@@ -56,35 +56,50 @@ export default function Header() {
     { label: t.nav[6], href: "/contact" },
   ];
 
+  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
+
   return (
     <>
       <div className="bg-foreground py-2 text-sm text-white">
-        <div className="container-narrow flex items-center justify-between gap-3">
+        <div className="container-narrow flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
           <a href={siteConfig.phoneHref} className="flex items-center gap-1.5 font-medium hover:text-primary">
             <Phone className="h-3.5 w-3.5" />
             <span>{siteConfig.phoneDisplay}</span>
           </a>
-          <a href={siteConfig.whatsappHref} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 font-medium text-primary-foreground hover:text-primary">
+          <a
+            href={siteConfig.whatsappHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 font-medium text-primary-foreground hover:text-primary"
+          >
             <MessageCircle className="h-3.5 w-3.5 text-primary" />
-            <span>{t.whatsapp}: {siteConfig.whatsappDisplay}</span>
+            <span>
+              {t.whatsapp}: {siteConfig.whatsappDisplay}
+            </span>
           </a>
         </div>
       </div>
 
       <header className="sticky top-0 z-50 border-b bg-background">
-        <div className="container-narrow flex h-20 items-center justify-between">
-          <BrandLogo />
+        <div className="container-narrow flex h-20 items-center gap-4">
+          <div className="shrink-0">
+            <BrandLogo />
+          </div>
 
-          <nav className="hidden items-center gap-6 lg:flex">
+          <nav className="hidden flex-1 items-center justify-center gap-4 xl:gap-6 lg:flex">
             {navLinks.map((link) => (
-              <Link key={link.href} href={link.href} className={`text-sm font-medium transition-colors ${pathname === link.href ? "text-accent" : "text-foreground/80 hover:text-accent"}`}>
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`text-sm font-medium transition-colors ${isActive(link.href) ? "text-accent" : "text-foreground/80 hover:text-accent"}`}
+              >
                 {link.label}
               </Link>
             ))}
           </nav>
 
-          <div className="flex items-center gap-3">
-            <label className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="ml-auto flex items-center gap-3">
+            <label className="hidden items-center gap-2 text-xs text-muted-foreground xl:flex">
               {t.language}
               <select
                 className="rounded border bg-background px-2 py-1 text-xs"
@@ -92,7 +107,9 @@ export default function Header() {
                 onChange={(event) => setLanguage(event.target.value as "en" | "bn" | "ja")}
               >
                 {languageOptions.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
                 ))}
               </select>
             </label>
@@ -116,7 +133,9 @@ export default function Header() {
                   onChange={(event) => setLanguage(event.target.value as "en" | "bn" | "ja")}
                 >
                   {languageOptions.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
                   ))}
                 </select>
               </label>
