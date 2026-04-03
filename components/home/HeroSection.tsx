@@ -28,14 +28,13 @@ const HeroSection = () => (
           Japanese language training, job preparation, interview support, visa guidance, and step-by-step assistance.
         </p>
         <div className="flex flex-col gap-4 sm:flex-row">
-          <Button asChild size="lg" className="bg-primary px-8 text-base font-bold text-primary-foreground hover:bg-primary/90">
+          <Button asChild size="lg" className="bg-accent px-8 text-base font-bold text-accent-foreground hover:bg-accent/90">
             <Link href="/contact">Apply Now</Link>
           </Button>
           <Button
             asChild
             size="lg"
-            variant="outline"
-            className="border-primary-foreground/30 px-8 text-base font-semibold text-primary-foreground hover:bg-primary-foreground/10"
+            className="bg-whatsapp px-8 text-base font-semibold text-whatsapp-foreground hover:bg-whatsapp/90"
           >
             <a href={siteConfig.whatsappHref} target="_blank" rel="noopener noreferrer">
               <MessageCircle className="mr-2 h-5 w-5" />
