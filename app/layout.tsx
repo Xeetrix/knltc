@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   description: siteConfig.description,
   icons: {
     icon: "/icon.svg",
-    shortcut: "/icon.svg",
+    shortcut: "/favicon.ico",
     apple: "/icon.svg",
   },
 };
