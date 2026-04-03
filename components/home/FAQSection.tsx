@@ -10,9 +10,81 @@ const FAQSection = () => {
       title: "Frequently Asked Questions",
       desc: "Everything you need to know before starting your Japan journey.",
       faqs: [
-        { q: "How much Japanese language is required?", a: "For most opportunities, JLPT N4 or N3 is required. KNLTC offers structured courses to help you reach the required level before application." },
-        { q: "Can I study and work part-time in Japan?", a: "Yes! Students in Japan can legally work up to 28 hours per week. We'll guide you on how to manage your schedule effectively." },
-        { q: "What services does KNLTC provide?", a: "We provide Japanese language training, job preparation, interview coaching, visa processing, pre-departure guidance, and Japan arrival support." },
+        {
+          q: "What kind of services do you provide?",
+          a: `We provide complete support from Bangladesh to Japan for both Work Visa and Student Visa processes.
+• Japanese language training
+• Skill training based on Japanese company requirements
+• Interview setup with Japanese companies
+• Visa processing guidance
+• Necessary support after arriving in Japan
+In short, we support you from the beginning until you settle in Japan.`,
+        },
+        {
+          q: "What qualifications are needed to go to Japan?",
+          a: `For a Student Visa, you generally need:
+• At least SSC/HSC or equivalent education
+• Interest in studying
+• Willingness to learn Japanese
+
+For a Work Visa, you generally need:
+• Interest in learning the job
+• Physical ability to work
+• Willingness to learn Japanese
+
+No need to worry — we prepare you for both language and work requirements.`,
+        },
+        {
+          q: "Do I need to know Japanese beforehand?",
+          a: "No, prior knowledge is not required. If you apply through us, we guide you from Japanese language learning to full interview preparation.",
+        },
+        {
+          q: "What types of jobs are available in Japan?",
+          a: `Common job sectors in Japan include:
+• Factory / Manufacturing
+• Food processing
+• Caregiver
+• Agriculture
+• Hotel / Restaurant
+Job placement depends on company demand and your skills.`,
+        },
+        {
+          q: "How much can I earn per month in Japan?",
+          a: "In many roles, monthly income is around 💴 150,000 – 250,000 yen or more. Earnings can increase with experience.",
+        },
+        {
+          q: "How long does the full process take?",
+          a: `Usually, the complete process takes about ⏳ 6 to 12 months.
+However, timeline depends on language progress, interviews, company approval, and visa processing.`,
+        },
+        {
+          q: "Will I get support after arriving in Japan?",
+          a: `Yes, absolutely. Even after arrival, we try to support you so that you can:
+• Join your company smoothly
+• Adjust to the new environment
+• Receive guidance whenever needed`,
+        },
+        {
+          q: "Is there an opportunity to study in Japan?",
+          a: `Yes. Through a Student Visa, you can:
+• Study at a language school
+• Work part-time at the same time
+Many students later build strong careers through this path.`,
+        },
+        {
+          q: "What is the application process?",
+          a: `The process is usually:
+1️⃣ Initial consultation
+2️⃣ Japanese language training
+3️⃣ Document preparation
+4️⃣ Company interview
+5️⃣ Visa process
+6️⃣ Travel to Japan`,
+        },
+        {
+          q: "How can I apply?",
+          a: "You can contact us for a free consultation. Our team will explain the full process and suggest the best path for your goals.",
+        },
       ],
     },
     bn: {
@@ -100,9 +172,81 @@ Work Visa এর জন্য সাধারণত লাগে:
       title: "よくある質問",
       desc: "日本への準備前に知っておきたいポイントです。",
       faqs: [
-        { q: "どの程度の日本語力が必要ですか？", a: "多くの場合、JLPT N4またはN3が必要です。KNLTCが到達まで支援します。" },
-        { q: "留学しながらアルバイトできますか？", a: "はい。学生は週28時間まで合法的に働けます。" },
-        { q: "KNLTCのサービス内容は？", a: "日本語学習、就職準備、面接対策、ビザ、渡航前後サポートを提供します。" },
+        {
+          q: "どのようなサービスを提供していますか？",
+          a: `当社は、バングラデシュから日本への Work Visa・Student Visa の両方で、全体を通してサポートします。
+• 日本語学習サポート
+• 日本企業の要件に合わせたトレーニング
+• 日本企業との面接設定
+• ビザ申請のガイダンス
+• 渡日後の必要サポート
+つまり、準備開始から日本到着後まで一貫して支援します。`,
+        },
+        {
+          q: "日本へ行くために必要な条件は？",
+          a: `Student Visa の一般的な条件:
+• SSC / HSC または同等の学歴
+• 学習意欲
+• 日本語を学ぶ意思
+
+Work Visa の一般的な条件:
+• 仕事を学ぶ意欲
+• 身体的に働けること
+• 日本語を学ぶ意思
+
+心配はいりません。言語面・就業面の準備を私たちがサポートします。`,
+        },
+        {
+          q: "事前に日本語が必要ですか？",
+          a: "いいえ、事前知識は必須ではありません。当社経由で応募した場合、日本語学習から面接準備まで丁寧に案内します。",
+        },
+        {
+          q: "日本ではどんな仕事がありますか？",
+          a: `日本で多い職種:
+• 工場・製造
+• 食品加工
+• 介護
+• 農業
+• ホテル・レストラン
+配属は企業ニーズとご本人のスキルによって決まります。`,
+        },
+        {
+          q: "日本での月収はどのくらいですか？",
+          a: "多くの場合、月収はおよそ 💴 150,000～250,000 円以上です。経験によりさらに増える可能性があります。",
+        },
+        {
+          q: "手続き全体にはどれくらい時間がかかりますか？",
+          a: `通常、全体の期間は約 ⏳ 6～12か月です。
+ただし、日本語学習の進度、面接、企業承認、ビザ手続きによって変動します。`,
+        },
+        {
+          q: "日本到着後もサポートはありますか？",
+          a: `はい、あります。到着後も次の点を中心にサポートします:
+• 会社へスムーズに入社できること
+• 新しい生活環境に適応できること
+• 必要時にガイダンスを受けられること`,
+        },
+        {
+          q: "日本で勉強するチャンスはありますか？",
+          a: `はい。Student Visa で渡日すると:
+• 日本語学校で学習できる
+• 同時にアルバイトができる
+このルートで将来のキャリアを築く方も多くいます。`,
+        },
+        {
+          q: "応募の流れを教えてください。",
+          a: `一般的な流れ:
+1️⃣ 初回カウンセリング
+2️⃣ 日本語トレーニング
+3️⃣ 書類準備
+4️⃣ 企業面接
+5️⃣ ビザ手続き
+6️⃣ 渡日`,
+        },
+        {
+          q: "どうやって申し込めますか？",
+          a: "無料相談にご連絡ください。担当チームが全体の流れを説明し、あなたに最適な進路をご提案します。",
+        },
       ],
     },
   }[language];
