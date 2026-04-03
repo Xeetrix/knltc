@@ -5,8 +5,8 @@ export default function BrandLogo({ compact = false }: { compact?: boolean }) {
   return (
     <Link href="/" className="inline-flex items-center gap-3" aria-label="KNLTC Home">
       <Image
-        src="/brand/knltc-crane-mark.svg"
-        alt="KNLTC crane symbol"
+        src="/brand/knltc-logo.svg"
+        alt="KNLTC Logo"
         width={compact ? 38 : 46}
         height={compact ? 38 : 46}
         priority
