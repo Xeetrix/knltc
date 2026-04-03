@@ -2,25 +2,59 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Menu, MessageCircle, Phone, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BrandLogo from "@/components/layout/BrandLogo";
+import { useLanguage } from "@/components/layout/LanguageProvider";
+import { languageOptions, translate } from "@/lib/i18n";
 import { siteConfig } from "@/lib/site";
-
-const navLinks = [
-  { label: "Home", href: "/" },
-  { label: "About", href: "/about" },
-  { label: "Services", href: "/services" },
-  { label: "Study in Japan", href: "/study-in-japan" },
-  { label: "Work in Japan", href: "/work-in-japan" },
-  { label: "Japanese Language", href: "/japanese-language" },
-  { label: "Contact", href: "/contact" },
-];
 
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const { language, setLanguage } = useLanguage();
+
+  const t = useMemo(
+    () =>
+      translate(
+        {
+          en: {
+            nav: ["Home", "About", "Services", "Study in Japan", "Work in Japan", "Japanese Language", "Contact"],
+            applyNow: "Apply Now",
+            whatsapp: "WhatsApp",
+            toggleMenu: "Toggle menu",
+            language: "Language",
+          },
+          bn: {
+            nav: ["হোম", "আমাদের সম্পর্কে", "সার্ভিস", "জাপানে পড়াশোনা", "জাপানে কাজ", "জাপানি ভাষা", "যোগাযোগ"],
+            applyNow: "এখনই আবেদন করুন",
+            whatsapp: "হোয়াটসঅ্যাপ",
+            toggleMenu: "মেনু টগল করুন",
+            language: "ভাষা",
+          },
+          ja: {
+            nav: ["ホーム", "会社概要", "サービス", "日本留学", "日本就職", "日本語", "お問い合わせ"],
+            applyNow: "今すぐ応募",
+            whatsapp: "WhatsApp",
+            toggleMenu: "メニュー切替",
+            language: "言語",
+          },
+        },
+        language,
+      ),
+    [language],
+  );
+
+  const navLinks = [
+    { label: t.nav[0], href: "/" },
+    { label: t.nav[1], href: "/about" },
+    { label: t.nav[2], href: "/services" },
+    { label: t.nav[3], href: "/study-in-japan" },
+    { label: t.nav[4], href: "/work-in-japan" },
+    { label: t.nav[5], href: "/japanese-language" },
+    { label: t.nav[6], href: "/contact" },
+  ];
 
   return (
     <>
@@ -32,7 +66,7 @@ export default function Header() {
           </a>
           <a href={siteConfig.whatsappHref} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 font-medium text-primary-foreground hover:text-primary">
             <MessageCircle className="h-3.5 w-3.5 text-primary" />
-            <span>WhatsApp: {siteConfig.whatsappDisplay}</span>
+            <span>{t.whatsapp}: {siteConfig.whatsappDisplay}</span>
           </a>
         </div>
       </div>
@@ -43,17 +77,29 @@ export default function Header() {
 
           <nav className="hidden items-center gap-6 lg:flex">
             {navLinks.map((link) => (
-              <Link key={link.label} href={link.href} className={`text-sm font-medium transition-colors ${pathname === link.href ? "text-accent" : "text-foreground/80 hover:text-accent"}`}>
+              <Link key={link.href} href={link.href} className={`text-sm font-medium transition-colors ${pathname === link.href ? "text-accent" : "text-foreground/80 hover:text-accent"}`}>
                 {link.label}
               </Link>
             ))}
           </nav>
 
           <div className="flex items-center gap-3">
+            <label className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
+              {t.language}
+              <select
+                className="rounded border bg-background px-2 py-1 text-xs"
+                value={language}
+                onChange={(event) => setLanguage(event.target.value as "en" | "bn" | "ja")}
+              >
+                {languageOptions.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </label>
             <Button asChild size="sm" className="hidden bg-primary font-semibold text-primary-foreground hover:bg-primary/90 sm:inline-flex">
-              <Link href="/contact">Apply Now</Link>
+              <Link href="/contact">{t.applyNow}</Link>
             </Button>
-            <button className="p-2 lg:hidden" onClick={() => setMobileOpen(!mobileOpen)} aria-label="Toggle menu">
+            <button className="p-2 lg:hidden" onClick={() => setMobileOpen(!mobileOpen)} aria-label={t.toggleMenu}>
               {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
@@ -61,8 +107,22 @@ export default function Header() {
 
         {mobileOpen && (
           <nav className="space-y-3 border-t bg-background px-4 py-4 lg:hidden">
+            <div>
+              <label className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
+                {t.language}
+                <select
+                  className="rounded border bg-background px-2 py-1 text-xs"
+                  value={language}
+                  onChange={(event) => setLanguage(event.target.value as "en" | "bn" | "ja")}
+                >
+                  {languageOptions.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
             {navLinks.map((link) => (
-              <Link key={link.label} href={link.href} className="block text-sm font-medium text-foreground/80 hover:text-accent" onClick={() => setMobileOpen(false)}>
+              <Link key={link.href} href={link.href} className="block text-sm font-medium text-foreground/80 hover:text-accent" onClick={() => setMobileOpen(false)}>
                 {link.label}
               </Link>
             ))}
