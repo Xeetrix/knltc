@@ -13,7 +13,7 @@ export default function BrandLogo({ compact = false }: { compact?: boolean }) {
       />
       <span className="leading-tight">
         <span className="block font-display text-xl font-semibold text-foreground">KNLTC</span>
-        {!compact && <span className="block text-xs text-muted-foreground">Japan Recruiting & Training</span>}
+        {!compact && <span className="block text-xs text-muted-foreground">Kurobe Nihongo Language Training Center</span>}
       </span>
     </Link>
   );
