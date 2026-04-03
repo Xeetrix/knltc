@@ -44,8 +44,35 @@ const ServicesSection = () => {
   const { language } = useLanguage();
   const list = services[language];
   const t = heading[language];
+
   return (
-    <section id="services" className="section-padding"><div className="container-narrow"><div className="text-center mb-14"><h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-4">{t.title}</h2><p className="text-muted-foreground max-w-2xl mx-auto">{t.desc}</p></div><div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">{list.map((svc, i) => (<motion.div key={svc.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08, duration: 0.5 }} className="bg-card border rounded-lg p-6 hover:shadow-md transition-shadow group"><div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors"><svc.icon className="h-6 w-6 text-primary" /></div><h3 className="font-bold text-foreground mb-2">{svc.title}</h3><p className="text-sm text-muted-foreground leading-relaxed">{svc.desc}</p></motion.div>))}</div></div></section>
+    <section id="services" className="section-padding">
+      <div className="container-narrow">
+        <div className="mb-10 text-center sm:mb-14">
+          <h2 className="mb-4 text-2xl font-extrabold text-foreground sm:text-3xl md:text-4xl">{t.title}</h2>
+          <p className="mx-auto max-w-2xl text-sm text-muted-foreground sm:text-base">{t.desc}</p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
+          {list.map((svc, i) => (
+            <motion.div
+              key={svc.title}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.08, duration: 0.5 }}
+              className="group rounded-lg border bg-card p-5 transition-shadow hover:shadow-md sm:p-6"
+            >
+              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/20 sm:h-12 sm:w-12">
+                <svc.icon className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
+              </div>
+              <h3 className="mb-2 text-base font-bold text-foreground sm:text-lg">{svc.title}</h3>
+              <p className="text-sm leading-relaxed text-muted-foreground">{svc.desc}</p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 };
 

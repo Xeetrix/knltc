@@ -252,7 +252,27 @@ Work Visa の一般的な条件:
   }[language];
 
   return (
-    <section className="section-padding bg-surface"><div className="container-narrow max-w-3xl"><div className="text-center mb-14"><h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-4">{content.title}</h2><p className="text-muted-foreground">{content.desc}</p></div><Accordion type="single" collapsible className="space-y-3">{content.faqs.map((faq, i) => (<AccordionItem key={i} value={`faq-${i}`} className="bg-card border rounded-lg px-6 data-[state=open]:shadow-sm"><AccordionTrigger className="text-left font-semibold text-foreground hover:no-underline py-5">{faq.q}</AccordionTrigger><AccordionContent className="text-muted-foreground leading-relaxed whitespace-pre-line pb-5">{faq.a}</AccordionContent></AccordionItem>))}</Accordion></div></section>
+    <section className="section-padding bg-surface">
+      <div className="container-narrow max-w-3xl">
+        <div className="mb-10 text-center sm:mb-14">
+          <h2 className="mb-4 text-2xl font-extrabold text-foreground sm:text-3xl md:text-4xl">{content.title}</h2>
+          <p className="text-sm text-muted-foreground sm:text-base">{content.desc}</p>
+        </div>
+
+        <Accordion type="single" collapsible className="space-y-3">
+          {content.faqs.map((faq, i) => (
+            <AccordionItem key={i} value={`faq-${i}`} className="rounded-lg border bg-card px-4 data-[state=open]:shadow-sm sm:px-6">
+              <AccordionTrigger className="py-4 text-left text-sm font-semibold text-foreground hover:no-underline sm:py-5 sm:text-base">
+                {faq.q}
+              </AccordionTrigger>
+              <AccordionContent className="whitespace-pre-line pb-5 text-sm leading-relaxed text-muted-foreground sm:text-base">
+                {faq.a}
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      </div>
+    </section>
   );
 };
 
