@@ -47,8 +47,8 @@ export default function Footer() {
       <div className="container-narrow">
         <div className="mb-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <div className="mb-4 rounded bg-white p-3 w-fit">
-              <BrandLogo compact />
+            <div className="mb-4 w-fit rounded-xl bg-white/5 p-3 ring-1 ring-white/15 backdrop-blur-sm">
+              <BrandLogo compact inverse />
             </div>
             <p className="text-sm leading-relaxed">{t.desc}</p>
           </div>
@@ -72,11 +72,11 @@ export default function Footer() {
             <ul className="space-y-2 text-sm">
               <li className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-primary" /> <a href={siteConfig.phoneHref} className="hover:text-primary">{siteConfig.phoneDisplay}</a></li>
               <li className="flex items-center gap-2"><Mail className="h-3.5 w-3.5 text-accent" /> <a href={`mailto:${siteConfig.email}`} className="hover:text-accent">{siteConfig.email}</a></li>
-              <li className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" /> {siteConfig.location}</li>
+              <li className="flex items-start gap-2"><MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/90" /> <span>{siteConfig.location}</span></li>
             </ul>
           </div>
         </div>
-        <div className="mb-6 flex items-center justify-center gap-5">
+        <div className="mb-6 flex items-center justify-start gap-5">
           <a href="https://web.facebook.com/KurobeNihongoLanguageTrainingCenter" target="_blank" rel="noopener noreferrer" className="text-white/80 transition-colors hover:text-primary" aria-label="Facebook">
             <Facebook className="h-4 w-4" />
           </a>

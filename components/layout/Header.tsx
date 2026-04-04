@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Menu, MessageCircle, Phone, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BrandLogo from "@/components/layout/BrandLogo";
@@ -12,6 +12,8 @@ import { siteConfig } from "@/lib/site";
 
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const menuPanelRef = useRef<HTMLDivElement | null>(null);
+  const menuButtonRef = useRef<HTMLButtonElement | null>(null);
   const pathname = usePathname();
   const { language, setLanguage } = useLanguage();
 
@@ -62,6 +64,30 @@ export default function Header() {
     setMobileOpen(false);
   }, [pathname]);
 
+  useEffect(() => {
+    if (!mobileOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (menuPanelRef.current?.contains(target) || menuButtonRef.current?.contains(target)) return;
+      setMobileOpen(false);
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMobileOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [mobileOpen]);
+
   return (
     <>
       <div className="bg-foreground py-2 text-xs text-white sm:text-sm">
@@ -84,7 +110,7 @@ export default function Header() {
         </div>
       </div>
 
-      <header className="sticky top-0 z-50 border-b bg-background">
+      <header className="sticky top-0 z-50 border-b bg-background relative">
         <div className="container-narrow flex min-h-20 items-center gap-3 py-2 sm:gap-4">
           <div className="shrink-0">
             <BrandLogo />
@@ -95,6 +121,7 @@ export default function Header() {
               <Link href="/contact">{t.applyNow}</Link>
             </Button>
             <button
+              ref={menuButtonRef}
               className="p-2"
               onClick={() => setMobileOpen((prev) => !prev)}
               aria-label={t.toggleMenu}
@@ -107,36 +134,42 @@ export default function Header() {
         </div>
 
         {mobileOpen && (
-          <nav id="mobile-menu" className="space-y-3 border-t bg-background px-4 py-4">
-            <div>
-              <label className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
-                {t.language}
-                <select
-                  className="rounded border bg-background px-2 py-1 text-xs"
-                  value={language}
-                  onChange={(event) => setLanguage(event.target.value as "en" | "bn" | "ja")}
+          <div className="absolute inset-x-0 top-full z-50 border-t border-border/60 bg-black/20 px-4 py-3 backdrop-blur-[1px]">
+            <nav
+              id="mobile-menu"
+              ref={menuPanelRef}
+              className="ml-auto w-full max-w-xs space-y-3 rounded-xl border bg-background p-4 shadow-lg"
+            >
+              <div>
+                <label className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
+                  {t.language}
+                  <select
+                    className="rounded border bg-background px-2 py-1 text-xs"
+                    value={language}
+                    onChange={(event) => setLanguage(event.target.value as "en" | "bn" | "ja")}
+                  >
+                    {languageOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`block rounded-md px-2 py-1 text-sm font-medium transition-colors ${
+                    isActive(link.href) ? "text-accent" : "text-foreground/80 hover:bg-muted hover:text-accent"
+                  }`}
+                  onClick={() => setMobileOpen(false)}
                 >
-                  {languageOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`block rounded-md px-2 py-1 text-sm font-medium transition-colors ${
-                  isActive(link.href) ? "text-accent" : "text-foreground/80 hover:bg-muted hover:text-accent"
-                }`}
-                onClick={() => setMobileOpen(false)}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
         )}
       </header>
     </>
