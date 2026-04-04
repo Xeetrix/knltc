@@ -6,7 +6,7 @@ export const languageOptions: Array<{ value: Language; label: string }> = [
   { value: "ja", label: "日本語" },
 ];
 
-export const defaultLanguage: Language = "en";
+export const defaultLanguage: Language = "bn";
 
 export const languageStorageKey = "knltc-language";
 
