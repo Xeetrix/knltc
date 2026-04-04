@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Mail, MapPin, Phone } from "lucide-react";
+import { Facebook, Instagram, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import BrandLogo from "@/components/layout/BrandLogo";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
@@ -75,6 +75,17 @@ export default function Footer() {
               <li className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" /> {siteConfig.location}</li>
             </ul>
           </div>
+        </div>
+        <div className="mb-6 flex items-center justify-center gap-5">
+          <a href="https://web.facebook.com/KurobeNihongoLanguageTrainingCenter" target="_blank" rel="noopener noreferrer" className="text-white/80 transition-colors hover:text-primary" aria-label="Facebook">
+            <Facebook className="h-4 w-4" />
+          </a>
+          <a href="https://www.instagram.com/knltc.official" target="_blank" rel="noopener noreferrer" className="text-white/80 transition-colors hover:text-pink-400" aria-label="Instagram">
+            <Instagram className="h-4 w-4" />
+          </a>
+          <a href={siteConfig.whatsappHref} target="_blank" rel="noopener noreferrer" className="text-white/80 transition-colors hover:text-green-400" aria-label="WhatsApp">
+            <MessageCircle className="h-4 w-4" />
+          </a>
         </div>
         <div className="border-t border-white/10 pt-6 text-center text-sm">© {new Date().getFullYear()} KNLTC. {t.rights}</div>
       </div>

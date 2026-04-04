@@ -7,5 +7,5 @@ export const siteConfig = {
   whatsappDisplay: "+880 1805 013633",
   whatsappHref: "https://wa.me/8801805013633",
   email: "info@knltc.com",
-  location: "Dhaka, Bangladesh",
+  location: "House 15, Road 8, Nikunja-2, Khilkhet, Dhaka-1229., Dhaka, Bangladesh.",
 };

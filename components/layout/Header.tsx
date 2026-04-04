@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Menu, MessageCircle, Phone, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BrandLogo from "@/components/layout/BrandLogo";
@@ -58,6 +58,10 @@ export default function Header() {
 
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
   return (
     <>
       <div className="bg-foreground py-2 text-xs text-white sm:text-sm">
@@ -86,15 +90,24 @@ export default function Header() {
             <BrandLogo />
           </div>
 
-          <div className="ml-auto flex items-center">
-            <button className="p-2" onClick={() => setMobileOpen(!mobileOpen)} aria-label={t.toggleMenu}>
+          <div className="ml-auto flex items-center gap-2">
+            <Button asChild size="sm" className="bg-primary font-semibold text-primary-foreground hover:bg-primary/90">
+              <Link href="/contact">{t.applyNow}</Link>
+            </Button>
+            <button
+              className="p-2"
+              onClick={() => setMobileOpen((prev) => !prev)}
+              aria-label={t.toggleMenu}
+              aria-expanded={mobileOpen}
+              aria-controls="mobile-menu"
+            >
               {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
         </div>
 
         {mobileOpen && (
-          <nav className="space-y-3 border-t bg-background px-4 py-4">
+          <nav id="mobile-menu" className="space-y-3 border-t bg-background px-4 py-4">
             <div>
               <label className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
                 {t.language}
@@ -111,11 +124,6 @@ export default function Header() {
                 </select>
               </label>
             </div>
-            <Button asChild size="sm" className="w-full bg-primary font-semibold text-primary-foreground hover:bg-primary/90">
-              <Link href="/contact" onClick={() => setMobileOpen(false)}>
-                {t.applyNow}
-              </Link>
-            </Button>
             {navLinks.map((link) => (
               <Link
                 key={link.href}
