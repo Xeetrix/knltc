@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Languages, Briefcase, Mic, Building2, FileCheck, Plane, MapPin } from "lucide-react";
+import { Languages, Briefcase, Mic, Building2, FileCheck, Plane, MapPin, House } from "lucide-react";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 
 const services = {
@@ -13,6 +13,7 @@ const services = {
     { icon: FileCheck, title: "Visa Processing Support", desc: "Complete documentation and application assistance." },
     { icon: Plane, title: "Pre-Departure Guidance", desc: "Accommodation, travel, insurance, and cultural orientation." },
     { icon: MapPin, title: "Japan Arrival Support", desc: "Arrival planning, orientation, and ongoing support guidance." },
+    { icon: House, title: "Residency Guidance", desc: "We guide you through residence registration, local procedures, and settling in smoothly." },
   ],
   bn: [
     { icon: Languages, title: "জাপানি ভাষা প্রশিক্ষণ", desc: "বিশেষজ্ঞ শিক্ষকের মাধ্যমে N5 থেকে N1 পর্যন্ত JLPT কোর্স।" },
@@ -22,6 +23,7 @@ const services = {
     { icon: FileCheck, title: "ভিসা প্রসেসিং সাপোর্ট", desc: "সম্পূর্ণ ডকুমেন্টেশন ও আবেদন সহায়তা।" },
     { icon: Plane, title: "প্রি-ডিপার্চার গাইডেন্স", desc: "আবাসন, ভ্রমণ, বীমা ও সাংস্কৃতিক ওরিয়েন্টেশন।" },
     { icon: MapPin, title: "জাপানে পৌঁছানোর পর সাপোর্ট", desc: "আগমনের পরিকল্পনা, ওরিয়েন্টেশন ও চলমান সহায়তা।" },
+    { icon: House, title: "রেসিডেন্সি গাইডেন্স", desc: "রেসিডেন্সি পেতে প্রয়োজনীয় ধাপ, স্থানীয় প্রক্রিয়া ও সেটেলমেন্টে আমরা সুন্দরভাবে গাইড করব।" },
   ],
   ja: [
     { icon: Languages, title: "日本語トレーニング", desc: "N5からN1までのJLPTコースを提供。" },
@@ -31,6 +33,7 @@ const services = {
     { icon: FileCheck, title: "ビザ申請サポート", desc: "必要書類と申請手続きを全面支援。" },
     { icon: Plane, title: "渡航前ガイダンス", desc: "住居、渡航、保険、生活オリエンテーション。" },
     { icon: MapPin, title: "来日後サポート", desc: "到着後の計画、案内、継続支援。" },
+    { icon: House, title: "居住サポート", desc: "在留手続きや地域での生活開始まで、分かりやすく丁寧にご案内します。" },
   ],
 } as const;
 
