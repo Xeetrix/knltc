@@ -14,7 +14,7 @@ const HeroSection = () => {
     {
       en: {
         badge: "🇯🇵 Trusted Japan Guidance Agency",
-        title: "Your Trusted Path from Bangladesh to Japan",
+        title: "Your Trusted Guidefrom Bangladesh to Japan",
         desc: "Japanese language training, job preparation, interview support, visa guidance, and step-by-step assistance.",
         apply: "Apply Now",
         whatsapp: "WhatsApp Us",
@@ -22,7 +22,7 @@ const HeroSection = () => {
       },
       bn: {
         badge: "🇯🇵 বিশ্বস্ত জাপান গাইডেন্স এজেন্সি",
-        title: "বাংলাদেশ থেকে জাপানে আপনার বিশ্বস্ত পথ",
+        title: "বাংলাদেশ থেকে জাপানে আপনার বিশ্বস্ত পথপ্রদর্শক",
         desc: "জাপানি ভাষা প্রশিক্ষণ, চাকরি প্রস্তুতি, ইন্টারভিউ সাপোর্ট, ভিসা গাইডেন্স এবং ধাপে ধাপে সহায়তা।",
         apply: "এখনই আবেদন করুন",
         whatsapp: "হোয়াটসঅ্যাপ করুন",
@@ -30,7 +30,7 @@ const HeroSection = () => {
       },
       ja: {
         badge: "🇯🇵 信頼できる日本進学・就職ガイダンス",
-        title: "バングラデシュから日本への確かな道",
+        title: "バングラデシュから日本への信頼のガイド",
         desc: "日本語学習、就職準備、面接サポート、ビザ案内まで段階的に支援します。",
         apply: "今すぐ応募",
         whatsapp: "WhatsAppで相談",
