@@ -54,7 +54,7 @@ Job placement depends on company demand and your skills.`,
         },
         {
           q: "How long does the full process take?",
-          a: `Usually, the complete process takes about ⏳ 6 to 12 months.
+          a: `Usually, the complete process takes about ⏳ 6 to 8 months.
 However, timeline depends on language progress, interviews, company approval, and visa processing.`,
         },
         {
@@ -135,7 +135,7 @@ Work Visa এর জন্য সাধারণত লাগে:
         },
         {
           q: "পুরো প্রসেস করতে কত সময় লাগে?",
-          a: `সাধারণত পুরো প্রসেস সম্পন্ন হতে সময় লাগে প্রায় ⏳ ৬ মাস থেকে ১২ মাস।
+          a: `সাধারণত পুরো প্রসেস সম্পন্ন হতে সময় লাগে প্রায় ⏳ ৬ মাস থেকে  ৮ মাস।
 তবে এটা নির্ভর করে ভাষা শেখা, ইন্টারভিউ, কোম্পানির অনুমোদন এবং ভিসা প্রসেসের উপর।`,
         },
         {
@@ -216,7 +216,7 @@ Work Visa の一般的な条件:
         },
         {
           q: "手続き全体にはどれくらい時間がかかりますか？",
-          a: `通常、全体の期間は約 ⏳ 6～12か月です。
+          a: `通常、全体の期間は約 ⏳ 6 to 8 months です。
 ただし、日本語学習の進度、面接、企業承認、ビザ手続きによって変動します。`,
         },
         {
