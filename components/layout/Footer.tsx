@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Mail, MapPin, Phone } from "lucide-react";
+import { Facebook, Instagram, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import BrandLogo from "@/components/layout/BrandLogo";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
@@ -16,6 +16,7 @@ export default function Footer() {
         quickLinks: "Quick Links",
         services: "Core Services",
         contact: "Contact",
+        social: "Social",
         items: ["Japanese Language Training", "Job Placement Support", "Visa Documentation Guidance", "Interview Preparation"],
         rights: "All rights reserved.",
         links: ["Services", "Study in Japan", "Work in Japan", "Contact"],
@@ -25,6 +26,7 @@ export default function Footer() {
         quickLinks: "দ্রুত লিংক",
         services: "মূল সেবা",
         contact: "যোগাযোগ",
+        social: "সোশ্যাল",
         items: ["জাপানি ভাষা প্রশিক্ষণ", "চাকরির সহায়তা", "ভিসা ডকুমেন্টেশন গাইড", "ইন্টারভিউ প্রস্তুতি"],
         rights: "সর্বস্বত্ব সংরক্ষিত।",
         links: ["সার্ভিস", "জাপানে পড়াশোনা", "জাপানে কাজ", "যোগাযোগ"],
@@ -34,6 +36,7 @@ export default function Footer() {
         quickLinks: "クイックリンク",
         services: "主要サービス",
         contact: "お問い合わせ",
+        social: "ソーシャル",
         items: ["日本語トレーニング", "就職サポート", "ビザ書類ガイド", "面接対策"],
         rights: "無断転載を禁じます。",
         links: ["サービス", "日本留学", "日本就職", "お問い合わせ"],
@@ -73,6 +76,12 @@ export default function Footer() {
               <li className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-primary" /> <a href={siteConfig.phoneHref} className="hover:text-primary">{siteConfig.phoneDisplay}</a></li>
               <li className="flex items-center gap-2"><Mail className="h-3.5 w-3.5 text-accent" /> <a href={`mailto:${siteConfig.email}`} className="hover:text-accent">{siteConfig.email}</a></li>
               <li className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" /> {siteConfig.location}</li>
+            </ul>
+            <h4 className="mb-3 mt-5 font-bold text-white">{t.social}</h4>
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-center gap-2"><Facebook className="h-3.5 w-3.5 text-primary" /> <a href="https://web.facebook.com/KurobeNihongoLanguageTrainingCenter" target="_blank" rel="noopener noreferrer" className="hover:text-primary">Facebook</a></li>
+              <li className="flex items-center gap-2"><Instagram className="h-3.5 w-3.5 text-pink-400" /> <a href="https://www.instagram.com/knltc.official" target="_blank" rel="noopener noreferrer" className="hover:text-pink-400">Instagram</a></li>
+              <li className="flex items-center gap-2"><MessageCircle className="h-3.5 w-3.5 text-green-400" /> <a href={siteConfig.whatsappHref} target="_blank" rel="noopener noreferrer" className="hover:text-green-400">{siteConfig.whatsappDisplay}</a></li>
             </ul>
           </div>
         </div>
