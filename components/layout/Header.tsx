@@ -86,44 +86,15 @@ export default function Header() {
             <BrandLogo />
           </div>
 
-          <nav className="hidden flex-1 items-center justify-center gap-4 xl:gap-6 lg:flex">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`text-sm font-medium transition-colors ${isActive(link.href) ? "text-accent" : "text-foreground/80 hover:text-accent"}`}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="ml-auto flex items-center gap-2 sm:gap-3">
-            <label className="hidden items-center gap-2 text-xs text-muted-foreground xl:flex">
-              {t.language}
-              <select
-                className="rounded border bg-background px-2 py-1 text-xs"
-                value={language}
-                onChange={(event) => setLanguage(event.target.value as "en" | "bn" | "ja")}
-              >
-                {languageOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <Button asChild size="sm" className="hidden bg-primary font-semibold text-primary-foreground hover:bg-primary/90 sm:inline-flex">
-              <Link href="/contact">{t.applyNow}</Link>
-            </Button>
-            <button className="p-2 lg:hidden" onClick={() => setMobileOpen(!mobileOpen)} aria-label={t.toggleMenu}>
+          <div className="ml-auto flex items-center">
+            <button className="p-2" onClick={() => setMobileOpen(!mobileOpen)} aria-label={t.toggleMenu}>
               {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
         </div>
 
         {mobileOpen && (
-          <nav className="space-y-3 border-t bg-background px-4 py-4 lg:hidden">
+          <nav className="space-y-3 border-t bg-background px-4 py-4">
             <div>
               <label className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
                 {t.language}
@@ -140,8 +111,20 @@ export default function Header() {
                 </select>
               </label>
             </div>
+            <Button asChild size="sm" className="w-full bg-primary font-semibold text-primary-foreground hover:bg-primary/90">
+              <Link href="/contact" onClick={() => setMobileOpen(false)}>
+                {t.applyNow}
+              </Link>
+            </Button>
             {navLinks.map((link) => (
-              <Link key={link.href} href={link.href} className="block rounded-md px-2 py-1 text-sm font-medium text-foreground/80 hover:bg-muted hover:text-accent" onClick={() => setMobileOpen(false)}>
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`block rounded-md px-2 py-1 text-sm font-medium transition-colors ${
+                  isActive(link.href) ? "text-accent" : "text-foreground/80 hover:bg-muted hover:text-accent"
+                }`}
+                onClick={() => setMobileOpen(false)}
+              >
                 {link.label}
               </Link>
             ))}
