@@ -117,7 +117,11 @@ export default function Header() {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
-            <Button asChild size="sm" className="bg-primary font-semibold text-primary-foreground hover:bg-primary/90">
+            <Button
+              asChild
+              size="sm"
+              className="hidden bg-primary font-semibold text-primary-foreground hover:bg-primary/90 sm:inline-flex"
+            >
               <Link href="/contact">{t.applyNow}</Link>
             </Button>
             <button
@@ -168,6 +172,11 @@ export default function Header() {
                   {link.label}
                 </Link>
               ))}
+              <Button asChild size="sm" className="mt-2 w-full bg-primary font-semibold text-primary-foreground hover:bg-primary/90">
+                <Link href="/contact" onClick={() => setMobileOpen(false)}>
+                  {t.applyNow}
+                </Link>
+              </Button>
             </nav>
           </div>
         )}
