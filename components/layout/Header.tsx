@@ -92,7 +92,7 @@ export default function Header() {
     <>
       <div className="bg-foreground py-2 text-xs text-white sm:text-sm">
         <div className="container-narrow flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
-          <a href={siteConfig.phoneHref} className="flex items-center gap-1.5 font-medium hover:text-primary break-all sm:break-normal">
+          <a href={siteConfig.phoneHref} className="flex break-all items-center gap-1.5 font-medium hover:text-primary sm:break-normal">
             <Phone className="h-3.5 w-3.5" />
             <span>{siteConfig.phoneDisplay}</span>
           </a>
@@ -100,7 +100,7 @@ export default function Header() {
             href={siteConfig.whatsappHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 font-medium text-primary-foreground hover:text-primary break-all sm:break-normal"
+            className="flex break-all items-center gap-1.5 font-medium text-primary-foreground hover:text-primary sm:break-normal"
           >
             <MessageCircle className="h-3.5 w-3.5 text-primary" />
             <span>
@@ -110,23 +110,53 @@ export default function Header() {
         </div>
       </div>
 
-      <header className="sticky top-0 z-50 border-b bg-background relative">
+      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="container-narrow flex min-h-20 items-center gap-3 py-2 sm:gap-4">
           <div className="shrink-0">
             <BrandLogo />
           </div>
 
-          <div className="ml-auto flex items-center gap-2">
-            <Button
-              asChild
-              size="sm"
-              className="hidden bg-primary font-semibold text-primary-foreground hover:bg-primary/90 sm:inline-flex"
-            >
+          <nav className="ml-4 hidden items-center gap-1 lg:flex">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                  isActive(link.href) ? "text-accent" : "text-foreground/80 hover:bg-muted hover:text-accent"
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="ml-auto hidden items-center gap-2 lg:flex">
+            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              {t.language}
+              <select
+                className="rounded border bg-background px-2 py-1 text-xs"
+                value={language}
+                onChange={(event) => setLanguage(event.target.value as "en" | "bn" | "ja")}
+              >
+                {languageOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Button asChild size="sm" className="bg-primary font-semibold text-primary-foreground hover:bg-primary/90">
+              <Link href="/contact">{t.applyNow}</Link>
+            </Button>
+          </div>
+
+          <div className="ml-auto flex items-center gap-2 lg:hidden">
+            <Button asChild size="sm" className="bg-primary font-semibold text-primary-foreground hover:bg-primary/90">
               <Link href="/contact">{t.applyNow}</Link>
             </Button>
             <button
               ref={menuButtonRef}
-              className="p-2"
+              className="rounded-md p-2 hover:bg-muted"
               onClick={() => setMobileOpen((prev) => !prev)}
               aria-label={t.toggleMenu}
               aria-expanded={mobileOpen}
@@ -138,7 +168,7 @@ export default function Header() {
         </div>
 
         {mobileOpen && (
-          <div className="absolute inset-x-0 top-full z-50 border-t border-border/60 bg-black/20 px-4 py-3 backdrop-blur-[1px]">
+          <div className="absolute inset-x-0 top-full z-50 border-t border-border/60 bg-black/20 px-4 py-3 backdrop-blur-[1px] lg:hidden">
             <nav
               id="mobile-menu"
               ref={menuPanelRef}
