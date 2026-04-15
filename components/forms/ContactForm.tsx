@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
+import { trackApplyNowClick, trackLead } from "@/lib/meta-pixel";
 
 type ContactFormState = { name: string; phone: string; interest: string; message: string };
 const initialForm: ContactFormState = { name: "", phone: "", interest: "", message: "" };
@@ -33,6 +34,7 @@ export default function ContactForm() {
       const response = await fetch("/api/contact", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
       if (!response.ok) throw new Error("Request failed");
       toast({ title: t.submitted, description: t.thanks });
+      trackLead();
       setForm(initialForm);
     } catch {
       toast({ title: t.failed, description: t.retry, variant: "destructive" });
@@ -48,7 +50,7 @@ export default function ContactForm() {
       <Input placeholder={t.phone} required value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} />
       <Input placeholder={t.interest} value={form.interest} onChange={(event) => setForm({ ...form, interest: event.target.value })} />
       <Textarea placeholder={t.message} rows={4} value={form.message} onChange={(event) => setForm({ ...form, message: event.target.value })} />
-      <Button disabled={submitting} type="submit" className="w-full bg-primary font-bold text-primary-foreground hover:bg-primary/90">{submitting ? t.applying : t.apply}</Button>
+      <Button disabled={submitting} type="submit" className="w-full bg-primary font-bold text-primary-foreground hover:bg-primary/90" onClick={() => trackApplyNowClick("contact_form_submit")}>{submitting ? t.applying : t.apply}</Button>
     </form>
   );
 }
