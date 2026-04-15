@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { Inter, Poppins } from "next/font/google";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -52,7 +52,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           />
         </noscript>
         <Providers>
-          <MetaPixelPageView />
+          <Suspense fallback={null}>
+            <MetaPixelPageView />
+          </Suspense>
           <div className="min-h-screen bg-background">
             <Header />
             <main>{children}</main>
