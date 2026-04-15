@@ -7,6 +7,7 @@ import { MessageCircle } from "lucide-react";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
 import { siteConfig } from "@/lib/site";
+import { trackApplyNowClick, trackWhatsAppClick } from "@/lib/meta-pixel";
 
 const HeroSection = () => {
   const { language } = useLanguage();
@@ -14,27 +15,27 @@ const HeroSection = () => {
     {
       en: {
         badge: "🇯🇵 Trusted Japan Guidance Agency",
-        title: "Your Trusted Guide from Bangladesh to Japan",
-        desc: "Japanese language training, job preparation, interview support, visa guidance, and step-by-step assistance.",
-        apply: "Apply Now",
-        whatsapp: "WhatsApp Us",
-        highlights: ["✓ Clear process guidance", "✓ Transparent communication", "✓ Ongoing support"],
+        title: "Japan e porashona o career er shothik prostuti",
+        desc: "Japanese language training, student visa guidance, and job pathway support for Bangladeshi students & job seekers.",
+        apply: "Free Consultation",
+        whatsapp: "WhatsApp Now",
+        highlights: ["✓ Student & job pathway support", "✓ Documentation assistance", "✓ End-to-end guidance"],
       },
       bn: {
         badge: "🇯🇵 বিশ্বস্ত জাপান গাইডেন্স এজেন্সি",
-        title: "বাংলাদেশ থেকে জাপানে আপনার বিশ্বস্ত পথপ্রদর্শক",
-        desc: "জাপানি ভাষা প্রশিক্ষণ, চাকরি প্রস্তুতি, ইন্টারভিউ সাপোর্ট, ভিসা গাইডেন্স এবং ধাপে ধাপে সহায়তা।",
-        apply: "এখনই আবেদন করুন",
-        whatsapp: "হোয়াটসঅ্যাপ করুন",
-        highlights: ["✓ পরিষ্কার প্রক্রিয়া নির্দেশনা", "✓ স্বচ্ছ যোগাযোগ", "✓ চলমান সহায়তা"],
+        title: "Japan e porashona o career er shothik prostuti",
+        desc: "বাংলাদেশি শিক্ষার্থী ও চাকরি প্রার্থীদের জন্য জাপানি ভাষা প্রশিক্ষণ, স্টুডেন্ট ভিসা গাইডেন্স ও জব পাথওয়ে সাপোর্ট।",
+        apply: "Free Consultation",
+        whatsapp: "WhatsApp Now",
+        highlights: ["✓ স্টুডেন্ট ও জব পাথওয়ে সাপোর্ট", "✓ ডকুমেন্টেশন সহায়তা", "✓ শুরু থেকে শেষ পর্যন্ত গাইডলাইন"],
       },
       ja: {
         badge: "🇯🇵 信頼できる日本進学・就職ガイダンス",
-        title: "バングラデシュから日本への信頼のガイド",
-        desc: "日本語学習、就職準備、面接サポート、ビザ案内まで段階的に支援します。",
-        apply: "今すぐ応募",
-        whatsapp: "WhatsAppで相談",
-        highlights: ["✓ 明確な手続き案内", "✓ 透明なコミュニケーション", "✓ 継続サポート"],
+        title: "Japan e porashona o career er shothik prostuti",
+        desc: "バングラデシュの学生・求職者向けに、日本語研修、学生ビザ支援、就職パスを提供します。",
+        apply: "Free Consultation",
+        whatsapp: "WhatsApp Now",
+        highlights: ["✓ 留学・就職の両方に対応", "✓ 書類準備サポート", "✓ 渡航まで一貫支援"],
       },
     },
     language,
@@ -57,10 +58,12 @@ const HeroSection = () => {
           <p className="mb-7 max-w-xl text-base text-primary-foreground/85 sm:text-lg md:mb-8 md:text-xl">{t.desc}</p>
           <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
             <Button asChild size="lg" className="w-full bg-accent px-6 text-base font-bold text-accent-foreground hover:bg-accent/90 sm:w-auto sm:px-8">
-              <Link href="/contact">{t.apply}</Link>
+              <Link href="/contact" onClick={() => trackApplyNowClick("hero_free_consultation")}>
+                {t.apply}
+              </Link>
             </Button>
             <Button asChild size="lg" className="w-full bg-whatsapp px-6 text-base font-semibold text-whatsapp-foreground hover:bg-whatsapp/90 sm:w-auto sm:px-8">
-              <a href={siteConfig.whatsappHref} target="_blank" rel="noopener noreferrer">
+              <a href={siteConfig.whatsappHref} target="_blank" rel="noopener noreferrer" onClick={() => trackWhatsAppClick("hero_whatsapp_now")}>
                 <MessageCircle className="mr-2 h-5 w-5" />
                 {t.whatsapp}
               </a>
