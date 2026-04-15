@@ -7,8 +7,10 @@ import { Menu, MessageCircle, Phone, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BrandLogo from "@/components/layout/BrandLogo";
 import { useLanguage } from "@/components/layout/LanguageProvider";
-import { languageOptions, translate } from "@/lib/i18n";
+import { defaultLanguage, languageOptions, Language, translate } from "@/lib/i18n";
 import { siteConfig } from "@/lib/site";
+
+const headerLanguageOptions = languageOptions.filter((option) => option.value !== "ja");
 
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -63,6 +65,11 @@ export default function Header() {
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (headerLanguageOptions.some((option) => option.value === language)) return;
+    setLanguage(defaultLanguage);
+  }, [language, setLanguage]);
 
   useEffect(() => {
     if (!mobileOpen) return;
@@ -136,9 +143,9 @@ export default function Header() {
               <select
                 className="rounded border bg-background px-2 py-1 text-xs"
                 value={language}
-                onChange={(event) => setLanguage(event.target.value as "en" | "bn" | "ja")}
+                onChange={(event) => setLanguage(event.target.value as Language)}
               >
-                {languageOptions.map((option) => (
+                {headerLanguageOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
@@ -151,9 +158,6 @@ export default function Header() {
           </div>
 
           <div className="ml-auto flex items-center gap-2 lg:hidden">
-            <Button asChild size="sm" className="bg-primary font-semibold text-primary-foreground hover:bg-primary/90">
-              <Link href="/contact">{t.applyNow}</Link>
-            </Button>
             <button
               ref={menuButtonRef}
               className="rounded-md p-2 hover:bg-muted"
@@ -180,9 +184,9 @@ export default function Header() {
                   <select
                     className="rounded border bg-background px-2 py-1 text-xs"
                     value={language}
-                    onChange={(event) => setLanguage(event.target.value as "en" | "bn" | "ja")}
+                    onChange={(event) => setLanguage(event.target.value as Language)}
                   >
-                    {languageOptions.map((option) => (
+                    {headerLanguageOptions.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
