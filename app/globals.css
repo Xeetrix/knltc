@@ -55,7 +55,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply overflow-x-hidden bg-background text-foreground antialiased;
     font-family: var(--font-body), Inter, sans-serif;
   }
   h1, h2, h3, h4, h5, h6 {

@@ -44,8 +44,8 @@ export default function ContactForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5 rounded-lg border bg-card p-8 shadow-sm">
-      <h3 className="mb-2 text-xl font-bold text-foreground">{t.header}</h3>
+    <form onSubmit={handleSubmit} className="space-y-5 rounded-lg border bg-card p-4 shadow-sm sm:p-6 md:p-8">
+      <h3 className="mb-2 text-lg font-bold text-foreground sm:text-xl">{t.header}</h3>
       <Input placeholder={t.name} required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
       <Input placeholder={t.phone} required value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} />
       <Input placeholder={t.interest} value={form.interest} onChange={(event) => setForm({ ...form, interest: event.target.value })} />

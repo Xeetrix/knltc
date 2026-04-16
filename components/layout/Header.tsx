@@ -102,7 +102,7 @@ export default function Header() {
     <>
       <div className="bg-foreground py-2 text-xs text-white sm:text-sm">
         <div className="container-narrow flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
-          <a href={siteConfig.phoneHref} className="flex break-all items-center gap-1.5 font-medium hover:text-primary sm:break-normal">
+          <a href={siteConfig.phoneHref} className="flex flex-wrap items-center gap-1.5 font-medium hover:text-primary">
             <Phone className="h-3.5 w-3.5" />
             <span>{siteConfig.phoneDisplay}</span>
           </a>
@@ -110,7 +110,7 @@ export default function Header() {
             href={siteConfig.whatsappHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex break-all items-center gap-1.5 font-medium text-primary-foreground hover:text-primary sm:break-normal"
+            className="flex flex-wrap items-center gap-1.5 font-medium text-primary-foreground hover:text-primary"
           >
             <MessageCircle className="h-3.5 w-3.5 text-primary" />
             <span>
@@ -121,12 +121,12 @@ export default function Header() {
       </div>
 
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="container-narrow flex min-h-[84px] items-center gap-3 py-3 sm:gap-5">
+        <div className="container-narrow flex min-h-[76px] items-center gap-3 py-2.5 sm:min-h-[84px] sm:py-3 sm:gap-5">
           <div className="shrink-0">
             <BrandLogo />
           </div>
 
-          <nav className="ml-4 hidden items-center gap-1.5 xl:ml-6 xl:gap-2 lg:flex">
+          <nav className="ml-4 hidden items-center gap-1.5 lg:flex xl:ml-6 xl:gap-2">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
@@ -175,17 +175,17 @@ export default function Header() {
         </div>
 
         {mobileOpen && (
-          <div className="absolute inset-x-0 top-full z-50 border-t border-border/60 bg-black/20 px-4 py-3 backdrop-blur-[1px] lg:hidden">
+          <div className="absolute inset-x-0 top-full z-50 border-t border-border/60 bg-black/20 px-3 py-3 backdrop-blur-[1px] sm:px-4 lg:hidden">
             <nav
               id="mobile-menu"
               ref={menuPanelRef}
-              className="ml-auto w-full max-w-xs space-y-3 rounded-xl border bg-background p-4 shadow-lg"
+              className="ml-auto w-full max-w-sm space-y-3 rounded-xl border bg-background p-4 shadow-lg"
             >
               <div>
-                <label className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
+                <label className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   {t.language}
                   <select
-                    className="min-w-28 rounded-md border bg-background px-2.5 py-1.5 text-xs"
+                    className="w-full min-w-0 rounded-md border bg-background px-2.5 py-1.5 text-xs sm:w-auto sm:min-w-28"
                     value={language}
                     onChange={(event) => handleLanguageChange(event.target.value)}
                   >
