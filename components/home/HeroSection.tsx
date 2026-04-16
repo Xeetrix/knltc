@@ -46,18 +46,20 @@ const HeroSection = () => {
       <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url(/images/hero-bg.jpg)" }} />
       <div className="absolute inset-0 bg-primary/75" />
 
-      <div className="container-narrow relative z-10 py-16 sm:py-20 md:py-28">
+      <div className="container-narrow relative z-10 py-16 sm:py-20 md:py-24 lg:py-28">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7 }}
-          className="max-w-2xl"
+          className="max-w-3xl"
         >
           <span className="mb-5 inline-block max-w-full rounded-full border border-accent-foreground/20 bg-accent/20 px-3 py-1.5 text-xs font-semibold text-accent-foreground sm:mb-6 sm:px-4 sm:text-sm">{t.badge}</span>
-          <h1 className="mb-5 max-w-3xl text-3xl font-extrabold leading-[1.2] tracking-tight text-primary-foreground sm:text-4xl md:mb-6 md:text-5xl lg:text-6xl">
+          <h1 className="text-balance-safe mb-5 max-w-[18ch] text-3xl font-extrabold leading-[1.12] tracking-tight text-primary-foreground sm:text-4xl md:mb-6 md:text-5xl lg:text-6xl xl:text-6xl">
             {t.title}
           </h1>
-          <p className="mb-7 max-w-2xl text-base leading-relaxed text-primary-foreground/90 sm:text-lg md:mb-8 md:text-xl">{t.desc}</p>
+          <p className="text-balance-safe mb-7 max-w-[62ch] text-base leading-relaxed text-primary-foreground/90 sm:text-lg sm:leading-8 md:mb-8 md:text-xl">
+            {t.desc}
+          </p>
           <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
             <Button asChild size="lg" className="w-full bg-accent px-6 text-base font-bold text-accent-foreground hover:bg-accent/90 sm:w-auto sm:px-8">
               <Link href="/contact" onClick={() => trackApplyNowClick("hero_free_consultation")}>
