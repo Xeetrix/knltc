@@ -42,7 +42,7 @@ const HeroSection = () => {
   );
 
   return (
-    <section className="relative flex min-h-[560px] items-center overflow-hidden md:min-h-[700px]">
+    <section className="relative flex min-h-[500px] items-center overflow-hidden sm:min-h-[560px] md:min-h-[700px]">
       <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url(/images/hero-bg.jpg)" }} />
       <div className="absolute inset-0 bg-primary/75" />
 
@@ -53,7 +53,7 @@ const HeroSection = () => {
           transition={{ duration: 0.7 }}
           className="max-w-2xl"
         >
-          <span className="mb-5 inline-block rounded-full border border-accent-foreground/20 bg-accent/20 px-3 py-1.5 text-xs font-semibold text-accent-foreground sm:mb-6 sm:px-4 sm:text-sm">{t.badge}</span>
+          <span className="mb-5 inline-block max-w-full rounded-full border border-accent-foreground/20 bg-accent/20 px-3 py-1.5 text-xs font-semibold text-accent-foreground sm:mb-6 sm:px-4 sm:text-sm">{t.badge}</span>
           <h1 className="mb-5 max-w-3xl text-3xl font-extrabold leading-[1.2] tracking-tight text-primary-foreground sm:text-4xl md:mb-6 md:text-5xl lg:text-6xl">
             {t.title}
           </h1>
@@ -72,7 +72,7 @@ const HeroSection = () => {
             </Button>
           </div>
 
-          <div className="mt-8 flex flex-wrap items-center gap-3 text-xs text-primary-foreground/80 sm:mt-10 sm:gap-6 sm:text-sm">
+          <div className="mt-8 flex flex-col items-start gap-2 text-xs text-primary-foreground/80 sm:mt-10 sm:flex-row sm:flex-wrap sm:items-center sm:gap-6 sm:text-sm">
             {t.highlights.map((item) => <span key={item}>{item}</span>)}
           </div>
         </motion.div>
