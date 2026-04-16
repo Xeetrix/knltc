@@ -7,10 +7,8 @@ import { Menu, MessageCircle, Phone, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BrandLogo from "@/components/layout/BrandLogo";
 import { useLanguage } from "@/components/layout/LanguageProvider";
-import { defaultLanguage, languageOptions, Language, translate } from "@/lib/i18n";
+import { defaultLanguage, languageOptions, translate } from "@/lib/i18n";
 import { siteConfig } from "@/lib/site";
-
-const headerLanguageOptions = languageOptions.filter((option) => option.value !== "ja");
 
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -67,9 +65,14 @@ export default function Header() {
   }, [pathname]);
 
   useEffect(() => {
-    if (headerLanguageOptions.some((option) => option.value === language)) return;
+    if (languageOptions.some((option) => option.value === language)) return;
     setLanguage(defaultLanguage);
   }, [language, setLanguage]);
+
+  const handleLanguageChange = (nextValue: string) => {
+    const matchedLanguage = languageOptions.find((option) => option.value === nextValue)?.value;
+    setLanguage(matchedLanguage ?? defaultLanguage);
+  };
 
   useEffect(() => {
     if (!mobileOpen) return;
@@ -118,17 +121,17 @@ export default function Header() {
       </div>
 
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="container-narrow flex min-h-20 items-center gap-3 py-2 sm:gap-4">
+        <div className="container-narrow flex min-h-[84px] items-center gap-3 py-3 sm:gap-5">
           <div className="shrink-0">
             <BrandLogo />
           </div>
 
-          <nav className="ml-4 hidden items-center gap-1 lg:flex">
+          <nav className="ml-4 hidden items-center gap-1.5 xl:ml-6 xl:gap-2 lg:flex">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                className={`whitespace-nowrap rounded-md px-3.5 py-2.5 text-sm font-medium transition-colors ${
                   isActive(link.href) ? "text-accent" : "text-foreground/80 hover:bg-muted hover:text-accent"
                 }`}
               >
@@ -137,15 +140,15 @@ export default function Header() {
             ))}
           </nav>
 
-          <div className="ml-auto hidden items-center gap-2 lg:flex">
-            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="ml-auto hidden items-center gap-3 lg:flex">
+            <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
               {t.language}
               <select
-                className="rounded border bg-background px-2 py-1 text-xs"
+                className="min-w-28 rounded-md border bg-background px-2.5 py-1.5 text-xs"
                 value={language}
-                onChange={(event) => setLanguage(event.target.value as Language)}
+                onChange={(event) => handleLanguageChange(event.target.value)}
               >
-                {headerLanguageOptions.map((option) => (
+                {languageOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
@@ -182,11 +185,11 @@ export default function Header() {
                 <label className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
                   {t.language}
                   <select
-                    className="rounded border bg-background px-2 py-1 text-xs"
+                    className="min-w-28 rounded-md border bg-background px-2.5 py-1.5 text-xs"
                     value={language}
-                    onChange={(event) => setLanguage(event.target.value as Language)}
+                    onChange={(event) => handleLanguageChange(event.target.value)}
                   >
-                    {headerLanguageOptions.map((option) => (
+                    {languageOptions.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
@@ -198,7 +201,7 @@ export default function Header() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`block rounded-md px-2 py-1 text-sm font-medium transition-colors ${
+                  className={`block rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                     isActive(link.href) ? "text-accent" : "text-foreground/80 hover:bg-muted hover:text-accent"
                   }`}
                   onClick={() => setMobileOpen(false)}
