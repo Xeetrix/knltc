@@ -121,17 +121,17 @@ export default function Header() {
       </div>
 
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="container-narrow flex min-h-[76px] items-center justify-between gap-3 py-2.5 sm:min-h-[84px] sm:py-3 sm:gap-4 lg:gap-6">
-          <div className="min-w-0 flex-1 lg:flex-none">
+        <div className="container-narrow flex min-h-[76px] items-center justify-between gap-3 py-2.5 sm:min-h-[84px] sm:py-3 sm:gap-4 xl:gap-6">
+          <div className="min-w-0 flex-1 xl:flex-none">
             <BrandLogo className="max-w-full" />
           </div>
 
-          <nav className="hidden flex-1 items-center justify-center gap-1 lg:flex xl:gap-1.5">
+          <nav className="hidden flex-1 items-center justify-center gap-1 xl:flex">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`whitespace-nowrap rounded-md px-2.5 py-2 text-[0.82rem] font-medium transition-colors xl:px-3 xl:text-sm ${
+                className={`whitespace-nowrap rounded-md px-2.5 py-2 text-[0.82rem] font-medium transition-colors 2xl:px-3 2xl:text-sm ${
                   isActive(link.href) ? "text-accent" : "text-foreground/80 hover:bg-muted hover:text-accent"
                 }`}
               >
@@ -140,7 +140,7 @@ export default function Header() {
             ))}
           </nav>
 
-          <div className="hidden shrink-0 items-center gap-2 xl:gap-3 lg:flex">
+          <div className="hidden shrink-0 items-center gap-2 2xl:gap-3 xl:flex">
             <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
               {t.language}
               <select
@@ -160,7 +160,7 @@ export default function Header() {
             </Button>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2 lg:hidden">
+          <div className="flex shrink-0 items-center gap-2 xl:hidden">
             <button
               ref={menuButtonRef}
               className="rounded-md p-2 hover:bg-muted"
@@ -175,7 +175,7 @@ export default function Header() {
         </div>
 
         {mobileOpen && (
-          <div className="absolute inset-x-0 top-full z-50 border-t border-border/60 bg-black/20 px-3 py-3 backdrop-blur-[1px] sm:px-4 lg:hidden">
+          <div className="absolute inset-x-0 top-full z-50 border-t border-border/60 bg-black/20 px-3 py-3 backdrop-blur-[1px] sm:px-4 xl:hidden">
             <nav
               id="mobile-menu"
               ref={menuPanelRef}
