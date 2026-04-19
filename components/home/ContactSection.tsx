@@ -22,16 +22,16 @@ export default function ContactSection() {
     <section id="contact" className="section-padding">
       <div className="container-narrow">
         <div className="mb-14 text-center">
-          <h2 className="mb-4 text-3xl font-extrabold text-foreground md:text-4xl">{t.title}</h2>
-          <p className="mx-auto max-w-2xl text-muted-foreground">{t.desc}</p>
+          <h2 className="mb-4 text-2xl font-extrabold text-foreground sm:text-3xl md:text-4xl">{t.title}</h2>
+          <p className="mx-auto max-w-2xl text-sm text-muted-foreground sm:text-base">{t.desc}</p>
         </div>
 
-        <div className="grid gap-12 lg:grid-cols-2">
+        <div className="grid gap-8 md:gap-10 lg:grid-cols-2 lg:gap-12">
           <div className="space-y-6">
-            <div className="flex items-start gap-4"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10"><Phone className="h-5 w-5 text-primary" /></div><div><h4 className="font-bold text-foreground">{t.phone}</h4><a href={siteConfig.phoneHref} className="text-muted-foreground hover:underline">{siteConfig.phoneDisplay}</a></div></div>
-            <div className="flex items-start gap-4"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-whatsapp/10"><MessageCircle className="h-5 w-5 text-whatsapp" /></div><div><h4 className="font-bold text-foreground">{t.whatsapp}</h4><a href={siteConfig.whatsappHref} target="_blank" rel="noopener noreferrer" className="text-whatsapp hover:underline" onClick={() => trackWhatsAppClick("contact_section_whatsapp")}>{siteConfig.whatsappDisplay}</a></div></div>
-            <div className="flex items-start gap-4"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10"><Mail className="h-5 w-5 text-primary" /></div><div><h4 className="font-bold text-foreground">{t.email}</h4><a href={`mailto:${siteConfig.email}`} className="text-muted-foreground hover:underline">{siteConfig.email}</a></div></div>
-            <div className="flex items-start gap-4"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10"><MapPin className="h-5 w-5 text-primary" /></div><div><h4 className="font-bold text-foreground">{t.office}</h4><p className="text-muted-foreground">{siteConfig.location}</p></div></div>
+            <div className="flex items-start gap-4"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10"><Phone className="h-5 w-5 text-primary" /></div><div><h4 className="font-bold text-foreground">{t.phone}</h4><a href={siteConfig.phoneHref} className="break-all text-muted-foreground hover:underline">{siteConfig.phoneDisplay}</a></div></div>
+            <div className="flex items-start gap-4"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-whatsapp/10"><MessageCircle className="h-5 w-5 text-whatsapp" /></div><div><h4 className="font-bold text-foreground">{t.whatsapp}</h4><a href={siteConfig.whatsappHref} target="_blank" rel="noopener noreferrer" className="break-all text-whatsapp hover:underline" onClick={() => trackWhatsAppClick("contact_section_whatsapp")}>{siteConfig.whatsappDisplay}</a></div></div>
+            <div className="flex items-start gap-4"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10"><Mail className="h-5 w-5 text-primary" /></div><div><h4 className="font-bold text-foreground">{t.email}</h4><a href={`mailto:${siteConfig.email}`} className="break-all text-muted-foreground hover:underline">{siteConfig.email}</a></div></div>
+            <div className="flex items-start gap-4"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10"><MapPin className="h-5 w-5 text-primary" /></div><div><h4 className="font-bold text-foreground">{t.office}</h4><p className="break-words text-muted-foreground">{siteConfig.location}</p></div></div>
           </div>
 
           <ContactForm />

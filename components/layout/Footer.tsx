@@ -70,13 +70,13 @@ export default function Footer() {
           <div>
             <h4 className="mb-3 font-bold text-white">{t.contact}</h4>
             <ul className="space-y-2 text-sm">
-              <li className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-primary" /> <a href={siteConfig.phoneHref} className="hover:text-primary">{siteConfig.phoneDisplay}</a></li>
-              <li className="flex items-center gap-2"><Mail className="h-3.5 w-3.5 text-accent" /> <a href={`mailto:${siteConfig.email}`} className="hover:text-accent">{siteConfig.email}</a></li>
-              <li className="flex items-start gap-2"><MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/90" /> <span>{siteConfig.location}</span></li>
+              <li className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 shrink-0 text-primary" /> <a href={siteConfig.phoneHref} className="break-all hover:text-primary">{siteConfig.phoneDisplay}</a></li>
+              <li className="flex items-center gap-2"><Mail className="h-3.5 w-3.5 shrink-0 text-accent" /> <a href={`mailto:${siteConfig.email}`} className="break-all hover:text-accent">{siteConfig.email}</a></li>
+              <li className="flex items-start gap-2"><MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/90" /> <span className="break-words">{siteConfig.location}</span></li>
             </ul>
           </div>
         </div>
-        <div className="mb-6 flex items-center justify-start gap-5">
+        <div className="mb-6 flex flex-wrap items-center justify-start gap-5">
           <a href="https://web.facebook.com/KurobeNihongoLanguageTrainingCenter" target="_blank" rel="noopener noreferrer" className="text-white/80 transition-colors hover:text-primary" aria-label="Facebook">
             <Facebook className="h-4 w-4" />
           </a>
