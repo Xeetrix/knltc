@@ -131,7 +131,7 @@ export default function Header() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`whitespace-nowrap rounded-md px-2.5 py-2 text-[0.82rem] font-medium transition-colors 2xl:px-3 2xl:text-sm ${
+                className={`flex h-10 w-24 items-center justify-center rounded-md px-2 text-center text-[0.82rem] font-medium leading-tight transition-colors whitespace-normal 2xl:w-28 2xl:text-sm ${
                   isActive(link.href) ? "text-accent" : "text-foreground/80 hover:bg-muted hover:text-accent"
                 }`}
               >
@@ -155,7 +155,11 @@ export default function Header() {
                 ))}
               </select>
             </label>
-            <Button asChild size="sm" className="bg-primary font-semibold text-primary-foreground hover:bg-primary/90">
+            <Button
+              asChild
+              size="sm"
+              className="h-10 w-24 whitespace-normal px-2 text-center font-semibold leading-tight text-primary-foreground hover:bg-primary/90 2xl:w-28"
+            >
               <Link href="/contact">{t.applyNow}</Link>
             </Button>
           </div>
