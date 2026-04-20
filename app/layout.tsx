@@ -20,6 +20,11 @@ export const metadata: Metadata = {
     template: "%s | KNLTC",
   },
   description: siteConfig.description,
+  verification: {
+    other: {
+      "facebook-domain-verification": "n6w8uw179i0d0yw42u7z64xonnbmzv",
+    },
+  },
   icons: {
     icon: "/favicon.ico",
     shortcut: "/favicon.ico",
