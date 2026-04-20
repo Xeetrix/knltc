@@ -126,12 +126,12 @@ export default function Header() {
             <BrandLogo className="max-w-full" />
           </div>
 
-          <nav className="hidden flex-1 items-center justify-center gap-1 xl:flex">
+          <nav className="hidden flex-1 items-center justify-center gap-0.5 xl:flex 2xl:gap-1">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`flex h-10 w-24 items-center justify-center rounded-md px-2 text-center text-[0.82rem] font-medium leading-tight transition-colors whitespace-normal 2xl:w-28 2xl:text-sm ${
+                className={`flex h-10 min-w-0 items-center justify-center rounded-md px-2 text-center text-[0.76rem] font-medium leading-tight transition-colors whitespace-normal xl:max-w-[88px] 2xl:max-w-[104px] 2xl:text-sm ${
                   isActive(link.href) ? "text-accent" : "text-foreground/80 hover:bg-muted hover:text-accent"
                 }`}
               >
@@ -158,7 +158,7 @@ export default function Header() {
             <Button
               asChild
               size="sm"
-              className="h-10 w-24 whitespace-normal px-2 text-center font-semibold leading-tight text-primary-foreground hover:bg-primary/90 2xl:w-28"
+              className="h-10 whitespace-normal px-2 text-center text-xs font-semibold leading-tight text-primary-foreground hover:bg-primary/90 xl:min-w-[88px] 2xl:min-w-[104px] 2xl:text-sm"
             >
               <Link href="/contact">{t.applyNow}</Link>
             </Button>
