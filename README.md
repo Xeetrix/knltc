@@ -24,7 +24,7 @@ Required:
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `SUPABASE_STORAGE_BUCKET`
 - `ADMIN_EMAIL`
-- `ADMIN_PASSWORD`
+- `ADMIN_PASSWORD_HASH` (recommended) or `ADMIN_PASSWORD` (legacy fallback)
 - `ADMIN_SESSION_SECRET`
 
 ## Supabase setup
