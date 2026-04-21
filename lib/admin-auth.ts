@@ -72,7 +72,7 @@ export async function isAdminAuthenticated() {
 }
 
 function verifyScryptHash(password: string, encodedHash: string) {
-  const [algorithm, salt, expectedHash] = encodedHash.split("$");
+  const [algorithm, salt, expectedHash] = encodedHash.trim().split("$");
   if (algorithm !== "scrypt" || !salt || !expectedHash) return false;
 
   const hash = scryptSync(password, salt, 64).toString("hex");
@@ -92,7 +92,9 @@ export function verifyAdminCredentials(email: string, password: string) {
     throw new Error("ADMIN_EMAIL and ADMIN_PASSWORD_HASH (or legacy ADMIN_PASSWORD) are required.");
   }
 
-  if (email !== adminEmail) return false;
+  const normalizedEmail = email.trim().toLowerCase();
+  const configuredEmail = adminEmail.trim().toLowerCase();
+  if (normalizedEmail !== configuredEmail) return false;
 
   if (adminPasswordHash) {
     return verifyScryptHash(password, adminPasswordHash);
