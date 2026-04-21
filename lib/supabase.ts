@@ -63,9 +63,8 @@ export async function deleteRow(table: string, id: string, admin = true) {
   await restRequest(`${table}?id=eq.${id}`, { method: "DELETE", headers: { Prefer: "return=minimal" } }, admin);
 }
 
-export async function uploadToStorage(fileName: string, bytes: Uint8Array, contentType: string, bucket: string) {
+export async function uploadToStorage(fileName: string, data: ArrayBuffer, contentType: string, bucket: string) {
   if (!serviceKey) throw new Error("SUPABASE_SERVICE_ROLE_KEY is missing.");
-  const body = new Blob([bytes], { type: contentType });
 
   const res = await fetch(`${getBaseUrl()}/storage/v1/object/${bucket}/${fileName}`, {
     method: "POST",
@@ -75,7 +74,7 @@ export async function uploadToStorage(fileName: string, bytes: Uint8Array, conte
       "Content-Type": contentType,
       "x-upsert": "false",
     },
-    body,
+    body: data,
   });
 
   if (!res.ok) {
