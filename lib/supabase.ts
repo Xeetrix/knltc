@@ -65,6 +65,7 @@ export async function deleteRow(table: string, id: string, admin = true) {
 
 export async function uploadToStorage(fileName: string, bytes: Buffer, contentType: string, bucket: string) {
   if (!serviceKey) throw new Error("SUPABASE_SERVICE_ROLE_KEY is missing.");
+  const body = new Blob([bytes], { type: contentType });
 
   const res = await fetch(`${getBaseUrl()}/storage/v1/object/${bucket}/${fileName}`, {
     method: "POST",
@@ -74,7 +75,7 @@ export async function uploadToStorage(fileName: string, bytes: Buffer, contentTy
       "Content-Type": contentType,
       "x-upsert": "false",
     },
-    body: bytes,
+    body,
   });
 
   if (!res.ok) {
