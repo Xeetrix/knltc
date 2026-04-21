@@ -40,31 +40,57 @@ export type BlogPost = {
 
 export type Category = { id: string; name: string; slug: string; type: CategoryType };
 
+async function selectWithCategoryFallback<T>(table: "products" | "blog_posts", params: Record<string, string | number>) {
+  try {
+    return (await selectRows(table, params)) as T[];
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    const canRetryWithoutCategoryJoin =
+      message.includes("categories") ||
+      message.includes("relationship") ||
+      message.includes("Could not find") ||
+      message.includes("does not exist");
+
+    if (!canRetryWithoutCategoryJoin) return [];
+
+    const fallbackParams = { ...params, select: "*" };
+    return (await selectRows(table, fallbackParams)) as T[];
+  }
+}
+
 export async function getPublishedProducts() {
-  return (await selectRows("products", { select: "*,categories(name,slug)", status: "eq.published", order: "created_at.desc" })) as Product[];
+  return await selectWithCategoryFallback<Product>("products", {
+    select: "*,categories(name,slug)",
+    status: "eq.published",
+    order: "created_at.desc",
+  });
 }
 
 export async function getPublishedProductBySlug(slug: string) {
-  const rows = (await selectRows("products", {
+  const rows = await selectWithCategoryFallback<Product>("products", {
     select: "*,categories(name,slug)",
     status: "eq.published",
     slug: `eq.${slug}`,
     limit: 1,
-  })) as Product[];
+  });
   return rows[0] ?? null;
 }
 
 export async function getPublishedPosts() {
-  return (await selectRows("blog_posts", { select: "*,categories(name,slug)", status: "eq.published", order: "publish_date.desc" })) as BlogPost[];
+  return await selectWithCategoryFallback<BlogPost>("blog_posts", {
+    select: "*,categories(name,slug)",
+    status: "eq.published",
+    order: "publish_date.desc",
+  });
 }
 
 export async function getPublishedPostBySlug(slug: string) {
-  const rows = (await selectRows("blog_posts", {
+  const rows = await selectWithCategoryFallback<BlogPost>("blog_posts", {
     select: "*,categories(name,slug)",
     status: "eq.published",
     slug: `eq.${slug}`,
     limit: 1,
-  })) as BlogPost[];
+  });
   return rows[0] ?? null;
 }
 
