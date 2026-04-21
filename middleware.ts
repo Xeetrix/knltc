@@ -1,25 +1,59 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { createHmac, timingSafeEqual } from "node:crypto";
 
-function verifyToken(token: string) {
+function base64UrlToUtf8(value: string) {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  const pad = normalized.length % 4;
+  const padded = pad ? normalized + "=".repeat(4 - pad) : normalized;
+  return decodeURIComponent(
+    atob(padded)
+      .split("")
+      .map((char) => `%${char.charCodeAt(0).toString(16).padStart(2, "0")}`)
+      .join(""),
+  );
+}
+
+function timingSafeEqual(left: string, right: string) {
+  if (left.length !== right.length) return false;
+
+  let mismatch = 0;
+  for (let i = 0; i < left.length; i += 1) {
+    mismatch |= left.charCodeAt(i) ^ right.charCodeAt(i);
+  }
+
+  return mismatch === 0;
+}
+
+async function sign(data: string, secret: string) {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(data));
+  return Array.from(new Uint8Array(signature))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function verifyToken(token: string) {
   const secret = process.env.ADMIN_SESSION_SECRET;
   if (!secret) return false;
 
   const [data, signature] = token.split(".");
   if (!data || !signature) return false;
 
-  const expected = createHmac("sha256", secret).update(data).digest("hex");
-  const left = Buffer.from(signature);
-  const right = Buffer.from(expected);
+  const expected = await sign(data, secret);
+  if (!timingSafeEqual(signature, expected)) return false;
 
-  if (left.length !== right.length || !timingSafeEqual(left, right)) return false;
-
-  const payload = JSON.parse(Buffer.from(data, "base64url").toString("utf8")) as { exp?: number };
+  const payload = JSON.parse(base64UrlToUtf8(data)) as { exp?: number };
   return Boolean(payload.exp && payload.exp > Math.floor(Date.now() / 1000));
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isAdminRoute = pathname.startsWith("/admin");
   const isLogin = pathname === "/admin/login";
@@ -27,7 +61,7 @@ export function middleware(request: NextRequest) {
   if (!isAdminRoute || isLogin) return NextResponse.next();
 
   const token = request.cookies.get("knltc_admin_session")?.value;
-  if (!token || !verifyToken(token)) {
+  if (!token || !(await verifyToken(token))) {
     return NextResponse.redirect(new URL("/admin/login", request.url));
   }
 
