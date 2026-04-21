@@ -19,6 +19,6 @@ export async function POST(request: Request) {
   const bucket = process.env.SUPABASE_STORAGE_BUCKET || "knltc-media";
   const arrayBuffer = await file.arrayBuffer();
 
-  const url = await uploadToStorage(fileName, Buffer.from(arrayBuffer), file.type, bucket);
+  const url = await uploadToStorage(fileName, new Uint8Array(arrayBuffer), file.type, bucket);
   return NextResponse.json({ url });
 }
