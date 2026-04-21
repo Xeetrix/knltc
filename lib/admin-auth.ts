@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, scryptSync, timingSafeEqual } from "node:crypto";
 
 const ADMIN_COOKIE = "knltc_admin_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 12;
@@ -71,15 +71,34 @@ export async function isAdminAuthenticated() {
   return Boolean(decode(token));
 }
 
+function verifyScryptHash(password: string, encodedHash: string) {
+  const [algorithm, salt, expectedHash] = encodedHash.split("$");
+  if (algorithm !== "scrypt" || !salt || !expectedHash) return false;
+
+  const hash = scryptSync(password, salt, 64).toString("hex");
+  const hashBuffer = Buffer.from(hash);
+  const expectedBuffer = Buffer.from(expectedHash);
+
+  if (hashBuffer.length !== expectedBuffer.length) return false;
+  return timingSafeEqual(hashBuffer, expectedBuffer);
+}
+
 export function verifyAdminCredentials(email: string, password: string) {
   const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
   const adminPassword = process.env.ADMIN_PASSWORD;
 
-  if (!adminEmail || !adminPassword) {
-    throw new Error("ADMIN_EMAIL or ADMIN_PASSWORD is missing.");
+  if (!adminEmail || (!adminPasswordHash && !adminPassword)) {
+    throw new Error("ADMIN_EMAIL and ADMIN_PASSWORD_HASH (or legacy ADMIN_PASSWORD) are required.");
   }
 
-  return email === adminEmail && password === adminPassword;
+  if (email !== adminEmail) return false;
+
+  if (adminPasswordHash) {
+    return verifyScryptHash(password, adminPasswordHash);
+  }
+
+  return password === adminPassword;
 }
 
 export const adminCookieName = ADMIN_COOKIE;
