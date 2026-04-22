@@ -4,9 +4,15 @@ import { createAdminSession, verifyAdminCredentials } from "@/lib/admin-auth";
 export async function POST(request: Request) {
   const { email, password } = await request.json();
 
-  const user = await verifyAdminCredentials(email, password);
+  const { user, debug } = await verifyAdminCredentials(email, password);
   if (!user) {
-    return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    return NextResponse.json(
+      {
+        error: "Invalid credentials",
+        debug,
+      },
+      { status: 401 },
+    );
   }
 
   await createAdminSession(user.email);
