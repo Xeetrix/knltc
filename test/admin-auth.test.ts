@@ -1,34 +1,47 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { verifyAdminCredentials } from "@/lib/admin-auth";
 
 const ORIGINAL_ENV = {
-  ADMIN_EMAIL: process.env.ADMIN_EMAIL,
-  ADMIN_PASSWORD_HASH: process.env.ADMIN_PASSWORD_HASH,
-  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
+  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
 };
 
+beforeEach(() => {
+  vi.restoreAllMocks();
+});
+
 afterEach(() => {
-  process.env.ADMIN_EMAIL = ORIGINAL_ENV.ADMIN_EMAIL;
-  process.env.ADMIN_PASSWORD_HASH = ORIGINAL_ENV.ADMIN_PASSWORD_HASH;
-  process.env.ADMIN_PASSWORD = ORIGINAL_ENV.ADMIN_PASSWORD;
+  process.env.NEXT_PUBLIC_SUPABASE_URL = ORIGINAL_ENV.NEXT_PUBLIC_SUPABASE_URL;
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = ORIGINAL_ENV.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 });
 
 describe("verifyAdminCredentials", () => {
-  it("accepts the configured admin credentials", () => {
-    process.env.ADMIN_EMAIL = "work.xeetrix@gmail.com";
-    process.env.ADMIN_PASSWORD_HASH =
-      "scrypt$5cd2e641508e7134deca8207a9c1ef42$41a1cb1fbce15cdfa726db4c8116a07915ea8f7296b7f8e36f900dd85bb506f6fdc62961eff5b52744b45ab38c5e84f58999b4ad662d4f1af0267539963e0eb3";
-    delete process.env.ADMIN_PASSWORD;
+  it("uses Supabase Auth password flow and returns the authenticated user", async () => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key";
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ user: { id: "auth-id", email: "work.xeetrix@gmail.com" } }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
 
-    expect(verifyAdminCredentials("work.xeetrix@gmail.com", "KNLTC2026-1M")).toBe(true);
+    await expect(verifyAdminCredentials("work.xeetrix@gmail.com", "KNLTC2026-1M")).resolves.toEqual({
+      id: "auth-id",
+      email: "work.xeetrix@gmail.com",
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("normalizes email input and configured email", () => {
-    process.env.ADMIN_EMAIL = " Work.Xeetrix@Gmail.com ";
-    process.env.ADMIN_PASSWORD_HASH =
-      "scrypt$5cd2e641508e7134deca8207a9c1ef42$41a1cb1fbce15cdfa726db4c8116a07915ea8f7296b7f8e36f900dd85bb506f6fdc62961eff5b52744b45ab38c5e84f58999b4ad662d4f1af0267539963e0eb3";
-    delete process.env.ADMIN_PASSWORD;
+  it("returns null when Supabase rejects credentials", async () => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+      }),
+    );
 
-    expect(verifyAdminCredentials(" work.xeetrix@gmail.com ", "KNLTC2026-1M")).toBe(true);
+    await expect(verifyAdminCredentials(" work.xeetrix@gmail.com ", "wrong")).resolves.toBeNull();
   });
 });

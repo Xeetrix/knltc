@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { createHmac, scryptSync, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 
 const ADMIN_COOKIE = "knltc_admin_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 12;
@@ -71,36 +71,47 @@ export async function isAdminAuthenticated() {
   return Boolean(decode(token));
 }
 
-function verifyScryptHash(password: string, encodedHash: string) {
-  const [algorithm, salt, expectedHash] = encodedHash.trim().split("$");
-  if (algorithm !== "scrypt" || !salt || !expectedHash) return false;
+type AuthUser = {
+  id: string;
+  email: string;
+};
 
-  const hash = scryptSync(password, salt, 64).toString("hex");
-  const hashBuffer = Buffer.from(hash);
-  const expectedBuffer = Buffer.from(expectedHash);
+function getSupabaseAuthConfig() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (hashBuffer.length !== expectedBuffer.length) return false;
-  return timingSafeEqual(hashBuffer, expectedBuffer);
+  if (!url || !anonKey) {
+    throw new Error("NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are required for admin login.");
+  }
+
+  return { url, anonKey };
 }
 
-export function verifyAdminCredentials(email: string, password: string) {
-  const adminEmail = process.env.ADMIN_EMAIL;
-  const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
-  const adminPassword = process.env.ADMIN_PASSWORD;
-
-  if (!adminEmail || (!adminPasswordHash && !adminPassword)) {
-    throw new Error("ADMIN_EMAIL and ADMIN_PASSWORD_HASH (or legacy ADMIN_PASSWORD) are required.");
-  }
-
+export async function verifyAdminCredentials(email: string, password: string): Promise<AuthUser | null> {
   const normalizedEmail = email.trim().toLowerCase();
-  const configuredEmail = adminEmail.trim().toLowerCase();
-  if (normalizedEmail !== configuredEmail) return false;
+  if (!normalizedEmail || !password) return null;
 
-  if (adminPasswordHash) {
-    return verifyScryptHash(password, adminPasswordHash);
-  }
+  const { url, anonKey } = getSupabaseAuthConfig();
 
-  return password === adminPassword;
+  const res = await fetch(`${url}/auth/v1/token?grant_type=password`, {
+    method: "POST",
+    headers: {
+      apikey: anonKey,
+      Authorization: `Bearer ${anonKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email: normalizedEmail, password }),
+    cache: "no-store",
+  });
+
+  if (!res.ok) return null;
+
+  const data = (await res.json()) as { user?: { id?: string; email?: string } };
+  const authEmail = data.user?.email?.trim().toLowerCase();
+  const authId = data.user?.id;
+  if (!authId || !authEmail) return null;
+
+  return { id: authId, email: authEmail };
 }
 
 export const adminCookieName = ADMIN_COOKIE;
