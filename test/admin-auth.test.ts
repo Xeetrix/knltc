@@ -21,13 +21,22 @@ describe("verifyAdminCredentials", () => {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key";
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
+      status: 200,
       json: async () => ({ user: { id: "auth-id", email: "work.xeetrix@gmail.com" } }),
     });
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(verifyAdminCredentials("work.xeetrix@gmail.com", "KNLTC2026-1M")).resolves.toEqual({
-      id: "auth-id",
-      email: "work.xeetrix@gmail.com",
+      user: {
+        id: "auth-id",
+        email: "work.xeetrix@gmail.com",
+      },
+      debug: {
+        supabaseUrl: "https://example.supabase.co",
+        reachedSupabase: true,
+        status: 200,
+        error: null,
+      },
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
@@ -39,9 +48,19 @@ describe("verifyAdminCredentials", () => {
       "fetch",
       vi.fn().mockResolvedValue({
         ok: false,
+        status: 400,
+        json: async () => ({ error: "invalid_grant" }),
       }),
     );
 
-    await expect(verifyAdminCredentials(" work.xeetrix@gmail.com ", "wrong")).resolves.toBeNull();
+    await expect(verifyAdminCredentials(" work.xeetrix@gmail.com ", "wrong")).resolves.toEqual({
+      user: null,
+      debug: {
+        supabaseUrl: "https://example.supabase.co",
+        reachedSupabase: true,
+        status: 400,
+        error: "invalid_grant",
+      },
+    });
   });
 });

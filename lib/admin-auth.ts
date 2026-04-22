@@ -76,6 +76,18 @@ type AuthUser = {
   email: string;
 };
 
+type AdminAuthDebug = {
+  supabaseUrl: string;
+  reachedSupabase: boolean;
+  status: number | null;
+  error: string | null;
+};
+
+type VerifyAdminCredentialsResult = {
+  user: AuthUser | null;
+  debug: AdminAuthDebug;
+};
+
 function getSupabaseAuthConfig() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -87,31 +99,62 @@ function getSupabaseAuthConfig() {
   return { url, anonKey };
 }
 
-export async function verifyAdminCredentials(email: string, password: string): Promise<AuthUser | null> {
+export async function verifyAdminCredentials(email: string, password: string): Promise<VerifyAdminCredentialsResult> {
   const normalizedEmail = email.trim().toLowerCase();
-  if (!normalizedEmail || !password) return null;
-
   const { url, anonKey } = getSupabaseAuthConfig();
+  const debug: AdminAuthDebug = {
+    supabaseUrl: url,
+    reachedSupabase: false,
+    status: null,
+    error: null,
+  };
 
-  const res = await fetch(`${url}/auth/v1/token?grant_type=password`, {
-    method: "POST",
-    headers: {
-      apikey: anonKey,
-      Authorization: `Bearer ${anonKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ email: normalizedEmail, password }),
-    cache: "no-store",
-  });
+  if (!normalizedEmail || !password) {
+    debug.error = "missing_email_or_password";
+    console.error("[admin-auth] Missing email or password.", debug);
+    return { user: null, debug };
+  }
 
-  if (!res.ok) return null;
+  console.log("[admin-auth] Supabase URL used for admin login:", debug.supabaseUrl);
+
+  let res: Response;
+  try {
+    res = await fetch(`${url}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: {
+        apikey: anonKey,
+        Authorization: `Bearer ${anonKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email: normalizedEmail, password }),
+      cache: "no-store",
+    });
+    debug.reachedSupabase = true;
+    debug.status = res.status;
+    console.log("[admin-auth] Supabase /auth/v1/token response status:", debug.status);
+  } catch (error) {
+    debug.error = error instanceof Error ? error.message : "fetch_failed";
+    console.error("[admin-auth] Request did not reach Supabase.", debug);
+    return { user: null, debug };
+  }
+
+  if (!res.ok) {
+    const errorPayload = (await res.json().catch(() => null)) as { error?: string; error_description?: string } | null;
+    debug.error = errorPayload?.error ?? errorPayload?.error_description ?? "unknown_supabase_auth_error";
+    console.error("[admin-auth] Supabase auth error:", debug.error);
+    return { user: null, debug };
+  }
 
   const data = (await res.json()) as { user?: { id?: string; email?: string } };
   const authEmail = data.user?.email?.trim().toLowerCase();
   const authId = data.user?.id;
-  if (!authId || !authEmail) return null;
+  if (!authId || !authEmail) {
+    debug.error = "missing_user_data_in_supabase_response";
+    console.error("[admin-auth] Supabase returned success without complete user payload.", debug);
+    return { user: null, debug };
+  }
 
-  return { id: authId, email: authEmail };
+  return { user: { id: authId, email: authEmail }, debug };
 }
 
 export const adminCookieName = ADMIN_COOKIE;
