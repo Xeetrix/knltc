@@ -91,23 +91,68 @@ type VerifyAdminCredentialsResult = {
 function getSupabaseAuthConfig() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const errors: string[] = [];
 
-  if (!url || !anonKey) {
-    throw new Error("NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are required for admin login.");
+  if (!url) {
+    errors.push("NEXT_PUBLIC_SUPABASE_URL is missing");
+  } else {
+    try {
+      new URL(url);
+    } catch {
+      errors.push("NEXT_PUBLIC_SUPABASE_URL is malformed");
+    }
   }
 
-  return { url, anonKey };
+  if (!anonKey) {
+    errors.push("NEXT_PUBLIC_SUPABASE_ANON_KEY is missing");
+  }
+
+  return {
+    url: url ?? "",
+    anonKey: anonKey ?? "",
+    error: errors.length ? errors.join("; ") : null,
+  };
+}
+
+async function safeReadJson(response: Response): Promise<{
+  json: Record<string, unknown> | null;
+  error: string | null;
+}> {
+  try {
+    const text = await response.text();
+    if (!text) {
+      return { json: null, error: "empty_response_body" };
+    }
+
+    try {
+      const parsed = JSON.parse(text) as Record<string, unknown>;
+      return { json: parsed, error: null };
+    } catch {
+      return { json: null, error: "non_json_response_body" };
+    }
+  } catch (error) {
+    return {
+      json: null,
+      error: error instanceof Error ? error.message : "failed_to_read_response_body",
+    };
+  }
 }
 
 export async function verifyAdminCredentials(email: string, password: string): Promise<VerifyAdminCredentialsResult> {
   const normalizedEmail = email.trim().toLowerCase();
-  const { url, anonKey } = getSupabaseAuthConfig();
+  const { url, anonKey, error: configError } = getSupabaseAuthConfig();
   const debug: AdminAuthDebug = {
     supabaseUrl: url,
     reachedSupabase: false,
     status: null,
     error: null,
   };
+
+  if (configError) {
+    debug.error = configError;
+    console.error("[admin-auth] Invalid Supabase configuration.", debug);
+    return { user: null, debug };
+  }
 
   if (!normalizedEmail || !password) {
     debug.error = "missing_email_or_password";
@@ -139,15 +184,26 @@ export async function verifyAdminCredentials(email: string, password: string): P
   }
 
   if (!res.ok) {
-    const errorPayload = (await res.json().catch(() => null)) as { error?: string; error_description?: string } | null;
-    debug.error = errorPayload?.error ?? errorPayload?.error_description ?? "unknown_supabase_auth_error";
+    const { json: errorPayload, error: jsonError } = await safeReadJson(res);
+    debug.error =
+      (typeof errorPayload?.error === "string" ? errorPayload.error : null) ??
+      (typeof errorPayload?.error_description === "string" ? errorPayload.error_description : null) ??
+      jsonError ??
+      "unknown_supabase_auth_error";
     console.error("[admin-auth] Supabase auth error:", debug.error);
     return { user: null, debug };
   }
 
-  const data = (await res.json()) as { user?: { id?: string; email?: string } };
-  const authEmail = data.user?.email?.trim().toLowerCase();
-  const authId = data.user?.id;
+  const { json: data, error: successJsonError } = await safeReadJson(res);
+  if (!data) {
+    debug.error = successJsonError ?? "missing_response_body";
+    console.error("[admin-auth] Could not parse successful Supabase auth response.", debug);
+    return { user: null, debug };
+  }
+
+  const user = data.user as { id?: string; email?: string } | undefined;
+  const authEmail = user?.email?.trim().toLowerCase();
+  const authId = user?.id;
   if (!authId || !authEmail) {
     debug.error = "missing_user_data_in_supabase_response";
     console.error("[admin-auth] Supabase returned success without complete user payload.", debug);
