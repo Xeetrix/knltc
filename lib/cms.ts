@@ -40,10 +40,32 @@ export type BlogPost = {
 
 export type Category = { id: string; name: string; slug: string; type: CategoryType };
 
+export type AdminSummary = {
+  totalProducts: number;
+  totalBlogPosts: number;
+  totalDrafts: number;
+  totalPublished: number;
+  setupWarning: string | null;
+};
+
+function logCmsError(context: string, error: unknown) {
+  console.error(`[CMS] ${context}`, error);
+}
+
+async function safeSelectRows<T>(table: string, params: Record<string, string | number>, admin = false, context?: string): Promise<T[]> {
+  try {
+    return (await selectRows(table, params, admin)) as T[];
+  } catch (error) {
+    logCmsError(context ?? `selectRows(${table}) failed`, error);
+    return [];
+  }
+}
+
 async function selectWithCategoryFallback<T>(table: "products" | "blog_posts", params: Record<string, string | number>) {
   try {
     return (await selectRows(table, params)) as T[];
   } catch (error) {
+    logCmsError(`${table} query with category join failed`, error);
     const message = error instanceof Error ? error.message : "";
     const canRetryWithoutCategoryJoin =
       message.includes("categories") ||
@@ -54,7 +76,7 @@ async function selectWithCategoryFallback<T>(table: "products" | "blog_posts", p
     if (!canRetryWithoutCategoryJoin) return [];
 
     const fallbackParams = { ...params, select: "*" };
-    return (await selectRows(table, fallbackParams)) as T[];
+    return await safeSelectRows<T>(table, fallbackParams, false, `${table} fallback query failed`);
   }
 }
 
@@ -95,36 +117,59 @@ export async function getPublishedPostBySlug(slug: string) {
 }
 
 export async function getAdminSummary() {
-  const [products, posts] = await Promise.all([
+  const [productsResult, postsResult] = await Promise.allSettled([
     selectRows("products", { select: "id,status" }, true),
     selectRows("blog_posts", { select: "id,status" }, true),
   ]);
-  const allProducts = products as Array<{ status: Status }>;
-  const allPosts = posts as Array<{ status: Status }>;
+
+  if (productsResult.status === "rejected") {
+    logCmsError("admin summary products query failed", productsResult.reason);
+  }
+  if (postsResult.status === "rejected") {
+    logCmsError("admin summary blog_posts query failed", postsResult.reason);
+  }
+
+  const allProducts = (productsResult.status === "fulfilled" ? productsResult.value : []) as Array<{ status: Status }>;
+  const allPosts = (postsResult.status === "fulfilled" ? postsResult.value : []) as Array<{ status: Status }>;
 
   const totalDrafts = [...allProducts, ...allPosts].filter((item) => item.status === "draft").length;
   const totalPublished = [...allProducts, ...allPosts].filter((item) => item.status === "published").length;
+  const setupWarning =
+    productsResult.status === "rejected" || postsResult.status === "rejected"
+      ? "Supabase data is unavailable or not fully set up yet. Showing empty totals."
+      : null;
 
   return {
     totalProducts: allProducts.length,
     totalBlogPosts: allPosts.length,
     totalDrafts,
     totalPublished,
+    setupWarning,
   };
 }
 
 export async function getAllAdminProducts() {
-  return (await selectRows("products", { select: "*,categories(name,slug)", order: "created_at.desc" }, true)) as Product[];
+  return await safeSelectRows<Product>(
+    "products",
+    { select: "*,categories(name,slug)", order: "created_at.desc" },
+    true,
+    "admin products query failed",
+  );
 }
 
 export async function getAllAdminPosts() {
-  return (await selectRows("blog_posts", { select: "*,categories(name,slug)", order: "created_at.desc" }, true)) as BlogPost[];
+  return await safeSelectRows<BlogPost>(
+    "blog_posts",
+    { select: "*,categories(name,slug)", order: "created_at.desc" },
+    true,
+    "admin blog posts query failed",
+  );
 }
 
 export async function getCategories(type?: CategoryType) {
   const params: Record<string, string> = { select: "*", order: "name.asc" };
   if (type) params.type = `eq.${type}`;
-  return (await selectRows("categories", params, true)) as Category[];
+  return await safeSelectRows<Category>("categories", params, true, "categories query failed");
 }
 
 export async function createProduct(payload: unknown) {
