@@ -24,7 +24,7 @@ Required:
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `SUPABASE_STORAGE_BUCKET`
 - `ADMIN_EMAIL`
-- `ADMIN_PASSWORD_HASH` (recommended) or `ADMIN_PASSWORD` (legacy fallback)
+- `ADMIN_PASSWORD`
 - `ADMIN_SESSION_SECRET`
 
 ## Supabase setup
@@ -52,3 +52,4 @@ Required:
 - Add all env vars in the Vercel project settings.
 - Redeploy after env updates.
 - Ensure Supabase URL/keys are for production project.
+- Admin login uses `ADMIN_EMAIL` + `ADMIN_PASSWORD` and signs the `knltc_admin_session` cookie with `ADMIN_SESSION_SECRET`.
