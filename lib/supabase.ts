@@ -38,6 +38,7 @@ async function restRequest(path: string, init: RequestInit = {}, admin = false) 
 
   if (!res.ok) {
     const txt = await res.text();
+    console.error("[Supabase][REST]", { path, status: res.status, response: txt });
     throw new Error(txt || `Supabase request failed: ${res.status}`);
   }
 
@@ -79,6 +80,7 @@ export async function uploadToStorage(fileName: string, data: ArrayBuffer, conte
 
   if (!res.ok) {
     const txt = await res.text();
+    console.error("[Supabase][Storage Upload]", { bucket, fileName, status: res.status, response: txt });
     throw new Error(txt || "Upload failed");
   }
 
