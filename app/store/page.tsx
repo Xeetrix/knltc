@@ -20,7 +20,7 @@ export default async function StorePage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {products.length === 0 ? (
             <div className="rounded-xl border bg-card p-5 md:col-span-2 lg:col-span-3">
-              <h2 className="text-lg font-semibold">No products available right now</h2>
+              <h2 className="text-lg font-semibold">No products available yet</h2>
               <p className="mt-2 text-sm text-muted-foreground">Please check back later for new learning resources.</p>
             </div>
           ) : (

@@ -20,7 +20,7 @@ export default async function BlogPage() {
         <div className="space-y-4">
           {posts.length === 0 ? (
             <div className="rounded-xl border bg-card p-5">
-              <h2 className="text-xl font-semibold">No blog posts published yet</h2>
+              <h2 className="text-xl font-semibold">No blog posts available yet</h2>
               <p className="mt-2 text-sm text-muted-foreground">Please check back later for updates and guides.</p>
             </div>
           ) : (
