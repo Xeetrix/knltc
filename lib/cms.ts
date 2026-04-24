@@ -3,6 +3,41 @@ import { deleteRow, insertRow, selectRows, updateRow } from "@/lib/supabase";
 export type Status = "draft" | "published";
 export type CategoryType = "product" | "blog";
 
+type ProductWritePayload = {
+  id?: string;
+  name?: string;
+  title?: string;
+  slug?: string;
+  category_id?: string | null;
+  short_description?: string;
+  full_description?: string;
+  description?: string;
+  price?: number;
+  sale_price?: number | null;
+  stock?: number;
+  featured_image?: string | null;
+  image_url?: string | null;
+  gallery?: string[] | null;
+  status?: Status;
+  is_featured?: boolean;
+  sku?: string | null;
+};
+
+type BlogWritePayload = {
+  id?: string;
+  title?: string;
+  slug?: string;
+  excerpt?: string;
+  content?: string;
+  cover_image?: string | null;
+  image_url?: string | null;
+  category_id?: string | null;
+  tags?: string[] | null;
+  author?: string;
+  publish_date?: string | null;
+  status?: Status;
+};
+
 export type Product = {
   id: string;
   name: string;
@@ -52,6 +87,59 @@ function logCmsError(context: string, error: unknown) {
   console.error(`[CMS] ${context}`, error);
 }
 
+function toSlug(input: string) {
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function normalizeProductPayload(payload: ProductWritePayload) {
+  const name = payload.name ?? payload.title ?? "";
+  const description = payload.description ?? payload.short_description ?? payload.full_description ?? "";
+  const slug = payload.slug?.trim() || toSlug(name);
+
+  return {
+    name,
+    title: payload.title ?? name,
+    slug,
+    category_id: payload.category_id ?? null,
+    short_description: payload.short_description ?? description,
+    full_description: payload.full_description ?? description,
+    description,
+    price: payload.price ?? 0,
+    sale_price: payload.sale_price ?? null,
+    stock: payload.stock ?? 0,
+    featured_image: payload.featured_image ?? payload.image_url ?? null,
+    image_url: payload.image_url ?? payload.featured_image ?? null,
+    gallery: payload.gallery ?? [],
+    status: payload.status ?? "draft",
+    is_featured: payload.is_featured ?? false,
+    sku: payload.sku ?? null,
+  };
+}
+
+function normalizeBlogPayload(payload: BlogWritePayload) {
+  const slug = payload.slug?.trim() || toSlug(payload.title ?? "");
+
+  return {
+    title: payload.title ?? "",
+    slug,
+    excerpt: payload.excerpt ?? payload.content ?? "",
+    content: payload.content ?? payload.excerpt ?? "",
+    cover_image: payload.cover_image ?? payload.image_url ?? null,
+    image_url: payload.image_url ?? payload.cover_image ?? null,
+    category_id: payload.category_id ?? null,
+    tags: payload.tags ?? [],
+    author: payload.author ?? "KNLTC",
+    publish_date: payload.publish_date ?? null,
+    status: payload.status ?? "draft",
+  };
+}
+
 async function safeSelectRows<T>(table: string, params: Record<string, string | number>, admin = false, context?: string): Promise<T[]> {
   try {
     return (await selectRows(table, params, admin)) as T[];
@@ -91,7 +179,7 @@ export async function getPublishedProducts() {
 export async function getPublishedProductBySlug(slug: string) {
   const rows = await selectWithCategoryFallback<Product>("products", {
     select: "*,categories(name,slug)",
-    status: "eq.published",
+    status: `eq.published`,
     slug: `eq.${slug}`,
     limit: 1,
   });
@@ -172,24 +260,24 @@ export async function getCategories(type?: CategoryType) {
   return await safeSelectRows<Category>("categories", params, true, "categories query failed");
 }
 
-export async function createProduct(payload: unknown) {
-  return (await insertRow("products", payload, true)) as Product;
+export async function createProduct(payload: ProductWritePayload) {
+  return (await insertRow("products", normalizeProductPayload(payload), true)) as Product;
 }
 
-export async function editProduct(id: string, payload: unknown) {
-  return (await updateRow("products", id, payload, true)) as Product;
+export async function editProduct(id: string, payload: ProductWritePayload) {
+  return (await updateRow("products", id, normalizeProductPayload(payload), true)) as Product;
 }
 
 export async function removeProduct(id: string) {
   await deleteRow("products", id, true);
 }
 
-export async function createPost(payload: unknown) {
-  return (await insertRow("blog_posts", payload, true)) as BlogPost;
+export async function createPost(payload: BlogWritePayload) {
+  return (await insertRow("blog_posts", normalizeBlogPayload(payload), true)) as BlogPost;
 }
 
-export async function editPost(id: string, payload: unknown) {
-  return (await updateRow("blog_posts", id, payload, true)) as BlogPost;
+export async function editPost(id: string, payload: BlogWritePayload) {
+  return (await updateRow("blog_posts", id, normalizeBlogPayload(payload), true)) as BlogPost;
 }
 
 export async function removePost(id: string) {
