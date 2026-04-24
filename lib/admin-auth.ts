@@ -88,6 +88,23 @@ type VerifyAdminCredentialsResult = {
   debug: AdminAuthDebug;
 };
 
+type SupabaseTokenUser = {
+  id?: unknown;
+  email?: unknown;
+};
+
+type SupabaseTokenResponse = {
+  access_token?: unknown;
+  token_type?: unknown;
+  expires_in?: unknown;
+  expires_at?: unknown;
+  refresh_token?: unknown;
+  user?: SupabaseTokenUser;
+  session?: {
+    user?: SupabaseTokenUser;
+  };
+};
+
 function getSupabaseAuthConfig() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -201,11 +218,32 @@ export async function verifyAdminCredentials(email: string, password: string): P
     return { user: null, debug };
   }
 
-  const user = data.user as { id?: string; email?: string } | undefined;
-  const authEmail = user?.email?.trim().toLowerCase();
-  const authId = user?.id;
+  const tokenPayload = data as SupabaseTokenResponse;
+  const topLevelKeys = Object.keys(data);
+  const topLevelUserKeys =
+    tokenPayload.user && typeof tokenPayload.user === "object" ? Object.keys(tokenPayload.user) : [];
+  const sessionUserKeys =
+    tokenPayload.session?.user && typeof tokenPayload.session.user === "object"
+      ? Object.keys(tokenPayload.session.user)
+      : [];
+  console.log("[admin-auth] Parsed successful Supabase token response (safe):", {
+    keys: topLevelKeys,
+    hasAccessToken: typeof tokenPayload.access_token === "string" && tokenPayload.access_token.length > 0,
+    hasRefreshToken: typeof tokenPayload.refresh_token === "string" && tokenPayload.refresh_token.length > 0,
+    tokenType: typeof tokenPayload.token_type === "string" ? tokenPayload.token_type : null,
+    topLevelUserKeys,
+    sessionUserKeys,
+  });
+
+  // Supabase password grant commonly returns `user` at top level. Some wrappers use `session.user`.
+  const user = tokenPayload.user ?? tokenPayload.session?.user;
+  const authEmail = typeof user?.email === "string" ? user.email.trim().toLowerCase() : "";
+  const authId = typeof user?.id === "string" ? user.id : "";
   if (!authId || !authEmail) {
-    debug.error = "missing_user_data_in_supabase_response";
+    debug.error =
+      typeof tokenPayload.access_token === "string" && tokenPayload.access_token.length > 0
+        ? "missing_user_data_in_supabase_response"
+        : "missing_token_or_user_data_in_supabase_response";
     console.error("[admin-auth] Supabase returned success without complete user payload.", debug);
     return { user: null, debug };
   }
