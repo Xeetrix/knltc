@@ -105,6 +105,10 @@ type SupabaseTokenResponse = {
   };
 };
 
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
 function getSupabaseAuthConfig() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -237,16 +241,29 @@ export async function verifyAdminCredentials(email: string, password: string): P
 
   // Supabase password grant commonly returns `user` at top level. Some wrappers use `session.user`.
   const user = tokenPayload.user ?? tokenPayload.session?.user;
-  const authEmail = typeof user?.email === "string" ? user.email.trim().toLowerCase() : "";
-  const authId = typeof user?.id === "string" ? user.id : "";
-  if (!authId || !authEmail) {
-    debug.error =
-      typeof tokenPayload.access_token === "string" && tokenPayload.access_token.length > 0
-        ? "missing_user_data_in_supabase_response"
-        : "missing_token_or_user_data_in_supabase_response";
-    console.error("[admin-auth] Supabase returned success without complete user payload.", debug);
+  const hasAccessToken = isNonEmptyString(tokenPayload.access_token);
+  const hasRefreshToken = isNonEmptyString(tokenPayload.refresh_token);
+  const hasTokenType = isNonEmptyString(tokenPayload.token_type);
+  const hasExpiresIn = typeof tokenPayload.expires_in === "number" || isNonEmptyString(tokenPayload.expires_in);
+  const hasUserObject = Boolean(user && typeof user === "object");
+
+  if (!hasAccessToken || !hasRefreshToken || !hasTokenType || !hasExpiresIn || !hasUserObject) {
+    debug.error = "incomplete_supabase_auth_success_payload";
+    console.error("[admin-auth] Supabase returned 200 with incomplete auth payload.", {
+      ...debug,
+      payloadShape: {
+        hasAccessToken,
+        hasRefreshToken,
+        hasTokenType,
+        hasExpiresIn,
+        hasUserObject,
+      },
+    });
     return { user: null, debug };
   }
+
+  const authEmail = isNonEmptyString(user?.email) ? user.email.trim().toLowerCase() : normalizedEmail;
+  const authId = isNonEmptyString(user?.id) ? user.id : `email:${authEmail}`;
 
   return { user: { id: authId, email: authEmail }, debug };
 }
