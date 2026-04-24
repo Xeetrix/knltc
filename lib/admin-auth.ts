@@ -9,6 +9,11 @@ type SessionPayload = {
   exp: number;
 };
 
+type VerifyAdminCredentialsResult = {
+  user: { id: string; email: string } | null;
+  error: string | null;
+};
+
 function getSecret() {
   const secret = process.env.ADMIN_SESSION_SECRET;
   if (!secret) throw new Error("ADMIN_SESSION_SECRET is missing.");
@@ -42,6 +47,17 @@ function decode(token: string): SessionPayload | null {
   return payload;
 }
 
+function normalizeCredential(value: string) {
+  return value.trim();
+}
+
+function equalsSafe(left: string, right: string) {
+  const leftBuffer = Buffer.from(left);
+  const rightBuffer = Buffer.from(right);
+  if (leftBuffer.length !== rightBuffer.length) return false;
+  return timingSafeEqual(leftBuffer, rightBuffer);
+}
+
 export async function createAdminSession(email: string) {
   const payload: SessionPayload = {
     email,
@@ -71,201 +87,45 @@ export async function isAdminAuthenticated() {
   return Boolean(decode(token));
 }
 
-type AuthUser = {
-  id: string;
-  email: string;
-};
+export async function verifyAdminCredentials(email: string, password: string): Promise<VerifyAdminCredentialsResult> {
+  const configuredEmail = process.env.ADMIN_EMAIL;
+  const configuredPassword = process.env.ADMIN_PASSWORD;
 
-type AdminAuthDebug = {
-  supabaseUrl: string;
-  reachedSupabase: boolean;
-  status: number | null;
-  error: string | null;
-};
-
-type VerifyAdminCredentialsResult = {
-  user: AuthUser | null;
-  debug: AdminAuthDebug;
-};
-
-type SupabaseTokenUser = {
-  id?: unknown;
-  email?: unknown;
-};
-
-type SupabaseTokenResponse = {
-  access_token?: unknown;
-  token_type?: unknown;
-  expires_in?: unknown;
-  expires_at?: unknown;
-  refresh_token?: unknown;
-  user?: SupabaseTokenUser;
-  session?: {
-    user?: SupabaseTokenUser;
-  };
-};
-
-function isNonEmptyString(value: unknown): value is string {
-  return typeof value === "string" && value.trim().length > 0;
-}
-
-function getSupabaseAuthConfig() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const errors: string[] = [];
-
-  if (!url) {
-    errors.push("NEXT_PUBLIC_SUPABASE_URL is missing");
-  } else {
-    try {
-      new URL(url);
-    } catch {
-      errors.push("NEXT_PUBLIC_SUPABASE_URL is malformed");
-    }
+  if (!configuredEmail || !configuredPassword) {
+    return {
+      user: null,
+      error: "admin_credentials_not_configured",
+    };
   }
 
-  if (!anonKey) {
-    errors.push("NEXT_PUBLIC_SUPABASE_ANON_KEY is missing");
+  const normalizedInputEmail = normalizeCredential(email).toLowerCase();
+  const normalizedConfiguredEmail = normalizeCredential(configuredEmail).toLowerCase();
+  const normalizedInputPassword = normalizeCredential(password);
+
+  if (!normalizedInputEmail || !normalizedInputPassword) {
+    return {
+      user: null,
+      error: "missing_email_or_password",
+    };
+  }
+
+  const emailMatched = equalsSafe(normalizedInputEmail, normalizedConfiguredEmail);
+  const passwordMatched = equalsSafe(normalizedInputPassword, configuredPassword);
+
+  if (!emailMatched || !passwordMatched) {
+    return {
+      user: null,
+      error: "invalid_credentials",
+    };
   }
 
   return {
-    url: url ?? "",
-    anonKey: anonKey ?? "",
-    error: errors.length ? errors.join("; ") : null,
-  };
-}
-
-async function safeReadJson(response: Response): Promise<{
-  json: Record<string, unknown> | null;
-  error: string | null;
-}> {
-  try {
-    const text = await response.text();
-    if (!text) {
-      return { json: null, error: "empty_response_body" };
-    }
-
-    try {
-      const parsed = JSON.parse(text) as Record<string, unknown>;
-      return { json: parsed, error: null };
-    } catch {
-      return { json: null, error: "non_json_response_body" };
-    }
-  } catch (error) {
-    return {
-      json: null,
-      error: error instanceof Error ? error.message : "failed_to_read_response_body",
-    };
-  }
-}
-
-export async function verifyAdminCredentials(email: string, password: string): Promise<VerifyAdminCredentialsResult> {
-  const normalizedEmail = email.trim().toLowerCase();
-  const { url, anonKey, error: configError } = getSupabaseAuthConfig();
-  const debug: AdminAuthDebug = {
-    supabaseUrl: url,
-    reachedSupabase: false,
-    status: null,
+    user: {
+      id: `admin:${normalizedConfiguredEmail}`,
+      email: normalizedConfiguredEmail,
+    },
     error: null,
   };
-
-  if (configError) {
-    debug.error = configError;
-    console.error("[admin-auth] Invalid Supabase configuration.", debug);
-    return { user: null, debug };
-  }
-
-  if (!normalizedEmail || !password) {
-    debug.error = "missing_email_or_password";
-    console.error("[admin-auth] Missing email or password.", debug);
-    return { user: null, debug };
-  }
-
-  console.log("[admin-auth] Supabase URL used for admin login:", debug.supabaseUrl);
-
-  let res: Response;
-  try {
-    res = await fetch(`${url}/auth/v1/token?grant_type=password`, {
-      method: "POST",
-      headers: {
-        apikey: anonKey,
-        Authorization: `Bearer ${anonKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email: normalizedEmail, password }),
-      cache: "no-store",
-    });
-    debug.reachedSupabase = true;
-    debug.status = res.status;
-    console.log("[admin-auth] Supabase /auth/v1/token response status:", debug.status);
-  } catch (error) {
-    debug.error = error instanceof Error ? error.message : "fetch_failed";
-    console.error("[admin-auth] Request did not reach Supabase.", debug);
-    return { user: null, debug };
-  }
-
-  if (!res.ok) {
-    const { json: errorPayload, error: jsonError } = await safeReadJson(res);
-    debug.error =
-      (typeof errorPayload?.error === "string" ? errorPayload.error : null) ??
-      (typeof errorPayload?.error_description === "string" ? errorPayload.error_description : null) ??
-      jsonError ??
-      "unknown_supabase_auth_error";
-    console.error("[admin-auth] Supabase auth error:", debug.error);
-    return { user: null, debug };
-  }
-
-  const { json: data, error: successJsonError } = await safeReadJson(res);
-  if (!data) {
-    debug.error = successJsonError ?? "missing_response_body";
-    console.error("[admin-auth] Could not parse successful Supabase auth response.", debug);
-    return { user: null, debug };
-  }
-
-  const tokenPayload = data as SupabaseTokenResponse;
-  const topLevelKeys = Object.keys(data);
-  const topLevelUserKeys =
-    tokenPayload.user && typeof tokenPayload.user === "object" ? Object.keys(tokenPayload.user) : [];
-  const sessionUserKeys =
-    tokenPayload.session?.user && typeof tokenPayload.session.user === "object"
-      ? Object.keys(tokenPayload.session.user)
-      : [];
-  console.log("[admin-auth] Parsed successful Supabase token response (safe):", {
-    keys: topLevelKeys,
-    hasAccessToken: typeof tokenPayload.access_token === "string" && tokenPayload.access_token.length > 0,
-    hasRefreshToken: typeof tokenPayload.refresh_token === "string" && tokenPayload.refresh_token.length > 0,
-    tokenType: typeof tokenPayload.token_type === "string" ? tokenPayload.token_type : null,
-    topLevelUserKeys,
-    sessionUserKeys,
-  });
-
-  // Supabase password grant commonly returns `user` at top level. Some wrappers use `session.user`.
-  const user = tokenPayload.user ?? tokenPayload.session?.user;
-  const hasAccessToken = isNonEmptyString(tokenPayload.access_token);
-  const hasRefreshToken = isNonEmptyString(tokenPayload.refresh_token);
-  const hasTokenType = isNonEmptyString(tokenPayload.token_type);
-  const hasExpiresIn = typeof tokenPayload.expires_in === "number" || isNonEmptyString(tokenPayload.expires_in);
-  const hasUserObject = Boolean(user && typeof user === "object");
-
-  if (!hasAccessToken || !hasRefreshToken || !hasTokenType || !hasExpiresIn || !hasUserObject) {
-    debug.error = "incomplete_supabase_auth_success_payload";
-    console.error("[admin-auth] Supabase returned 200 with incomplete auth payload.", {
-      ...debug,
-      payloadShape: {
-        hasAccessToken,
-        hasRefreshToken,
-        hasTokenType,
-        hasExpiresIn,
-        hasUserObject,
-      },
-    });
-    return { user: null, debug };
-  }
-
-  const authEmail = isNonEmptyString(user?.email) ? user.email.trim().toLowerCase() : normalizedEmail;
-  const authId = isNonEmptyString(user?.id) ? user.id : `email:${authEmail}`;
-
-  return { user: { id: authId, email: authEmail }, debug };
 }
 
 export const adminCookieName = ADMIN_COOKIE;
