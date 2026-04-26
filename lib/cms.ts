@@ -8,6 +8,7 @@ type ProductWritePayload = {
   name?: string;
   title?: string;
   slug?: string;
+  category?: string | null;
   category_id?: string | null;
   short_description?: string;
   full_description?: string;
@@ -19,6 +20,7 @@ type ProductWritePayload = {
   image_url?: string | null;
   gallery?: string[] | null;
   status?: Status;
+  featured?: boolean;
   is_featured?: boolean;
   sku?: string | null;
 };
@@ -29,12 +31,15 @@ type BlogWritePayload = {
   slug?: string;
   excerpt?: string;
   content?: string;
+  category?: string | null;
   cover_image?: string | null;
+  cover_image_url?: string | null;
   image_url?: string | null;
   category_id?: string | null;
   tags?: string[] | null;
   author?: string;
   publish_date?: string | null;
+  published_at?: string | null;
   status?: Status;
 };
 
@@ -106,6 +111,7 @@ function normalizeProductPayload(payload: ProductWritePayload) {
     name,
     title: payload.title ?? name,
     slug,
+    category: payload.category ?? null,
     category_id: payload.category_id ?? null,
     short_description: payload.short_description ?? description,
     full_description: payload.full_description ?? description,
@@ -117,7 +123,8 @@ function normalizeProductPayload(payload: ProductWritePayload) {
     image_url: payload.image_url ?? payload.featured_image ?? null,
     gallery: payload.gallery ?? [],
     status: payload.status ?? "draft",
-    is_featured: payload.is_featured ?? false,
+    featured: payload.featured ?? payload.is_featured ?? false,
+    is_featured: payload.is_featured ?? payload.featured ?? false,
     sku: payload.sku ?? null,
   };
 }
@@ -130,12 +137,15 @@ function normalizeBlogPayload(payload: BlogWritePayload) {
     slug,
     excerpt: payload.excerpt ?? payload.content ?? "",
     content: payload.content ?? payload.excerpt ?? "",
-    cover_image: payload.cover_image ?? payload.image_url ?? null,
-    image_url: payload.image_url ?? payload.cover_image ?? null,
+    category: payload.category ?? null,
+    cover_image: payload.cover_image ?? payload.cover_image_url ?? payload.image_url ?? null,
+    cover_image_url: payload.cover_image_url ?? payload.cover_image ?? payload.image_url ?? null,
+    image_url: payload.image_url ?? payload.cover_image_url ?? payload.cover_image ?? null,
     category_id: payload.category_id ?? null,
     tags: payload.tags ?? [],
     author: payload.author ?? "KNLTC",
-    publish_date: payload.publish_date ?? null,
+    published_at: payload.published_at ?? payload.publish_date ?? null,
+    publish_date: payload.publish_date ?? payload.published_at ?? null,
     status: payload.status ?? "draft",
   };
 }
