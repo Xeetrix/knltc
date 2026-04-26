@@ -39,11 +39,13 @@ const initialForm: ProductInput = {
 export default function ProductManager({ initialProducts, categories }: { initialProducts: Product[]; categories: Category[] }) {
   const [products, setProducts] = useState(initialProducts);
   const [form, setForm] = useState<ProductInput>(initialForm);
+  const [error, setError] = useState<string | null>(null);
 
   const mode = useMemo(() => (form.id ? "Update" : "Create"), [form.id]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
+    setError(null);
     const payload = {
       ...form,
       price: Number(form.price),
@@ -58,7 +60,11 @@ export default function ProductManager({ initialProducts, categories }: { initia
       body: JSON.stringify(payload),
     });
     const data = await res.json();
-    if (!res.ok) return;
+    if (!res.ok) {
+      console.error("[Admin][products][submit]", data);
+      setError(data.error || "Failed to save product");
+      return;
+    }
 
     if (form.id) {
       setProducts((prev) => prev.map((item) => (item.id === data.product.id ? data.product : item)));
@@ -70,13 +76,19 @@ export default function ProductManager({ initialProducts, categories }: { initia
 
   const remove = async (id: string) => {
     const res = await fetch(`/api/admin/products?id=${id}`, { method: "DELETE" });
-    if (!res.ok) return;
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      console.error("[Admin][products][delete]", data);
+      setError(data.error || "Failed to delete product");
+      return;
+    }
     setProducts((prev) => prev.filter((item) => item.id !== id));
   };
 
   return (
     <div className="space-y-6">
       <form onSubmit={submit} className="grid gap-3 rounded-xl border bg-card p-4 md:grid-cols-2">
+        {error ? <p className="md:col-span-2 text-sm text-red-600">{error}</p> : null}
         <input className="rounded-md border px-3 py-2" placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
         <input className="rounded-md border px-3 py-2" placeholder="Slug" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} />
         <select className="rounded-md border px-3 py-2" value={form.category_id} onChange={(e) => setForm({ ...form, category_id: e.target.value })}>

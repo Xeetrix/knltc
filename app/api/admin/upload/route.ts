@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-guard";
 import { uploadToStorage } from "@/lib/supabase";
+import { toAdminErrorResponse } from "@/lib/admin-api-error";
 
 export async function POST(request: Request) {
   const unauthorized = await requireAdmin();
@@ -23,8 +24,8 @@ export async function POST(request: Request) {
     const url = await uploadToStorage(fileName, arrayBuffer, file.type, bucket);
     return NextResponse.json({ url });
   } catch (error) {
-    console.error("[API][upload][POST]", error);
-    const message = error instanceof Error ? error.message : "Upload failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const errorResponse = toAdminErrorResponse(error, "Upload failed");
+    console.error("[API][upload][POST]", errorResponse);
+    return NextResponse.json(errorResponse, { status: errorResponse.status });
   }
 }
