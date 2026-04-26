@@ -33,10 +33,12 @@ const initialForm: BlogInput = {
 export default function BlogManager({ initialPosts, categories }: { initialPosts: BlogPost[]; categories: Category[] }) {
   const [posts, setPosts] = useState(initialPosts);
   const [form, setForm] = useState<BlogInput>(initialForm);
+  const [error, setError] = useState<string | null>(null);
   const mode = useMemo(() => (form.id ? "Update" : "Create"), [form.id]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
+    setError(null);
     const payload = {
       ...form,
       tags: form.tags ? form.tags.split(",").map((v) => v.trim()) : [],
@@ -48,7 +50,11 @@ export default function BlogManager({ initialPosts, categories }: { initialPosts
       body: JSON.stringify(payload),
     });
     const data = await res.json();
-    if (!res.ok) return;
+    if (!res.ok) {
+      console.error("[Admin][blog][submit]", data);
+      setError(data.error || "Failed to save blog post");
+      return;
+    }
 
     if (form.id) {
       setPosts((prev) => prev.map((item) => (item.id === data.post.id ? data.post : item)));
@@ -60,13 +66,19 @@ export default function BlogManager({ initialPosts, categories }: { initialPosts
 
   const remove = async (id: string) => {
     const res = await fetch(`/api/admin/blog?id=${id}`, { method: "DELETE" });
-    if (!res.ok) return;
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      console.error("[Admin][blog][delete]", data);
+      setError(data.error || "Failed to delete blog post");
+      return;
+    }
     setPosts((prev) => prev.filter((item) => item.id !== id));
   };
 
   return (
     <div className="space-y-6">
       <form onSubmit={submit} className="grid gap-3 rounded-xl border bg-card p-4 md:grid-cols-2">
+        {error ? <p className="md:col-span-2 text-sm text-red-600">{error}</p> : null}
         <input className="rounded-md border px-3 py-2" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
         <input className="rounded-md border px-3 py-2" placeholder="Slug" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} />
         <select className="rounded-md border px-3 py-2" value={form.category_id} onChange={(e) => setForm({ ...form, category_id: e.target.value })}>

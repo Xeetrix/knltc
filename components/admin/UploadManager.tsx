@@ -18,6 +18,7 @@ export default function UploadManager() {
     const data = await res.json();
 
     if (!res.ok) {
+      console.error("[Admin][upload]", data);
       setError(data.error || "Upload failed");
       return;
     }
