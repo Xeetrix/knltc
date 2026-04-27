@@ -88,6 +88,11 @@ export type AdminSummary = {
   setupWarning: string | null;
 };
 
+export type AdminOrdersResult = {
+  orders: Order[];
+  setupWarning: string | null;
+};
+
 export type OrderStatus = "pending" | "confirmed" | "processing" | "delivered" | "cancelled";
 export type LeadStatus = "new" | "contacted" | "interested" | "converted" | "lost";
 export type ReviewStatus = "pending" | "approved" | "rejected";
@@ -362,13 +367,17 @@ export async function createOrderItem(payload: Omit<OrderItem, "id">) {
   return (await insertRow("order_items", payload, true)) as OrderItem;
 }
 
-export async function getAllAdminOrders() {
-  return await safeSelectRows<Order>(
-    "orders",
-    { select: "*,order_items(*)", order: "created_at.desc" },
-    true,
-    "admin orders query failed",
-  );
+export async function getAllAdminOrders(): Promise<AdminOrdersResult> {
+  try {
+    const orders = (await selectRows("orders", { select: "*,order_items(*)", order: "created_at.desc" }, true)) as Order[];
+    return { orders, setupWarning: null };
+  } catch (error) {
+    logCmsError("admin orders query failed", error);
+    return {
+      orders: [],
+      setupWarning: "Unable to load orders from Supabase right now. Please check your Supabase connection and table setup.",
+    };
+  }
 }
 
 export async function updateOrderStatus(id: string, status: OrderStatus) {

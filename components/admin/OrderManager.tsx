@@ -23,25 +23,38 @@ export default function OrderManager({ initialOrders }: { initialOrders: Order[]
   const [orders, setOrders] = useState(initialOrders);
   const [selectedOrderId, setSelectedOrderId] = useState(initialOrders[0]?.id ?? null);
   const [error, setError] = useState<string | null>(null);
+  const [savingOrderId, setSavingOrderId] = useState<string | null>(null);
 
   const selectedOrder = useMemo(() => orders.find((order) => order.id === selectedOrderId) ?? null, [orders, selectedOrderId]);
 
   const updateStatus = async (id: string, status: OrderStatus) => {
     setError(null);
+    setSavingOrderId(id);
 
     const res = await fetch("/api/admin/orders", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, status }),
-    });
+    }).catch(() => null);
+
+    if (!res) {
+      setError("Unable to reach admin orders API. Please check your network and Supabase connection.");
+      setSavingOrderId(null);
+      return;
+    }
 
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      setError(data.error || "Failed to update order status");
+      const baseError = typeof data.error === "string" ? data.error : "Failed to update order status";
+      const details = typeof data.details === "string" && data.details.trim().length > 0 ? ` Details: ${data.details}` : "";
+      const hint = typeof data.hint === "string" && data.hint.trim().length > 0 ? ` Hint: ${data.hint}` : "";
+      setError(`${baseError}${details}${hint}`);
+      setSavingOrderId(null);
       return;
     }
 
     setOrders((prev) => prev.map((order) => (order.id === id ? { ...order, ...data.order } : order)));
+    setSavingOrderId(null);
   };
 
   return (
@@ -73,6 +86,7 @@ export default function OrderManager({ initialOrders }: { initialOrders: Order[]
                   <select
                     className="rounded-md border bg-background px-2 py-1"
                     value={order.status}
+                    disabled={savingOrderId === order.id}
                     onChange={(e) => updateStatus(order.id, e.target.value as OrderStatus)}
                   >
                     {statuses.map((status) => (
