@@ -25,7 +25,7 @@ export default function WishlistButton({ product }: Props) {
   return (
     <button
       type="button"
-      className={`rounded-md border px-2.5 py-2 text-sm ${active ? "border-red-300 text-red-600" : ""}`}
+      className={`inline-flex items-center justify-center gap-1 rounded-md border px-2.5 py-2 text-sm hover:bg-muted ${active ? "border-red-300 text-red-600" : ""}`}
       onClick={() => {
         const next = toggleWishlist({
           productId: product.id,
@@ -39,6 +39,7 @@ export default function WishlistButton({ product }: Props) {
       aria-label="Add to wishlist"
     >
       <Heart className={`h-4 w-4 ${active ? "fill-current" : ""}`} />
+      <span>{active ? "Wishlisted" : "Wishlist"}</span>
     </button>
   );
 }
