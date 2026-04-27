@@ -392,6 +392,15 @@ export async function getAllAdminReviews() {
   return await safeSelectRows<ProductReview>("product_reviews", { select: "*", order: "created_at.desc" }, true, "admin reviews query failed");
 }
 
+export async function getPendingAdminReviews() {
+  return await safeSelectRows<ProductReview>(
+    "product_reviews",
+    { select: "*", status: "eq.pending", order: "created_at.desc" },
+    true,
+    "pending admin reviews query failed",
+  );
+}
+
 export async function updateReviewStatus(id: string, status: ReviewStatus) {
   return (await updateRow("product_reviews", id, { status }, true)) as ProductReview;
 }
