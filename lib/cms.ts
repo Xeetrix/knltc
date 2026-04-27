@@ -400,8 +400,10 @@ export async function deleteReview(id: string) {
   await deleteRow("product_reviews", id, true);
 }
 
-export async function createCrmLead(payload: Omit<CrmLead, "id" | "created_at" | "updated_at" | "status"> & { status?: LeadStatus }) {
-  return (await insertRow("crm_leads", { ...payload, status: payload.status ?? "new" }, true)) as CrmLead;
+export async function createCrmLead(
+  payload: Omit<CrmLead, "id" | "created_at" | "updated_at" | "status" | "notes"> & { status?: LeadStatus; notes?: string | null },
+) {
+  return (await insertRow("crm_leads", { ...payload, status: payload.status ?? "new", notes: payload.notes ?? null }, true)) as CrmLead;
 }
 
 export async function getAllCrmLeads() {
