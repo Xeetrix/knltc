@@ -24,7 +24,7 @@ export default function CartNavLink({ className }: CartNavLinkProps) {
     <Link
       href="/cart"
       className={cn(
-        "relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-slate-100 transition hover:bg-white/10",
+        "relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-emerald-200 bg-white text-emerald-700 transition hover:bg-emerald-50",
         className,
       )}
       aria-label="Cart"

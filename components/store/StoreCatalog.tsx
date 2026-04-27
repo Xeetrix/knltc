@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { BookOpen, ChevronDown, Gem, NotebookTabs, Package, SlidersHorizontal, Sparkles } from "lucide-react";
+import { BookOpen, ChevronDown, Gem, NotebookTabs, Package, SlidersHorizontal } from "lucide-react";
 import type { Product } from "@/lib/cms";
 import StoreProductCard from "@/components/store/StoreProductCard";
 import CartNavLink from "@/components/store/CartNavLink";
@@ -65,64 +64,11 @@ export default function StoreCatalog({ products }: Props) {
   }, [category, featuredOnly, priceMode, products, search, sort]);
 
   return (
-    <div className="space-y-8 text-slate-900">
-      <section className="overflow-hidden rounded-3xl border border-stone-200 bg-[radial-gradient(circle_at_100%_0%,rgba(16,185,129,0.1),transparent_42%),radial-gradient(circle_at_0%_100%,rgba(251,191,36,0.08),transparent_35%),linear-gradient(145deg,#fafaf9,#ffffff_45%,#f8fafc)] px-5 py-6 shadow-lg shadow-stone-200/80 md:px-8 md:py-7">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-emerald-700">KNLTC Premium Store</p>
-        <h1 className="mt-2.5 max-w-3xl text-2xl font-bold leading-tight text-slate-900 md:text-4xl">Curated Japanese Learning Essentials, Crafted for Serious Learners.</h1>
-        <p className="mt-2.5 max-w-2xl text-sm text-slate-600 md:text-[15px]">A clean premium shopping experience for books, JLPT prep, and refined stationery.</p>
-        <div className="mt-4 flex flex-wrap gap-2.5">
-          <Link href="#products" className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-200 transition hover:bg-emerald-500">
-            Shop Now
-          </Link>
-          <Link href="#categories" className="rounded-full border border-stone-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-stone-100">
-            Browse Categories
-          </Link>
-        </div>
-        <div className="mt-4 grid gap-2.5 text-[11px] font-medium uppercase tracking-[0.16em] text-slate-600 sm:grid-cols-3">
-          {[
-            "Original Books",
-            "JLPT Materials",
-            "Fast Support",
-          ].map((item) => (
-            <span key={item} className="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white/90 px-3 py-1.5">
-              <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
-              {item}
-            </span>
-          ))}
-        </div>
+    <div className="space-y-5 text-slate-900">
+      <section className="rounded-2xl border border-stone-200 bg-white px-5 py-4 shadow-sm shadow-stone-200/70 md:px-6 md:py-5">
+        <h1 className="text-2xl font-bold text-slate-900 md:text-3xl">Japanese Learning Store</h1>
+        <p className="mt-1 text-sm text-slate-600">Premium books, JLPT prep, and essentials—ready to shop quickly.</p>
       </section>
-
-      <section id="categories" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {categoryShowcase.map(({ label, icon: Icon }) => (
-          <button
-            type="button"
-            onClick={() => setCategory(label)}
-            key={label}
-            className="group rounded-2xl border border-stone-200 bg-white p-5 text-left shadow-md shadow-stone-200/70 transition duration-300 hover:-translate-y-1 hover:border-emerald-300/60 hover:shadow-lg hover:shadow-emerald-100/70"
-          >
-            <span className="inline-flex rounded-xl border border-emerald-100 bg-emerald-50 p-2">
-              <Icon className="h-5 w-5 text-emerald-700" />
-            </span>
-            <p className="mt-3 text-xs uppercase tracking-[0.2em] text-slate-500">Category</p>
-            <h3 className="mt-1 text-xl font-semibold text-slate-900">{label}</h3>
-            <p className="mt-2 text-sm text-slate-600 group-hover:text-slate-700">Tap to filter products</p>
-          </button>
-        ))}
-      </section>
-
-      {featuredProducts.length > 0 ? (
-        <section>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-2xl font-semibold text-slate-900">Featured Products</h2>
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Editor&apos;s picks</p>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {featuredProducts.map((product) => (
-              <StoreProductCard key={`featured-${product.id}`} product={product} />
-            ))}
-          </div>
-        </section>
-      ) : null}
 
       <section id="products" className="space-y-4 rounded-3xl border border-stone-200 bg-stone-100/70 p-4 md:p-6">
         <div className="flex items-center justify-between gap-2">
@@ -203,6 +149,38 @@ export default function StoreCatalog({ products }: Props) {
             ))}
           </div>
         )}
+      </section>
+
+      {featuredProducts.length > 0 ? (
+        <section>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-2xl font-semibold text-slate-900">Featured Products</h2>
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Editor&apos;s picks</p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {featuredProducts.map((product) => (
+              <StoreProductCard key={`featured-${product.id}`} product={product} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <section id="categories" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {categoryShowcase.map(({ label, icon: Icon }) => (
+          <button
+            type="button"
+            onClick={() => setCategory(label)}
+            key={label}
+            className="group rounded-2xl border border-stone-200 bg-white p-5 text-left shadow-md shadow-stone-200/70 transition duration-300 hover:-translate-y-1 hover:border-emerald-300/60 hover:shadow-lg hover:shadow-emerald-100/70"
+          >
+            <span className="inline-flex rounded-xl border border-emerald-100 bg-emerald-50 p-2">
+              <Icon className="h-5 w-5 text-emerald-700" />
+            </span>
+            <p className="mt-3 text-xs uppercase tracking-[0.2em] text-slate-500">Category</p>
+            <h3 className="mt-1 text-xl font-semibold text-slate-900">{label}</h3>
+            <p className="mt-2 text-sm text-slate-600 group-hover:text-slate-700">Tap to filter products</p>
+          </button>
+        ))}
       </section>
 
       <div className="fixed bottom-4 right-4 z-40 md:hidden">
