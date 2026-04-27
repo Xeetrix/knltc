@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { BookOpen, ChevronDown, Gem, NotebookTabs, Package, SlidersHorizontal } from "lucide-react";
+import { Search, ChevronDown, SlidersHorizontal } from "lucide-react";
 import type { Product } from "@/lib/cms";
 import StoreProductCard from "@/components/store/StoreProductCard";
 import CartNavLink from "@/components/store/CartNavLink";
@@ -13,13 +13,6 @@ type Props = {
 
 type SortMode = "newest" | "price-low" | "price-high" | "popular";
 type PriceMode = "all" | "under-500" | "500-1000" | "1000-plus";
-
-const categoryShowcase = [
-  { label: "Books", icon: BookOpen },
-  { label: "JLPT", icon: NotebookTabs },
-  { label: "Stationery", icon: Package },
-  { label: "Accessories", icon: Gem },
-];
 
 export default function StoreCatalog({ products }: Props) {
   const params = useSearchParams();
@@ -34,8 +27,6 @@ export default function StoreCatalog({ products }: Props) {
     () => Array.from(new Set(products.map((item) => item.categories?.name).filter(Boolean))) as string[],
     [products],
   );
-
-  const featuredProducts = useMemo(() => products.filter((item) => item.is_featured).slice(0, 4), [products]);
 
   const filteredProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -64,13 +55,13 @@ export default function StoreCatalog({ products }: Props) {
   }, [category, featuredOnly, priceMode, products, search, sort]);
 
   return (
-    <div className="space-y-5 text-slate-900">
-      <section className="rounded-2xl border border-stone-200 bg-white px-5 py-4 shadow-sm shadow-stone-200/70 md:px-6 md:py-5">
-        <h1 className="text-2xl font-bold text-slate-900 md:text-3xl">Japanese Learning Store</h1>
+    <div className="space-y-4 text-slate-900">
+      <section className="rounded-2xl border border-stone-200 bg-white px-5 py-4 shadow-sm shadow-stone-200/70">
+        <h1 className="text-2xl font-bold text-slate-900">Japanese Learning Store</h1>
         <p className="mt-1 text-sm text-slate-600">Premium books, JLPT prep, and essentials—ready to shop quickly.</p>
       </section>
 
-      <section id="products" className="space-y-4 rounded-3xl border border-stone-200 bg-stone-100/70 p-4 md:p-6">
+      <section id="products" className="space-y-4 rounded-3xl border border-stone-200 bg-stone-100/70 p-4 md:p-5">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-2xl font-semibold text-slate-900">All Products</h2>
           <button
@@ -87,12 +78,15 @@ export default function StoreCatalog({ products }: Props) {
         <div className={`${filtersOpen ? "grid" : "hidden"} gap-3 rounded-2xl border border-stone-200 bg-white p-3 shadow-sm md:grid md:grid-cols-5`}>
           <label>
             <span className="mb-1 block text-xs font-medium text-slate-600">Search</span>
-            <input
-              className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400"
-              placeholder="Search by name"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
+            <div className="flex items-center gap-2 rounded-md border border-stone-300 bg-white px-3 py-2">
+              <Search className="h-4 w-4 text-slate-400" />
+              <input
+                className="w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
+                placeholder="Search by name"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+            </div>
           </label>
 
           <label>
@@ -149,38 +143,6 @@ export default function StoreCatalog({ products }: Props) {
             ))}
           </div>
         )}
-      </section>
-
-      {featuredProducts.length > 0 ? (
-        <section>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-2xl font-semibold text-slate-900">Featured Products</h2>
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Editor&apos;s picks</p>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {featuredProducts.map((product) => (
-              <StoreProductCard key={`featured-${product.id}`} product={product} />
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      <section id="categories" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {categoryShowcase.map(({ label, icon: Icon }) => (
-          <button
-            type="button"
-            onClick={() => setCategory(label)}
-            key={label}
-            className="group rounded-2xl border border-stone-200 bg-white p-5 text-left shadow-md shadow-stone-200/70 transition duration-300 hover:-translate-y-1 hover:border-emerald-300/60 hover:shadow-lg hover:shadow-emerald-100/70"
-          >
-            <span className="inline-flex rounded-xl border border-emerald-100 bg-emerald-50 p-2">
-              <Icon className="h-5 w-5 text-emerald-700" />
-            </span>
-            <p className="mt-3 text-xs uppercase tracking-[0.2em] text-slate-500">Category</p>
-            <h3 className="mt-1 text-xl font-semibold text-slate-900">{label}</h3>
-            <p className="mt-2 text-sm text-slate-600 group-hover:text-slate-700">Tap to filter products</p>
-          </button>
-        ))}
       </section>
 
       <div className="fixed bottom-4 right-4 z-40 md:hidden">

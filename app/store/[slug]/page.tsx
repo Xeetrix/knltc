@@ -19,13 +19,13 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
     .slice(0, 3);
 
   return (
-    <section className="section-padding bg-slate-950 text-slate-100">
+    <section className="section-padding bg-stone-50 text-slate-900">
       <div className="container-narrow space-y-8">
         <ProductPurchasePanel product={product} />
 
         <ProductDetailTabs details={product.full_description} reviews={reviews} />
 
-        <section className="rounded-2xl border border-white/10 bg-slate-900/60 p-5 md:p-8">
+        <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm shadow-stone-200/70 md:p-8">
           <h2 className="text-xl font-semibold">Write a Review</h2>
           <ReviewForm productId={product.id} />
         </section>
@@ -33,12 +33,12 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
         <section>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-xl font-semibold">Related Products</h2>
-            <Link href="/store" className="text-sm font-medium text-emerald-300 hover:underline">
+            <Link href="/store" className="text-sm font-medium text-emerald-700 hover:underline">
               Continue shopping
             </Link>
           </div>
           {relatedProducts.length === 0 ? (
-            <p className="rounded-xl border border-white/10 bg-slate-900 p-4 text-sm text-slate-300">No related products available right now.</p>
+            <p className="rounded-xl border border-stone-200 bg-white p-4 text-sm text-slate-500">No related products available right now.</p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {relatedProducts.map((item) => (
