@@ -67,7 +67,7 @@ export default function StoreProductCard({ product }: Props) {
 
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
           <AddToCartButton product={product} disabled={!inStock} className="bg-emerald-600 text-white hover:bg-emerald-500" />
-          <WishlistButton product={product} className="border-stone-300 text-slate-700 hover:bg-stone-100" />
+          <WishlistButton product={product} className="border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50" />
         </div>
 
         <Link href={`/store/${product.slug}`} className="mt-3 text-center text-sm font-medium text-emerald-700 transition hover:text-emerald-600 hover:underline">

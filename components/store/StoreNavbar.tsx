@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Search, ChevronDown, Store, Home, Grid3X3 } from "lucide-react";
+import { Search, ChevronDown, Store, Home, Grid3X3, Menu, X } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
 import BrandLogo from "@/components/layout/BrandLogo";
 import CartNavLink from "@/components/store/CartNavLink";
@@ -20,6 +20,7 @@ export default function StoreNavbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [query, setQuery] = useState("");
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const isStoreRoute = useMemo(() => STORE_ROUTES.some((route) => pathname.startsWith(route)), [pathname]);
 
@@ -34,10 +35,10 @@ export default function StoreNavbar() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-stone-200/80 bg-stone-50/95 backdrop-blur-xl supports-[backdrop-filter]:bg-stone-50/85">
-      <div className="container-narrow flex min-h-[72px] flex-wrap items-center gap-2 py-2.5">
-        <div className="flex min-w-0 items-center gap-3">
-          <BrandLogo className="max-w-[126px] sm:max-w-[150px]" />
-          <nav className="hidden items-center gap-1 lg:flex">
+      <div className="container-narrow flex min-h-[72px] flex-nowrap items-center gap-2 py-2.5">
+        <div className="flex shrink-0 items-center gap-2">
+          <BrandLogo className="max-w-[118px] sm:max-w-[138px]" />
+          <nav className="hidden items-center gap-0.5 xl:flex">
             <Link href="/" className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm text-slate-700 transition hover:bg-white">
               <Home className="h-4 w-4" />
               Home
@@ -52,7 +53,7 @@ export default function StoreNavbar() {
             <div className="group relative">
               <button className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm text-slate-700 transition hover:bg-white" type="button">
                 <Grid3X3 className="h-4 w-4" />
-                Categories
+                Category
                 <ChevronDown className="h-4 w-4" />
               </button>
               <div className="invisible absolute left-0 top-full mt-2 w-52 rounded-2xl border border-stone-200 bg-white p-2 opacity-0 shadow-xl shadow-stone-200/80 transition group-hover:visible group-hover:opacity-100">
@@ -66,7 +67,7 @@ export default function StoreNavbar() {
           </nav>
         </div>
 
-        <form onSubmit={onSearch} className="order-3 flex w-full items-center gap-2 rounded-xl border border-stone-200 bg-white px-4 py-2 md:order-none md:mx-auto md:max-w-2xl">
+        <form onSubmit={onSearch} className="hidden min-w-0 flex-1 items-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-2 md:flex md:max-w-xl">
           <Search className="h-4 w-4 text-slate-500" />
           <input
             value={query}
@@ -76,11 +77,57 @@ export default function StoreNavbar() {
           />
         </form>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          <button
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-stone-300 bg-white text-slate-700 transition hover:bg-stone-100 xl:hidden"
+            aria-label="Toggle store menu"
+            onClick={() => setMobileOpen((prev) => !prev)}
+            type="button"
+          >
+            {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          </button>
           <WishlistNavLink />
           <CartNavLink />
         </div>
       </div>
+
+      <div className="container-narrow pb-2 md:hidden">
+        <form onSubmit={onSearch} className="flex min-w-0 items-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-2">
+          <Search className="h-4 w-4 text-slate-500" />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search books, JLPT prep, stationery..."
+            className="w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
+          />
+        </form>
+      </div>
+
+      {mobileOpen ? (
+        <div className="border-t border-stone-200 bg-stone-50 px-4 py-3 xl:hidden">
+          <div className="container-narrow space-y-2">
+            <Link href="/" className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-white" onClick={() => setMobileOpen(false)}>
+              Home
+            </Link>
+            <Link href="/store" className="block rounded-lg px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-white" onClick={() => setMobileOpen(false)}>
+              Store
+            </Link>
+            <div className="rounded-lg border border-stone-200 bg-white p-2">
+              <p className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Category</p>
+              {STORE_CATEGORIES.map((category) => (
+                <Link
+                  key={category.name}
+                  href={category.href}
+                  className="block rounded-md px-2 py-2 text-sm text-slate-700 hover:bg-stone-100"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {category.name}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </header>
   );
 }
