@@ -4,6 +4,7 @@ import { getApprovedReviews, getPublishedProductBySlug, getPublishedProducts } f
 import ReviewForm from "@/components/store/ReviewForm";
 import StoreProductCard from "@/components/store/StoreProductCard";
 import ProductPurchasePanel from "@/components/store/ProductPurchasePanel";
+import ProductDetailTabs from "@/components/store/ProductDetailTabs";
 
 export default async function ProductDetailsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -22,31 +23,17 @@ export default async function ProductDetailsPage({ params }: { params: Promise<{
       <div className="container-narrow space-y-8">
         <ProductPurchasePanel product={product} />
 
-        <section className="rounded-2xl border border-white/10 bg-slate-900 p-5 md:p-8">
-          <h2 className="text-xl font-semibold">Description</h2>
-          <p className="mt-3 whitespace-pre-wrap leading-relaxed text-slate-300">{product.full_description}</p>
-        </section>
+        <ProductDetailTabs details={product.full_description} reviews={reviews} />
 
-        <section className="rounded-2xl border border-white/10 bg-slate-900 p-5 md:p-8">
-          <h2 className="text-xl font-semibold">Reviews</h2>
-          <div className="mt-4 space-y-3">
-            {reviews.length === 0 ? <p className="text-sm text-slate-400">No approved reviews yet.</p> : null}
-            {reviews.map((review) => (
-              <div key={review.id} className="rounded-lg border border-white/10 bg-black/20 p-3">
-                <p className="font-medium text-slate-100">
-                  {review.customer_name} • {"★".repeat(review.rating)}
-                </p>
-                <p className="mt-1 text-sm text-slate-300">{review.comment}</p>
-              </div>
-            ))}
-          </div>
+        <section className="rounded-2xl border border-white/10 bg-slate-900/60 p-5 md:p-8">
+          <h2 className="text-xl font-semibold">Write a Review</h2>
           <ReviewForm productId={product.id} />
         </section>
 
         <section>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-xl font-semibold">Related Products</h2>
-            <Link href="/store" className="text-sm font-medium text-amber-300 hover:underline">
+            <Link href="/store" className="text-sm font-medium text-emerald-300 hover:underline">
               Continue shopping
             </Link>
           </div>

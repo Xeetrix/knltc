@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import AddToCartButton from "@/components/store/AddToCartButton";
 import WishlistButton from "@/components/store/WishlistButton";
@@ -25,17 +26,17 @@ export default function ProductPurchasePanel({ product }: ProductPanelProps) {
   const effectivePrice = useMemo(() => (product.sale_price ?? product.price) * quantity, [product.price, product.sale_price, quantity]);
 
   return (
-    <article className="grid gap-6 rounded-2xl border border-white/10 bg-slate-900 p-5 md:grid-cols-2 md:p-8">
-      <div className="overflow-hidden rounded-xl border border-white/10 bg-slate-800">
+    <article className="grid gap-6 rounded-2xl border border-white/10 bg-slate-900/70 p-5 backdrop-blur-sm md:grid-cols-[1.1fr_1fr] md:p-8">
+      <div className="overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-slate-800 to-slate-900">
         {product.featured_image ? (
           <img src={product.featured_image} alt={product.name} className="aspect-square w-full object-cover" />
         ) : (
-          <div className="flex aspect-square items-center justify-center text-sm text-slate-400">No image available</div>
+          <div className="flex aspect-square items-center justify-center text-sm text-slate-400">Premium product image coming soon</div>
         )}
       </div>
 
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{product.categories?.name ?? "Uncategorized"}</p>
+      <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
+        <p className="text-xs font-semibold uppercase tracking-wide text-emerald-300">{product.categories?.name ?? "Uncategorized"}</p>
         <h1 className="mt-2 text-3xl font-bold text-white">{product.name}</h1>
 
         <div className="mt-4 flex items-center gap-2">
@@ -43,18 +44,18 @@ export default function ProductPurchasePanel({ product }: ProductPanelProps) {
           {product.sale_price ? <span className="text-slate-400 line-through">৳{product.price}</span> : null}
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-          <span className={`rounded-full border px-2 py-1 ${product.stock > 0 ? "border-emerald-400/60 text-emerald-300" : "border-rose-400/60 text-rose-300"}`}>
+        <div className="mt-3 grid gap-2 text-sm text-slate-300 sm:grid-cols-2">
+          <span className={`rounded-full border px-2 py-1 text-center ${product.stock > 0 ? "border-emerald-400/60 text-emerald-300" : "border-rose-400/60 text-rose-300"}`}>
             {product.stock > 0 ? `In stock (${product.stock})` : "Out of stock"}
           </span>
-          <span className="rounded-full border border-white/20 px-2 py-1 text-slate-300">SKU: {product.sku ?? "N/A"}</span>
+          <span className="rounded-full border border-white/20 px-2 py-1 text-center">SKU: {product.sku ?? "N/A"}</span>
         </div>
 
         <p className="mt-4 text-sm text-slate-300">{product.short_description}</p>
 
         <div className="mt-5">
           <p className="mb-2 text-sm text-slate-300">Quantity</p>
-          <div className="inline-flex items-center rounded-md border border-white/20">
+          <div className="inline-flex items-center rounded-lg border border-white/20 bg-slate-950/70">
             <button type="button" className="px-3 py-2 hover:bg-white/10" onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}>
               -
             </button>
@@ -71,8 +72,11 @@ export default function ProductPurchasePanel({ product }: ProductPanelProps) {
         </div>
 
         <div className="mt-5 flex flex-wrap items-center gap-2">
-          <AddToCartButton product={product} quantity={quantity} disabled={product.stock <= 0} className="px-6 py-2.5" />
+          <AddToCartButton product={product} quantity={quantity} disabled={product.stock <= 0} className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400" />
           <WishlistButton product={product} className="border-white/20 text-slate-100 hover:bg-white/10" />
+          <Link href="/checkout" className="rounded-md border border-emerald-300/40 bg-emerald-500/15 px-6 py-2.5 text-sm font-semibold text-emerald-200 hover:bg-emerald-500/25">
+            Buy Now
+          </Link>
         </div>
       </div>
     </article>

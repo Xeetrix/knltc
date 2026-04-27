@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { clearCart, readCart, type CartItem } from "@/lib/shop";
 
@@ -76,20 +77,30 @@ export default function CheckoutPage() {
         <h1 className="text-3xl font-bold">Checkout</h1>
 
         {cart.length === 0 ? (
-          <div className="mt-6 rounded-2xl border border-white/10 bg-slate-900 p-8 text-center">
+          <div className="mt-6 rounded-2xl border border-white/10 bg-slate-900/70 p-8 text-center">
             <h2 className="text-xl font-semibold">No items to checkout</h2>
             <p className="mt-2 text-sm text-slate-400">Please add products to your cart first.</p>
-            <Link href="/store" className="mt-4 inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
+            <Link href="/store" className="mt-4 inline-flex rounded-md bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-400">
               Go to Store
             </Link>
           </div>
         ) : (
-          <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_340px]">
-            <form className="grid gap-3 rounded-2xl border border-white/10 bg-slate-900 p-5" onSubmit={submit}>
-              {message ? <p className="rounded-md bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">{message}</p> : null}
-              {error ? <p className="rounded-md bg-rose-500/10 px-3 py-2 text-sm text-rose-300">{error}</p> : null}
+          <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_360px]">
+            <form className="grid gap-3 rounded-2xl border border-white/10 bg-slate-900/65 p-5 backdrop-blur-sm" onSubmit={submit}>
+              {message ? (
+                <p className="inline-flex items-center gap-2 rounded-md bg-emerald-500/15 px-3 py-2 text-sm text-emerald-200">
+                  <CheckCircle2 className="h-4 w-4" />
+                  {message}
+                </p>
+              ) : null}
+              {error ? (
+                <p className="inline-flex items-center gap-2 rounded-md bg-rose-500/15 px-3 py-2 text-sm text-rose-200">
+                  <AlertTriangle className="h-4 w-4" />
+                  {error}
+                </p>
+              ) : null}
 
-              <h2 className="text-lg font-semibold">Shipping Information</h2>
+              <h2 className="text-lg font-semibold">Customer Information</h2>
               <input required className="rounded-md border border-white/15 bg-white/5 px-3 py-2" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
               <input required className="rounded-md border border-white/15 bg-white/5 px-3 py-2" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
               <input className="rounded-md border border-white/15 bg-white/5 px-3 py-2" placeholder="Email (optional)" value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -99,9 +110,9 @@ export default function CheckoutPage() {
               <h2 className="mt-2 text-lg font-semibold">Payment Method</h2>
               <div className="grid gap-2 sm:grid-cols-3">
                 {[
-                  { value: "cod", label: "COD" },
-                  { value: "bkash", label: "bKash" },
-                  { value: "nagad", label: "Nagad" },
+                  { value: "cod", label: "Cash on Delivery" },
+                  { value: "bkash", label: "bKash manual" },
+                  { value: "nagad", label: "Nagad manual" },
                 ].map((item) => (
                   <label key={item.value} className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm">
                     <input
@@ -126,12 +137,12 @@ export default function CheckoutPage() {
                 />
               ) : null}
 
-              <button disabled={loading || cart.length === 0} className="rounded-md bg-primary px-3 py-2 text-primary-foreground disabled:opacity-60">
+              <button disabled={loading || cart.length === 0} className="rounded-md bg-emerald-500 px-3 py-2 font-semibold text-white hover:bg-emerald-400 disabled:opacity-60">
                 {loading ? "Placing order..." : "Place Order"}
               </button>
             </form>
 
-            <aside className="h-fit rounded-2xl border border-white/10 bg-slate-900 p-4">
+            <aside className="h-fit rounded-2xl border border-white/10 bg-slate-900/70 p-4 backdrop-blur-sm lg:sticky lg:top-24">
               <h2 className="text-lg font-semibold">Order Summary</h2>
               <div className="mt-3 space-y-2 text-sm">
                 {cart.map((item) => (
