@@ -11,15 +11,17 @@ type Props = {
     sale_price: number | null;
     featured_image: string | null;
   };
+  disabled?: boolean;
 };
 
-export default function AddToCartButton({ product }: Props) {
+export default function AddToCartButton({ product, disabled = false }: Props) {
   const [added, setAdded] = useState(false);
 
   return (
     <button
-      className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+      className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
       onClick={() => {
+        if (disabled) return;
         addToCart({
           productId: product.id,
           name: product.name,
@@ -31,8 +33,9 @@ export default function AddToCartButton({ product }: Props) {
         setTimeout(() => setAdded(false), 1200);
       }}
       type="button"
+      disabled={disabled}
     >
-      {added ? "Added" : "Add to Cart"}
+      {disabled ? "Out of Stock" : added ? "Added" : "Add to Cart"}
     </button>
   );
 }
