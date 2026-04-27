@@ -10,7 +10,7 @@ export default async function StorePage() {
   const products = await getPublishedProducts();
 
   return (
-    <section className="section-padding">
+    <section className="section-padding bg-slate-950">
       <div className="container-narrow">
         <StoreCatalog products={products} />
       </div>

@@ -9,7 +9,7 @@ import BrandLogo from "@/components/layout/BrandLogo";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { defaultLanguage, languageOptions, translate } from "@/lib/i18n";
 import { siteConfig } from "@/lib/site";
-import CartNavLink from "@/components/store/CartNavLink";
+import StoreNavbar from "@/components/store/StoreNavbar";
 
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -63,6 +63,10 @@ export default function Header() {
 
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
   const showStoreControls = ["/store", "/cart", "/wishlist", "/checkout"].some((route) => pathname.startsWith(route));
+
+  if (showStoreControls) {
+    return <StoreNavbar />;
+  }
 
   useEffect(() => {
     setMobileOpen(false);
@@ -145,14 +149,6 @@ export default function Header() {
           </nav>
 
           <div className="hidden shrink-0 items-center gap-2 2xl:gap-3 xl:flex">
-            {showStoreControls ? (
-              <>
-                <CartNavLink />
-                <Link href="/wishlist" className="rounded-md border px-3 py-2 text-sm hover:bg-muted">
-                  Wishlist
-                </Link>
-              </>
-            ) : null}
             <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
               {t.language}
               <select
@@ -198,14 +194,6 @@ export default function Header() {
               className="ml-auto w-full max-w-sm space-y-3 rounded-xl border bg-background p-4 shadow-lg"
             >
               <div>
-                {showStoreControls ? (
-                  <div className="mb-3 flex items-center gap-2">
-                    <CartNavLink />
-                    <Link href="/wishlist" className="rounded-md border px-3 py-2 text-sm hover:bg-muted">
-                      Wishlist
-                    </Link>
-                  </div>
-                ) : null}
                 <label className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   {t.language}
                   <select

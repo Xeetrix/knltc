@@ -71,42 +71,55 @@ export default function CheckoutPage() {
   };
 
   return (
-    <section className="section-padding">
+    <section className="section-padding bg-slate-950 text-slate-100">
       <div className="container-narrow">
         <h1 className="text-3xl font-bold">Checkout</h1>
 
         {cart.length === 0 ? (
-          <div className="mt-6 rounded-2xl border bg-card p-8 text-center">
+          <div className="mt-6 rounded-2xl border border-white/10 bg-slate-900 p-8 text-center">
             <h2 className="text-xl font-semibold">No items to checkout</h2>
-            <p className="mt-2 text-sm text-muted-foreground">Please add products to your cart first.</p>
+            <p className="mt-2 text-sm text-slate-400">Please add products to your cart first.</p>
             <Link href="/store" className="mt-4 inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
               Go to Store
             </Link>
           </div>
         ) : (
-          <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_320px]">
-            <form className="grid gap-3 rounded-2xl border bg-card p-5" onSubmit={submit}>
-              {message ? <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{message}</p> : null}
-              {error ? <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p> : null}
+          <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_340px]">
+            <form className="grid gap-3 rounded-2xl border border-white/10 bg-slate-900 p-5" onSubmit={submit}>
+              {message ? <p className="rounded-md bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">{message}</p> : null}
+              {error ? <p className="rounded-md bg-rose-500/10 px-3 py-2 text-sm text-rose-300">{error}</p> : null}
 
-              <h2 className="text-lg font-semibold">Customer Information</h2>
-              <input required className="rounded-md border px-3 py-2" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
-              <input required className="rounded-md border px-3 py-2" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-              <input className="rounded-md border px-3 py-2" placeholder="Email (optional)" value={email} onChange={(e) => setEmail(e.target.value)} />
-              <textarea required className="rounded-md border px-3 py-2" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
-              <textarea className="rounded-md border px-3 py-2" placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
+              <h2 className="text-lg font-semibold">Shipping Information</h2>
+              <input required className="rounded-md border border-white/15 bg-white/5 px-3 py-2" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
+              <input required className="rounded-md border border-white/15 bg-white/5 px-3 py-2" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <input className="rounded-md border border-white/15 bg-white/5 px-3 py-2" placeholder="Email (optional)" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <textarea required className="rounded-md border border-white/15 bg-white/5 px-3 py-2" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
+              <textarea className="rounded-md border border-white/15 bg-white/5 px-3 py-2" placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
 
               <h2 className="mt-2 text-lg font-semibold">Payment Method</h2>
-              <select className="rounded-md border px-3 py-2" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}>
-                <option value="cod">Cash on Delivery</option>
-                <option value="bkash">Manual bKash</option>
-                <option value="nagad">Manual Nagad</option>
-              </select>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {[
+                  { value: "cod", label: "COD" },
+                  { value: "bkash", label: "bKash" },
+                  { value: "nagad", label: "Nagad" },
+                ].map((item) => (
+                  <label key={item.value} className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value={item.value}
+                      checked={paymentMethod === item.value}
+                      onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                    />
+                    {item.label}
+                  </label>
+                ))}
+              </div>
 
               {paymentMethod !== "cod" ? (
                 <input
                   required
-                  className="rounded-md border px-3 py-2"
+                  className="rounded-md border border-white/15 bg-white/5 px-3 py-2"
                   placeholder="Transaction ID"
                   value={transactionId}
                   onChange={(e) => setTransactionId(e.target.value)}
@@ -118,21 +131,21 @@ export default function CheckoutPage() {
               </button>
             </form>
 
-            <aside className="h-fit rounded-2xl border bg-card p-4">
+            <aside className="h-fit rounded-2xl border border-white/10 bg-slate-900 p-4">
               <h2 className="text-lg font-semibold">Order Summary</h2>
               <div className="mt-3 space-y-2 text-sm">
                 {cart.map((item) => (
                   <div key={item.productId} className="flex items-start justify-between gap-2">
                     <p>
-                      {item.name} <span className="text-muted-foreground">x{item.quantity}</span>
+                      {item.name} <span className="text-slate-400">x{item.quantity}</span>
                     </p>
                     <p className="font-medium">৳{item.price * item.quantity}</p>
                   </div>
                 ))}
               </div>
-              <div className="mt-3 border-t pt-3">
-                <p className="text-sm text-muted-foreground">Total</p>
-                <p className="text-2xl font-bold">৳{total}</p>
+              <div className="mt-3 border-t border-white/10 pt-3">
+                <p className="text-sm text-slate-400">Total</p>
+                <p className="text-3xl font-bold">৳{total}</p>
               </div>
             </aside>
           </div>
