@@ -88,6 +88,58 @@ export type AdminSummary = {
   setupWarning: string | null;
 };
 
+export type OrderStatus = "pending" | "confirmed" | "processing" | "delivered" | "cancelled";
+export type LeadStatus = "new" | "contacted" | "interested" | "converted" | "lost";
+export type ReviewStatus = "pending" | "approved" | "rejected";
+
+export type OrderItem = {
+  id: string;
+  order_id: string;
+  product_id: string;
+  product_name: string;
+  price: number;
+  quantity: number;
+  subtotal: number;
+};
+
+export type Order = {
+  id: string;
+  customer_name: string;
+  customer_phone: string;
+  customer_email: string | null;
+  customer_address: string;
+  customer_note: string | null;
+  total_amount: number;
+  status: OrderStatus;
+  created_at: string;
+  updated_at: string;
+  order_items?: OrderItem[];
+};
+
+export type ProductReview = {
+  id: string;
+  product_id: string;
+  customer_name: string;
+  rating: number;
+  comment: string;
+  status: ReviewStatus;
+  created_at: string;
+};
+
+export type CrmLead = {
+  id: string;
+  name: string;
+  phone: string;
+  email: string | null;
+  source: "checkout" | "contact form" | "consultation form" | "manual admin entry";
+  interest: string | null;
+  message: string | null;
+  status: LeadStatus;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 function logCmsError(context: string, error: unknown) {
   console.error(`[CMS] ${context}`, error);
 }
@@ -300,4 +352,62 @@ export async function createCategory(payload: unknown) {
 
 export async function removeCategory(id: string) {
   await deleteRow("categories", id, true);
+}
+
+export async function createOrder(payload: Omit<Order, "id" | "created_at" | "updated_at" | "order_items">) {
+  return (await insertRow("orders", payload, true)) as Order;
+}
+
+export async function createOrderItem(payload: Omit<OrderItem, "id">) {
+  return (await insertRow("order_items", payload, true)) as OrderItem;
+}
+
+export async function getAllAdminOrders() {
+  return await safeSelectRows<Order>(
+    "orders",
+    { select: "*,order_items(*)", order: "created_at.desc" },
+    true,
+    "admin orders query failed",
+  );
+}
+
+export async function updateOrderStatus(id: string, status: OrderStatus) {
+  return (await updateRow("orders", id, { status }, true)) as Order;
+}
+
+export async function createProductReview(payload: Omit<ProductReview, "id" | "created_at" | "status">) {
+  return (await insertRow("product_reviews", { ...payload, status: "pending" }, true)) as ProductReview;
+}
+
+export async function getApprovedReviews(productId: string) {
+  return await safeSelectRows<ProductReview>(
+    "product_reviews",
+    { select: "*", product_id: `eq.${productId}`, status: "eq.approved", order: "created_at.desc" },
+    false,
+    "approved reviews query failed",
+  );
+}
+
+export async function getAllAdminReviews() {
+  return await safeSelectRows<ProductReview>("product_reviews", { select: "*", order: "created_at.desc" }, true, "admin reviews query failed");
+}
+
+export async function updateReviewStatus(id: string, status: ReviewStatus) {
+  return (await updateRow("product_reviews", id, { status }, true)) as ProductReview;
+}
+
+export async function deleteReview(id: string) {
+  await deleteRow("product_reviews", id, true);
+}
+
+export async function createCrmLead(payload: Omit<CrmLead, "id" | "created_at" | "updated_at" | "status"> & { status?: LeadStatus }) {
+  return (await insertRow("crm_leads", { ...payload, status: payload.status ?? "new" }, true)) as CrmLead;
+}
+
+export async function getAllCrmLeads() {
+  return await safeSelectRows<CrmLead>("crm_leads", { select: "*", order: "created_at.desc" }, true, "crm leads query failed");
+}
+
+export async function updateCrmLead(id: string, payload: Partial<Pick<CrmLead, "status" | "notes">>) {
+  return (await updateRow("crm_leads", id, payload, true)) as CrmLead;
 }
