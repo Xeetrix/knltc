@@ -11,11 +11,14 @@ import { defaultLanguage, languageOptions, translate } from "@/lib/i18n";
 import { siteConfig } from "@/lib/site";
 import StoreNavbar from "@/components/store/StoreNavbar";
 
-export default function Header() {
+function StoreHeader() {
+  return <StoreNavbar />;
+}
+
+function MainHeader({ pathname }: { pathname: string }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const menuPanelRef = useRef<HTMLDivElement | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
-  const pathname = usePathname();
   const { language, setLanguage } = useLanguage();
 
   const t = useMemo(
@@ -62,11 +65,6 @@ export default function Header() {
   ];
 
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
-  const showStoreControls = ["/store", "/cart", "/wishlist", "/checkout"].some((route) => pathname.startsWith(route));
-
-  if (showStoreControls) {
-    return <StoreNavbar />;
-  }
 
   useEffect(() => {
     setMobileOpen(false);
@@ -76,11 +74,6 @@ export default function Header() {
     if (languageOptions.some((option) => option.value === language)) return;
     setLanguage(defaultLanguage);
   }, [language, setLanguage]);
-
-  const handleLanguageChange = (nextValue: string) => {
-    const matchedLanguage = languageOptions.find((option) => option.value === nextValue)?.value;
-    setLanguage(matchedLanguage ?? defaultLanguage);
-  };
 
   useEffect(() => {
     if (!mobileOpen) return;
@@ -105,6 +98,11 @@ export default function Header() {
       document.removeEventListener("keydown", handleEscape);
     };
   }, [mobileOpen]);
+
+  const handleLanguageChange = (nextValue: string) => {
+    const matchedLanguage = languageOptions.find((option) => option.value === nextValue)?.value;
+    setLanguage(matchedLanguage ?? defaultLanguage);
+  };
 
   return (
     <>
@@ -232,4 +230,11 @@ export default function Header() {
       </header>
     </>
   );
+}
+
+export default function Header() {
+  const pathname = usePathname();
+  const isStoreRoute = ["/store", "/cart", "/wishlist", "/checkout"].some((route) => pathname.startsWith(route));
+
+  return isStoreRoute ? <StoreHeader /> : <MainHeader pathname={pathname} />;
 }
