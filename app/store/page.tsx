@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { getPublishedProducts } from "@/lib/cms";
 import StoreCatalog from "@/components/store/StoreCatalog";
 
@@ -12,7 +13,15 @@ export default async function StorePage() {
   return (
     <section className="section-padding bg-slate-950">
       <div className="container-narrow">
-        <StoreCatalog products={products} />
+        <Suspense
+          fallback={
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-6 text-sm text-slate-300">
+              Loading store catalog...
+            </div>
+          }
+        >
+          <StoreCatalog products={products} />
+        </Suspense>
       </div>
     </section>
   );
