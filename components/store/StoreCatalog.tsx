@@ -65,27 +65,27 @@ export default function StoreCatalog({ products }: Props) {
   }, [category, featuredOnly, priceMode, products, search, sort]);
 
   return (
-    <div className="space-y-10 text-slate-100">
-      <section className="overflow-hidden rounded-3xl border border-white/15 bg-[radial-gradient(circle_at_10%_10%,rgba(16,185,129,0.2),transparent_35%),radial-gradient(circle_at_90%_10%,rgba(56,189,248,0.2),transparent_30%),linear-gradient(125deg,#020617,#0f172a_40%,#111827)] p-6 shadow-2xl shadow-black/50 md:p-12">
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-300">KNLTC Premium Store</p>
-        <h1 className="mt-3 max-w-3xl text-4xl font-bold leading-tight md:text-6xl">Curated Japanese Learning Essentials, Crafted for Serious Learners.</h1>
-        <p className="mt-4 max-w-2xl text-sm text-slate-300 md:text-base">A cinematic shopping experience for books, JLPT prep, and premium stationery.</p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Link href="#products" className="rounded-full bg-emerald-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/35 transition hover:bg-emerald-400">
+    <div className="space-y-8 text-slate-900">
+      <section className="overflow-hidden rounded-3xl border border-stone-200 bg-[radial-gradient(circle_at_100%_0%,rgba(16,185,129,0.1),transparent_42%),radial-gradient(circle_at_0%_100%,rgba(251,191,36,0.08),transparent_35%),linear-gradient(145deg,#fafaf9,#ffffff_45%,#f8fafc)] px-5 py-6 shadow-lg shadow-stone-200/80 md:px-8 md:py-7">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-emerald-700">KNLTC Premium Store</p>
+        <h1 className="mt-2.5 max-w-3xl text-2xl font-bold leading-tight text-slate-900 md:text-4xl">Curated Japanese Learning Essentials, Crafted for Serious Learners.</h1>
+        <p className="mt-2.5 max-w-2xl text-sm text-slate-600 md:text-[15px]">A clean premium shopping experience for books, JLPT prep, and refined stationery.</p>
+        <div className="mt-4 flex flex-wrap gap-2.5">
+          <Link href="#products" className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-200 transition hover:bg-emerald-500">
             Shop Now
           </Link>
-          <Link href="#categories" className="rounded-full border border-white/20 px-6 py-3 text-sm font-semibold text-slate-100 transition hover:bg-white/10">
+          <Link href="#categories" className="rounded-full border border-stone-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-stone-100">
             Browse Categories
           </Link>
         </div>
-        <div className="mt-8 grid gap-3 text-xs font-medium uppercase tracking-wider text-slate-300 sm:grid-cols-3">
+        <div className="mt-4 grid gap-2.5 text-[11px] font-medium uppercase tracking-[0.16em] text-slate-600 sm:grid-cols-3">
           {[
             "Original Books",
             "JLPT Materials",
             "Fast Support",
           ].map((item) => (
-            <span key={item} className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-2">
-              <Sparkles className="h-3.5 w-3.5 text-emerald-300" />
+            <span key={item} className="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white/90 px-3 py-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
               {item}
             </span>
           ))}
@@ -98,14 +98,14 @@ export default function StoreCatalog({ products }: Props) {
             type="button"
             onClick={() => setCategory(label)}
             key={label}
-            className="group rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-left shadow-lg shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-emerald-300/50 hover:bg-white/[0.07]"
+            className="group rounded-2xl border border-stone-200 bg-white p-5 text-left shadow-md shadow-stone-200/70 transition duration-300 hover:-translate-y-1 hover:border-emerald-300/60 hover:shadow-lg hover:shadow-emerald-100/70"
           >
-            <span className="inline-flex rounded-xl border border-white/15 bg-black/30 p-2">
-              <Icon className="h-5 w-5 text-emerald-300" />
+            <span className="inline-flex rounded-xl border border-emerald-100 bg-emerald-50 p-2">
+              <Icon className="h-5 w-5 text-emerald-700" />
             </span>
-            <p className="mt-3 text-xs uppercase tracking-[0.2em] text-slate-400">Category</p>
-            <h3 className="mt-1 text-xl font-semibold">{label}</h3>
-            <p className="mt-2 text-sm text-slate-400 group-hover:text-slate-200">Tap to filter products</p>
+            <p className="mt-3 text-xs uppercase tracking-[0.2em] text-slate-500">Category</p>
+            <h3 className="mt-1 text-xl font-semibold text-slate-900">{label}</h3>
+            <p className="mt-2 text-sm text-slate-600 group-hover:text-slate-700">Tap to filter products</p>
           </button>
         ))}
       </section>
@@ -113,8 +113,8 @@ export default function StoreCatalog({ products }: Props) {
       {featuredProducts.length > 0 ? (
         <section>
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-2xl font-semibold">Featured Products</h2>
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Editor&apos;s picks</p>
+            <h2 className="text-2xl font-semibold text-slate-900">Featured Products</h2>
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Editor&apos;s picks</p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {featuredProducts.map((product) => (
@@ -124,12 +124,12 @@ export default function StoreCatalog({ products }: Props) {
         </section>
       ) : null}
 
-      <section id="products" className="space-y-4 rounded-3xl border border-white/10 bg-slate-900/40 p-4 backdrop-blur-sm md:p-6">
+      <section id="products" className="space-y-4 rounded-3xl border border-stone-200 bg-stone-100/70 p-4 md:p-6">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-2xl font-semibold">All Products</h2>
+          <h2 className="text-2xl font-semibold text-slate-900">All Products</h2>
           <button
             type="button"
-            className="inline-flex items-center gap-2 rounded-full border border-white/15 px-3 py-2 text-xs md:hidden"
+            className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white px-3 py-2 text-xs text-slate-700 md:hidden"
             onClick={() => setFiltersOpen((prev) => !prev)}
           >
             <SlidersHorizontal className="h-4 w-4" />
@@ -138,11 +138,11 @@ export default function StoreCatalog({ products }: Props) {
           </button>
         </div>
 
-        <div className={`${filtersOpen ? "grid" : "hidden"} gap-3 rounded-2xl border border-white/10 bg-black/20 p-3 md:grid md:grid-cols-5`}>
+        <div className={`${filtersOpen ? "grid" : "hidden"} gap-3 rounded-2xl border border-stone-200 bg-white p-3 shadow-sm md:grid md:grid-cols-5`}>
           <label>
-            <span className="mb-1 block text-xs font-medium text-slate-300">Search</span>
+            <span className="mb-1 block text-xs font-medium text-slate-600">Search</span>
             <input
-              className="w-full rounded-md border border-white/15 bg-white/5 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400"
               placeholder="Search by name"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
@@ -150,8 +150,8 @@ export default function StoreCatalog({ products }: Props) {
           </label>
 
           <label>
-            <span className="mb-1 block text-xs font-medium text-slate-300">Category</span>
-            <select className="w-full rounded-md border border-white/15 bg-slate-900 px-3 py-2 text-sm" value={category} onChange={(e) => setCategory(e.target.value)}>
+            <span className="mb-1 block text-xs font-medium text-slate-600">Category</span>
+            <select className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-slate-800" value={category} onChange={(e) => setCategory(e.target.value)}>
               <option value="all">All categories</option>
               {categories.map((item) => (
                 <option key={item} value={item}>
@@ -162,8 +162,8 @@ export default function StoreCatalog({ products }: Props) {
           </label>
 
           <label>
-            <span className="mb-1 block text-xs font-medium text-slate-300">Price</span>
-            <select className="w-full rounded-md border border-white/15 bg-slate-900 px-3 py-2 text-sm" value={priceMode} onChange={(e) => setPriceMode(e.target.value as PriceMode)}>
+            <span className="mb-1 block text-xs font-medium text-slate-600">Price</span>
+            <select className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-slate-800" value={priceMode} onChange={(e) => setPriceMode(e.target.value as PriceMode)}>
               <option value="all">All ranges</option>
               <option value="under-500">Under ৳500</option>
               <option value="500-1000">৳500 - ৳1000</option>
@@ -172,8 +172,8 @@ export default function StoreCatalog({ products }: Props) {
           </label>
 
           <label>
-            <span className="mb-1 block text-xs font-medium text-slate-300">Sort</span>
-            <select className="w-full rounded-md border border-white/15 bg-slate-900 px-3 py-2 text-sm" value={sort} onChange={(e) => setSort(e.target.value as SortMode)}>
+            <span className="mb-1 block text-xs font-medium text-slate-600">Sort</span>
+            <select className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-slate-800" value={sort} onChange={(e) => setSort(e.target.value as SortMode)}>
               <option value="newest">Newest</option>
               <option value="price-low">Price low to high</option>
               <option value="price-high">Price high to low</option>
@@ -181,20 +181,20 @@ export default function StoreCatalog({ products }: Props) {
             </select>
           </label>
 
-          <label className="inline-flex items-center gap-2 self-end rounded-md border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-300">
+          <label className="inline-flex items-center gap-2 self-end rounded-md border border-stone-300 bg-stone-50 px-3 py-2 text-sm text-slate-700">
             <input type="checkbox" checked={featuredOnly} onChange={(event) => setFeaturedOnly(event.target.checked)} />
             Featured only
           </label>
         </div>
 
         {products.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-black/25 p-8 text-center">
-            <h3 className="text-xl font-semibold">No products available yet</h3>
+          <div className="rounded-2xl border border-stone-200 bg-white p-8 text-center">
+            <h3 className="text-xl font-semibold text-slate-900">No products available yet</h3>
           </div>
         ) : filteredProducts.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-black/25 p-8 text-center">
-            <h3 className="text-xl font-semibold">No matching products</h3>
-            <p className="mt-2 text-sm text-slate-300">Try a different filter combination.</p>
+          <div className="rounded-2xl border border-stone-200 bg-white p-8 text-center">
+            <h3 className="text-xl font-semibold text-slate-900">No matching products</h3>
+            <p className="mt-2 text-sm text-slate-600">Try a different filter combination.</p>
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -206,7 +206,7 @@ export default function StoreCatalog({ products }: Props) {
       </section>
 
       <div className="fixed bottom-4 right-4 z-40 md:hidden">
-        <CartNavLink className="h-14 w-14 rounded-full border-emerald-200/40 bg-emerald-500 text-white shadow-2xl" />
+        <CartNavLink className="h-14 w-14 rounded-full border-emerald-200 bg-emerald-600 text-white shadow-xl shadow-emerald-200/70" />
       </div>
     </div>
   );

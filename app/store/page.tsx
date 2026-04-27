@@ -11,11 +11,11 @@ export default async function StorePage() {
   const products = await getPublishedProducts();
 
   return (
-    <section className="section-padding bg-slate-950">
+    <section className="section-padding bg-stone-50">
       <div className="container-narrow">
         <Suspense
           fallback={
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-6 text-sm text-slate-300">
+            <div className="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-slate-600 shadow-sm">
               Loading store catalog...
             </div>
           }

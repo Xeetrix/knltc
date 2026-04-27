@@ -9,10 +9,10 @@ type Props = {
 };
 
 function getBadge(product: Product) {
-  if (product.stock <= 0) return { label: "Out of Stock", style: "border-rose-300/40 bg-rose-500/20 text-rose-100" };
-  if (product.is_featured) return { label: "Featured", style: "border-emerald-300/40 bg-emerald-500/20 text-emerald-100" };
-  if (product.sale_price) return { label: "Bestseller", style: "border-amber-300/40 bg-amber-500/20 text-amber-100" };
-  return { label: "New", style: "border-sky-300/40 bg-sky-500/20 text-sky-100" };
+  if (product.stock <= 0) return { label: "Out of Stock", style: "border-rose-200 bg-rose-50 text-rose-700" };
+  if (product.is_featured) return { label: "Featured", style: "border-emerald-200 bg-emerald-50 text-emerald-700" };
+  if (product.sale_price) return { label: "Bestseller", style: "border-amber-200 bg-amber-50 text-amber-700" };
+  return { label: "New", style: "border-sky-200 bg-sky-50 text-sky-700" };
 }
 
 export default function StoreProductCard({ product }: Props) {
@@ -20,9 +20,9 @@ export default function StoreProductCard({ product }: Props) {
   const badge = getBadge(product);
 
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] shadow-lg shadow-black/30 backdrop-blur-sm transition duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-emerald-500/10">
+    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-md shadow-stone-200/70 transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-100/80">
       <Link href={`/store/${product.slug}`} className="block">
-        <div className="relative aspect-[4/3] overflow-hidden border-b border-white/10 bg-gradient-to-b from-slate-800 to-slate-900">
+        <div className="relative aspect-[4/3] overflow-hidden border-b border-stone-200 bg-gradient-to-b from-stone-100 to-white">
           <span className={`absolute left-3 top-3 z-10 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${badge.style}`}>{badge.label}</span>
           {product.featured_image ? (
             <img
@@ -31,8 +31,8 @@ export default function StoreProductCard({ product }: Props) {
               className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
             />
           ) : (
-            <div className="flex h-full w-full flex-col items-center justify-center text-sm text-slate-400">
-              <p className="font-medium text-slate-200">KNLTC Premium</p>
+            <div className="flex h-full w-full flex-col items-center justify-center text-sm text-slate-500">
+              <p className="font-medium text-slate-700">KNLTC Premium</p>
               <p>Image coming soon</p>
             </div>
           )}
@@ -40,8 +40,8 @@ export default function StoreProductCard({ product }: Props) {
       </Link>
 
       <div className="flex flex-1 flex-col p-4">
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{product.categories?.name ?? "Uncategorized"}</p>
-        <Link href={`/store/${product.slug}`} className="mt-1 line-clamp-2 text-base font-semibold leading-snug text-slate-100 hover:text-emerald-300">
+        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{product.categories?.name ?? "Uncategorized"}</p>
+        <Link href={`/store/${product.slug}`} className="mt-1 line-clamp-2 text-base font-semibold leading-snug text-slate-900 hover:text-emerald-700">
           {product.name}
         </Link>
 
@@ -51,14 +51,14 @@ export default function StoreProductCard({ product }: Props) {
         </div>
 
         <div className="mt-3 flex items-center gap-2">
-          <span className="text-lg font-bold text-white">৳{product.sale_price ?? product.price}</span>
+          <span className="text-lg font-bold text-slate-900">৳{product.sale_price ?? product.price}</span>
           {product.sale_price ? <span className="text-sm text-slate-400 line-through">৳{product.price}</span> : null}
         </div>
 
         <div className="mt-2 text-xs">
           <span
             className={`inline-flex rounded-full border px-2 py-1 font-medium ${
-              inStock ? "border-emerald-400/50 bg-emerald-500/10 text-emerald-300" : "border-rose-400/50 bg-rose-500/10 text-rose-300"
+              inStock ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-rose-200 bg-rose-50 text-rose-700"
             }`}
           >
             {inStock ? `In stock (${product.stock})` : "Out of stock"}
@@ -66,11 +66,11 @@ export default function StoreProductCard({ product }: Props) {
         </div>
 
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
-          <AddToCartButton product={product} disabled={!inStock} className="bg-emerald-500 hover:bg-emerald-400" />
-          <WishlistButton product={product} className="border-white/20 text-slate-100 hover:bg-white/10" />
+          <AddToCartButton product={product} disabled={!inStock} className="bg-emerald-600 text-white hover:bg-emerald-500" />
+          <WishlistButton product={product} className="border-stone-300 text-slate-700 hover:bg-stone-100" />
         </div>
 
-        <Link href={`/store/${product.slug}`} className="mt-3 text-center text-sm font-medium text-emerald-300 transition hover:text-emerald-200 hover:underline">
+        <Link href={`/store/${product.slug}`} className="mt-3 text-center text-sm font-medium text-emerald-700 transition hover:text-emerald-600 hover:underline">
           View details
         </Link>
       </div>
