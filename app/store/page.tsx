@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { getPublishedProducts } from "@/lib/cms";
+import AddToCartButton from "@/components/store/AddToCartButton";
+import WishlistButton from "@/components/store/WishlistButton";
 
 export const metadata = {
   title: "Store",
@@ -25,15 +27,21 @@ export default async function StorePage() {
             </div>
           ) : (
             products.map((product) => (
-              <Link key={product.id} href={`/store/${product.slug}`} className="rounded-xl border bg-card p-5 transition hover:border-primary/40">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{product.categories?.name ?? "Uncategorized"}</p>
-                <h2 className="mt-2 text-lg font-semibold">{product.name}</h2>
-                <p className="mt-2 text-sm text-muted-foreground">{product.short_description}</p>
+              <article key={product.id} className="rounded-xl border bg-card p-5 transition hover:border-primary/40">
+                <Link href={`/store/${product.slug}`}>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{product.categories?.name ?? "Uncategorized"}</p>
+                  <h2 className="mt-2 text-lg font-semibold">{product.name}</h2>
+                  <p className="mt-2 text-sm text-muted-foreground">{product.short_description}</p>
+                </Link>
                 <div className="mt-4 flex items-center gap-2">
                   <span className="text-base font-bold">৳{product.sale_price ?? product.price}</span>
                   {product.sale_price ? <span className="text-sm text-muted-foreground line-through">৳{product.price}</span> : null}
                 </div>
-              </Link>
+                <div className="mt-4 flex items-center gap-2">
+                  <AddToCartButton product={product} />
+                  <WishlistButton product={product} />
+                </div>
+              </article>
             ))
           )}
         </div>
