@@ -3,9 +3,14 @@
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
 import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 import { readCart } from "@/lib/shop";
 
-export default function CartNavLink() {
+type CartNavLinkProps = {
+  className?: string;
+};
+
+export default function CartNavLink({ className }: CartNavLinkProps) {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
@@ -16,9 +21,16 @@ export default function CartNavLink() {
   }, []);
 
   return (
-    <Link href="/cart" className="relative rounded-md border px-3 py-2 text-sm hover:bg-muted">
+    <Link
+      href="/cart"
+      className={cn(
+        "relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-slate-100 transition hover:bg-white/10",
+        className,
+      )}
+      aria-label="Cart"
+    >
       <ShoppingCart className="h-4 w-4" />
-      {count > 0 ? <span className="absolute -right-1 -top-1 rounded-full bg-primary px-1.5 text-[10px] text-white">{count}</span> : null}
+      {count > 0 ? <span className="absolute -right-1 -top-1 rounded-full bg-primary px-1.5 text-[10px] font-semibold text-white">{count}</span> : null}
     </Link>
   );
 }

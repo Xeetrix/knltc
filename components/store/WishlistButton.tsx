@@ -3,6 +3,7 @@
 import { Heart } from "lucide-react";
 import { useEffect, useState } from "react";
 import { readWishlist, toggleWishlist } from "@/lib/shop";
+import { cn } from "@/lib/utils";
 
 type Props = {
   product: {
@@ -13,9 +14,10 @@ type Props = {
     sale_price: number | null;
     featured_image: string | null;
   };
+  className?: string;
 };
 
-export default function WishlistButton({ product }: Props) {
+export default function WishlistButton({ product, className }: Props) {
   const [active, setActive] = useState(false);
 
   useEffect(() => {
@@ -25,7 +27,11 @@ export default function WishlistButton({ product }: Props) {
   return (
     <button
       type="button"
-      className={`inline-flex items-center justify-center gap-1 rounded-md border px-2.5 py-2 text-sm hover:bg-muted ${active ? "border-red-300 text-red-600" : ""}`}
+      className={cn(
+        "inline-flex items-center justify-center gap-1 rounded-md border px-2.5 py-2 text-sm hover:bg-muted",
+        active ? "border-red-300 text-red-600" : "",
+        className,
+      )}
       onClick={() => {
         const next = toggleWishlist({
           productId: product.id,

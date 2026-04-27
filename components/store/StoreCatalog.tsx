@@ -1,110 +1,187 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import type { Product } from "@/lib/cms";
 import StoreProductCard from "@/components/store/StoreProductCard";
+import CartNavLink from "@/components/store/CartNavLink";
 
 type Props = {
   products: Product[];
 };
 
-type SortMode = "newest" | "low-high" | "high-low" | "featured";
+type SortMode = "newest" | "price-low" | "price-high" | "popular";
+type PriceMode = "all" | "under-500" | "500-1000" | "1000-plus";
+
+const featuredCategoryShowcase = ["Books", "JLPT", "Stationery"];
 
 export default function StoreCatalog({ products }: Props) {
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("all");
+  const params = useSearchParams();
+  const [search, setSearch] = useState(params.get("search") ?? "");
+  const [category, setCategory] = useState(params.get("category") ?? "all");
   const [sort, setSort] = useState<SortMode>("newest");
+  const [priceMode, setPriceMode] = useState<PriceMode>("all");
+  const [featuredOnly, setFeaturedOnly] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const categories = useMemo(
     () => Array.from(new Set(products.map((item) => item.categories?.name).filter(Boolean))) as string[],
     [products],
   );
 
+  const featuredProducts = useMemo(() => products.filter((item) => item.is_featured).slice(0, 4), [products]);
+
   const filteredProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
 
     const filtered = products.filter((product) => {
-      const matchesSearch =
-        query.length === 0 ||
-        product.name.toLowerCase().includes(query) ||
-        product.short_description.toLowerCase().includes(query) ||
-        (product.categories?.name ?? "").toLowerCase().includes(query);
-
+      const matchingText = `${product.name} ${product.short_description} ${product.categories?.name ?? ""}`.toLowerCase();
+      const matchesSearch = query.length === 0 || matchingText.includes(query);
       const matchesCategory = category === "all" || product.categories?.name === category;
-      return matchesSearch && matchesCategory;
+      const effectivePrice = product.sale_price ?? product.price;
+      const matchesPrice =
+        priceMode === "all" ||
+        (priceMode === "under-500" && effectivePrice < 500) ||
+        (priceMode === "500-1000" && effectivePrice >= 500 && effectivePrice <= 1000) ||
+        (priceMode === "1000-plus" && effectivePrice > 1000);
+      const matchesFeatured = !featuredOnly || product.is_featured;
+
+      return matchesSearch && matchesCategory && matchesPrice && matchesFeatured;
     });
 
     const sorted = [...filtered];
-    if (sort === "low-high") sorted.sort((a, b) => (a.sale_price ?? a.price) - (b.sale_price ?? b.price));
-    if (sort === "high-low") sorted.sort((a, b) => (b.sale_price ?? b.price) - (a.sale_price ?? a.price));
-    if (sort === "featured") {
-      sorted.sort((a, b) => Number(b.is_featured) - Number(a.is_featured));
-    }
+    if (sort === "price-low") sorted.sort((a, b) => (a.sale_price ?? a.price) - (b.sale_price ?? b.price));
+    if (sort === "price-high") sorted.sort((a, b) => (b.sale_price ?? b.price) - (a.sale_price ?? a.price));
+    if (sort === "popular") sorted.sort((a, b) => Number(b.is_featured) - Number(a.is_featured) || b.stock - a.stock);
 
     return sorted;
-  }, [category, products, search, sort]);
+  }, [category, featuredOnly, priceMode, products, search, sort]);
 
   return (
-    <>
-      <section className="mb-8 overflow-hidden rounded-3xl border bg-gradient-to-br from-primary/10 via-background to-accent/10 p-6 md:p-10">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">KNLTC Store</p>
-        <h1 className="mt-2 text-3xl font-bold md:text-4xl">Japanese Learning Store</h1>
-        <p className="mt-3 max-w-2xl text-sm text-muted-foreground md:text-base">
-          Books, JLPT materials, stationery, and learning accessories for Japan-focused learners
-        </p>
+    <div className="space-y-10 text-slate-100">
+      <section className="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-6 shadow-2xl md:p-12">
+        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-amber-300">Premium Japanese Collection</p>
+        <h1 className="mt-3 text-4xl font-bold md:text-6xl">KNLTC Japanese Store</h1>
+        <p className="mt-4 max-w-2xl text-sm text-slate-300 md:text-base">Curated learning essentials inspired by Japanese precision and minimalism.</p>
+        <Link href="#products" className="mt-6 inline-flex rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 hover:bg-primary/90">
+          Shop Now
+        </Link>
       </section>
 
-      <section className="mb-6 grid gap-3 rounded-2xl border bg-card p-4 md:grid-cols-3">
-        <label className="md:col-span-1">
-          <span className="mb-1 block text-xs font-medium text-muted-foreground">Search product</span>
-          <input
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-            placeholder="Search by name or keyword"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-        </label>
+      <section className="grid gap-4 sm:grid-cols-3">
+        {featuredCategoryShowcase.map((item) => (
+          <Link
+            href={`/store?category=${encodeURIComponent(item)}`}
+            key={item}
+            className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-lg shadow-black/20 transition hover:-translate-y-1 hover:bg-white/[0.08]"
+          >
+            <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Category</p>
+            <h3 className="mt-2 text-2xl font-semibold">{item}</h3>
+          </Link>
+        ))}
+      </section>
 
-        <label>
-          <span className="mb-1 block text-xs font-medium text-muted-foreground">Category</span>
-          <select className="w-full rounded-md border bg-background px-3 py-2 text-sm" value={category} onChange={(e) => setCategory(e.target.value)}>
-            <option value="all">All categories</option>
-            {categories.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
+      {featuredProducts.length > 0 ? (
+        <section>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-2xl font-semibold">Featured Products</h2>
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Editor&apos;s picks</p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {featuredProducts.map((product) => (
+              <StoreProductCard key={`featured-${product.id}`} product={product} />
             ))}
-          </select>
-        </label>
+          </div>
+        </section>
+      ) : null}
 
-        <label>
-          <span className="mb-1 block text-xs font-medium text-muted-foreground">Sort by</span>
-          <select className="w-full rounded-md border bg-background px-3 py-2 text-sm" value={sort} onChange={(e) => setSort(e.target.value as SortMode)}>
-            <option value="newest">Newest</option>
-            <option value="low-high">Price low to high</option>
-            <option value="high-low">Price high to low</option>
-            <option value="featured">Featured</option>
-          </select>
-        </label>
+      <section id="products" className="space-y-4 rounded-3xl border border-white/10 bg-slate-900/70 p-4 md:p-6">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-2xl font-semibold">All Products</h2>
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-full border border-white/15 px-3 py-2 text-xs md:hidden"
+            onClick={() => setFiltersOpen((prev) => !prev)}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            Filters
+            <ChevronDown className={`h-4 w-4 transition ${filtersOpen ? "rotate-180" : ""}`} />
+          </button>
+        </div>
+
+        <div className={`${filtersOpen ? "grid" : "hidden"} gap-3 rounded-2xl border border-white/10 bg-black/20 p-3 md:grid md:grid-cols-4`}>
+          <label>
+            <span className="mb-1 block text-xs font-medium text-slate-300">Search</span>
+            <input
+              className="w-full rounded-md border border-white/15 bg-white/5 px-3 py-2 text-sm"
+              placeholder="Search by name"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </label>
+
+          <label>
+            <span className="mb-1 block text-xs font-medium text-slate-300">Category</span>
+            <select className="w-full rounded-md border border-white/15 bg-slate-900 px-3 py-2 text-sm" value={category} onChange={(e) => setCategory(e.target.value)}>
+              <option value="all">All categories</option>
+              {categories.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            <span className="mb-1 block text-xs font-medium text-slate-300">Price</span>
+            <select className="w-full rounded-md border border-white/15 bg-slate-900 px-3 py-2 text-sm" value={priceMode} onChange={(e) => setPriceMode(e.target.value as PriceMode)}>
+              <option value="all">All ranges</option>
+              <option value="under-500">Under ৳500</option>
+              <option value="500-1000">৳500 - ৳1000</option>
+              <option value="1000-plus">Above ৳1000</option>
+            </select>
+          </label>
+
+          <div className="grid gap-2">
+            <label>
+              <span className="mb-1 block text-xs font-medium text-slate-300">Sort</span>
+              <select className="w-full rounded-md border border-white/15 bg-slate-900 px-3 py-2 text-sm" value={sort} onChange={(e) => setSort(e.target.value as SortMode)}>
+                <option value="newest">Newest</option>
+                <option value="price-low">Price low to high</option>
+                <option value="price-high">Price high to low</option>
+                <option value="popular">Popular</option>
+              </select>
+            </label>
+            <label className="inline-flex items-center gap-2 text-sm text-slate-300">
+              <input type="checkbox" checked={featuredOnly} onChange={(event) => setFeaturedOnly(event.target.checked)} />
+              Featured only
+            </label>
+          </div>
+        </div>
+
+        {products.length === 0 ? (
+          <div className="rounded-2xl border border-white/10 bg-black/25 p-8 text-center">
+            <h3 className="text-xl font-semibold">No products available yet</h3>
+          </div>
+        ) : filteredProducts.length === 0 ? (
+          <div className="rounded-2xl border border-white/10 bg-black/25 p-8 text-center">
+            <h3 className="text-xl font-semibold">No matching products</h3>
+            <p className="mt-2 text-sm text-slate-300">Try a different filter combination.</p>
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {filteredProducts.map((product) => (
+              <StoreProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
       </section>
 
-      {products.length === 0 ? (
-        <div className="rounded-2xl border bg-card p-8 text-center">
-          <h2 className="text-xl font-semibold">No products available yet</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Please check back soon for new items.</p>
-        </div>
-      ) : filteredProducts.length === 0 ? (
-        <div className="rounded-2xl border bg-card p-8 text-center">
-          <h2 className="text-xl font-semibold">No matching products</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Try another keyword or category filter.</p>
-        </div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {filteredProducts.map((product) => (
-            <StoreProductCard key={product.id} product={product} />
-          ))}
-        </div>
-      )}
-    </>
+      <div className="fixed bottom-4 right-4 z-40 md:hidden">
+        <CartNavLink className="h-12 w-12 rounded-full border-primary/40 bg-primary text-white shadow-2xl" />
+      </div>
+    </div>
   );
 }

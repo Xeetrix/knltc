@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { addToCart } from "@/lib/shop";
+import { cn } from "@/lib/utils";
 
 type Props = {
   product: {
@@ -12,21 +13,26 @@ type Props = {
     featured_image: string | null;
   };
   disabled?: boolean;
+  quantity?: number;
+  className?: string;
 };
 
-export default function AddToCartButton({ product, disabled = false }: Props) {
+export default function AddToCartButton({ product, disabled = false, quantity = 1, className }: Props) {
   const [added, setAdded] = useState(false);
 
   return (
     <button
-      className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+      className={cn(
+        "rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60",
+        className,
+      )}
       onClick={() => {
         if (disabled) return;
         addToCart({
           productId: product.id,
           name: product.name,
           price: product.sale_price ?? product.price,
-          quantity: 1,
+          quantity,
           image: product.featured_image,
         });
         setAdded(true);
