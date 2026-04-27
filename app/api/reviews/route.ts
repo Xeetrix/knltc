@@ -10,7 +10,7 @@ type CreateReviewPayload = {
   comment: string | null;
 };
 
-const reviewSchema: z.ZodType<CreateReviewPayload> = z.object({
+const reviewSchema = z.object({
   product_id: z.string().trim().min(1, "Product ID is required"),
   customer_name: z.string().trim().min(2, "Customer name must be at least 2 characters"),
   rating: z.number().int().min(1).max(5),
@@ -26,13 +26,14 @@ const reviewSchema: z.ZodType<CreateReviewPayload> = z.object({
 
 export async function POST(request: Request) {
   try {
-    const payload = reviewSchema.parse(await request.json());
-    const review = await createProductReview({
-      product_id: payload.product_id,
-      customer_name: payload.customer_name,
-      rating: payload.rating,
-      comment: payload.comment ?? "",
-    });
+    const parsed = reviewSchema.parse(await request.json());
+    const payload: CreateReviewPayload = {
+      product_id: parsed.product_id,
+      customer_name: parsed.customer_name,
+      rating: parsed.rating,
+      comment: parsed.comment ?? null,
+    };
+    const review = await createProductReview(payload);
 
     return NextResponse.json({ review, message: "Review submitted and pending approval." }, { status: 201 });
   } catch (error) {
