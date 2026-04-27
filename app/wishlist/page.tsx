@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingCart, Trash2 } from "lucide-react";
+import { Heart, ShoppingCart, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { addToCart, readWishlist, writeWishlist, type WishlistItem } from "@/lib/shop";
 
@@ -31,21 +31,22 @@ export default function WishlistPage() {
       <div className="container-narrow">
         <div className="mb-6">
           <h1 className="text-3xl font-bold">Wishlist</h1>
-          <p className="mt-1 text-sm text-slate-400">Save your favorite products and move them into cart with one click.</p>
+          <p className="mt-1 text-sm text-slate-400">Save favorites and move them to cart in one click.</p>
         </div>
 
         {items.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-slate-900 p-8 text-center">
-            <h2 className="text-xl font-semibold">No wishlist items yet</h2>
+          <div className="rounded-2xl border border-white/10 bg-slate-900/70 p-8 text-center">
+            <Heart className="mx-auto h-10 w-10 text-slate-500" />
+            <h2 className="mt-3 text-xl font-semibold">No wishlist items yet</h2>
             <p className="mt-2 text-sm text-slate-400">Browse the store and tap the heart icon to save products.</p>
-            <Link href="/store" className="mt-4 inline-flex rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
+            <Link href="/store" className="mt-4 inline-flex rounded-md bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-400">
               Go to Store
             </Link>
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {items.map((item) => (
-              <article key={item.productId} className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900 shadow-lg shadow-black/20">
+              <article key={item.productId} className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/70 shadow-lg shadow-black/20 backdrop-blur-sm">
                 <Link href={`/store/${item.slug}`} className="block aspect-[4/3] overflow-hidden bg-slate-800">
                   {item.image ? <img src={item.image} alt={item.name} className="h-full w-full object-cover transition hover:scale-105" /> : null}
                 </Link>
@@ -54,7 +55,7 @@ export default function WishlistPage() {
                   <p className="mt-1 text-sm text-slate-400">৳{item.price}</p>
                   <div className="mt-4 grid gap-2 sm:grid-cols-2">
                     <button
-                      className="inline-flex items-center justify-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
+                      className="inline-flex items-center justify-center gap-1 rounded-md bg-emerald-500 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-400"
                       onClick={() => moveToCart(item)}
                     >
                       <ShoppingCart className="h-4 w-4" />
