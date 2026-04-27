@@ -8,9 +8,10 @@ import { readCart } from "@/lib/shop";
 
 type CartNavLinkProps = {
   className?: string;
+  showLabel?: boolean;
 };
 
-export default function CartNavLink({ className }: CartNavLinkProps) {
+export default function CartNavLink({ className, showLabel = false }: CartNavLinkProps) {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
@@ -25,11 +26,13 @@ export default function CartNavLink({ className }: CartNavLinkProps) {
       href="/cart"
       className={cn(
         "relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-emerald-200 bg-white text-emerald-700 transition hover:bg-emerald-50",
+        showLabel && "w-auto gap-2 px-3",
         className,
       )}
       aria-label="Cart"
     >
       <ShoppingCart className="h-4 w-4" />
+      {showLabel ? <span className="text-sm font-semibold">Cart</span> : null}
       {count > 0 ? <span className="absolute -right-1 -top-1 rounded-full bg-primary px-1.5 text-[10px] font-semibold text-white">{count}</span> : null}
     </Link>
   );

@@ -19,14 +19,7 @@ export default function BrandLogo({ compact = false, inverse = false, className 
         priority
         className={cn("rounded-md", inverse && "ring-1 ring-white/20")}
       />
-      <span className="min-w-0 leading-tight">
-        <span className={cn("block truncate font-display text-lg font-semibold text-foreground sm:text-xl", inverse && "text-white")}>KNLTC</span>
-        {!compact && (
-          <span className={cn("hidden text-xs text-muted-foreground sm:block", inverse && "text-white/70")}>
-            Kurobe Nihongo Language Training Center
-          </span>
-        )}
-      </span>
+      <span className={cn("block truncate font-display font-semibold text-foreground", compact ? "text-base sm:text-lg" : "text-lg sm:text-xl", inverse && "text-white")}>KNLTC</span>
     </Link>
   );
 }

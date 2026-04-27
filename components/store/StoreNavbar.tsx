@@ -35,10 +35,10 @@ export default function StoreNavbar() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-stone-200/80 bg-stone-50/95 backdrop-blur-xl supports-[backdrop-filter]:bg-stone-50/85">
-      <div className="container-narrow flex min-h-[72px] flex-nowrap items-center gap-2 py-2.5">
-        <div className="flex shrink-0 items-center gap-2">
-          <BrandLogo className="max-w-[118px] sm:max-w-[138px]" />
-          <nav className="hidden items-center gap-0.5 xl:flex">
+      <div className="container-narrow flex min-h-[64px] items-center gap-2 py-2">
+        <div className="flex min-w-0 shrink-0 items-center gap-2 lg:gap-3">
+          <BrandLogo compact className="max-w-[118px] sm:max-w-none" />
+          <nav className="hidden items-center gap-0.5 lg:flex">
             <Link href="/" className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm text-slate-700 transition hover:bg-white">
               <Home className="h-4 w-4" />
               Home
@@ -53,7 +53,7 @@ export default function StoreNavbar() {
             <div className="group relative">
               <button className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm text-slate-700 transition hover:bg-white" type="button">
                 <Grid3X3 className="h-4 w-4" />
-                Category
+                Categories
                 <ChevronDown className="h-4 w-4" />
               </button>
               <div className="invisible absolute left-0 top-full mt-2 w-52 rounded-2xl border border-stone-200 bg-white p-2 opacity-0 shadow-xl shadow-stone-200/80 transition group-hover:visible group-hover:opacity-100">
@@ -67,7 +67,7 @@ export default function StoreNavbar() {
           </nav>
         </div>
 
-        <form onSubmit={onSearch} className="hidden min-w-0 flex-1 items-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-2 md:flex md:max-w-xl">
+        <form onSubmit={onSearch} className="hidden min-w-0 flex-1 items-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-2 md:flex lg:max-w-none">
           <Search className="h-4 w-4 text-slate-500" />
           <input
             value={query}
@@ -79,15 +79,17 @@ export default function StoreNavbar() {
 
         <div className="ml-auto flex shrink-0 items-center gap-2">
           <button
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-stone-300 bg-white text-slate-700 transition hover:bg-stone-100 xl:hidden"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-stone-300 bg-white text-slate-700 transition hover:bg-stone-100 lg:hidden"
             aria-label="Toggle store menu"
             onClick={() => setMobileOpen((prev) => !prev)}
             type="button"
           >
             {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </button>
-          <WishlistNavLink />
-          <CartNavLink />
+          <WishlistNavLink showLabel className="hidden lg:inline-flex" />
+          <CartNavLink showLabel className="hidden lg:inline-flex" />
+          <WishlistNavLink className="lg:hidden" />
+          <CartNavLink className="lg:hidden" />
         </div>
       </div>
 
@@ -104,7 +106,7 @@ export default function StoreNavbar() {
       </div>
 
       {mobileOpen ? (
-        <div className="border-t border-stone-200 bg-stone-50 px-4 py-3 xl:hidden">
+        <div className="border-t border-stone-200 bg-stone-50 px-4 py-3 lg:hidden">
           <div className="container-narrow space-y-2">
             <Link href="/" className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-white" onClick={() => setMobileOpen(false)}>
               Home

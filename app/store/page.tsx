@@ -11,7 +11,7 @@ export default async function StorePage() {
   const products = await getPublishedProducts();
 
   return (
-    <section className="section-padding bg-stone-50">
+    <section className="bg-stone-50 py-5 md:py-6">
       <div className="container-narrow">
         <Suspense
           fallback={

@@ -72,40 +72,40 @@ export default function CheckoutPage() {
   };
 
   return (
-    <section className="section-padding bg-slate-950 text-slate-100">
+    <section className="section-padding bg-stone-50 text-slate-900">
       <div className="container-narrow">
         <h1 className="text-3xl font-bold">Checkout</h1>
 
         {cart.length === 0 ? (
-          <div className="mt-6 rounded-2xl border border-white/10 bg-slate-900/70 p-8 text-center">
+          <div className="mt-6 rounded-2xl border border-stone-200 bg-white p-8 text-center shadow-sm shadow-stone-200/70">
             <h2 className="text-xl font-semibold">No items to checkout</h2>
-            <p className="mt-2 text-sm text-slate-400">Please add products to your cart first.</p>
-            <Link href="/store" className="mt-4 inline-flex rounded-md bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-400">
+            <p className="mt-2 text-sm text-slate-600">Please add products to your cart first.</p>
+            <Link href="/store" className="mt-4 inline-flex rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500">
               Go to Store
             </Link>
           </div>
         ) : (
           <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_360px]">
-            <form className="grid gap-3 rounded-2xl border border-white/10 bg-slate-900/65 p-5 backdrop-blur-sm" onSubmit={submit}>
+            <form className="grid gap-3 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm shadow-stone-200/70" onSubmit={submit}>
               {message ? (
-                <p className="inline-flex items-center gap-2 rounded-md bg-emerald-500/15 px-3 py-2 text-sm text-emerald-200">
+                <p className="inline-flex items-center gap-2 rounded-md bg-emerald-100 px-3 py-2 text-sm text-emerald-700">
                   <CheckCircle2 className="h-4 w-4" />
                   {message}
                 </p>
               ) : null}
               {error ? (
-                <p className="inline-flex items-center gap-2 rounded-md bg-rose-500/15 px-3 py-2 text-sm text-rose-200">
+                <p className="inline-flex items-center gap-2 rounded-md bg-rose-100 px-3 py-2 text-sm text-rose-700">
                   <AlertTriangle className="h-4 w-4" />
                   {error}
                 </p>
               ) : null}
 
               <h2 className="text-lg font-semibold">Customer Information</h2>
-              <input required className="rounded-md border border-white/15 bg-white/5 px-3 py-2" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
-              <input required className="rounded-md border border-white/15 bg-white/5 px-3 py-2" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-              <input className="rounded-md border border-white/15 bg-white/5 px-3 py-2" placeholder="Email (optional)" value={email} onChange={(e) => setEmail(e.target.value)} />
-              <textarea required className="rounded-md border border-white/15 bg-white/5 px-3 py-2" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
-              <textarea className="rounded-md border border-white/15 bg-white/5 px-3 py-2" placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
+              <input required className="rounded-md border border-stone-300 bg-white px-3 py-2" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
+              <input required className="rounded-md border border-stone-300 bg-white px-3 py-2" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <input className="rounded-md border border-stone-300 bg-white px-3 py-2" placeholder="Email (optional)" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <textarea required className="rounded-md border border-stone-300 bg-white px-3 py-2" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
+              <textarea className="rounded-md border border-stone-300 bg-white px-3 py-2" placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
 
               <h2 className="mt-2 text-lg font-semibold">Payment Method</h2>
               <div className="grid gap-2 sm:grid-cols-3">
@@ -114,7 +114,7 @@ export default function CheckoutPage() {
                   { value: "bkash", label: "bKash manual" },
                   { value: "nagad", label: "Nagad manual" },
                 ].map((item) => (
-                  <label key={item.value} className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm">
+                  <label key={item.value} className="inline-flex items-center gap-2 rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm">
                     <input
                       type="radio"
                       name="paymentMethod"
@@ -130,32 +130,32 @@ export default function CheckoutPage() {
               {paymentMethod !== "cod" ? (
                 <input
                   required
-                  className="rounded-md border border-white/15 bg-white/5 px-3 py-2"
+                  className="rounded-md border border-stone-300 bg-white px-3 py-2"
                   placeholder="Transaction ID"
                   value={transactionId}
                   onChange={(e) => setTransactionId(e.target.value)}
                 />
               ) : null}
 
-              <button disabled={loading || cart.length === 0} className="rounded-md bg-emerald-500 px-3 py-2 font-semibold text-white hover:bg-emerald-400 disabled:opacity-60">
+              <button disabled={loading || cart.length === 0} className="rounded-md bg-emerald-600 px-3 py-2 font-semibold text-white hover:bg-emerald-500 disabled:opacity-60">
                 {loading ? "Placing order..." : "Place Order"}
               </button>
             </form>
 
-            <aside className="h-fit rounded-2xl border border-white/10 bg-slate-900/70 p-4 backdrop-blur-sm lg:sticky lg:top-24">
+            <aside className="h-fit rounded-2xl border border-stone-200 bg-white p-4 shadow-sm shadow-stone-200/70 lg:sticky lg:top-24">
               <h2 className="text-lg font-semibold">Order Summary</h2>
               <div className="mt-3 space-y-2 text-sm">
                 {cart.map((item) => (
                   <div key={item.productId} className="flex items-start justify-between gap-2">
                     <p>
-                      {item.name} <span className="text-slate-400">x{item.quantity}</span>
+                      {item.name} <span className="text-slate-500">x{item.quantity}</span>
                     </p>
                     <p className="font-medium">৳{item.price * item.quantity}</p>
                   </div>
                 ))}
               </div>
-              <div className="mt-3 border-t border-white/10 pt-3">
-                <p className="text-sm text-slate-400">Total</p>
+              <div className="mt-3 border-t border-stone-200 pt-3">
+                <p className="text-sm text-slate-600">Total</p>
                 <p className="text-3xl font-bold">৳{total}</p>
               </div>
             </aside>
