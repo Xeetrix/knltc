@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import AdminShell from "@/components/admin/AdminShell";
 import CategoryManager from "@/components/admin/CategoryManager";
 import { getCategories } from "@/lib/cms";
