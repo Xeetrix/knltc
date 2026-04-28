@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import AdminShell from "@/components/admin/AdminShell";
 import ProductManager from "@/components/admin/ProductManager";
 import { getAllAdminProducts, getCategories } from "@/lib/cms";

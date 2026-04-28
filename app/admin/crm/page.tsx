@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import AdminShell from "@/components/admin/AdminShell";
 import CrmManager from "@/components/admin/CrmManager";
 import { getAllCrmLeads } from "@/lib/cms";

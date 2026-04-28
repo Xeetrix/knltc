@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import AdminShell from "@/components/admin/AdminShell";
 import UploadManager from "@/components/admin/UploadManager";
 
