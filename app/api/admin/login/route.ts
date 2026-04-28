@@ -19,30 +19,40 @@ export async function POST(request: Request) {
     );
   }
 
-  const { user, error } = await verifyAdminCredentials(email, password);
-  if (!user) {
-    const isConfigError = error === "admin_credentials_not_configured";
-
-    return NextResponse.json(
-      {
-        error: isConfigError ? "Admin login is not configured" : "Invalid credentials",
-        code: error ?? "invalid_credentials",
-      },
-      { status: isConfigError ? 503 : 401 },
-    );
-  }
-
   try {
-    await createAdminSession(user.email);
+    const { user, error } = await verifyAdminCredentials(email, password);
+    if (!user) {
+      const isConfigError = error === "admin_credentials_not_configured";
+
+      return NextResponse.json(
+        {
+          error: isConfigError ? "Admin login is not configured" : "Invalid credentials",
+          code: error ?? "invalid_credentials",
+        },
+        { status: isConfigError ? 503 : 401 },
+      );
+    }
+
+    try {
+      await createAdminSession(user.email);
+    } catch {
+      return NextResponse.json(
+        {
+          error: "Admin session is not configured",
+          code: "admin_session_secret_missing",
+        },
+        { status: 503 },
+      );
+    }
+
+    return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json(
       {
-        error: "Admin session is not configured",
-        code: "admin_session_secret_missing",
+        error: "Unable to complete admin login",
+        code: "admin_login_unavailable",
       },
       { status: 503 },
     );
   }
-
-  return NextResponse.json({ ok: true });
 }

@@ -1,31 +1,41 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = searchParams.get("next") || "/admin";
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setError(null);
+    setIsSubmitting(true);
 
-    const res = await fetch("/api/admin/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-    if (!res.ok) {
-      setError("Invalid credentials");
-      return;
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => null)) as { error?: string } | null;
+        setError(payload?.error ?? "Invalid credentials");
+        return;
+      }
+
+      router.push(nextPath.startsWith("/admin") ? nextPath : "/admin");
+      router.refresh();
+    } finally {
+      setIsSubmitting(false);
     }
-
-    router.push("/admin");
-    router.refresh();
   };
 
   return (
@@ -43,8 +53,12 @@ export default function AdminLoginPage() {
               placeholder="Password"
             />
             {error ? <p className="text-sm text-red-600">{error}</p> : null}
-            <button type="submit" className="w-full rounded-md bg-primary px-3 py-2 font-medium text-primary-foreground">
-              Login
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full rounded-md bg-primary px-3 py-2 font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isSubmitting ? "Logging in..." : "Login"}
             </button>
           </form>
         </div>
