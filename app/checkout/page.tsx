@@ -4,10 +4,14 @@ import Link from "next/link";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { clearCart, readCart, type CartItem } from "@/lib/shop";
+import { useLanguage } from "@/components/layout/LanguageProvider";
+import { translate } from "@/lib/i18n";
 
 type PaymentMethod = "cod" | "bkash" | "nagad";
 
 export default function CheckoutPage() {
+  const { language } = useLanguage();
+  const [deliveryArea, setDeliveryArea] = useState<"inside_dhaka" | "outside_dhaka">("inside_dhaka");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -28,6 +32,12 @@ export default function CheckoutPage() {
   }, []);
 
   const total = useMemo(() => cart.reduce((sum, item) => sum + item.price * item.quantity, 0), [cart]);
+  const totalQuantity = useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart]);
+  const deliveryCharge = useMemo(() => {
+    if (totalQuantity <= 1) return deliveryArea === "inside_dhaka" ? 60 : 100;
+    return deliveryArea === "inside_dhaka" ? 80 : 120;
+  }, [deliveryArea, totalQuantity]);
+  const grandTotal = total + deliveryCharge;
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -56,6 +66,9 @@ export default function CheckoutPage() {
         customer_address: address,
         customer_note: [note.trim(), paymentNote].filter(Boolean).join("\n"),
         items: cart,
+        delivery_area: deliveryArea,
+        delivery_charge: deliveryCharge,
+        grand_total: grandTotal,
       }),
     });
 
@@ -108,6 +121,17 @@ export default function CheckoutPage() {
               <textarea className="rounded-md border border-stone-300 bg-white px-3 py-2" placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
 
               <h2 className="mt-2 text-lg font-semibold">Payment Method</h2>
+              <h2 className="mt-2 text-lg font-semibold">{translate({ en: "Delivery Area", bn: "ডেলিভারি এলাকা", ja: "配送エリア" }, language)}</h2>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <label className="inline-flex items-center gap-2 rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm">
+                  <input type="radio" name="deliveryArea" checked={deliveryArea === "inside_dhaka"} onChange={() => setDeliveryArea("inside_dhaka")} />
+                  {translate({ en: "Inside Dhaka", bn: "ঢাকার মধ্যে", ja: "ダッカ市内" }, language)}
+                </label>
+                <label className="inline-flex items-center gap-2 rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm">
+                  <input type="radio" name="deliveryArea" checked={deliveryArea === "outside_dhaka"} onChange={() => setDeliveryArea("outside_dhaka")} />
+                  {translate({ en: "Outside Dhaka", bn: "ঢাকার বাইরে", ja: "ダッカ市外" }, language)}
+                </label>
+              </div>
               <div className="grid gap-2 sm:grid-cols-3">
                 {[
                   { value: "cod", label: "Cash on Delivery" },
@@ -155,8 +179,10 @@ export default function CheckoutPage() {
                 ))}
               </div>
               <div className="mt-3 border-t border-stone-200 pt-3">
-                <p className="text-sm text-slate-600">Total</p>
-                <p className="text-3xl font-bold">৳{total}</p>
+                <p className="text-sm text-slate-600">Product subtotal: ৳{total}</p>
+                <p className="text-sm text-slate-600">{translate({ en: "Delivery Charge", bn: "ডেলিভারি চার্জ", ja: "配送料" }, language)}: ৳{deliveryCharge}</p>
+                <p className="text-sm text-slate-600">{translate({ en: "Grand Total", bn: "সর্বমোট", ja: "合計" }, language)}</p>
+                <p className="text-3xl font-bold">৳{grandTotal}</p>
               </div>
             </aside>
           </div>

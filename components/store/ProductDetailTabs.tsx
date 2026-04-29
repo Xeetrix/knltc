@@ -52,6 +52,7 @@ export default function ProductDetailTabs({ details, reviews }: Props) {
                 {review.customer_name} • {"★".repeat(review.rating)}
               </p>
               <p className="mt-1 text-sm text-slate-700">{review.comment}</p>
+              {review.image_url ? <img src={review.image_url} alt="Review" className="mt-2 h-24 w-24 rounded-md object-cover" /> : null}
             </div>
           ))}
         </div>

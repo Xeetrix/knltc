@@ -9,6 +9,9 @@ const orderSchema = z.object({
   customer_email: z.string().email().optional().nullable(),
   customer_address: z.string().trim().min(5),
   customer_note: z.string().optional().nullable(),
+  delivery_area: z.enum(["inside_dhaka", "outside_dhaka"]),
+  delivery_charge: z.number().nonnegative(),
+  grand_total: z.number().nonnegative(),
   items: z
     .array(
       z.object({
@@ -33,6 +36,9 @@ export async function POST(request: Request) {
       customer_address: payload.customer_address,
       customer_note: payload.customer_note ?? null,
       total_amount: total,
+      delivery_area: payload.delivery_area,
+      delivery_charge: payload.delivery_charge,
+      grand_total: payload.grand_total,
       status: "pending",
     });
 
