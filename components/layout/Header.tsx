@@ -26,21 +26,21 @@ function MainHeader({ pathname }: { pathname: string }) {
       translate(
         {
           en: {
-            nav: ["Home", "About", "Services", "Store", "Blog", "Study in Japan", "Work in Japan", "Japanese Language", "Contact"],
+            nav: ["Home", "About", "Services", "Store", "Blog", "Contact"],
             applyNow: "Apply Now",
             whatsapp: "WhatsApp",
             toggleMenu: "Toggle menu",
             language: "Language",
           },
           bn: {
-            nav: ["হোম", "আমাদের সম্পর্কে", "সার্ভিস", "স্টোর", "ব্লগ", "জাপানে পড়াশোনা", "জাপানে কাজ", "জাপানি ভাষা", "যোগাযোগ"],
+            nav: ["হোম", "আমাদের সম্পর্কে", "সার্ভিস", "স্টোর", "ব্লগ", "যোগাযোগ"],
             applyNow: "এখনই আবেদন করুন",
             whatsapp: "হোয়াটসঅ্যাপ",
             toggleMenu: "মেনু টগল করুন",
             language: "ভাষা",
           },
           ja: {
-            nav: ["ホーム", "会社概要", "サービス", "ストア", "ブログ", "日本留学", "日本就職", "日本語", "お問い合わせ"],
+            nav: ["ホーム", "会社概要", "サービス", "ストア", "ブログ", "お問い合わせ"],
             applyNow: "今すぐ応募",
             whatsapp: "WhatsApp",
             toggleMenu: "メニュー切替",
@@ -58,10 +58,7 @@ function MainHeader({ pathname }: { pathname: string }) {
     { label: t.nav[2], href: "/services" },
     { label: t.nav[3], href: "/store" },
     { label: t.nav[4], href: "/blog" },
-    { label: t.nav[5], href: "/study-in-japan" },
-    { label: t.nav[6], href: "/work-in-japan" },
-    { label: t.nav[7], href: "/japanese-language" },
-    { label: t.nav[8], href: "/contact" },
+    { label: t.nav[5], href: "/contact" },
   ];
 
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
