@@ -115,6 +115,9 @@ export type Order = {
   customer_address: string;
   customer_note: string | null;
   total_amount: number;
+  delivery_area?: string | null;
+  delivery_charge?: number;
+  grand_total?: number;
   status: OrderStatus;
   created_at: string;
   updated_at: string;
@@ -127,6 +130,7 @@ export type ProductReview = {
   customer_name: string;
   rating: number;
   comment: string;
+  image_url?: string | null;
   status: ReviewStatus;
   created_at: string;
 };

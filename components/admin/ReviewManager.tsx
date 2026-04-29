@@ -59,6 +59,7 @@ export default function ReviewManager({ initialReviews }: { initialReviews: Prod
           </div>
 
           <p className="mt-3 text-sm text-muted-foreground">{review.comment || "No comment provided."}</p>
+          {review.image_url ? <img src={review.image_url} alt="Review upload" className="mt-3 h-28 w-28 rounded-md object-cover" /> : null}
 
           <div className="mt-4 flex items-center gap-2">
             <button

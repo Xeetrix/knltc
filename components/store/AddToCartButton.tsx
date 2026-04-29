@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useLanguage } from "@/components/layout/LanguageProvider";
+import { translate } from "@/lib/i18n";
 import { addToCart } from "@/lib/shop";
 import { cn } from "@/lib/utils";
 
@@ -18,7 +20,13 @@ type Props = {
 };
 
 export default function AddToCartButton({ product, disabled = false, quantity = 1, className }: Props) {
+  const { language } = useLanguage();
   const [added, setAdded] = useState(false);
+  const labels = {
+    out: translate({ en: "Out of Stock", bn: "স্টক নেই", ja: "在庫なし" }, language),
+    added: translate({ en: "Added", bn: "যোগ হয়েছে", ja: "追加済み" }, language),
+    add: translate({ en: "Add to Cart", bn: "কার্টে যোগ করুন", ja: "カートに追加" }, language),
+  };
 
   return (
     <button
@@ -41,7 +49,7 @@ export default function AddToCartButton({ product, disabled = false, quantity = 
       type="button"
       disabled={disabled}
     >
-      {disabled ? "Out of Stock" : added ? "Added" : "Add to Cart"}
+      {disabled ? labels.out : added ? labels.added : labels.add}
     </button>
   );
 }

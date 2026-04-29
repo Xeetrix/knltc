@@ -1,47 +1,55 @@
 "use client";
 
+import { Star } from "lucide-react";
 import { useState, type FormEvent } from "react";
+import { useLanguage } from "@/components/layout/LanguageProvider";
+import { translate } from "@/lib/i18n";
 
 export default function ReviewForm({ productId }: { productId: string }) {
+  const { language } = useLanguage();
   const [customerName, setCustomerName] = useState("");
   const [rating, setRating] = useState(5);
+  const [hovered, setHovered] = useState(0);
   const [comment, setComment] = useState("");
+  const [image, setImage] = useState<File | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const t = {
+    name: translate({ en: "Name", bn: "নাম", ja: "名前" }, language),
+    comment: translate({ en: "Comment", bn: "মন্তব্য", ja: "コメント" }, language),
+    submit: translate({ en: "Submit Review", bn: "রিভিউ সাবমিট করুন", ja: "レビューを送信" }, language),
+    photo: translate({ en: "Optional Photo", bn: "ঐচ্ছিক ছবি", ja: "任意の写真" }, language),
+  };
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setMessage(null);
     setError(null);
+    const body = new FormData();
+    body.append("product_id", productId);
+    body.append("customer_name", customerName);
+    body.append("rating", String(rating));
+    body.append("comment", comment);
+    if (image) body.append("image", image);
 
-    const res = await fetch("/api/reviews", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ product_id: productId, customer_name: customerName, rating, comment }),
-    });
-
+    const res = await fetch("/api/reviews", { method: "POST", body });
     const data = await res.json();
-    if (!res.ok) {
-      setError(data.error || "Failed to submit review");
-      return;
-    }
-
-    setMessage(data.message || "Review submitted");
-    setCustomerName("");
-    setRating(5);
-    setComment("");
+    if (!res.ok) return setError(data.error || "Failed");
+    setMessage(data.message || "Submitted");
+    setCustomerName(""); setRating(5); setComment(""); setImage(null);
   };
 
-  return (
-    <form onSubmit={submit} className="mt-6 grid gap-2 rounded-xl border bg-muted/30 p-4">
-      {message ? <p className="text-sm text-green-700">{message}</p> : null}
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
-      <input required className="rounded-md border bg-background px-3 py-2" placeholder="Your name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
-      <select className="rounded-md border bg-background px-3 py-2" value={rating} onChange={(e) => setRating(Number(e.target.value))}>
-        {[5, 4, 3, 2, 1].map((star) => <option key={star} value={star}>{star} star</option>)}
-      </select>
-      <textarea required className="rounded-md border bg-background px-3 py-2" placeholder="Comment" value={comment} onChange={(e) => setComment(e.target.value)} />
-      <button className="w-fit rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground">Submit review</button>
-    </form>
-  );
+  return <form onSubmit={submit} className="mt-6 grid gap-3 rounded-xl border bg-muted/30 p-4">
+    {message ? <p className="text-sm text-green-700">{message}</p> : null}
+    {error ? <p className="text-sm text-red-600">{error}</p> : null}
+    <input required className="rounded-md border bg-background px-3 py-2" placeholder={t.name} value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+    <div className="flex items-center gap-1">{[1,2,3,4,5].map((s)=><button key={s} type="button" onMouseEnter={()=>setHovered(s)} onMouseLeave={()=>setHovered(0)} onClick={()=>setRating(s)} className="p-1">
+      <Star className={`h-6 w-6 ${(hovered||rating)>=s?"fill-amber-400 text-amber-500":"text-stone-300"}`} />
+    </button>)}</div>
+    <textarea required className="rounded-md border bg-background px-3 py-2" placeholder={t.comment} value={comment} onChange={(e) => setComment(e.target.value)} />
+    <label className="text-sm">{t.photo}</label>
+    <input type="file" accept="image/*" onChange={(e)=>setImage(e.target.files?.[0] ?? null)} />
+    <button className="w-fit rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground">{t.submit}</button>
+  </form>;
 }

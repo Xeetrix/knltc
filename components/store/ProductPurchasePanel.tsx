@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import AddToCartButton from "@/components/store/AddToCartButton";
 import WishlistButton from "@/components/store/WishlistButton";
+import { useLanguage } from "@/components/layout/LanguageProvider";
+import { translate } from "@/lib/i18n";
 
 type ProductPanelProps = {
   product: {
@@ -22,6 +24,7 @@ type ProductPanelProps = {
 };
 
 export default function ProductPurchasePanel({ product }: ProductPanelProps) {
+  const { language } = useLanguage();
   const [quantity, setQuantity] = useState(1);
   const effectivePrice = useMemo(() => (product.sale_price ?? product.price) * quantity, [product.price, product.sale_price, quantity]);
 
@@ -46,7 +49,7 @@ export default function ProductPurchasePanel({ product }: ProductPanelProps) {
 
         <div className="mt-3 grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
           <span className={`rounded-full border px-2 py-1 text-center ${product.stock > 0 ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-rose-200 bg-rose-50 text-rose-700"}`}>
-            {product.stock > 0 ? `In stock (${product.stock})` : "Out of stock"}
+            {product.stock > 0 ? translate({ en: "Stock Available", bn: "স্টক আছে", ja: "在庫あり" }, language) : translate({ en: "Out of Stock", bn: "স্টক নেই", ja: "在庫なし" }, language)}
           </span>
           <span className="rounded-full border border-stone-300 bg-white px-2 py-1 text-center">SKU: {product.sku ?? "N/A"}</span>
         </div>

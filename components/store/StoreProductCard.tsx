@@ -1,8 +1,12 @@
+"use client";
+
 import Link from "next/link";
 import { Star } from "lucide-react";
 import AddToCartButton from "@/components/store/AddToCartButton";
 import WishlistButton from "@/components/store/WishlistButton";
+import { useLanguage } from "@/components/layout/LanguageProvider";
 import type { Product } from "@/lib/cms";
+import { translate } from "@/lib/i18n";
 
 type Props = {
   product: Product;
@@ -16,6 +20,7 @@ function getBadge(product: Product) {
 }
 
 export default function StoreProductCard({ product }: Props) {
+  const { language } = useLanguage();
   const inStock = product.stock > 0;
   const badge = getBadge(product);
 
@@ -61,7 +66,7 @@ export default function StoreProductCard({ product }: Props) {
               inStock ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-rose-200 bg-rose-50 text-rose-700"
             }`}
           >
-            {inStock ? `In stock (${product.stock})` : "Out of stock"}
+            {inStock ? translate({ en: "Stock Available", bn: "স্টক আছে", ja: "在庫あり" }, language) : translate({ en: "Out of Stock", bn: "স্টক নেই", ja: "在庫なし" }, language)}
           </span>
         </div>
 
