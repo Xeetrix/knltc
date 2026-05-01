@@ -80,17 +80,22 @@ export type BlogPost = {
 
 export type Category = { id: string; name: string; slug: string; type: CategoryType };
 
+export type CountResponse = { count: number | null };
+
+export type AdminNotificationCounts = {
+  pendingOrders: number;
+  pendingReviews: number;
+  newLeads: number;
+  lowStockProducts: number;
+};
+
 export type AdminSummary = {
   totalProducts: number;
   totalBlogPosts: number;
   totalDrafts: number;
   totalPublished: number;
   setupWarning: string | null;
-  pendingOrders: number;
-  pendingReviews: number;
-  newLeads: number;
-  lowStockProducts: number;
-};
+} & AdminNotificationCounts;
 
 export type AdminOrdersResult = {
   orders: Order[];
@@ -297,7 +302,7 @@ export async function getAdminSummary() {
     logCmsError("admin summary blog_posts query failed", postsResult.reason);
   }
 
-  const allProducts = (productsResult.status === "fulfilled" ? productsResult.value : []) as Array<{ status: Status }>;
+  const allProducts = (productsResult.status === "fulfilled" ? productsResult.value : []) as Array<{ status: Status; stock?: number | null }>;
   const allPosts = (postsResult.status === "fulfilled" ? postsResult.value : []) as Array<{ status: Status }>;
 
   const totalDrafts = [...allProducts, ...allPosts].filter((item) => item.status === "draft").length;
@@ -307,13 +312,15 @@ export async function getAdminSummary() {
       ? "Supabase data is unavailable or not fully set up yet. Showing empty totals."
       : null;
 
-  const lowStockProducts = allProducts.filter((item: any) => (item as any).stock !== undefined && Number((item as any).stock) <= 2).length;
+  const lowStockProducts = allProducts.filter((item) => item.stock !== undefined && item.stock !== null && Number(item.stock) <= 2).length;
+
+  const getCount = (result: PromiseSettledResult<CountResponse[]>) => (result.status === "fulfilled" ? result.value.length : 0);
 
   return {
     totalProducts: allProducts.length,
-    pendingOrders: ordersResult.status === "fulfilled" ? (ordersResult.value as any[]).length : 0,
-    pendingReviews: reviewsResult.status === "fulfilled" ? (reviewsResult.value as any[]).length : 0,
-    newLeads: leadsResult.status === "fulfilled" ? (leadsResult.value as any[]).length : 0,
+    pendingOrders: getCount(ordersResult as PromiseSettledResult<CountResponse[]>),
+    pendingReviews: getCount(reviewsResult as PromiseSettledResult<CountResponse[]>),
+    newLeads: getCount(leadsResult as PromiseSettledResult<CountResponse[]>),
     lowStockProducts,
     totalBlogPosts: allPosts.length,
     totalDrafts,
