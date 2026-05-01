@@ -81,39 +81,23 @@
   .rich-editor:focus {
     box-shadow: inset 0 0 0 2px hsl(var(--ring) / 0.2);
   }
-  .rich-editor :is(p, ul, ol, blockquote, h1, h2, h3, figure) {
+  .rich-editor :is(p, ul, ol, blockquote, h1, h2, h3, hr, img) {
     margin-top: 0.85rem;
     margin-bottom: 0.85rem;
   }
-
-  .rich-editor figure[data-blog-image="true"] {
-    position: relative;
-  }
-  .rich-editor figure[data-blog-image="true"].is-selected {
-    outline: 2px solid rgb(59 130 246 / 0.4);
-    outline-offset: 6px;
-    border-radius: 1rem;
-  }
-  .blog-image {
-    width: 100%;
-  }
-  .blog-image img {
+  .rich-editor h1 { @apply text-3xl font-bold; }
+  .rich-editor h2 { @apply text-2xl font-semibold; }
+  .rich-editor h3 { @apply text-xl font-semibold; }
+  .rich-editor ul { @apply list-disc pl-6; }
+  .rich-editor ol { @apply list-decimal pl-6; }
+  .rich-editor blockquote { @apply border-l-4 border-slate-300 bg-slate-50 px-4 py-2 italic; }
+  .rich-editor a { @apply text-blue-700 underline underline-offset-2; }
+  .rich-editor img,
+  .blog-content-image {
     max-width: 100%;
     height: auto;
     border-radius: 0.9rem;
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
-    margin-inline: auto;
+    margin: 1.25rem auto;
   }
-  .blog-image figcaption {
-    margin-top: 0.5rem;
-    text-align: center;
-    font-size: 0.85rem;
-    color: rgb(100 116 139);
-  }
-  .blog-image--sm img { width: min(420px, 100%); }
-  .blog-image--md img { width: min(720px, 100%); }
-  .blog-image--full img { width: 100%; }
-  .blog-image--left img { margin-left: 0; margin-right: auto; }
-  .blog-image--center img { margin-left: auto; margin-right: auto; }
-  .blog-image--right img { margin-left: auto; margin-right: 0; }
 }
