@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getPublishedPostBySlug } from "@/lib/cms";
+import RichContent from "@/components/blog/RichContent";
 
 export default async function BlogDetailsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -14,7 +15,7 @@ export default async function BlogDetailsPage({ params }: { params: Promise<{ sl
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{post.categories?.name ?? "Uncategorized"}</p>
           <h1 className="mt-2 text-3xl font-bold">{post.title}</h1>
           <p className="mt-3 text-sm text-muted-foreground">By {post.author}</p>
-          <p className="mt-6 whitespace-pre-wrap text-foreground/90">{post.content}</p>
+          <RichContent html={post.content} />
         </article>
       </div>
     </section>

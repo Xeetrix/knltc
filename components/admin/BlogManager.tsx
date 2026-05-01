@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
+import RichTextEditor from "@/components/admin/RichTextEditor";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
 import { notify } from "@/lib/notify";
 import type { BlogPost, Category } from "@/lib/cms";
@@ -110,7 +111,7 @@ export default function BlogManager({ initialPosts, categories }: { initialPosts
         </select>
         <input className="rounded-md border px-3 py-2 md:col-span-2" placeholder="Cover image URL" value={form.cover_image} onChange={(e) => setForm({ ...form, cover_image: e.target.value })} />
         <input className="rounded-md border px-3 py-2 md:col-span-2" placeholder="Excerpt" value={form.excerpt} onChange={(e) => setForm({ ...form, excerpt: e.target.value })} />
-        <textarea className="rounded-md border px-3 py-2 md:col-span-2" placeholder="Content" value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={7} />
+        <RichTextEditor value={form.content} onChange={(content) => setForm({ ...form, content })} />
         <div className="flex gap-2">
           <button className="rounded-md bg-primary px-3 py-2 text-primary-foreground">{mode} post</button>
           {form.id ? <button type="button" onClick={() => setForm(initialForm)} className="rounded-md border px-3 py-2">Cancel</button> : null}
