@@ -86,6 +86,10 @@ export type AdminSummary = {
   totalDrafts: number;
   totalPublished: number;
   setupWarning: string | null;
+  pendingOrders: number;
+  pendingReviews: number;
+  newLeads: number;
+  lowStockProducts: number;
 };
 
 export type AdminOrdersResult = {
@@ -168,6 +172,7 @@ function normalizeProductPayload(payload: ProductWritePayload) {
   const description = payload.description ?? payload.short_description ?? payload.full_description ?? "";
   const slug = payload.slug?.trim() || toSlug(name);
 
+
   return {
     name,
     title: payload.title ?? name,
@@ -192,6 +197,7 @@ function normalizeProductPayload(payload: ProductWritePayload) {
 
 function normalizeBlogPayload(payload: BlogWritePayload) {
   const slug = payload.slug?.trim() || toSlug(payload.title ?? "");
+
 
   return {
     title: payload.title ?? "",
@@ -276,9 +282,12 @@ export async function getPublishedPostBySlug(slug: string) {
 }
 
 export async function getAdminSummary() {
-  const [productsResult, postsResult] = await Promise.allSettled([
-    selectRows("products", { select: "id,status" }, true),
+  const [productsResult, postsResult, ordersResult, reviewsResult, leadsResult] = await Promise.allSettled([
+    selectRows("products", { select: "id,status,stock" }, true),
     selectRows("blog_posts", { select: "id,status" }, true),
+    selectRows("orders", { select: "id", status: "eq.pending" }, true),
+    selectRows("product_reviews", { select: "id", status: "eq.pending" }, true),
+    selectRows("crm_leads", { select: "id", status: "eq.new" }, true),
   ]);
 
   if (productsResult.status === "rejected") {
@@ -298,8 +307,14 @@ export async function getAdminSummary() {
       ? "Supabase data is unavailable or not fully set up yet. Showing empty totals."
       : null;
 
+  const lowStockProducts = allProducts.filter((item: any) => (item as any).stock !== undefined && Number((item as any).stock) <= 2).length;
+
   return {
     totalProducts: allProducts.length,
+    pendingOrders: ordersResult.status === "fulfilled" ? (ordersResult.value as any[]).length : 0,
+    pendingReviews: reviewsResult.status === "fulfilled" ? (reviewsResult.value as any[]).length : 0,
+    newLeads: leadsResult.status === "fulfilled" ? (leadsResult.value as any[]).length : 0,
+    lowStockProducts,
     totalBlogPosts: allPosts.length,
     totalDrafts,
     totalPublished,

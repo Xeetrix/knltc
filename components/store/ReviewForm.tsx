@@ -4,6 +4,7 @@ import { Star } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
+import { notify } from "@/lib/notify";
 
 export default function ReviewForm({ productId }: { productId: string }) {
   const { language } = useLanguage();
@@ -35,8 +36,14 @@ export default function ReviewForm({ productId }: { productId: string }) {
 
     const res = await fetch("/api/reviews", { method: "POST", body });
     const data = await res.json();
-    if (!res.ok) return setError(data.error || "Failed");
+    if (!res.ok) {
+      const err = data.error || "Failed";
+      setError(err);
+      notify("error", "Review submit failed", err);
+      return;
+    }
     setMessage(data.message || "Submitted");
+    notify("success", "Review submitted", "Your review is pending admin approval.");
     setCustomerName(""); setRating(5); setComment(""); setImage(null);
   };
 
