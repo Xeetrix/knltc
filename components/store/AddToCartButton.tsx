@@ -5,6 +5,7 @@ import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
 import { addToCart } from "@/lib/shop";
 import { cn } from "@/lib/utils";
+import { notify } from "@/lib/notify";
 
 type Props = {
   product: {
@@ -35,7 +36,7 @@ export default function AddToCartButton({ product, disabled = false, quantity = 
         className,
       )}
       onClick={() => {
-        if (disabled) return;
+        if (disabled) { notify("warning", labels.out, "This product is currently unavailable."); return; }
         addToCart({
           productId: product.id,
           name: product.name,
@@ -44,6 +45,7 @@ export default function AddToCartButton({ product, disabled = false, quantity = 
           image: product.featured_image,
         });
         setAdded(true);
+        notify("success", labels.added, `${product.name} added to cart.`);
         setTimeout(() => setAdded(false), 1200);
       }}
       type="button"

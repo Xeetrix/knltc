@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import Link from "next/link";
 import AdminShell from "@/components/admin/AdminShell";
 import { getAdminSummary } from "@/lib/cms";
 
@@ -30,6 +31,20 @@ export default async function AdminDashboardPage() {
           <p className="text-sm text-muted-foreground">Total published</p>
           <p className="mt-2 text-2xl font-bold">{summary.totalPublished}</p>
         </div>
+      </div>
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Link href="/admin/orders" className="rounded-lg border bg-card p-4 hover:border-emerald-300">
+          <p className="text-sm text-muted-foreground">New Orders</p><p className="mt-2 text-2xl font-bold text-emerald-600">{summary.pendingOrders}</p>
+        </Link>
+        <Link href="/admin/reviews" className="rounded-lg border bg-card p-4 hover:border-emerald-300">
+          <p className="text-sm text-muted-foreground">Pending Reviews</p><p className="mt-2 text-2xl font-bold text-emerald-600">{summary.pendingReviews}</p>
+        </Link>
+        <Link href="/admin/crm" className="rounded-lg border bg-card p-4 hover:border-emerald-300">
+          <p className="text-sm text-muted-foreground">New CRM Leads</p><p className="mt-2 text-2xl font-bold text-emerald-600">{summary.newLeads}</p>
+        </Link>
+        <Link href="/admin/products" className="rounded-lg border bg-card p-4 hover:border-emerald-300">
+          <p className="text-sm text-muted-foreground">Low Stock Products</p><p className="mt-2 text-2xl font-bold text-rose-600">{summary.lowStockProducts}</p>
+        </Link>
       </div>
     </AdminShell>
   );

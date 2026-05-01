@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
+import { notify } from "@/lib/notify";
 import type { BlogPost, Category } from "@/lib/cms";
 
 type BlogInput = {
@@ -33,6 +35,8 @@ const initialForm: BlogInput = {
 export default function BlogManager({ initialPosts, categories }: { initialPosts: BlogPost[]; categories: Category[] }) {
   const [posts, setPosts] = useState(initialPosts);
   const [form, setForm] = useState<BlogInput>(initialForm);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mode = useMemo(() => (form.id ? "Update" : "Create"), [form.id]);
 
@@ -52,7 +56,9 @@ export default function BlogManager({ initialPosts, categories }: { initialPosts
     const data = await res.json();
     if (!res.ok) {
       console.error("[Admin][blog][submit]", data);
-      setError(data.error || "Failed to save blog post");
+      const msg = data.error || "Failed to save blog post";
+      setError(msg);
+      notify("error", "Blog save failed", msg);
       return;
     }
 
@@ -62,17 +68,25 @@ export default function BlogManager({ initialPosts, categories }: { initialPosts
       setPosts((prev) => [data.post, ...prev]);
     }
     setForm(initialForm);
+    notify("success", form.id ? "Blog updated" : "Blog created");
   };
 
   const remove = async (id: string) => {
+    setDeleting(true);
     const res = await fetch(`/api/admin/blog?id=${id}`, { method: "DELETE" });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       console.error("[Admin][blog][delete]", data);
-      setError(data.error || "Failed to delete blog post");
+      const msg = data.error || "Failed to delete blog post";
+      setError(msg);
+      setDeleting(false);
+      notify("error", "Blog delete failed", msg);
       return;
     }
     setPosts((prev) => prev.filter((item) => item.id !== id));
+    setDeleting(false);
+    setDeleteTarget(null);
+    notify("success", "Blog post deleted");
   };
 
   return (
@@ -130,11 +144,12 @@ export default function BlogManager({ initialPosts, categories }: { initialPosts
               >
                 Edit
               </button>
-              <button onClick={() => remove(item.id)} className="rounded-md border px-3 py-1 text-sm text-red-600">Delete</button>
+              <button onClick={() => setDeleteTarget(item.id)} className="rounded-md border px-3 py-1 text-sm text-red-600">Delete</button>
             </div>
           </div>
         ))}
       </div>
+      <ConfirmDialog open={Boolean(deleteTarget)} title="Delete item" message="This action cannot be undone." confirmLabel="Delete" onCancel={() => setDeleteTarget(null)} onConfirm={() => deleteTarget && remove(deleteTarget)} loading={deleting} danger />
     </div>
   );
 }

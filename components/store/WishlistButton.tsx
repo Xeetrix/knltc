@@ -4,6 +4,7 @@ import { Heart } from "lucide-react";
 import { useEffect, useState } from "react";
 import { readWishlist, toggleWishlist } from "@/lib/shop";
 import { cn } from "@/lib/utils";
+import { notify } from "@/lib/notify";
 
 type Props = {
   product: {
@@ -41,6 +42,7 @@ export default function WishlistButton({ product, className }: Props) {
           image: product.featured_image,
         });
         setActive(next);
+        notify("info", next ? "Added to wishlist" : "Removed from wishlist", product.name);
       }}
       aria-label="Add to wishlist"
     >

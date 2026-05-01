@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type DragEvent, type FormEvent } from "react";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
+import { notify } from "@/lib/notify";
 import type { Category, Product } from "@/lib/cms";
 
 type ProductInput = {
@@ -42,6 +44,8 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024;
 export default function ProductManager({ initialProducts, categories }: { initialProducts: Product[]; categories: Category[] }) {
   const [products, setProducts] = useState(initialProducts);
   const [form, setForm] = useState<ProductInput>(initialForm);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -135,7 +139,9 @@ export default function ProductManager({ initialProducts, categories }: { initia
       const data = await res.json();
       if (!res.ok) {
         console.error("[Admin][products][submit]", data);
-        setError(data.error || "Failed to save product");
+        const msg = data.error || "Failed to save product";
+        setError(msg);
+        notify("error", "Product save failed", msg);
         return;
       }
 
@@ -146,21 +152,30 @@ export default function ProductManager({ initialProducts, categories }: { initia
       }
       setForm(initialForm);
       clearImageState();
+      notify("success", form.id ? "Product updated" : "Product created");
     } catch (submitError) {
       const message = submitError instanceof Error ? submitError.message : "Failed to save product";
       setError(message);
+      notify("error", "Product save failed", message);
     }
   };
 
   const remove = async (id: string) => {
+    setDeleting(true);
     const res = await fetch(`/api/admin/products?id=${id}`, { method: "DELETE" });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       console.error("[Admin][products][delete]", data);
-      setError(data.error || "Failed to delete product");
+const msg = data.error || "Failed to delete product";
+      setError(msg);
+      notify("error", "Delete failed", msg);
+      setDeleting(false);
       return;
     }
     setProducts((prev) => prev.filter((item) => item.id !== id));
+    notify("success", "Product deleted");
+    setDeleting(false);
+    setDeleteTarget(null);
   };
 
   const onDrop = (event: DragEvent<HTMLDivElement>) => {
@@ -276,11 +291,12 @@ export default function ProductManager({ initialProducts, categories }: { initia
               >
                 Edit
               </button>
-              <button onClick={() => remove(item.id)} className="rounded-md border px-3 py-1 text-sm text-red-600">Delete</button>
+              <button onClick={() => setDeleteTarget(item.id)} className="rounded-md border px-3 py-1 text-sm text-red-600">Delete</button>
             </div>
           </div>
         ))}
       </div>
+      <ConfirmDialog open={Boolean(deleteTarget)} title="Delete item" message="This action cannot be undone." confirmLabel="Delete" onCancel={() => setDeleteTarget(null)} onConfirm={() => deleteTarget && remove(deleteTarget)} loading={deleting} danger />
     </div>
   );
 }
