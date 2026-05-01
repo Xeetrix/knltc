@@ -329,6 +329,27 @@ export async function getAdminSummary() {
   };
 }
 
+export async function getAdminNotificationCounts(): Promise<AdminNotificationCounts> {
+  const [ordersResult, reviewsResult, leadsResult, productsResult] = await Promise.allSettled([
+    selectRows("orders", { select: "id", status: "eq.pending" }, true),
+    selectRows("product_reviews", { select: "id", status: "eq.pending" }, true),
+    selectRows("crm_leads", { select: "id", status: "eq.new" }, true),
+    selectRows("products", { select: "id,stock" }, true),
+  ]);
+
+  const getCount = (result: PromiseSettledResult<unknown[]>) => (result.status === "fulfilled" ? result.value.length : 0);
+
+  const productRows = (productsResult.status === "fulfilled" ? productsResult.value : []) as Array<{ stock?: number | null }>;
+  const lowStockProducts = productRows.filter((item) => item.stock !== undefined && item.stock !== null && Number(item.stock) <= 2).length;
+
+  return {
+    pendingOrders: getCount(ordersResult as PromiseSettledResult<unknown[]>),
+    pendingReviews: getCount(reviewsResult as PromiseSettledResult<unknown[]>),
+    newLeads: getCount(leadsResult as PromiseSettledResult<unknown[]>),
+    lowStockProducts,
+  };
+}
+
 export async function getAllAdminProducts() {
   return await safeSelectRows<Product>(
     "products",

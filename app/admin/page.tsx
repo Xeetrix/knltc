@@ -14,6 +14,15 @@ export default async function AdminDashboardPage() {
           {summary.setupWarning}
         </div>
       ) : null}
+      <div className="mb-4 rounded-lg border bg-card p-4">
+        <p className="text-sm font-semibold">Notification summary</p>
+        <div className="mt-2 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
+          <p>New Orders: <span className="font-semibold text-emerald-600">{summary.pendingOrders}</span></p>
+          <p>Pending Reviews: <span className="font-semibold text-emerald-600">{summary.pendingReviews}</span></p>
+          <p>New CRM Leads: <span className="font-semibold text-emerald-600">{summary.newLeads}</span></p>
+          <p>Low Stock Products: <span className="font-semibold text-rose-600">{summary.lowStockProducts}</span></p>
+        </div>
+      </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-lg border bg-card p-4">
           <p className="text-sm text-muted-foreground">Total products</p>
