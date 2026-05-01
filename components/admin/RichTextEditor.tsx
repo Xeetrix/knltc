@@ -37,6 +37,11 @@ type ActiveStates = {
 
 type ImagePreset = "sm" | "md" | "full";
 
+type UploadImageResponse = {
+  url?: string;
+  error?: string;
+};
+
 const toolbarButtonClass =
   "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-transparent text-muted-foreground transition-all hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60";
 
@@ -119,7 +124,7 @@ export default function RichTextEditor({ value, onChange }: Props) {
     fd.append("bucket", "blog-images");
 
     try {
-      const data = await new Promise<any>((resolve, reject) => {
+      const data = await new Promise<UploadImageResponse>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open("POST", "/api/admin/upload");
 
@@ -129,7 +134,7 @@ export default function RichTextEditor({ value, onChange }: Props) {
         };
 
         xhr.onload = () => {
-          const parsed = JSON.parse(xhr.responseText || "{}");
+          const parsed: UploadImageResponse = JSON.parse(xhr.responseText || "{}");
           if (xhr.status >= 200 && xhr.status < 300) resolve(parsed);
           else reject(new Error(parsed.error || "Image upload failed."));
         };
@@ -139,6 +144,7 @@ export default function RichTextEditor({ value, onChange }: Props) {
       });
 
       ref.current?.focus();
+      if (!data.url) throw new Error("Image upload failed.");
       const html = `<figure data-blog-image="true" data-align="center" data-size="md" class="blog-image blog-image--center blog-image--md"><img src="${data.url}" alt="" loading="lazy" /><figcaption contenteditable="true">Add caption (optional)</figcaption></figure><p><br></p>`;
       document.execCommand("insertHTML", false, html);
       syncContent();
