@@ -86,7 +86,8 @@ export default function RichTextEditor({ value, onChange }: Props) {
 
     const sel = window.getSelection();
     const anchor = sel?.anchorNode instanceof Element ? sel.anchorNode : sel?.anchorNode?.parentElement;
-    setSelectedFigure(anchor?.closest("figure[data-blog-image='true']") ?? null);
+    const figure = anchor?.closest("figure[data-blog-image='true']");
+    setSelectedFigure(figure instanceof HTMLElement ? figure : null);
   };
 
   useEffect(() => {
