@@ -1,6 +1,6 @@
 type QueryParams = Record<string, string | number | boolean | null | undefined>;
 
-type SupabaseOperation = "select" | "insert" | "update" | "delete" | "upload";
+type SupabaseOperation = "select" | "insert" | "update" | "delete" | "upload" | "list";
 
 type SupabaseErrorResponse = {
   code?: string;
@@ -218,4 +218,47 @@ export async function uploadToStorage(fileName: string, data: ArrayBuffer, conte
   }
 
   return `${getBaseUrl()}/storage/v1/object/public/${bucket}/${fileName}`;
+}
+
+
+type StorageListItem = { name: string; created_at?: string | null };
+
+export async function listStorageFiles(bucket: string) {
+  if (!serviceKey) throw new Error("SUPABASE_SERVICE_ROLE_KEY is missing.");
+
+  const res = await fetch(`${getBaseUrl()}/storage/v1/object/list/${bucket}`, {
+    method: "POST",
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ limit: 200, offset: 0, sortBy: { column: "created_at", order: "desc" } }),
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const rawResponse = await res.text();
+    const parsed = parseSupabaseError(rawResponse);
+    throw new SupabaseOperationError({
+      status: res.status,
+      operation: "list",
+      resourceType: "bucket",
+      resourceName: bucket,
+      message: parsed.message ?? parsed.error ?? "Failed to list storage files",
+      code: parsed.code,
+      details: parsed.details,
+      hint: parsed.hint,
+      rawResponse,
+    });
+  }
+
+  const rows = (await res.json()) as StorageListItem[];
+  return rows
+    .filter((row) => row.name && !row.name.endsWith("/"))
+    .map((row) => ({
+      name: row.name,
+      created_at: row.created_at ?? null,
+      url: `${getBaseUrl()}/storage/v1/object/public/${bucket}/${row.name}`,
+    }));
 }

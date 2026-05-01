@@ -85,6 +85,15 @@
     margin-top: 0.85rem;
     margin-bottom: 0.85rem;
   }
+
+  .rich-editor figure[data-blog-image="true"] {
+    position: relative;
+  }
+  .rich-editor figure[data-blog-image="true"].is-selected {
+    outline: 2px solid rgb(59 130 246 / 0.4);
+    outline-offset: 6px;
+    border-radius: 1rem;
+  }
   .blog-image {
     width: 100%;
   }
