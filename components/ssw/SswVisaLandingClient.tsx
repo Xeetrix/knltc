@@ -115,7 +115,7 @@ export default function SswVisaLandingClient() {
           </article>
 
           <article className="rounded-2xl border border-rose-100 bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-extrabold text-slate-900">Why KNLTC</h2>
+            <h2 className="text-lg font-extrabold text-slate-900">Why KNLTC?</h2>
             <div className="mt-3 grid grid-cols-1 gap-2 text-sm text-slate-700 xl:grid-cols-2">
               {["সঠিক গাইডলাইন", "ডকুমেন্টেশন সাপোর্ট", "ইন্টারভিউ প্রস্তুতি", "দ্রুত যোগাযোগ", "জাপান-কেন্দ্রিক বাস্তব পরামর্শ"].map((item) => (
                 <div key={item} className="rounded-xl bg-slate-50 p-3">{item}</div>
@@ -127,7 +127,7 @@ export default function SswVisaLandingClient() {
         <section className="mt-8 rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-600 to-emerald-700 p-5 text-white shadow-xl shadow-emerald-700/30 sm:p-6">
           <p className="text-xs font-semibold uppercase tracking-wide text-emerald-100">আপনি কি যোগ্য?</p>
           <h2 className="mt-1 text-2xl font-black">N4 পাশ এবং স্কিল টেস্ট সার্টিফিকেট থাকলে এখনই আবেদন করুন।</h2>
-          <a href="#apply" className="mt-4 inline-flex items-center rounded-xl bg-white px-4 py-2 text-sm font-bold text-emerald-800 transition hover:bg-emerald-50">ফর্ম পূরণ করুন <ChevronRight className="ml-1 h-4 w-4" /></a>
+          <a href="#apply" className="mt-4 inline-flex items-center rounded-xl bg-white px-4 py-2 text-sm font-bold text-emerald-800 transition hover:bg-emerald-50">ফরম পূরণ করুন <ChevronRight className="ml-1 h-4 w-4" /></a>
         </section>
 
         <section id="apply" className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/40 sm:p-9">
@@ -163,7 +163,7 @@ export default function SswVisaLandingClient() {
               </label>
             </div>
 
-            <label className="space-y-1.5 text-sm font-medium text-slate-800">
+            <label className="mt-2 space-y-1.5 text-sm font-medium text-slate-800">
               <span className="block">অতিরিক্ত বার্তা</span>
               <Textarea rows={6} placeholder="আপনার অভিজ্ঞতা বা প্রশ্ন লিখুন" className="min-h-36 rounded-xl border-slate-200 bg-slate-50/60 px-4 py-3.5 leading-relaxed placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-emerald-500/80 focus-visible:ring-offset-0" value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
             </label>
