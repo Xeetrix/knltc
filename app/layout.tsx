@@ -6,7 +6,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import Providers from "@/components/layout/Providers";
 import MetaPixel from "@/components/analytics/MetaPixel";
-import MetaPixelPageView from "@/components/analytics/MetaPixelPageView";
+import PageViewTracker from "@/components/analytics/PageViewTracker";
 import { siteConfig } from "@/lib/site";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-body" });
@@ -38,7 +38,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <MetaPixel />
         <Providers>
           <Suspense fallback={null}>
-            <MetaPixelPageView />
+            <PageViewTracker />
           </Suspense>
           <div className="min-h-screen bg-background">
             <Header />
