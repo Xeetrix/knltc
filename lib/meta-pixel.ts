@@ -1,17 +1,16 @@
 "use client";
 
-type FbqArgs = ["track", string, Record<string, string>?] | ["trackCustom", string, Record<string, string>?];
+import { canUseFbq, fbq } from "./fbq";
 
 declare global {
   interface Window {
-    fbq?: (...args: FbqArgs) => void;
     __knltcTrackedPageViews?: Set<string>;
     __knltcRecentEvents?: Map<string, number>;
   }
 }
 
 function canTrack() {
-  return typeof window !== "undefined" && typeof window.fbq === "function";
+  return canUseFbq();
 }
 
 function shouldSendDedupedEvent(key: string, ttlMs = 1200) {
@@ -28,28 +27,28 @@ export function trackPageView(pathWithQuery: string) {
   if (!canTrack()) return;
   if (!window.__knltcTrackedPageViews) window.__knltcTrackedPageViews = new Set<string>();
   if (window.__knltcTrackedPageViews.has(pathWithQuery)) return;
-  window.fbq?.("track", "PageView");
+  fbq("track", "PageView");
   window.__knltcTrackedPageViews.add(pathWithQuery);
 }
 
 export function trackViewContent(payload: { content_name: string; content_category: string }) {
   if (!canTrack()) return;
-  window.fbq?.("track", "ViewContent", payload);
+  fbq("track", "ViewContent", payload);
 }
 
 export function trackLead(payload?: { content_name: string; content_category: string }) {
   if (!canTrack()) return;
-  window.fbq?.("track", "Lead", payload);
+  fbq("track", "Lead", payload);
 }
 
 export function trackWhatsAppClick(source: string) {
   if (!canTrack()) return;
   if (!shouldSendDedupedEvent(`whatsapp:${source}`)) return;
-  window.fbq?.("trackCustom", "WhatsAppClick", { source });
+  fbq("trackCustom", "WhatsAppClick", { source });
 }
 
 export function trackApplyNowClick(source: string) {
   if (!canTrack()) return;
   if (!shouldSendDedupedEvent(`apply:${source}`)) return;
-  window.fbq?.("trackCustom", "ApplyNowClick", { source });
+  fbq("trackCustom", "ApplyNowClick", { source });
 }
