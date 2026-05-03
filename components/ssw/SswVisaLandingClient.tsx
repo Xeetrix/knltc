@@ -163,7 +163,7 @@ export default function SswVisaLandingClient() {
               </label>
             </div>
 
-            <div className="field-group md:col-span-2 mt-6">
+            <div className="field-group md:col-span-2 mt-4">
               <label className="mb-2 block text-sm font-medium text-slate-800">
                 অতিরিক্ত বার্তা
               </label>
