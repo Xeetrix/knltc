@@ -1,4 +1,4 @@
-type FbqArg =
+export type FbqArg =
   | string
   | number
   | boolean
@@ -16,4 +16,8 @@ export function fbq(...args: FbqArg[]) {
   if (typeof window !== "undefined" && typeof window.fbq === "function") {
     window.fbq(...args);
   }
+}
+
+export function canUseFbq() {
+  return typeof window !== "undefined" && typeof window.fbq === "function";
 }
