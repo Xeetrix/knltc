@@ -149,7 +149,7 @@ export type CrmLead = {
   name: string;
   phone: string;
   email: string | null;
-  source: "checkout" | "contact form" | "consultation form" | "manual admin entry";
+  source: "checkout" | "contact form" | "consultation form" | "manual admin entry" | "SSW Visa Landing Page";
   interest: string | null;
   message: string | null;
   status: LeadStatus;
