@@ -22,6 +22,7 @@ export async function POST(request: Request) {
     }
 
     const details = [
+      `Visa interest: ${result.data.visa_interest}`,
       `Japanese level: ${result.data.japanese_level}`,
       `Skill certificate: ${result.data.skill_certificate}`,
       result.data.message ? `Message: ${result.data.message}` : "",
