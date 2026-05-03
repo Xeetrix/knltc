@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import SswViewContentTracker from "@/components/ssw/SswViewContentTracker";
 import SswVisaLandingClient from "@/components/ssw/SswVisaLandingClient";
 
 export const metadata: Metadata = {
@@ -7,5 +8,10 @@ export const metadata: Metadata = {
 };
 
 export default function SswVisaPage() {
-  return <SswVisaLandingClient />;
+  return (
+    <>
+      <SswViewContentTracker />
+      <SswVisaLandingClient />
+    </>
+  );
 }

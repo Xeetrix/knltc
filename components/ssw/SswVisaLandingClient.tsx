@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, ChevronRight, Leaf, PhoneCall, ShieldCheck, Stethoscope, Timer, Users, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -33,10 +33,6 @@ export default function SswVisaLandingClient() {
     message: "",
   });
 
-  useEffect(() => {
-    trackViewContent({ content_name: "SSW Visa Campaign", content_category: "Lead Generation" });
-  }, []);
-
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setSubmitting(true);
@@ -48,7 +44,7 @@ export default function SswVisaLandingClient() {
       });
       if (!res.ok) throw new Error();
 
-      trackLead({ content_name: "SSW Visa Lead", content_category: form.visa_interest });
+      trackLead({ content_name: "SSW Lead" });
       toast({
         title: "আবেদন সফল",
         description: "আপনার আবেদন গ্রহণ করা হয়েছে। আমাদের টিম দ্রুত যোগাযোগ করবে।",

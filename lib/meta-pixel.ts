@@ -31,12 +31,12 @@ export function trackPageView(pathWithQuery: string) {
   window.__knltcTrackedPageViews.add(pathWithQuery);
 }
 
-export function trackViewContent(payload: { content_name: string; content_category: string }) {
+export function trackViewContent(payload: { content_name: string; content_category?: string }) {
   if (!canTrack()) return;
   fbq("track", "ViewContent", payload);
 }
 
-export function trackLead(payload?: { content_name: string; content_category: string }) {
+export function trackLead(payload?: { content_name: string; content_category?: string }) {
   if (!canTrack()) return;
   fbq("track", "Lead", payload);
 }
