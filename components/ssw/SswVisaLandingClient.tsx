@@ -163,10 +163,12 @@ export default function SswVisaLandingClient() {
               </label>
             </div>
 
-            <label className="mt-2 space-y-1.5 text-sm font-medium text-slate-800">
-              <span className="block">অতিরিক্ত বার্তা</span>
-              <Textarea rows={6} placeholder="আপনার অভিজ্ঞতা বা প্রশ্ন লিখুন" className="min-h-36 rounded-xl border-slate-200 bg-slate-50/60 px-4 py-3.5 leading-relaxed placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-emerald-500/80 focus-visible:ring-offset-0" value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
-            </label>
+            <div className="field-group md:col-span-2 mt-6">
+              <label className="mb-2 block text-sm font-medium text-slate-800">
+                অতিরিক্ত বার্তা
+              </label>
+              <Textarea rows={6} placeholder="আপনার অভিজ্ঞতা বা প্রশ্ন লিখুন" className="w-full min-h-36 rounded-xl border-slate-200 bg-slate-50/60 px-4 py-3.5 leading-relaxed placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-emerald-500/80 focus-visible:ring-offset-0" value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
+            </div>
 
             <p className="mt-4 flex items-start gap-2 rounded-xl bg-slate-100 px-4 py-3 text-[11px] leading-relaxed text-slate-600 sm:text-xs"><Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />আপনার তথ্য নিরাপদ থাকবে এবং শুধুমাত্র KNLTC যোগাযোগের জন্য ব্যবহার করবে।</p>
             <Button type="submit" disabled={submitting} className="mt-6 h-[52px] w-full rounded-xl bg-rose-600 text-base font-semibold shadow-md shadow-rose-600/20 transition duration-200 hover:-translate-y-0.5 hover:bg-rose-700 hover:shadow-lg hover:shadow-rose-700/25 focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2">{submitting ? "জমা হচ্ছে..." : "আবেদন সাবমিট করুন"}</Button>
