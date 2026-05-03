@@ -1,11 +1,19 @@
+type FbqArg =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | Record<string, unknown>;
+
 declare global {
   interface Window {
-    fbq: (...args: any[]) => void;
+    fbq?: (...args: FbqArg[]) => void;
   }
 }
 
-export const fbq = (...args: any[]) => {
-  if (typeof window !== "undefined" && window.fbq) {
+export function fbq(...args: FbqArg[]) {
+  if (typeof window !== "undefined" && typeof window.fbq === "function") {
     window.fbq(...args);
   }
-};
+}
