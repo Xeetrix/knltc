@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, ChevronRight, Leaf, MessageCircle, PhoneCall, ShieldCheck, Timer, UserCheck, Users, Wallet } from "lucide-react";
+import { CheckCircle2, ChevronRight, Leaf, Lock, MessageCircle, PhoneCall, ShieldCheck, Timer, UserCheck, Users, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -130,48 +130,46 @@ export default function SswVisaLandingClient() {
           <a href="#apply" className="mt-4 inline-flex items-center rounded-xl bg-white px-4 py-2 text-sm font-bold text-emerald-800 transition hover:bg-emerald-50">ফর্ম পূরণ করুন <ChevronRight className="ml-1 h-4 w-4" /></a>
         </section>
 
-        <section id="apply" className="mt-8 rounded-3xl border border-slate-200 bg-white p-5 shadow-xl shadow-slate-200/40 sm:p-8">
+        <section id="apply" className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/40 sm:p-9">
           <p className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">সীমিত আসন • দ্রুত যোগাযোগ • সঠিক গাইডলাইন</p>
           <h2 className="mt-3 text-2xl font-black text-slate-900">এখনই আবেদন করুন</h2>
           <p className="mt-1 text-sm text-slate-600">আপনার তথ্য দিন, আমাদের টিম দ্রুত যোগাযোগ করবে।</p>
-          <form onSubmit={submit} className="mt-6 space-y-5 sm:space-y-6">
-            <div className="grid gap-x-4 gap-y-5 md:grid-cols-2">
-              <label className="space-y-2.5 text-sm font-medium text-slate-800">
+          <form onSubmit={submit} className="mt-8 space-y-8">
+            <div className="grid gap-x-5 gap-y-5 md:grid-cols-2">
+              <label className="space-y-1.5 text-sm font-medium text-slate-800">
                 <span className="block">আপনার নাম</span>
-                <Input required placeholder="নাম" className="h-12 rounded-xl border-slate-300 px-4 focus-visible:ring-2 focus-visible:ring-emerald-500" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                <Input required placeholder="নাম" className="h-12 rounded-xl border-slate-300 px-4 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-emerald-500/80 focus-visible:ring-offset-0 h-[52px] md:h-12" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
               </label>
 
-              <label className="space-y-2.5 text-sm font-medium text-slate-800">
+              <label className="space-y-1.5 text-sm font-medium text-slate-800">
                 <span className="block">মোবাইল নম্বর</span>
-                <Input required placeholder="মোবাইল নম্বর" className="h-12 rounded-xl border-slate-300 px-4 focus-visible:ring-2 focus-visible:ring-emerald-500" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                <Input required placeholder="মোবাইল নম্বর" className="h-12 rounded-xl border-slate-300 px-4 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-emerald-500/80 focus-visible:ring-offset-0 h-[52px] md:h-12" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
                 <p className="pt-0.5 text-xs leading-relaxed text-slate-500">সঠিক নম্বর দিন, এই নম্বরেই আমাদের টিম যোগাযোগ করবে।</p>
               </label>
 
-              <label className="space-y-2.5 text-sm font-medium text-slate-800">
+              <label className="space-y-1.5 text-sm font-medium text-slate-800">
                 <span className="block">কোন ক্যাটাগরিতে আগ্রহী?</span>
-                <select className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm outline-none ring-offset-white transition focus-visible:ring-2 focus-visible:ring-emerald-500" value={form.visa_interest} onChange={(e) => setForm({ ...form, visa_interest: e.target.value as VisaInterest })}><option>Agriculture</option><option>Caregiver</option></select>
+                <select className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus-visible:ring-2 focus-visible:ring-emerald-500/80 focus-visible:ring-offset-0 h-[52px] md:h-12" value={form.visa_interest} onChange={(e) => setForm({ ...form, visa_interest: e.target.value as VisaInterest })}><option>Agriculture</option><option>Caregiver</option></select>
               </label>
 
-              <label className="space-y-2.5 text-sm font-medium text-slate-800">
+              <label className="space-y-1.5 text-sm font-medium text-slate-800">
                 <span className="block">আপনার জাপানি ভাষার লেভেল</span>
-                <select className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm outline-none ring-offset-white transition focus-visible:ring-2 focus-visible:ring-emerald-500" value={form.japanese_level} onChange={(e) => setForm({ ...form, japanese_level: e.target.value as JapaneseLevel })}><option>N4 Passed</option><option>N5 Passed</option><option>Preparing for N4</option></select>
+                <select className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus-visible:ring-2 focus-visible:ring-emerald-500/80 focus-visible:ring-offset-0 h-[52px] md:h-12" value={form.japanese_level} onChange={(e) => setForm({ ...form, japanese_level: e.target.value as JapaneseLevel })}><option>N4 Passed</option><option>N5 Passed</option><option>Preparing for N4</option></select>
               </label>
 
-              <label className="space-y-2.5 text-sm font-medium text-slate-800 md:col-span-1">
+              <label className="space-y-1.5 text-sm font-medium text-slate-800 md:col-span-2">
                 <span className="block">স্কিল টেস্ট সার্টিফিকেট আছে?</span>
-                <select className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm outline-none ring-offset-white transition focus-visible:ring-2 focus-visible:ring-emerald-500" value={form.skill_certificate} onChange={(e) => setForm({ ...form, skill_certificate: e.target.value as SkillCertificate })}><option>Yes</option><option>No</option></select>
+                <select className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus-visible:ring-2 focus-visible:ring-emerald-500/80 focus-visible:ring-offset-0 h-[52px] md:h-12" value={form.skill_certificate} onChange={(e) => setForm({ ...form, skill_certificate: e.target.value as SkillCertificate })}><option>Yes</option><option>No</option></select>
               </label>
-
-              <div className="hidden md:block" aria-hidden />
             </div>
 
-            <label className="space-y-2.5 text-sm font-medium text-slate-800">
+            <label className="space-y-1.5 text-sm font-medium text-slate-800">
               <span className="block">অতিরিক্ত বার্তা</span>
-              <Textarea rows={5} placeholder="আপনার অভিজ্ঞতা বা প্রশ্ন লিখুন" className="min-h-32 rounded-xl border-slate-300 px-4 py-3 leading-relaxed focus-visible:ring-2 focus-visible:ring-emerald-500" value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
+              <Textarea rows={6} placeholder="আপনার অভিজ্ঞতা বা প্রশ্ন লিখুন" className="min-h-36 rounded-xl border-slate-200 bg-slate-50/60 px-4 py-3.5 leading-relaxed placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-emerald-500/80 focus-visible:ring-offset-0" value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
             </label>
 
-            <p className="mt-1 rounded-xl bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-600 sm:mt-2">আপনার তথ্য নিরাপদ থাকবে এবং শুধুমাত্র KNLTC যোগাযোগের জন্য ব্যবহার করবে।</p>
-            <Button type="submit" disabled={submitting} className="mt-2 h-12 w-full rounded-xl bg-rose-600 text-base font-semibold transition hover:bg-rose-700 focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2">{submitting ? "জমা হচ্ছে..." : "আবেদন সাবমিট করুন"}</Button>
+            <p className="mt-4 flex items-start gap-2 rounded-xl bg-slate-100 px-4 py-3 text-[11px] leading-relaxed text-slate-600 sm:text-xs"><Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />আপনার তথ্য নিরাপদ থাকবে এবং শুধুমাত্র KNLTC যোগাযোগের জন্য ব্যবহার করবে।</p>
+            <Button type="submit" disabled={submitting} className="mt-6 h-[52px] w-full rounded-xl bg-rose-600 text-base font-semibold shadow-md shadow-rose-600/20 transition duration-200 hover:-translate-y-0.5 hover:bg-rose-700 hover:shadow-lg hover:shadow-rose-700/25 focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2">{submitting ? "জমা হচ্ছে..." : "আবেদন সাবমিট করুন"}</Button>
           </form>
         </section>
 
