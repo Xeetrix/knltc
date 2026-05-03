@@ -7,8 +7,8 @@ const sswLeadSchema = z.object({
   name: z.string().trim().min(2),
   phone: z.string().trim().min(6),
   visa_interest: z.enum(["Agriculture", "Caregiver"]),
-  japanese_level: z.enum(["N5", "N4", "N3+", "Not started"]),
-  skill_certificate: z.enum(["Yes", "No", "Preparing"]),
+  japanese_level: z.enum(["N4 Passed", "N5 Passed", "Preparing for N4"]),
+  skill_certificate: z.enum(["Yes", "No"]),
   message: z.string().trim().optional(),
 });
 
