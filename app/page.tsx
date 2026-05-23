@@ -1,43 +1,106 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import WhatsAppFAB from "@/components/home/WhatsAppFAB";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
 
+const coreServiceMap = {
+  bn: ["জাপানি ভাষা প্রোগ্রাম", "স্কিল ট্রেনিং", "স্টুডেন্ট ও জব ভিসা সাপোর্ট", "ইন্টারভিউ প্রিপারেশন", "ডকুমেন্টেশন সাপোর্ট", "লার্নিং রিসোর্স", "আফটার-অ্যারাইভাল সাপোর্ট"],
+  en: ["Japanese Language Program", "Skill Training", "Student & Job Visa Support", "Interview Preparation", "Documentation Support", "Japanese Learning Resources", "After Arrival Support"],
+  ja: ["日本語プログラム", "スキルトレーニング", "学生・就労ビザ支援", "面接対策", "書類サポート", "学習リソース", "渡航後サポート"],
+};
+
 export default function HomePage() {
   const { language } = useLanguage();
-  const t = translate({
-    bn: {
-      title: "জাপান ও আন্তর্জাতিক শিক্ষা পরামর্শ",
-      desc: "জাপানি ভাষা, SSW/TITP সহায়তা, স্টুডেন্ট ভিসা ও ক্যারিয়ার গাইডলাইন এক জায়গায়।",
-      cta: "ফ্রি কনসালটেশন",
-      explore: "সার্ভিস দেখুন",
-      cards: ["জাপানে কাজ ও ক্যারিয়ার", "স্টাডি অ্যাব্রড", "জাপানি ভাষা"],
-      pathway: "বিস্তারিত দেখুন",
+  const t = translate(
+    {
+      bn: {
+        title: "জাপান ও আন্তর্জাতিক শিক্ষা পরামর্শ",
+        desc: "জাপানি ভাষা প্রশিক্ষণ, SSW/TITP সাপোর্ট, স্টুডেন্ট ভিসা, স্কিল ডেভেলপমেন্ট ও আন্তর্জাতিক শিক্ষা গাইডলাইন।",
+        freeConsultation: "ফ্রি কনসালটেশন",
+        whatsapp: "হোয়াটসঅ্যাপ",
+        services: "সার্ভিস দেখুন",
+        cards: ["জাপানে কাজ ও ক্যারিয়ার", "স্টাডি অ্যাব্রড", "জাপানি ভাষা"],
+        explorePathway: "পাথওয়ে দেখুন",
+        coreServices: "মূল সেবাসমূহ",
+        featuredPrograms: "ফিচার্ড প্রোগ্রাম",
+        learningTitle: "জাপানি লার্নিং রিসোর্স",
+        learningDesc: "আমাদের স্টোর থেকে বই ও স্টাডি টুলস এক্সপ্লোর করুন।",
+        visitStore: "স্টোরে যান",
+        finalTitle: "নিজের পথ বেছে নিতে প্রস্তুত?",
+        finalDesc: "আমাদের কনসালটেন্টদের সাথে কথা বলে জাপান ক্যারিয়ার, ভাষা ও আন্তর্জাতিক শিক্ষার জন্য স্ট্রাকচার্ড রোডম্যাপ নিন।",
+      },
+      en: {
+        title: "Japan & Global Education Consultancy",
+        desc: "Japanese Language Training, SSW/TITP Support, Student Visa, Skill Development & International Education Guidance.",
+        freeConsultation: "Free Consultation",
+        whatsapp: "WhatsApp",
+        services: "Explore Services",
+        cards: ["Work & Career in Japan", "Study Abroad", "Japanese Language"],
+        explorePathway: "Explore Pathway",
+        coreServices: "Core Services",
+        featuredPrograms: "Featured Programs",
+        learningTitle: "Japanese Learning Resources",
+        learningDesc: "Explore books and study tools from our existing store ecosystem.",
+        visitStore: "Visit Store",
+        finalTitle: "Ready to choose your path?",
+        finalDesc: "Talk with our consultants for a structured roadmap across Japan career, language, and global education opportunities.",
+      },
+      ja: {
+        title: "日本・海外教育コンサルティング",
+        desc: "日本語トレーニング、SSW/TITP支援、学生ビザ、スキル開発、海外教育ガイダンスを提供します。",
+        freeConsultation: "無料相談",
+        whatsapp: "WhatsApp",
+        services: "サービスを見る",
+        cards: ["日本で働く・キャリア", "留学", "日本語"],
+        explorePathway: "詳細を見る",
+        coreServices: "主要サービス",
+        featuredPrograms: "注目プログラム",
+        learningTitle: "日本語学習リソース",
+        learningDesc: "ストアで書籍や学習ツールをご覧ください。",
+        visitStore: "ストアへ",
+        finalTitle: "進路を選ぶ準備はできましたか？",
+        finalDesc: "日本でのキャリア・語学・海外教育に向けたロードマップをご相談ください。",
+      },
     },
-    en: { title: "Japan & Global Education Consultancy", desc: "Japanese language, SSW/TITP support, student visa and career guidance in one place.", cta: "Free Consultation", explore: "Explore Services", cards: ["Work & Career in Japan", "Study Abroad", "Japanese Language"], pathway: "Explore Pathway" },
-    ja: { title: "日本・海外教育コンサルティング", desc: "日本語、SSW/TITP支援、学生ビザ、キャリア相談をワンストップで。", cta: "無料相談", explore: "サービスを見る", cards: ["日本で働く・キャリア", "留学", "日本語"], pathway: "詳細を見る" },
-    zh: { title: "日本与国际教育咨询", desc: "提供日语、SSW/TITP、学生签证与职业规划的一站式服务。", cta: "免费咨询", explore: "查看服务", cards: ["日本就业与职业", "海外留学", "日语学习"], pathway: "查看路径" },
-    ru: { title: "Консалтинг по Японии и зарубежному обучению", desc: "Японский язык, SSW/TITP, студенческие визы и карьерное сопровождение в одном месте.", cta: "Бесплатная консультация", explore: "Наши услуги", cards: ["Работа и карьера в Японии", "Учёба за рубежом", "Японский язык"], pathway: "Подробнее" },
-    ms: { title: "Perundingan Pendidikan Jepun & Global", desc: "Bahasa Jepun, sokongan SSW/TITP, visa pelajar dan panduan kerjaya di satu tempat.", cta: "Konsultasi Percuma", explore: "Lihat Servis", cards: ["Kerja & Kerjaya di Jepun", "Belajar di Luar Negara", "Bahasa Jepun"], pathway: "Lihat Laluan" },
-  }, language);
+    language,
+  );
 
-  return <>
-    <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="section-padding bg-gradient-to-b from-slate-900 via-slate-800 to-slate-700 text-white">
-      <div className="container-narrow">
-        <h1 className="text-balance-safe text-4xl font-bold md:text-5xl">{t.title}</h1>
-        <p className="mt-4 max-w-3xl text-white/85">{t.desc}</p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Button asChild className="rounded-full px-6 shadow-lg"><Link href="/contact">{t.cta}</Link></Button>
-          <Button asChild variant="secondary" className="rounded-full px-6"><Link href="/services">{t.explore}</Link></Button>
+  const coreServices = coreServiceMap[language as "bn" | "en" | "ja"] ?? coreServiceMap.en;
+
+  return (
+    <>
+      <section className="section-padding bg-gradient-to-b from-slate-900 to-slate-700 text-white">
+        <div className="container-narrow">
+          <h1 className="text-4xl font-bold md:text-5xl">{t.title}</h1>
+          <p className="mt-4 max-w-3xl text-white/85">{t.desc}</p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Button asChild><Link href="/contact">{t.freeConsultation}</Link></Button>
+            <Button asChild variant="outline"><a href="https://wa.me/8801313292295" target="_blank" rel="noopener noreferrer">{t.whatsapp}</a></Button>
+            <Button asChild variant="secondary"><Link href="/services">{t.services}</Link></Button>
+          </div>
         </div>
-      </div>
-    </motion.section>
-    <section className="section-padding pt-12"><div className="container-narrow grid gap-4 md:grid-cols-3">{t.cards.map((n, i)=><Card key={n} className="transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"><CardHeader><CardTitle>{n}</CardTitle></CardHeader><CardContent><Button asChild variant="outline"><Link href={["/japan-career","/study-abroad","/japanese-language"][i]}>{t.pathway}</Link></Button></CardContent></Card>)}</div></section>
-    <WhatsAppFAB />
-  </>;
+      </section>
+
+      <section className="section-padding">
+        <div className="container-narrow grid gap-4 md:grid-cols-3">
+          {t.cards.map((name, i) => (
+            <Card key={name}>
+              <CardHeader><CardTitle>{name}</CardTitle></CardHeader>
+              <CardContent><Button asChild><Link href={["/japan-career", "/study-abroad", "/japanese-language"][i]}>{t.explorePathway}</Link></Button></CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      <section className="section-padding pt-0"><div className="container-narrow"><h2 className="text-3xl font-bold">{t.coreServices}</h2><div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{coreServices.map((item) => <Card key={item}><CardContent className="p-5 font-medium">{item}</CardContent></Card>)}</div></div></section>
+      <section className="section-padding pt-0"><div className="container-narrow"><h2 className="text-3xl font-bold">{t.featuredPrograms}</h2><div className="mt-5 grid gap-4 md:grid-cols-4">{[["SSW Visa", "/ssw-visa"], ["TITP Program", "/japan-career"], ["Study in Malaysia", "/study-in-malaysia"], ["Study in China", "/study-in-china"]].map(([n, h]) => <Card key={n}><CardHeader><CardTitle>{n}</CardTitle></CardHeader><CardContent><Button asChild variant="outline"><Link href={h}>{n}</Link></Button></CardContent></Card>)}</div></div></section>
+      <section className="section-padding pt-0"><div className="container-narrow rounded-2xl border bg-white p-6"><h2 className="text-3xl font-bold">{t.learningTitle}</h2><p className="mt-2 text-muted-foreground">{t.learningDesc}</p><Button asChild className="mt-4"><Link href="/store">{t.visitStore}</Link></Button></div></section>
+      <section className="section-padding pt-0"><div className="container-narrow rounded-2xl border bg-white p-6 text-center"><h2 className="text-3xl font-bold">{t.finalTitle}</h2><p className="mt-2 text-muted-foreground">{t.finalDesc}</p><div className="mt-4 flex flex-wrap justify-center gap-3"><Button asChild><Link href="/contact">{t.freeConsultation}</Link></Button><Button asChild variant="outline"><a href="https://wa.me/8801313292295" target="_blank" rel="noopener noreferrer">{t.whatsapp}</a></Button></div></div></section>
+      <WhatsAppFAB />
+    </>
+  );
 }
