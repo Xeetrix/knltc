@@ -52,12 +52,12 @@ const text = {
   heroSubtitle: tr(
     "ভাষা শিক্ষা, স্কিল ট্রেনিং, SSW/TITP ভিসা, ইন্টারভিউ প্রস্তুতি, ডকুমেন্টেশন ও জাপানে পৌঁছানোর পরও সাপোর্ট—সবকিছু এক জায়গায়।"
   ),
-  ctaConsult: tr("ফ্রি কনসাল্টেশন নিন", "Get Free Consultation"),
+  ctaConsult: tr("ফ্রি কনসাল্টেশন", "Get Free Consultation"),
   ctaWhatsapp: tr("হোয়াটসঅ্যাপে কথা বলুন", "Talk on WhatsApp"),
   supportTitle: tr("জাপানে যাওয়ার সম্পূর্ণ সাপোর্ট সিস্টেম"),
   compareTitle: tr("SSW ও TITP: আপনার জন্য কোন পথটি উপযুক্ত?"),
   opportunityTitle: tr("বর্তমানে চলমান সুযোগসমূহ"),
-  sswSectorTitle: tr("জাপানে SSW ভিসার সম্ভাব্য খাত"),
+  sswSectorTitle: tr("জাপানে কাজের সম্ভাব্য খাত"),
   titpSectorTitle: tr("TITP প্রোগ্রামের সম্ভাব্য খাত"),
   processTitle: tr("জাপানে কাজের প্রস্তুতি যেভাবে হবে"),
   whyTitle: tr("কেন KNLTC?"),
@@ -67,7 +67,7 @@ const text = {
 
 const supportCards = [
   {
-    title: "ল্যাঙ্গুয়েজ প্রোগ্রাম",
+    title: "ভাষা প্রস্তুতি",
     description:
       "জাপান যাওয়ার জন্য ভাষা শেখা সবচেয়ে গুরুত্বপূর্ণ। KNLTC অল্প সময়ের মধ্যে N5 ও N4 সম্পন্ন করিয়ে পরবর্তী ধাপে এগিয়ে নিতে সাহায্য করে।",
     icon: Languages,
@@ -84,25 +84,30 @@ const supportCards = [
     icon: ShieldCheck,
   },
   {
-    title: "ইন্টারভিউ প্রিপারেশন",
+    title: "ইন্টারভিউ প্রস্তুতি",
     description:
       "জাপানে চাকরি পাওয়ার জন্য ইন্টারভিউ প্রস্তুতি, মক ইন্টারভিউ ও কমিউনিকেশন গাইডলাইন দেওয়া হয়।",
     icon: CheckCircle2,
   },
   {
-    title: "জাপানিজ ভাষার বই",
-    description: "জাপানি ভাষা শেখার প্রয়োজনীয় বই ও গাইড পাওয়া যায়।",
+    title: "ডকুমেন্টেশন",
+    description: "CV/Resume, ব্যাংক স্টেটমেন্ট, সার্টিফিকেট ও প্রয়োজনীয় ফাইল প্রস্তুতিতে সহায়তা।",
     icon: BookOpen,
   },
   {
-    title: "ডকুমেন্টেশন সাপোর্ট",
-    description: "CV/Resume, ব্যাংক স্টেটমেন্ট, সার্টিফিকেট ও প্রয়োজনীয় ফাইল প্রস্তুতিতে সহায়তা।",
+    title: "ভিসা প্রসেসিং",
+    description: "SSW ও TITP ভিসার জন্য ধাপে ধাপে প্রসেসিং, ফর্ম ফিলআপ ও প্রয়োজনীয় গাইডলাইন দেওয়া হয়।",
     icon: FileCheck2,
   },
   {
-    title: "আফটার অ্যারাইভাল সাপোর্ট",
+    title: "জাপানে পৌঁছানোর পর সাপোর্ট",
     description: "জাপানে পৌঁছানোর পরও প্রয়োজনীয় খোঁজখবর ও গাইডলাইন দেওয়ার চেষ্টা করা হয়।",
     icon: HeartHandshake,
+  },
+  {
+    title: "আফটার অ্যারাইভাল সাপোর্ট",
+    description: "জাপানে পৌঁছানোর পর বাসস্থান, কাগজপত্র ও দৈনন্দিন সেটআপ বিষয়ে ফলো-আপ সাপোর্ট দেওয়া হয়।",
+    icon: Sparkles,
   },
 ];
 
@@ -111,7 +116,7 @@ const opportunities = [
   ["SSW Caregiver", "SSW", "১৮০,০০০ – ২২০,০০০ ইয়েন", ["JLPT N4 অথবা JFT-Basic", "Skill Test Certificate"]],
   ["TITP Construction", "TITP", "১৫০,০০০ – ২০০,০০০ ইয়েন", ["N5 লেভেলের জাপানি ভাষা থাকলে ভালো", "প্রয়োজন হলে ভাষা শেখানো যায়"]],
   ["TITP Automobile", "TITP", "২০০,০০০ – ২৫০,০০০ ইয়েন", ["সংশ্লিষ্ট কাজের অভিজ্ঞতা থাকলে আবেদন করা যায়", "প্রয়োজনীয় ভাষা শেখানো যায়"]],
-  ["TITP Welding", "TITP", "২০০,০০০ – ২৫০,০০০ ইয়েন", ["সংশ্লিষ্ট কাজের অভিজ্ঞতা থাকলে আবেদন করা যায়", "প্রয়োজনীয় ভাষা শেখানো যায়"]],
+  ["TITP Welding", "TITP", "২০০,০০০ – ২৫০,০০০ ইয়েন", ["সংশ্লিষ্ট কাজের অভিজ্ঞতা থাকলে আবেদন করা যায়।", "প্রাথমিকভাবে ভাষা না জানলেও চলবে।", "প্রয়োজনীয় ভাষা শিখিয়ে নেওয়া হবে।"]],
 ] as const;
 
 const sswSectors = [
@@ -190,14 +195,24 @@ export default function JapanCareerPage() {
           <div className="mt-5 grid gap-4 lg:grid-cols-2">
             <Card className="rounded-2xl border-red-200 bg-red-50/60 shadow-sm">
               <CardHeader><CardTitle className="flex items-center gap-2 text-red-700"><BriefcaseBusiness className="h-5 w-5" />SSW (Specified Skilled Worker)</CardTitle></CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <p>• JLPT N4 অথবা JFT-Basic প্রয়োজন</p><p>• সংশ্লিষ্ট স্কিল টেস্ট পাস করতে হয়</p><p>• দক্ষ কর্মীদের জন্য সরাসরি কাজের সুযোগ</p><p>• Type 1 থেকে ভবিষ্যতে Type 2 pathway</p>
+              <CardContent>
+                <ul className="space-y-2 text-sm text-zinc-800">
+                  <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />JLPT N4 অথবা JFT-Basic প্রয়োজন</li>
+                  <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />সংশ্লিষ্ট স্কিল টেস্ট পাস করতে হয়</li>
+                  <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />সরাসরি দক্ষ কর্মী হিসেবে কাজের সুযোগ</li>
+                  <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />Type 1 থেকে ভবিষ্যতে Type 2-এ যাওয়ার সম্ভাবনা</li>
+                </ul>
               </CardContent>
             </Card>
             <Card className="rounded-2xl border-green-200 bg-green-50/70 shadow-sm">
               <CardHeader><CardTitle className="flex items-center gap-2 text-green-700"><GraduationCap className="h-5 w-5" />TITP (Technical Intern Training Program)</CardTitle></CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <p>• ট্রেইনি বা শিক্ষানবিস ভিত্তিক প্রোগ্রাম</p><p>• N5 লেভেলের ভাষা প্রস্তুতি থাকলে ভালো</p><p>• ৩ থেকে ৫ বছরের সুযোগ</p><p>• সফলভাবে শেষ করলে SSW Type 1-এ যাওয়ার সুযোগ তৈরি হতে পারে</p>
+              <CardContent>
+                <ul className="space-y-2 text-sm text-zinc-800">
+                  <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-700" />প্রশিক্ষণভিত্তিক কর্মপথ</li>
+                  <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-700" />N5 লেভেলের ভাষা প্রস্তুতি থাকলে ভালো</li>
+                  <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-700" />৩ থেকে ৫ বছরের সুযোগ</li>
+                  <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-700" />ভবিষ্যতে SSW-তে যাওয়ার সম্ভাবনা</li>
+                </ul>
               </CardContent>
             </Card>
           </div>
@@ -207,15 +222,17 @@ export default function JapanCareerPage() {
           <h2 className="text-2xl font-bold md:text-3xl">{text.opportunityTitle[lang]}</h2>
           <div className="mt-5 grid gap-4 lg:grid-cols-2">
             {opportunities.map(([title, visa, salary, eligibility]) => (
-              <Card key={title} className="group rounded-2xl border-zinc-200 transition hover:-translate-y-1 hover:shadow-md">
+              <Card key={title} className="group rounded-2xl border border-zinc-200 bg-white transition hover:-translate-y-1 hover:shadow-lg">
                 <CardHeader className="space-y-2">
-                  <div className="flex flex-wrap gap-2 text-xs font-semibold"><span className="rounded-full bg-red-100 px-3 py-1 text-red-700">{visa}</span><span className="rounded-full bg-green-100 px-3 py-1 text-green-700">বেতন: {salary}</span></div>
+                  <div className="flex flex-wrap gap-2 text-xs font-semibold"><span className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-red-700">ভিসা: {visa}</span><span className="rounded-full border border-green-200 bg-green-50 px-3 py-1 text-green-700">বেতন: {salary}</span></div>
                   <CardTitle className="text-lg">{title}</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p className="mb-2 text-sm font-semibold">যোগ্যতা:</p>
-                  <ul className="space-y-1 text-sm text-zinc-700">{eligibility.map((line) => <li key={line} className="flex items-start gap-2"><ClipboardCheck className="mt-0.5 h-4 w-4 text-green-700" />{line}</li>)}</ul>
-                  <Button asChild className="mt-4 bg-red-600 hover:bg-red-700"><Link href="/contact">এই সুযোগে আবেদন করুন</Link></Button>
+                <CardContent className="space-y-3">
+                  <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-3">
+                    <p className="mb-2 text-sm font-semibold text-zinc-900">যোগ্যতা</p>
+                    <ul className="space-y-1.5 text-sm text-zinc-700">{eligibility.map((line) => <li key={line} className="flex items-start gap-2"><ClipboardCheck className="mt-0.5 h-4 w-4 shrink-0 text-green-700" />{line}</li>)}</ul>
+                  </div>
+                  <Button asChild className="w-full bg-red-600 text-white hover:bg-red-700"><Link href="/contact">এই সুযোগে আবেদন করুন</Link></Button>
                 </CardContent>
               </Card>
             ))}
