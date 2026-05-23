@@ -77,18 +77,18 @@ export default function HomePage() {
 
   return (
     <>
-      <section className="relative overflow-hidden bg-slate-950 text-white">
+      <section className="relative overflow-hidden bg-[#111827] text-white">
         <div className="absolute inset-0 bg-[url('/images/hero-bg.jpg')] bg-cover bg-center opacity-45" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(220,38,38,.35),transparent_35%),radial-gradient(circle_at_80%_10%,rgba(16,185,129,.2),transparent_32%),linear-gradient(180deg,rgba(2,6,23,.6),rgba(2,6,23,.92))]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(214,31,38,.36),transparent_35%),radial-gradient(circle_at_80%_10%,rgba(0,153,102,.22),transparent_32%),linear-gradient(180deg,rgba(17,24,39,.55),rgba(17,24,39,.9))]" />
         <motion.div initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="container-narrow relative z-10 grid gap-8 py-16 md:grid-cols-2 md:items-end md:py-20 lg:py-24">
           <div>
             <span className="mb-4 inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold backdrop-blur">🇯🇵 KNLTC · Japan + Global Education</span>
             <h1 className="text-balance-safe text-4xl font-bold leading-tight md:text-5xl lg:text-6xl">{t.heroTitle}</h1>
             <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/85 md:text-lg">{t.heroDesc}</p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <Button asChild className="h-11 rounded-full bg-emerald-500 px-7 font-semibold text-slate-950 hover:bg-emerald-400"><Link href="/contact">{t.consult}</Link></Button>
-              <Button asChild variant="outline" className="h-11 rounded-full border-white/40 bg-white/10 px-7 text-white hover:bg-white/20"><Link href="/services">{t.services}</Link></Button>
-              <Button asChild className="h-11 rounded-full bg-rose-600 px-7 hover:bg-rose-500"><a href={siteConfig.whatsappHref} target="_blank" rel="noopener noreferrer">WhatsApp</a></Button>
+              <Button asChild className="h-11 rounded-full bg-gradient-to-r from-[#009966] to-[#00B67A] px-7 font-semibold text-white shadow-[0_8px_24px_rgba(0,153,102,0.35)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,153,102,0.45)]"><Link href="/contact">{t.consult}</Link></Button>
+              <Button asChild variant="outline" className="h-11 rounded-full border-[#D61F26]/70 bg-white/10 px-7 text-white hover:bg-[#D61F26]/25"><Link href="/services">{t.services}</Link></Button>
+              <Button asChild className="h-11 rounded-full border border-[#D61F26]/40 bg-[#D61F26] px-7 hover:bg-[#A8141A]"><a href={siteConfig.whatsappHref} target="_blank" rel="noopener noreferrer">WhatsApp</a></Button>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3 text-sm">
@@ -107,15 +107,15 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      <section className="section-padding bg-slate-50">
+      <section className="section-padding bg-[#F8FAFC]">
         <div className="container-narrow">
-          <h2 className="text-3xl font-bold text-slate-900 md:text-4xl">{t.servicesTitle}</h2>
+          <h2 className="text-3xl font-bold text-[#111827] md:text-4xl">{t.servicesTitle}</h2>
           <div className="mt-7 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
             {services.map((s, i) => (
-              <Link key={s} href={serviceLinks[i]} className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
-                <div className="mb-4 inline-flex rounded-xl bg-gradient-to-br from-slate-900 to-slate-700 p-2.5 text-white">{[GraduationCap, BriefcaseBusiness, Globe2, CheckCircle2].map((I, idx) => idx===i ? <I key={idx} className="h-5 w-5"/>:null)}</div>
-                <p className="min-h-16 text-lg font-semibold leading-snug text-slate-900">{s}</p>
-                <p className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-rose-600">Explore <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></p>
+              <Link key={s} href={serviceLinks[i]} className="group rounded-2xl border border-red-100 bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+                <div className="mb-4 inline-flex rounded-xl bg-gradient-to-br from-[#D61F26] to-[#A8141A] p-2.5 text-white">{[GraduationCap, BriefcaseBusiness, Globe2, CheckCircle2].map((I, idx) => idx===i ? <I key={idx} className="h-5 w-5"/>:null)}</div>
+                <p className="min-h-16 text-lg font-semibold leading-snug text-[#111827]">{s}</p>
+                <p className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-[#A8141A]">Explore <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></p>
               </Link>
             ))}
           </div>
@@ -125,10 +125,10 @@ export default function HomePage() {
       <section className="section-padding bg-white">
         <div className="container-narrow grid gap-6 lg:grid-cols-3">
           {[{t:t.whyTitle,d:"Expert counsellors, transparent process, and profile-specific planning for each applicant.",i:Award},{t:t.pathwayTitle,d:"Student visa, language school, SSW, TITP, and higher-study progression mapped clearly.",i:TrendingUp},{t:t.successTitle,d:"From first consultation to arrival support—our team stays with students at every key step.",i:Users2}].map((item) => (
-            <Card key={item.t} className="border-slate-200 bg-gradient-to-b from-white to-slate-50 shadow-sm">
+            <Card key={item.t} className="border-red-100 bg-gradient-to-b from-white to-red-50/30 shadow-sm">
               <CardContent className="p-6">
-                <item.i className="mb-3 h-6 w-6 text-rose-600" />
-                <h3 className="text-xl font-semibold text-slate-900">{item.t}</h3>
+                <item.i className="mb-3 h-6 w-6 text-[#D61F26]" />
+                <h3 className="text-xl font-semibold text-[#111827]">{item.t}</h3>
                 <p className="mt-2 leading-relaxed text-slate-600">{item.d}</p>
               </CardContent>
             </Card>
@@ -136,13 +136,13 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="section-padding pt-0 bg-white">
-        <div className="container-narrow rounded-3xl border border-slate-200 bg-slate-900 p-8 text-center text-white shadow-2xl">
+      <section className="section-padding bg-gradient-to-b from-white to-green-50/30 pt-0">
+        <div className="container-narrow rounded-3xl border border-red-100 bg-[#111827] p-8 text-center text-white shadow-2xl">
           <h2 className="text-3xl font-bold md:text-4xl">{t.finalTitle}</h2>
           <p className="mx-auto mt-3 max-w-3xl text-white/80">{t.finalDesc}</p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <Button asChild className="h-11 rounded-full bg-emerald-500 px-7 font-semibold text-slate-900 hover:bg-emerald-400"><Link href="/contact">{t.consult}</Link></Button>
-            <Button asChild className="h-11 rounded-full bg-rose-600 px-7 hover:bg-rose-500"><a href={siteConfig.whatsappHref} target="_blank" rel="noopener noreferrer">WhatsApp</a></Button>
+            <Button asChild className="h-11 rounded-full bg-gradient-to-r from-[#009966] to-[#00B67A] px-7 font-semibold text-white shadow-[0_8px_24px_rgba(0,153,102,0.35)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(0,153,102,0.45)]"><Link href="/contact">{t.consult}</Link></Button>
+            <Button asChild className="h-11 rounded-full border border-[#D61F26]/40 bg-[#D61F26] px-7 hover:bg-[#A8141A]"><a href={siteConfig.whatsappHref} target="_blank" rel="noopener noreferrer">WhatsApp</a></Button>
           </div>
         </div>
       </section>
