@@ -25,9 +25,12 @@ function MainHeader({ pathname }: { pathname: string }) {
     () =>
       translate(
         {
-          en: { nav: ["Home", "Japan Career", "Study Abroad", "Japanese Language", "Store", "Blog", "Contact"], cta: "Free Consultation", whatsapp: "WhatsApp", toggleMenu: "Toggle menu", language: "Language" },
           bn: { nav: ["হোম", "জাপান ক্যারিয়ার", "স্টাডি অ্যাব্রড", "জাপানি ভাষা", "স্টোর", "ব্লগ", "যোগাযোগ"], cta: "ফ্রি কনসালটেশন", whatsapp: "হোয়াটসঅ্যাপ", toggleMenu: "মেনু টগল করুন", language: "ভাষা" },
+          en: { nav: ["Home", "Japan Career", "Study Abroad", "Japanese Language", "Store", "Blog", "Contact"], cta: "Free Consultation", whatsapp: "WhatsApp", toggleMenu: "Toggle menu", language: "Language" },
           ja: { nav: ["ホーム", "日本キャリア", "留学", "日本語", "ストア", "ブログ", "お問い合わせ"], cta: "無料相談", whatsapp: "WhatsApp", toggleMenu: "メニュー切替", language: "言語" },
+          zh: { nav: ["首页", "日本职业", "海外留学", "日语", "商店", "博客", "联系"], cta: "免费咨询", whatsapp: "WhatsApp", toggleMenu: "切换菜单", language: "语言" },
+          ru: { nav: ["Главная", "Карьера в Японии", "Учёба за рубежом", "Японский язык", "Магазин", "Блог", "Контакты"], cta: "Бесплатная консультация", whatsapp: "WhatsApp", toggleMenu: "Открыть меню", language: "Язык" },
+          ms: { nav: ["Laman Utama", "Kerjaya Jepun", "Belajar di Luar Negara", "Bahasa Jepun", "Kedai", "Blog", "Hubungi"], cta: "Konsultasi Percuma", whatsapp: "WhatsApp", toggleMenu: "Togol menu", language: "Bahasa" },
         },
         language,
       ),
@@ -103,7 +106,7 @@ function MainHeader({ pathname }: { pathname: string }) {
           <div className="hidden shrink-0 items-center gap-2 xl:flex">
             <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground">{t.language}
               <select className="min-w-28 rounded-md border bg-background px-2.5 py-1.5 text-xs" value={language} onChange={(e) => setLanguage(e.target.value as typeof language)}>
-                {languageOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                {languageOptions.map((option) => <option key={option.value} value={option.value}>{`${option.short} · ${option.label}`}</option>)}
               </select>
             </label>
             <Button asChild size="sm" className="h-10 rounded-full bg-emerald-600 px-4 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700">
@@ -123,7 +126,7 @@ function MainHeader({ pathname }: { pathname: string }) {
             <nav id="mobile-menu" ref={menuPanelRef} className="ml-auto w-full max-w-sm space-y-3 rounded-xl border bg-background p-4 shadow-lg">
               <label className="mb-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">{t.language}
                 <select className="w-full min-w-0 rounded-md border bg-background px-2.5 py-1.5 text-xs sm:w-auto sm:min-w-28" value={language} onChange={(e) => setLanguage(e.target.value as typeof language)}>
-                  {languageOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  {languageOptions.map((option) => <option key={option.value} value={option.value}>{`${option.short} · ${option.label}`}</option>)}
                 </select>
               </label>
               {navLinks.map((link) => {

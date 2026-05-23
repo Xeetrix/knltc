@@ -54,6 +54,9 @@
   * {
     @apply border-border;
   }
+  html {
+    scroll-behavior: smooth;
+  }
   body {
     @apply overflow-x-hidden bg-background text-foreground antialiased;
     font-family: var(--font-body), Inter, sans-serif;
@@ -99,5 +102,12 @@
     border-radius: 0.9rem;
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
     margin: 1.25rem auto;
+  }
+}
+
+
+@layer utilities {
+  .premium-card {
+    @apply rounded-2xl border bg-white/95 shadow-[0_12px_30px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_36px_rgba(15,23,42,0.12)];
   }
 }
