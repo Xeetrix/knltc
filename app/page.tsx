@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Award, BriefcaseBusiness, CheckCircle2, Globe2, GraduationCap, ShieldCheck, Sparkles, TrendingUp, Users2 } from "lucide-react";
+import { ArrowRight, Award, BriefcaseBusiness, CheckCircle2, Globe2, GraduationCap, ShieldCheck, Sparkles, TrendingUp, Users2, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import WhatsAppFAB from "@/components/home/WhatsAppFAB";
@@ -11,6 +11,12 @@ import { translate } from "@/lib/i18n";
 import { siteConfig } from "@/lib/site";
 
 const serviceLinks = ["/japanese-language", "/japan-career", "/study-abroad", "/ssw-visa"];
+
+type StatItem = {
+  icon: LucideIcon;
+  value: string;
+  label: string;
+};
 
 export default function HomePage() {
   const { language } = useLanguage();
@@ -62,6 +68,13 @@ export default function HomePage() {
     ja: ["日本語マスタリー", "SSW/TITP就職ルート", "日本・マレーシア・中国留学", "書類・COE・面接サポート"],
   }, language);
 
+  const stats: StatItem[] = [
+    { value: "3,200+", label: "Students Guided", icon: Users2 },
+    { value: "97%", label: "Visa File Accuracy", icon: ShieldCheck },
+    { value: "24/7", label: "Counsellor Support", icon: Sparkles },
+    { value: "11+", label: "Partner Networks", icon: Globe2 },
+  ];
+
   return (
     <>
       <section className="relative overflow-hidden bg-slate-950 text-white">
@@ -79,14 +92,17 @@ export default function HomePage() {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3 text-sm">
-            {[["3,200+", "Students Guided", Users2], ["97%", "Visa File Accuracy", ShieldCheck], ["24/7", "Counsellor Support", Sparkles], ["11+", "Partner Networks", Globe2]].map(([v, l, Icon]) => (
-              <Card key={String(v)} className="border-white/20 bg-white/10 text-white shadow-2xl backdrop-blur-md">
+            {stats.map((item) => {
+              const Icon = item.icon;
+              return (
+              <Card key={item.value} className="border-white/20 bg-white/10 text-white shadow-2xl backdrop-blur-md">
                 <CardContent className="p-4">
                   <Icon className="mb-2 h-4 w-4 text-emerald-300" />
-                  <p className="text-2xl font-bold">{v}</p><p className="text-white/75">{l}</p>
+                  <p className="text-2xl font-bold">{item.value}</p>
+                  <p className="text-white/75">{item.label}</p>
                 </CardContent>
               </Card>
-            ))}
+            )})}
           </div>
         </motion.div>
       </section>
