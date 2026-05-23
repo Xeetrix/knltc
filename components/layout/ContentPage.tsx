@@ -3,9 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/components/layout/LanguageProvider";
-import { Language } from "@/lib/i18n";
-
-type LocalizedField = Record<Language, string>;
+import { LocalizedField } from "@/lib/i18n";
 
 type ContentPageProps = {
   title: LocalizedField;

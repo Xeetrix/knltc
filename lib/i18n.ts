@@ -18,3 +18,28 @@ export type TranslationDict<T> = Partial<Record<Language, T>> & { bn: T };
 export function translate<T>(dictionary: TranslationDict<T>, language: Language): T {
   return dictionary[language] ?? dictionary[defaultLanguage];
 }
+
+
+export type LocalizedField = Record<Language, string>;
+
+type PartialLocalizedFieldInput = {
+  en: string;
+  bn: string;
+  ja: string;
+  zh?: string;
+  ru?: string;
+  ms?: string;
+};
+
+export function fallbackLocalizedField(field: PartialLocalizedFieldInput): LocalizedField {
+  const fallback = field.en;
+
+  return {
+    en: field.en,
+    bn: field.bn,
+    ja: field.ja,
+    zh: field.zh ?? fallback,
+    ru: field.ru ?? fallback,
+    ms: field.ms ?? fallback,
+  };
+}
