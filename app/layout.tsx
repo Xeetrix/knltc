@@ -33,7 +33,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${poppins.variable}`}>
+    <html lang="bn" className={`${inter.variable} ${poppins.variable}`}>
       <body>
         <MetaPixel />
         <Providers>

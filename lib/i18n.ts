@@ -13,10 +13,10 @@ export const defaultLanguage: Language = "bn";
 
 export const languageStorageKey = "knltc-language";
 
-export type TranslationDict<T> = Partial<Record<Language, T>> & { bn: T };
+export type TranslationDict<T> = Partial<Record<Language, T>> & { bn: T; en: T };
 
 export function translate<T>(dictionary: TranslationDict<T>, language: Language): T {
-  return dictionary[language] ?? dictionary[defaultLanguage];
+  return dictionary[language] ?? dictionary.en ?? dictionary[defaultLanguage];
 }
 
 
