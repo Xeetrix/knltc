@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BookOpen, Grid2x2, Home, Info, Mail, Menu, MessageCircle, Phone, ShoppingBag, X } from "lucide-react";
+import { BookOpen, BriefcaseBusiness, Grid2x2, Home, Languages, Mail, Menu, MessageCircle, Phone, ShoppingBag, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BrandLogo from "@/components/layout/BrandLogo";
 import { useLanguage } from "@/components/layout/LanguageProvider";
@@ -25,9 +25,9 @@ function MainHeader({ pathname }: { pathname: string }) {
     () =>
       translate(
         {
-          en: { nav: ["Home", "About", "Services", "Blog", "Store", "Contact"], cta: "Start Your Journey", whatsapp: "WhatsApp", toggleMenu: "Toggle menu", language: "Language" },
-          bn: { nav: ["হোম", "আমাদের সম্পর্কে", "সার্ভিস", "ব্লগ", "স্টোর", "যোগাযোগ"], cta: "আপনার যাত্রা শুরু করুন", whatsapp: "হোয়াটসঅ্যাপ", toggleMenu: "মেনু টগল করুন", language: "ভাষা" },
-          ja: { nav: ["ホーム", "会社概要", "サービス", "ブログ", "ストア", "お問い合わせ"], cta: "新しい一歩を始める", whatsapp: "WhatsApp", toggleMenu: "メニュー切替", language: "言語" },
+          en: { nav: ["Home", "Japan Career", "Study Abroad", "Japanese Language", "Store", "Blog", "Contact"], cta: "Free Consultation", whatsapp: "WhatsApp", toggleMenu: "Toggle menu", language: "Language" },
+          bn: { nav: ["হোম", "জাপান ক্যারিয়ার", "স্টাডি অ্যাব্রড", "জাপানি ভাষা", "স্টোর", "ব্লগ", "যোগাযোগ"], cta: "ফ্রি কনসালটেশন", whatsapp: "হোয়াটসঅ্যাপ", toggleMenu: "মেনু টগল করুন", language: "ভাষা" },
+          ja: { nav: ["ホーム", "日本キャリア", "留学", "日本語", "ストア", "ブログ", "お問い合わせ"], cta: "無料相談", whatsapp: "WhatsApp", toggleMenu: "メニュー切替", language: "言語" },
         },
         language,
       ),
@@ -36,11 +36,12 @@ function MainHeader({ pathname }: { pathname: string }) {
 
   const navLinks = [
     { label: t.nav[0], href: "/", icon: Home },
-    { label: t.nav[1], href: "/about", icon: Info },
-    { label: t.nav[2], href: "/services", icon: Grid2x2 },
-    { label: t.nav[3], href: "/blog", icon: BookOpen },
+    { label: t.nav[1], href: "/japan-career", icon: BriefcaseBusiness },
+    { label: t.nav[2], href: "/study-abroad", icon: Grid2x2 },
+    { label: t.nav[3], href: "/japanese-language", icon: Languages },
     { label: t.nav[4], href: "/store", icon: ShoppingBag },
-    { label: t.nav[5], href: "/contact", icon: Mail },
+    { label: t.nav[5], href: "/blog", icon: BookOpen },
+    { label: t.nav[6], href: "/contact", icon: Mail },
   ];
 
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
