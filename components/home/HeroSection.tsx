@@ -42,31 +42,31 @@ const HeroSection = () => {
   );
 
   return (
-    <section className="relative flex min-h-[500px] items-center overflow-hidden sm:min-h-[560px] md:min-h-[700px]">
+    <section className="relative flex min-h-[520px] items-center overflow-hidden sm:min-h-[580px] md:min-h-[720px]">
       <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url(/images/hero-bg.jpg)" }} />
       <div className="absolute inset-0 bg-primary/75" />
 
-      <div className="container-narrow relative z-10 py-16 sm:py-20 md:py-24 lg:py-28">
+      <div className="container-narrow relative z-10 py-20 sm:py-24 md:py-28 lg:py-32">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7 }}
           className="max-w-3xl"
         >
-          <span className="mb-5 inline-block max-w-full rounded-full border border-accent-foreground/20 bg-accent/20 px-3 py-1.5 text-xs font-semibold text-accent-foreground sm:mb-6 sm:px-4 sm:text-sm">{t.badge}</span>
-          <h1 className="text-balance-safe mb-5 max-w-[18ch] text-3xl font-extrabold leading-[1.12] tracking-tight text-primary-foreground sm:text-4xl md:mb-6 md:text-5xl lg:text-6xl xl:text-6xl">
+          <span className="mb-6 inline-block max-w-full rounded-full border border-accent-foreground/20 bg-accent/20 px-3.5 py-1.5 text-xs font-semibold tracking-wide text-accent-foreground sm:mb-7 sm:px-4 sm:text-sm">{t.badge}</span>
+          <h1 className="text-balance-safe mb-6 max-w-[18ch] text-[2rem] font-bold leading-[1.16] text-primary-foreground sm:text-[2.4rem] md:mb-7 md:text-[3.1rem] lg:text-[3.75rem] xl:text-[3.95rem]">
             {t.title}
           </h1>
-          <p className="text-balance-safe mb-7 max-w-[62ch] text-base leading-relaxed text-primary-foreground/90 sm:text-lg sm:leading-8 md:mb-8 md:text-xl">
+          <p className="text-balance-safe mb-8 max-w-[60ch] text-[1.02rem] leading-[1.8] text-primary-foreground/90 sm:text-[1.1rem] md:mb-10 md:text-[1.22rem]">
             {t.desc}
           </p>
           <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
-            <Button asChild size="lg" className="w-full bg-accent px-6 text-base font-bold text-accent-foreground hover:bg-accent/90 sm:w-auto sm:px-8">
+            <Button asChild size="lg" className="w-full bg-accent px-6 text-sm font-semibold tracking-wide text-accent-foreground hover:bg-accent/90 sm:w-auto sm:px-9 sm:text-base">
               <Link href="/contact" onClick={() => trackApplyNowClick("hero_free_consultation")}>
                 {t.apply}
               </Link>
             </Button>
-            <Button asChild size="lg" className="w-full bg-whatsapp px-6 text-base font-semibold text-whatsapp-foreground hover:bg-whatsapp/90 sm:w-auto sm:px-8">
+            <Button asChild size="lg" className="w-full bg-whatsapp px-6 text-sm font-semibold tracking-wide text-whatsapp-foreground hover:bg-whatsapp/90 sm:w-auto sm:px-9 sm:text-base">
               <a href={siteConfig.whatsappHref} target="_blank" rel="noopener noreferrer" onClick={() => trackWhatsAppClick("hero_whatsapp_now")}>
                 <MessageCircle className="mr-2 h-5 w-5" />
                 {t.whatsapp}
@@ -74,7 +74,7 @@ const HeroSection = () => {
             </Button>
           </div>
 
-          <div className="mt-8 flex flex-col items-start gap-2 text-xs text-primary-foreground/80 sm:mt-10 sm:flex-row sm:flex-wrap sm:items-center sm:gap-6 sm:text-sm">
+          <div className="mt-10 flex flex-col items-start gap-2.5 text-xs leading-relaxed text-primary-foreground/85 sm:mt-12 sm:flex-row sm:flex-wrap sm:items-center sm:gap-7 sm:text-sm">
             {t.highlights.map((item) => <span key={item}>{item}</span>)}
           </div>
         </motion.div>

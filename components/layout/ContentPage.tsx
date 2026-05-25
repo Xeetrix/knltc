@@ -19,15 +19,15 @@ export default function ContentPage({ title, description, points }: ContentPageP
   return (
     <section className="section-padding">
       <div className="container-narrow">
-        <div className="mx-auto max-w-3xl rounded-2xl border bg-card p-5 sm:p-7 md:p-12">
-          <h1 className="mb-4 text-2xl font-extrabold text-foreground sm:text-3xl md:text-4xl">{title[language]}</h1>
-          <p className="mb-7 text-base text-muted-foreground sm:text-lg">{description[language]}</p>
-          <ul className="mb-8 space-y-3 text-sm text-foreground/90 sm:mb-10 sm:text-base">
+        <div className="mx-auto max-w-3xl rounded-2xl border bg-card p-6 sm:p-8 md:p-12">
+          <h1 className="mb-5 text-3xl font-bold leading-tight text-foreground sm:text-4xl md:text-[2.65rem]">{title[language]}</h1>
+          <p className="mb-8 text-[1.02rem] leading-[1.8] text-muted-foreground sm:text-lg">{description[language]}</p>
+          <ul className="mb-9 space-y-3.5 text-sm leading-relaxed text-foreground/90 sm:mb-11 sm:text-base">
             {points.map((point, index) => (
               <li key={index}>• {point[language]}</li>
             ))}
           </ul>
-          <Button asChild className="w-full bg-accent text-accent-foreground hover:bg-accent/90 sm:w-auto">
+          <Button asChild className="w-full bg-accent text-sm font-semibold tracking-wide text-accent-foreground hover:bg-accent/90 sm:w-auto sm:text-base">
             <Link href="/contact">{language === "bn" ? "অ্যাডভাইজরের সাথে কথা বলুন" : language === "ja" ? "アドバイザーに相談" : "Talk to an Advisor"}</Link>
           </Button>
         </div>
