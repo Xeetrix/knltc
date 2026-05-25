@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Poppins } from "next/font/google";
+import { Hind_Siliguri, Inter, Noto_Sans_JP } from "next/font/google";
 import { Suspense, type ReactNode } from "react";
 import "./globals.css";
 import Header from "@/components/layout/Header";
@@ -9,8 +9,9 @@ import MetaPixel from "@/components/analytics/MetaPixel";
 import PageViewTracker from "@/components/analytics/PageViewTracker";
 import { siteConfig } from "@/lib/site";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-body" });
-const poppins = Poppins({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--font-display" });
+const hindSiliguri = Hind_Siliguri({ subsets: ["bengali", "latin"], weight: ["400", "500", "600", "700"], variable: "--font-bangla" });
+const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-body" });
+const notoSansJp = Noto_Sans_JP({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-japanese" });
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.knltc.com"),
@@ -33,7 +34,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${poppins.variable}`}>
+    <html lang="en" className={`${hindSiliguri.variable} ${inter.variable} ${notoSansJp.variable}`}>
       <body>
         <MetaPixel />
         <Providers>

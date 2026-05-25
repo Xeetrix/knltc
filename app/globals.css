@@ -56,16 +56,37 @@
   }
   body {
     @apply overflow-x-hidden bg-background text-foreground antialiased;
-    font-family: var(--font-body), Inter, sans-serif;
+    font-family: var(--font-bangla), var(--font-body), var(--font-japanese), "Noto Sans Bengali", "Hind Siliguri", "Noto Sans", sans-serif;
+    font-size: clamp(0.97rem, 0.94rem + 0.2vw, 1.06rem);
+    line-height: 1.72;
+    letter-spacing: 0.003em;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "kern" 1, "liga" 1;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-display), Poppins, sans-serif;
+    font-family: var(--font-bangla), var(--font-body), var(--font-japanese), sans-serif;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+    text-wrap: balance;
+  }
+
+  p {
+    max-width: 72ch;
+  }
+
+  section {
+    scroll-margin-top: 5rem;
+  }
+
+  button,
+  [role="button"] {
+    letter-spacing: 0.01em;
   }
 }
 
 @layer utilities {
   .section-padding {
-    @apply py-16 md:py-20 lg:py-24;
+    @apply py-16 md:py-24 lg:py-28;
   }
   .container-narrow {
     @apply mx-auto w-full max-w-screen-xl px-4 md:px-6 lg:px-8;
@@ -110,7 +131,7 @@
     @apply transition duration-300 hover:-translate-y-1 hover:shadow-lg;
   }
   .section-title {
-    @apply text-3xl font-bold text-red-700;
+    @apply text-3xl font-bold leading-tight text-red-700 md:text-4xl;
   }
   .btn-premium-red {
     @apply bg-red-600 transition duration-300 hover:-translate-y-1 hover:bg-red-700;
