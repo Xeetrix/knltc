@@ -1,152 +1,27 @@
 "use client";
-
 import Link from "next/link";
-import { ArrowRight, BriefcaseBusiness, GraduationCap, Languages, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, BadgeCheck, BriefcaseBusiness, ClipboardCheck, FileCheck2, GraduationCap, Handshake, Languages, Leaf, ShieldCheck, Users, Wrench } from "lucide-react";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
 
 export default function HomePage() {
   const { language } = useLanguage();
+  const t = translate({ bn: { headline: "জাপানে পড়াশোনা, কাজ ও ভবিষ্যৎ গড়ার সঠিক পথ", subtitle: "স্টুডেন্ট ভিসা, জব ভিসা, SSW/TITP, জাপানি ভাষা, স্কিল ট্রেইনিং, ডকুমেন্টেশন ও ইন্টারভিউ প্রস্তুতি—সবকিছুর জন্য এক জায়গায় KNLTC।", c1: "ফ্রি কনসাল্টেশন নিন", c2: "হোয়াটসঅ্যাপে কথা বলুন", details: "বিস্তারিত জানুন", apply: "এই সুযোগে আবেদন করুন", path: "আপনার জাপান পথ বেছে নিন", supportTitle: "জাপানে যাওয়ার জন্য যা যা প্রয়োজন — সবকিছু এক জায়গায়", supportSub: "ভাষা শিক্ষা থেকে শুরু করে ভিসা, স্কিল, ইন্টারভিউ, ডকুমেন্টেশন ও জাপানে পৌঁছানোর পরও প্রয়োজনীয় গাইডলাইন দিয়ে থাকে KNLTC।", opp: "বর্তমানে চলমান সুযোগসমূহ", process: "জাপানে যাওয়ার প্রক্রিয়া", whyJ: "কেন জাপান?", whyK: "কেন KNLTC?", trust: "বিশ্বাসের সাথে জাপান যাত্রা", finalT: "আপনার জাপান যাত্রা শুরু করতে প্রস্তুত?", finalS: "আপনার লক্ষ্য অনুযায়ী সঠিক পথ বুঝতে এখনই KNLTC-এর সাথে যোগাযোগ করুন।" }, en: { headline: "The right path to study, work, and build your future in Japan", subtitle: "Student visa, job visa, SSW/TITP, Japanese language, skill training, documentation, and interview preparation with KNLTC.", c1: "Get Free Consultation", c2: "Talk on WhatsApp", details: "Learn more", apply: "Apply for this opportunity", path: "Choose Your Japan Path", supportTitle: "Everything you need for Japan — in one place", supportSub: "Language training, visa support, skills, interviews, documentation, and after-arrival support.", opp: "Current Japan Opportunities", process: "Japan Journey Process", whyJ: "Why Japan?", whyK: "Why KNLTC?", trust: "Start your Japan journey with trust", finalT: "Ready to start your Japan journey?", finalS: "Contact KNLTC now to choose the right path for your goal." }, ja: { headline: "日本で学び、働き、未来を築くための正しい道", subtitle: "学生ビザ、就労ビザ、SSW/TITP、日本語、技能訓練、書類準備、面接対策をKNLTCが総合サポート。", c1: "無料相談を受ける", c2: "WhatsAppで相談", details: "詳しく見る", apply: "この機会に応募", path: "あなたの日本進路を選ぶ", supportTitle: "日本渡航に必要なすべてを一か所で", supportSub: "語学教育からビザ、技能、面接、書類、渡航後サポートまで。", opp: "現在募集中の機会", process: "日本渡航までの流れ", whyJ: "なぜ日本？", whyK: "なぜKNLTC？", trust: "信頼とともに日本へ", finalT: "日本への一歩を始める準備はできましたか？", finalS: "目標に合う進路を今すぐKNLTCと確認しましょう。" } }, language);
 
-  const t = translate(
-    {
-      bn: {
-        brand: "KNLTC — Japan Education & Career Consultancy",
-        headline: "জাপানে পড়াশোনা, কাজ ও ভবিষ্যৎ গড়ার প্রিমিয়াম পথনির্দেশনা",
-        subtitle:
-          "স্টুডেন্ট ভিসা, SSW/TITP, জাপানি ভাষা, স্কিল ট্রেইনিং ও ডকুমেন্টেশন—সবকিছু অভিভাবক-বান্ধব ও বিশ্বাসযোগ্য গাইডলাইনে।",
-        ctaConsult: "ফ্রি কনসাল্টেশন নিন",
-        ctaWhatsApp: "হোয়াটসঅ্যাপে কথা বলুন",
-        choosePath: "আপনার জাপান যাত্রার সঠিক ধাপ বেছে নিন",
-      },
-      en: {
-        brand: "KNLTC — Japan Education & Career Consultancy",
-        headline: "Premium guidance to study, work, and build your future in Japan",
-        subtitle:
-          "Student visa, SSW/TITP, Japanese language, skill training, and documentation in one trusted and parent-friendly system.",
-        ctaConsult: "Get Free Consultation",
-        ctaWhatsApp: "Talk on WhatsApp",
-        choosePath: "Choose your Japan pathway",
-      },
-      ja: {
-        brand: "KNLTC — Japan Education & Career Consultancy",
-        headline: "日本で学び、働き、未来を築くためのプレミアムガイダンス",
-        subtitle:
-          "学生ビザ、SSW/TITP、日本語、技能訓練、書類準備まで、保護者にも安心の一体型サポート。",
-        ctaConsult: "無料相談を受ける",
-        ctaWhatsApp: "WhatsAppで相談",
-        choosePath: "日本への進路を選ぶ",
-      },
-    },
-    language,
-  );
+  const pathCards = translate({ bn: [{ icon: GraduationCap, title: "জাপানে পড়াশোনা", text: "ভাষা স্কুল, বিশ্ববিদ্যালয় ভর্তি, স্টুডেন্ট ভিসা, ডকুমেন্টেশন ও প্রি-ডিপার্চার গাইডলাইন।", cta: "স্টুডেন্ট ভিসা সম্পর্কে জানুন", href: "/study-in-japan" }, { icon: BriefcaseBusiness, title: "জাপানে কাজ", text: "SSW, TITP, স্কিল ট্রেইনিং, ইন্টারভিউ প্রস্তুতি, ডকুমেন্টেশন ও জব ভিসা গাইডলাইন।", cta: "জব ভিসা সম্পর্কে জানুন", href: "/work-in-japan" }, { icon: Languages, title: "জাপানি ভাষা", text: "N5/N4 প্রস্তুতি, JLPT/JFT গাইডলাইন, স্পোকেন জাপানিজ ও শেখার বই।", cta: "ভাষা শেখা শুরু করুন", href: "/japanese-language" }], en: [{ icon: GraduationCap, title: "Study in Japan", text: "Language school, university admission, student visa, documentation, and pre-departure guidance.", cta: "Learn about Student Visa", href: "/study-in-japan" }, { icon: BriefcaseBusiness, title: "Work in Japan", text: "SSW, TITP, skill training, interview prep, documentation, and job visa guidance.", cta: "Learn about Job Visa", href: "/work-in-japan" }, { icon: Languages, title: "Japanese Language", text: "N5/N4 prep, JLPT/JFT guidance, spoken Japanese, and learning resources.", cta: "Start learning", href: "/japanese-language" }], ja: [{ icon: GraduationCap, title: "日本留学", text: "日本語学校・大学進学・学生ビザ・書類準備・渡航前ガイド。", cta: "学生ビザを見る", href: "/study-in-japan" }, { icon: BriefcaseBusiness, title: "日本で働く", text: "SSW、TITP、技能訓練、面接対策、書類準備、就労ビザ。", cta: "就労ビザを見る", href: "/work-in-japan" }, { icon: Languages, title: "日本語", text: "N5/N4対策、JLPT/JFTガイド、会話練習、教材サポート。", cta: "学習を始める", href: "/japanese-language" }] }, language);
 
-  const pathCards = translate(
-    {
-      bn: [
-        { icon: GraduationCap, title: "জাপানে পড়াশোনা", desc: "ভর্তি, ভিসা, স্টুডেন্ট লাইফ প্রস্তুতি", href: "/study-in-japan", bg: "from-red-100/90 to-white" },
-        { icon: BriefcaseBusiness, title: "জাপানে কাজ", desc: "SSW/TITP, চাকরি খাত, বাস্তব প্রস্তুতি", href: "/work-in-japan", bg: "from-green-100/90 to-white" },
-        { icon: Languages, title: "জাপানি ভাষা", desc: "JLPT/JFT লক্ষ্যভিত্তিক ক্লাস", href: "/japanese-language", bg: "from-red-50 to-green-50" },
-      ],
-      en: [
-        { icon: GraduationCap, title: "Study in Japan", desc: "Admission, visa, and student life prep", href: "/study-in-japan", bg: "from-red-100/90 to-white" },
-        { icon: BriefcaseBusiness, title: "Work in Japan", desc: "SSW/TITP, sectors, and job readiness", href: "/work-in-japan", bg: "from-green-100/90 to-white" },
-        { icon: Languages, title: "Japanese Language", desc: "Targeted JLPT/JFT preparation", href: "/japanese-language", bg: "from-red-50 to-green-50" },
-      ],
-      ja: [
-        { icon: GraduationCap, title: "日本留学", desc: "入学・ビザ・学生生活準備", href: "/study-in-japan", bg: "from-red-100/90 to-white" },
-        { icon: BriefcaseBusiness, title: "日本就職", desc: "SSW/TITP・分野選定・就職準備", href: "/work-in-japan", bg: "from-green-100/90 to-white" },
-        { icon: Languages, title: "日本語", desc: "JLPT/JFT目標別トレーニング", href: "/japanese-language", bg: "from-red-50 to-green-50" },
-      ],
-    },
-    language,
-  );
+  const badges = translate({ bn: ["স্টুডেন্ট ভিসা সাপোর্ট", "জব ভিসা সাপোর্ট", "জাপানি ভাষা", "SSW/TITP"], en: ["Student Visa Support", "Job Visa Support", "Japanese Language", "SSW/TITP"], ja: ["学生ビザサポート", "就労ビザサポート", "日本語学習", "SSW/TITP"] }, language);
+  const support = [[Languages, "ল্যাঙ্গুয়েজ প্রোগ্রাম", "অল্প সময়ে N5/N4 প্রস্তুতি ও জাপানি ভাষার শক্ত ভিত্তি তৈরিতে সহায়তা।"], [Wrench, "স্কিল ট্রেইনিং", "জাপানে যেসব স্কিলে কর্মী নেওয়া হয়, সেসব স্কিল ও স্কিল টেস্ট প্রস্তুতিতে সহায়তা।"], [GraduationCap, "স্টুডেন্ট ভিসা", "ভাষা স্কুল, বিশ্ববিদ্যালয় ভর্তি, ডকুমেন্টেশন ও স্টুডেন্ট ভিসা প্রসেসে গাইডলাইন।"], [BriefcaseBusiness, "জব ভিসা", "SSW ও TITP ভিসার জন্য যোগ্যতা, প্রস্তুতি ও প্রসেসিং সাপোর্ট।"], [Users, "ইন্টারভিউ প্রিপারেশন", "জাপানি প্রতিষ্ঠান বা কোম্পানির ইন্টারভিউয়ের জন্য মক ইন্টারভিউ ও প্রস্তুতি।"], [FileCheck2, "ডকুমেন্টেশন সাপোর্ট", "CV/Resume, ব্যাংক স্টেটমেন্ট, সার্টিফিকেট ও প্রয়োজনীয় ফাইল প্রস্তুতিতে সহায়তা।"], [Handshake, "আফটার অ্যারাইভাল সাপোর্ট", "জাপানে পৌঁছানোর পরও প্রয়োজনীয় খোঁজখবর ও গাইডলাইন দেওয়ার চেষ্টা।"]] as const;
+  const opportunities = [["SSW Agriculture", "JLPT N4 অথবা JFT-Basic + Skill Test Certificate", "১৫০,০০০ – ২০০,০০০ ইয়েন"], ["SSW Caregiver", "JLPT N4 অথবা JFT-Basic + Skill Test Certificate", "১৮০,০০০ – ২২০,০০০ ইয়েন"], ["TITP Construction", "N5 লেভেলের জাপানি ভাষা থাকলে ভালো। প্রয়োজন হলে ভাষা শেখানো যায়।", "১৫০,০০০ – ২০০,০০০ ইয়েন"], ["TITP Automobile", "সংশ্লিষ্ট কাজের অভিজ্ঞতা থাকলে আবেদন করা যায়। প্রয়োজনীয় ভাষা শেখানো যায়।", "২০০,০০০ – ২৫০,০০০ ইয়েন"], ["TITP Welding", "সংশ্লিষ্ট কাজের অভিজ্ঞতা থাকলে আবেদন করা যায়। প্রয়োজনীয় ভাষা শেখানো যায়।", "২০০,০০০ – ২৫০,০০০ ইয়েন"]] as const;
 
-  const trustBadges = translate(
-    {
-      bn: ["জাপান-কেন্দ্রিক গাইডেন্স", "ডকুমেন্টেশন সাপোর্ট", "আফটার অ্যারাইভাল সাপোর্ট"],
-      en: ["Japan-focused guidance", "Documentation support", "After-arrival support"],
-      ja: ["日本特化のガイダンス", "書類サポート", "渡航後サポート"],
-    },
-    language,
-  );
-
-  return (
-    <main className="bg-[#fcfaf7]">
-      <section className="section-padding pb-10">
-        <div className="container-narrow relative overflow-hidden rounded-[2rem] border border-red-100 bg-white/90 p-6 shadow-2xl md:p-10">
-          <div className="absolute -right-14 top-6 h-48 w-48 rounded-full bg-red-200/40 blur-2xl" />
-          <div className="absolute -left-16 bottom-4 h-44 w-44 rounded-full bg-green-200/40 blur-2xl" />
-          <div className="absolute inset-0 opacity-[0.06] [background-image:radial-gradient(#d83434_1px,transparent_1px)] [background-size:16px_16px]" />
-
-          <div className="relative grid items-center gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="fade-up">
-              <p className="text-xs font-bold tracking-[0.18em] text-green-700 md:text-sm">{t.brand}</p>
-              <h1 className="mt-4 text-balance-safe text-4xl font-black leading-tight text-red-700 md:text-5xl">{t.headline}</h1>
-              <p className="mt-4 max-w-2xl text-base leading-relaxed text-zinc-700">{t.subtitle}</p>
-              <div className="mt-6 flex flex-wrap gap-3">
-                <Link href="/contact" className="inline-flex items-center gap-2 rounded-full bg-green-700 px-6 py-3 font-semibold text-white transition hover:-translate-y-1 hover:bg-green-800">
-                  {t.ctaConsult} <ArrowRight className="h-4 w-4" />
-                </Link>
-                <a href="https://wa.me/8801627442366" target="_blank" rel="noopener noreferrer" className="rounded-full border border-red-200 bg-white px-6 py-3 font-semibold text-red-700 transition hover:-translate-y-1">
-                  {t.ctaWhatsApp}
-                </a>
-              </div>
-              <div className="mt-6 flex flex-wrap gap-2">
-                {trustBadges.map((badge, i) => (
-                  <span key={badge} style={{ animationDelay: `${i * 90}ms` }} className="fade-up inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
-                    <ShieldCheck className="h-3.5 w-3.5" /> {badge}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="fade-up space-y-3" style={{ animationDelay: "90ms" }}>
-              {pathCards.map((item, i) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.title}
-                    href={item.href}
-                    className={`card-lift group block rounded-2xl border border-white/60 bg-gradient-to-br ${item.bg} p-5 shadow-lg`}
-                    style={{ animationDelay: `${i * 80}ms` }}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <h3 className="text-xl font-extrabold text-zinc-900">{item.title}</h3>
-                        <p className="mt-1 text-sm text-zinc-700">{item.desc}</p>
-                      </div>
-                      <div className="rounded-xl bg-white/75 p-2"><Icon className="h-6 w-6 text-red-600" /></div>
-                    </div>
-                    <div className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-green-700 group-hover:gap-2">বিস্তারিত দেখুন <ArrowRight className="h-4 w-4" /></div>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="section-padding pt-0">
-        <div className="container-narrow">
-          <h2 className="section-title fade-up">{t.choosePath}</h2>
-          <div className="mt-8 grid gap-5 md:grid-cols-3">
-            {pathCards.map((item, i) => (
-              <Link key={`${item.title}-2`} href={item.href} style={{ animationDelay: `${i * 80}ms` }} className="fade-up card-lift rounded-2xl border border-red-100 bg-white p-6 shadow-md">
-                <h3 className="text-2xl font-bold text-red-700">{item.title}</h3>
-                <p className="mt-2 text-sm text-zinc-600">{item.desc}</p>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="section-padding pt-0">
-        <div className="container-narrow fade-up rounded-3xl border border-green-200 bg-gradient-to-r from-red-700 to-green-700 p-8 text-center text-white">
-          <Sparkles className="mx-auto h-8 w-8" />
-          <p className="mt-3 text-lg font-semibold">KNLTC আপনার জাপান যাত্রায় প্রিমিয়াম, মানবিক ও ফলাফলমুখী সাপোর্ট নিশ্চিত করে।</p>
-        </div>
-      </section>
-    </main>
-  );
+  return <main className="bg-[#fcfaf7]">
+    <section className="section-padding"><div className="container-narrow rounded-[2rem] border border-red-100 bg-white p-8 shadow-2xl"><h1 className="text-4xl font-black text-red-700">{t.headline}</h1><p className="mt-3 text-zinc-700">{t.subtitle}</p><div className="mt-5 flex flex-wrap gap-3"><Link href="/contact" className="rounded-full bg-green-700 px-6 py-3 font-semibold text-white hover:-translate-y-1 transition">{t.c1}</Link><a href="https://wa.me/8801627442366" className="rounded-full border border-red-200 px-6 py-3 font-semibold text-red-700 hover:-translate-y-1 transition">{t.c2}</a></div><div className="mt-5 flex flex-wrap gap-2">{badges.map((b) => <span key={b} className="fade-up inline-flex items-center rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700"><ShieldCheck className="mr-1 h-3 w-3" />{b}</span>)}</div></div></section>
+    <section className="section-padding pt-0"><div className="container-narrow"><h2 className="section-title">{t.path}</h2><div className="mt-8 grid gap-5 md:grid-cols-3">{pathCards.map((p) => { const Icon = p.icon; return <Link key={p.title} href={p.href} className="card-lift fade-up rounded-2xl border border-red-100 bg-white p-6 shadow-md"><Icon className="h-6 w-6 text-red-600" /><h3 className="mt-3 text-2xl font-bold text-red-700">{p.title}</h3><p className="mt-2 text-sm text-zinc-700">{p.text}</p><p className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-green-700">{p.cta}<ArrowRight className="h-4 w-4" /></p></Link>; })}</div></div></section>
+    <section className="section-padding pt-0"><div className="container-narrow"><h2 className="section-title">{t.supportTitle}</h2><p className="section-subtitle">{t.supportSub}</p><div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">{support.map(([I,tt,tx],i)=><article key={tt} style={{animationDelay:`${i*60}ms`}} className="fade-up card-lift rounded-2xl border bg-white p-5 shadow-sm"><I className="h-6 w-6 text-green-700"/><h3 className="mt-3 font-bold text-red-700">{tt}</h3><p className="mt-2 text-sm text-zinc-700">{tx}</p></article>)}</div></div></section>
+    <section className="section-padding pt-0"><div className="container-narrow"><h2 className="section-title">{t.opp}</h2><div className="mt-8 grid gap-4 lg:grid-cols-2">{opportunities.map(([name,elig,sal])=><article key={name} className="card-lift rounded-2xl border bg-white p-5 shadow-sm"><div className="flex gap-2 flex-wrap"><span className="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">ভিসা সুযোগ</span><span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">বেতন: {sal}</span></div><h3 className="mt-3 text-xl font-bold text-zinc-900">{name}</h3><p className="mt-2 text-sm text-zinc-700"><strong>যোগ্যতা:</strong> {elig}</p><button className="mt-4 rounded-full bg-green-700 px-4 py-2 text-sm font-semibold text-white hover:bg-green-800 transition">{t.apply}</button></article>)}</div></div></section>
+    <section className="section-padding pt-0"><div className="container-narrow"><h2 className="section-title">{t.process}</h2><div className="mt-8 grid gap-3 md:grid-cols-2">{["ফ্রি কনসাল্টেশন","ভাষা শিক্ষা","স্কিল ট্রেইনিং / অ্যাডমিশন প্রস্তুতি","ইন্টারভিউ প্রিপারেশন","ডকুমেন্টেশন","ভিসা প্রসেস","জাপান যাত্রা","আফটার অ্যারাইভাল সাপোর্ট"].map((s,i)=><div key={s} className="fade-up rounded-2xl border-l-4 border-green-600 bg-white p-4 shadow-sm"><p className="text-xs font-semibold text-red-700">ধাপ {i+1}</p><p className="font-semibold">{s}</p></div>)}</div></div></section>
+    <section className="section-padding pt-0"><div className="container-narrow grid gap-6 lg:grid-cols-2"><div><h2 className="section-title">{t.whyJ}</h2><div className="mt-4 grid grid-cols-2 gap-3">{["নিরাপদ পরিবেশ","উন্নত প্রযুক্তি","ভবিষ্যৎ ক্যারিয়ার সুযোগ","আন্তর্জাতিক মানের শিক্ষা","শৃঙ্খলাপূর্ণ জীবন","দীর্ঘমেয়াদি সম্ভাবনা"].map((i)=><div key={i} className="rounded-xl border bg-white p-4 text-sm font-semibold"><Leaf className="mb-2 h-4 w-4 text-green-700"/>{i}</div>)}</div></div><div><h2 className="section-title">{t.whyK}</h2><div className="mt-4 grid grid-cols-2 gap-3">{["জাপান-কেন্দ্রিক গাইডলাইন","স্টুডেন্ট ও জব ভিসা সাপোর্ট","ভাষা + স্কিল সাপোর্ট","ডকুমেন্টেশন সাপোর্ট","ইন্টারভিউ প্রস্তুতি","জাপানে পৌঁছানোর পরও সম্পর্ক"].map((i)=><div key={i} className="rounded-xl border bg-white p-4 text-sm font-semibold"><BadgeCheck className="mb-2 h-4 w-4 text-red-700"/>{i}</div>)}</div></div></div></section>
+    <section className="section-padding pt-0"><div className="container-narrow"><h2 className="section-title">{t.trust}</h2><div className="mt-6 grid gap-4 md:grid-cols-4">{[["৫০০+","গাইডলাইন"],["N5/N4","প্রস্তুতি"],["স্টুডেন্ট ও জব ভিসা","সাপোর্ট"],["SSW/TITP","পথ"]].map(([n,l])=><div key={n} className="fade-up rounded-2xl border bg-white p-5 text-center shadow-sm"><p className="text-2xl font-black text-red-700">{n}</p><p className="text-sm font-semibold text-zinc-700">{l}</p></div>)}</div></div></section>
+    <section className="section-padding pt-0"><div className="container-narrow rounded-3xl bg-gradient-to-r from-red-700 to-green-700 p-8 text-center text-white"><h2 className="text-3xl font-black">{t.finalT}</h2><p className="mt-3">{t.finalS}</p><div className="mt-6 flex justify-center gap-3"><Link href="/contact" className="rounded-full bg-white px-6 py-3 font-semibold text-green-700">{t.c1}</Link><a href="https://wa.me/8801627442366" className="rounded-full border border-white px-6 py-3 font-semibold">{t.c2}</a></div></div></section>
+  </main>;
 }
