@@ -38,39 +38,12 @@ export default function Footer() {
         rights: "無断転載を禁じます。",
         links: ["サービス", "日本留学", "日本就職", "お問い合わせ"],
       },
-      zh: {
-        desc: "您在孟加拉国到日本升学与就业培训路上的可信赖伙伴。",
-        quickLinks: "快速链接",
-        services: "核心服务",
-        contact: "联系方式",
-        items: ["日语培训", "就业安置支持", "签证文件指导", "面试准备"],
-        rights: "版权所有。",
-        links: ["服务", "赴日留学", "赴日工作", "联系"],
-      },
-      ru: {
-        desc: "Надёжный партнёр из Бангладеш по обучению и трудоустройству в Японии.",
-        quickLinks: "Быстрые ссылки",
-        services: "Ключевые услуги",
-        contact: "Контакты",
-        items: ["Курсы японского языка", "Поддержка трудоустройства", "Сопровождение визовых документов", "Подготовка к интервью"],
-        rights: "Все права защищены.",
-        links: ["Услуги", "Учёба в Японии", "Работа в Японии", "Контакты"],
-      },
-      ms: {
-        desc: "Rakan dipercayai anda untuk latihan dan penempatan ke Jepun dari Bangladesh.",
-        quickLinks: "Pautan Pantas",
-        services: "Perkhidmatan Utama",
-        contact: "Hubungi",
-        items: ["Latihan Bahasa Jepun", "Sokongan Penempatan Kerja", "Panduan Dokumen Visa", "Persediaan Temuduga"],
-        rights: "Hak cipta terpelihara.",
-        links: ["Perkhidmatan", "Belajar di Jepun", "Bekerja di Jepun", "Hubungi"],
-      },
     },
     language,
   );
 
   return (
-    <footer className="bg-[#111827] py-12 text-white/80">
+    <footer className="bg-foreground py-12 text-white/80">
       <div className="container-narrow">
         <div className="mb-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           <div>
