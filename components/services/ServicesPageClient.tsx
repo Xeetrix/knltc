@@ -165,18 +165,6 @@ export default function ServicesPage() {
           </div>
         </div>
 
-
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          {[['Japan Career','/japan-career'],['Study Abroad','/study-abroad'],['Japanese Language','/japanese-language'],['Store','/store'],['Contact','/contact']].map(([name, href]) => (
-            <Card key={name} className="border-emerald-100 bg-white">
-              <CardHeader><CardTitle className="text-lg">{name}</CardTitle></CardHeader>
-              <CardContent>
-                <Button asChild variant="outline" className="w-full"><Link href={href}>Open</Link></Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
         <div className="space-y-4">
           <h2 className="text-center text-2xl font-bold tracking-tight">{t.decisionTitle}</h2>
           <div className="grid gap-4 md:grid-cols-3">

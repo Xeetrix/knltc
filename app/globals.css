@@ -13,16 +13,16 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 7%;
 
-    --primary: 160 100% 30%;
+    --primary: 157 80% 30%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 33% 98%;
+    --secondary: 0 0% 97%;
     --secondary-foreground: 0 0% 7%;
 
     --muted: 0 0% 97%;
     --muted-foreground: 0 0% 35%;
 
-    --accent: 358 75% 48%;
+    --accent: 352 100% 42%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -30,14 +30,14 @@
 
     --border: 0 0% 90%;
     --input: 0 0% 90%;
-    --ring: 160 100% 30%;
+    --ring: 157 80% 30%;
 
     --radius: 0.65rem;
 
     --whatsapp: 157 80% 30%;
     --whatsapp-foreground: 0 0% 100%;
 
-    --surface: 210 33% 98%;
+    --surface: 0 0% 97%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 0 0% 20%;
@@ -46,16 +46,13 @@
     --sidebar-accent: 0 0% 95%;
     --sidebar-accent-foreground: 0 0% 10%;
     --sidebar-border: 0 0% 90%;
-    --sidebar-ring: 160 100% 30%;
+    --sidebar-ring: 157 80% 30%;
   }
 }
 
 @layer base {
   * {
     @apply border-border;
-  }
-  html {
-    scroll-behavior: smooth;
   }
   body {
     @apply overflow-x-hidden bg-background text-foreground antialiased;
@@ -93,8 +90,8 @@
   .rich-editor h3 { @apply text-xl font-semibold; }
   .rich-editor ul { @apply list-disc pl-6; }
   .rich-editor ol { @apply list-decimal pl-6; }
-  .rich-editor blockquote { @apply border-l-4 border-red-200 bg-red-50/40 px-4 py-2 italic; }
-  .rich-editor a { @apply text-red-700 underline underline-offset-2; }
+  .rich-editor blockquote { @apply border-l-4 border-slate-300 bg-slate-50 px-4 py-2 italic; }
+  .rich-editor a { @apply text-blue-700 underline underline-offset-2; }
   .rich-editor img,
   .blog-content-image {
     max-width: 100%;
