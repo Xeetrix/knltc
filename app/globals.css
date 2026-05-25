@@ -101,3 +101,32 @@
     margin: 1.25rem auto;
   }
 }
+
+@layer utilities {
+  .fade-up {
+    animation: fadeUp 0.7s ease both;
+  }
+  .card-lift {
+    @apply transition duration-300 hover:-translate-y-1 hover:shadow-lg;
+  }
+  .section-title {
+    @apply text-3xl font-bold text-red-700;
+  }
+  .btn-premium-red {
+    @apply bg-red-600 transition duration-300 hover:-translate-y-1 hover:bg-red-700;
+  }
+  .btn-premium-green {
+    @apply text-green-700 transition duration-300 hover:-translate-y-1 hover:bg-green-50;
+  }
+  .timeline-step {
+    @apply flex items-center gap-3 rounded-xl border bg-white p-4;
+  }
+  .timeline-dot {
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-full bg-green-100 text-sm font-bold text-green-700;
+  }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
