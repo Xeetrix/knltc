@@ -20,8 +20,8 @@ function MainHeader({ pathname }: { pathname: string }) {
   const { language, setLanguage } = useLanguage();
   const t = useMemo(() => translate({
     en: { nav: ["Home", "Study in Japan", "Work in Japan", "Japanese Language", "Store", "Blog", "Contact"], cta: "Free Consultation", whatsapp: "WhatsApp", toggleMenu: "Toggle menu", language: "Language" },
-    bn: { nav: ["হোম", "জাপানে পড়াশোনা", "জাপানে কাজ", "জাপানি ভাষা", "স্টোর", "ব্লগ", "যোগাযোগ"], cta: "ফ্রি কাউন্সেলিং", whatsapp: "হোয়াটসঅ্যাপ", toggleMenu: "মেনু টগল করুন", language: "ভাষা" },
-    ja: { nav: ["ホーム", "日本留学", "日本就職", "日本語", "ストア", "ブログ", "お問い合わせ"], cta: "無料相談", whatsapp: "WhatsApp", toggleMenu: "メニュー切替", language: "言語" },
+    bn: { nav: ["হোম", "জাপানে পড়াশোনা", "জাপানে কাজ", "জাপানি ভাষা", "স্টোর", "ব্লগ", "যোগাযোগ"], cta: "ফ্রি কাউন্সেলিং", whatsapp: "হোয়াটসঅ্যাপ", toggleMenu: "মেনু টগল করুন", language: "Language" },
+    ja: { nav: ["ホーム", "日本留学", "日本就職", "日本語", "ストア", "ブログ", "お問い合わせ"], cta: "無料相談", whatsapp: "WhatsApp", toggleMenu: "メニュー切替", language: "Language" },
   }, language), [language]);
 
   const navLinks = [
