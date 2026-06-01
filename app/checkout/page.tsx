@@ -11,6 +11,11 @@ type PaymentMethod = "cod" | "bkash" | "nagad";
 
 export default function CheckoutPage() {
   const { language } = useLanguage();
+  const t = translate({
+    en: { title: "Checkout", emptyTitle: "No items to checkout", emptyText: "Please add products to your cart first.", store: "Go to Store", customer: "Customer Information", name: "Name", phone: "Phone", email: "Email (optional)", address: "Address", note: "Note (optional)", payment: "Payment Method", cod: "Cash on Delivery", bkash: "bKash manual", nagad: "Nagad manual", delivery: "Delivery Area", inside: "Inside Dhaka", outside: "Outside Dhaka", transaction: "Transaction ID", placing: "Placing order...", place: "Place Order", summary: "Order Summary", subtotal: "Product subtotal", charge: "Delivery Charge", grand: "Grand Total", missingTransaction: "Please provide your transaction ID for bKash or Nagad payment.", failed: "Failed to place order.", success: "Order placed successfully. Order ID:" },
+    bn: { title: "চেকআউট", emptyTitle: "চেকআউট করার মতো কোনো আইটেম নেই", emptyText: "অনুগ্রহ করে আগে কার্টে পণ্য যোগ করুন।", store: "স্টোরে যান", customer: "গ্রাহকের তথ্য", name: "নাম", phone: "ফোন", email: "ইমেইল (ঐচ্ছিক)", address: "ঠিকানা", note: "নোট (ঐচ্ছিক)", payment: "পেমেন্ট পদ্ধতি", cod: "ক্যাশ অন ডেলিভারি", bkash: "ম্যানুয়াল bKash", nagad: "ম্যানুয়াল Nagad", delivery: "ডেলিভারি এলাকা", inside: "ঢাকার মধ্যে", outside: "ঢাকার বাইরে", transaction: "ট্রানজেকশন আইডি", placing: "অর্ডার করা হচ্ছে...", place: "অর্ডার করুন", summary: "অর্ডার সারাংশ", subtotal: "পণ্যের সাবটোটাল", charge: "ডেলিভারি চার্জ", grand: "সর্বমোট", missingTransaction: "bKash বা Nagad পেমেন্টের জন্য ট্রানজেকশন আইডি দিন।", failed: "অর্ডার করা যায়নি।", success: "অর্ডার সফল হয়েছে। অর্ডার আইডি:" },
+    ja: { title: "チェックアウト", emptyTitle: "チェックアウトする商品がありません", emptyText: "まず商品をカートに追加してください。", store: "ストアへ", customer: "お客様情報", name: "名前", phone: "電話番号", email: "メール（任意）", address: "住所", note: "メモ（任意）", payment: "支払い方法", cod: "代金引換", bkash: "手動bKash", nagad: "手動Nagad", delivery: "配送エリア", inside: "ダッカ市内", outside: "ダッカ市外", transaction: "取引ID", placing: "注文を送信中...", place: "注文する", summary: "注文概要", subtotal: "商品小計", charge: "配送料", grand: "合計", missingTransaction: "bKashまたはNagad支払いの取引IDを入力してください。", failed: "注文に失敗しました。", success: "注文が完了しました。注文ID:" },
+  }, language);
   const [deliveryArea, setDeliveryArea] = useState<"inside_dhaka" | "outside_dhaka">("inside_dhaka");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [name, setName] = useState("");
@@ -47,7 +52,7 @@ export default function CheckoutPage() {
 
     if ((paymentMethod === "bkash" || paymentMethod === "nagad") && !transactionId.trim()) {
       setLoading(false);
-      setError("Please provide your transaction ID for bKash or Nagad payment.");
+      setError(t.missingTransaction);
       return;
     }
 
@@ -76,25 +81,25 @@ export default function CheckoutPage() {
     setLoading(false);
 
     if (!res.ok) {
-      setError(data.error || "Failed to place order.");
+      setError(data.error || t.failed);
       return;
     }
 
     clearCart();
-    setMessage(`Order placed successfully. Order ID: ${data.order.id}`);
+    setMessage(`${t.success} ${data.order.id}`);
   };
 
   return (
     <section className="section-padding bg-stone-50 text-slate-900">
       <div className="container-narrow">
-        <h1 className="text-3xl font-bold">Checkout</h1>
+        <h1 className="text-3xl font-bold">{t.title}</h1>
 
         {cart.length === 0 ? (
           <div className="mt-6 rounded-2xl border border-stone-200 bg-white p-8 text-center shadow-sm shadow-stone-200/70">
-            <h2 className="text-xl font-semibold">No items to checkout</h2>
-            <p className="mt-2 text-sm text-slate-600">Please add products to your cart first.</p>
+            <h2 className="text-xl font-semibold">{t.emptyTitle}</h2>
+            <p className="mt-2 text-sm text-slate-600">{t.emptyText}</p>
             <Link href="/store" className="mt-4 inline-flex rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500">
-              Go to Store
+              {t.store}
             </Link>
           </div>
         ) : (
@@ -113,30 +118,30 @@ export default function CheckoutPage() {
                 </p>
               ) : null}
 
-              <h2 className="text-lg font-semibold">Customer Information</h2>
-              <input required className="rounded-md border border-stone-300 bg-white px-3 py-2" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
-              <input required className="rounded-md border border-stone-300 bg-white px-3 py-2" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-              <input className="rounded-md border border-stone-300 bg-white px-3 py-2" placeholder="Email (optional)" value={email} onChange={(e) => setEmail(e.target.value)} />
-              <textarea required className="rounded-md border border-stone-300 bg-white px-3 py-2" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
-              <textarea className="rounded-md border border-stone-300 bg-white px-3 py-2" placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
+              <h2 className="text-lg font-semibold">{t.customer}</h2>
+              <input required className="rounded-md border border-stone-300 bg-white px-3 py-2" placeholder={t.name} value={name} onChange={(e) => setName(e.target.value)} />
+              <input required className="rounded-md border border-stone-300 bg-white px-3 py-2" placeholder={t.phone} value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <input className="rounded-md border border-stone-300 bg-white px-3 py-2" placeholder={t.email} value={email} onChange={(e) => setEmail(e.target.value)} />
+              <textarea required className="rounded-md border border-stone-300 bg-white px-3 py-2" placeholder={t.address} value={address} onChange={(e) => setAddress(e.target.value)} />
+              <textarea className="rounded-md border border-stone-300 bg-white px-3 py-2" placeholder={t.note} value={note} onChange={(e) => setNote(e.target.value)} />
 
-              <h2 className="mt-2 text-lg font-semibold">Payment Method</h2>
-              <h2 className="mt-2 text-lg font-semibold">{translate({ en: "Delivery Area", bn: "ডেলিভারি এলাকা", ja: "配送エリア" }, language)}</h2>
+              <h2 className="mt-2 text-lg font-semibold">{t.payment}</h2>
+              <h2 className="mt-2 text-lg font-semibold">{t.delivery}</h2>
               <div className="grid gap-2 sm:grid-cols-2">
                 <label className="inline-flex items-center gap-2 rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm">
                   <input type="radio" name="deliveryArea" checked={deliveryArea === "inside_dhaka"} onChange={() => setDeliveryArea("inside_dhaka")} />
-                  {translate({ en: "Inside Dhaka", bn: "ঢাকার মধ্যে", ja: "ダッカ市内" }, language)}
+                  {t.inside}
                 </label>
                 <label className="inline-flex items-center gap-2 rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm">
                   <input type="radio" name="deliveryArea" checked={deliveryArea === "outside_dhaka"} onChange={() => setDeliveryArea("outside_dhaka")} />
-                  {translate({ en: "Outside Dhaka", bn: "ঢাকার বাইরে", ja: "ダッカ市外" }, language)}
+                  {t.outside}
                 </label>
               </div>
               <div className="grid gap-2 sm:grid-cols-3">
                 {[
-                  { value: "cod", label: "Cash on Delivery" },
-                  { value: "bkash", label: "bKash manual" },
-                  { value: "nagad", label: "Nagad manual" },
+                  { value: "cod", label: t.cod },
+                  { value: "bkash", label: t.bkash },
+                  { value: "nagad", label: t.nagad },
                 ].map((item) => (
                   <label key={item.value} className="inline-flex items-center gap-2 rounded-lg border border-stone-300 bg-stone-50 px-3 py-2 text-sm">
                     <input
@@ -155,19 +160,19 @@ export default function CheckoutPage() {
                 <input
                   required
                   className="rounded-md border border-stone-300 bg-white px-3 py-2"
-                  placeholder="Transaction ID"
+                  placeholder={t.transaction}
                   value={transactionId}
                   onChange={(e) => setTransactionId(e.target.value)}
                 />
               ) : null}
 
               <button disabled={loading || cart.length === 0} className="rounded-md bg-emerald-600 px-3 py-2 font-semibold text-white hover:bg-emerald-500 disabled:opacity-60">
-                {loading ? "Placing order..." : "Place Order"}
+                {loading ? t.placing : t.place}
               </button>
             </form>
 
             <aside className="h-fit rounded-2xl border border-stone-200 bg-white p-4 shadow-sm shadow-stone-200/70 lg:sticky lg:top-24">
-              <h2 className="text-lg font-semibold">Order Summary</h2>
+              <h2 className="text-lg font-semibold">{t.summary}</h2>
               <div className="mt-3 space-y-2 text-sm">
                 {cart.map((item) => (
                   <div key={item.productId} className="flex items-start justify-between gap-2">
@@ -179,9 +184,9 @@ export default function CheckoutPage() {
                 ))}
               </div>
               <div className="mt-3 border-t border-stone-200 pt-3">
-                <p className="text-sm text-slate-600">Product subtotal: ৳{total}</p>
-                <p className="text-sm text-slate-600">{translate({ en: "Delivery Charge", bn: "ডেলিভারি চার্জ", ja: "配送料" }, language)}: ৳{deliveryCharge}</p>
-                <p className="text-sm text-slate-600">{translate({ en: "Grand Total", bn: "সর্বমোট", ja: "合計" }, language)}</p>
+                <p className="text-sm text-slate-600">{t.subtotal}: ৳{total}</p>
+                <p className="text-sm text-slate-600">{t.charge}: ৳{deliveryCharge}</p>
+                <p className="text-sm text-slate-600">{t.grand}</p>
                 <p className="text-3xl font-bold">৳{grandTotal}</p>
               </div>
             </aside>

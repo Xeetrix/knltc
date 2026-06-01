@@ -4,6 +4,8 @@ import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/components/layout/LanguageProvider";
+import { translate } from "@/lib/i18n";
 import { readCart } from "@/lib/shop";
 
 type CartNavLinkProps = {
@@ -12,6 +14,8 @@ type CartNavLinkProps = {
 };
 
 export default function CartNavLink({ className, showLabel = false }: CartNavLinkProps) {
+  const { language } = useLanguage();
+  const label = translate({ en: "Cart", bn: "কার্ট", ja: "カート" }, language);
   const [count, setCount] = useState(0);
 
   useEffect(() => {
@@ -29,10 +33,10 @@ export default function CartNavLink({ className, showLabel = false }: CartNavLin
         showLabel && "w-auto gap-2 px-3",
         className,
       )}
-      aria-label="Cart"
+      aria-label={label}
     >
       <ShoppingCart className="h-4 w-4" />
-      {showLabel ? <span className="text-sm font-semibold">Cart</span> : null}
+      {showLabel ? <span className="text-sm font-semibold">{label}</span> : null}
       {count > 0 ? <span className="absolute -right-1 -top-1 rounded-full bg-primary px-1.5 text-[10px] font-semibold text-white">{count}</span> : null}
     </Link>
   );

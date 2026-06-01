@@ -4,6 +4,8 @@ import Link from "next/link";
 import { Heart } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/components/layout/LanguageProvider";
+import { translate } from "@/lib/i18n";
 import { readWishlist } from "@/lib/shop";
 
 type WishlistNavLinkProps = {
@@ -12,6 +14,8 @@ type WishlistNavLinkProps = {
 };
 
 export default function WishlistNavLink({ className, showLabel = false }: WishlistNavLinkProps) {
+  const { language } = useLanguage();
+  const label = translate({ en: "Wishlist", bn: "উইশলিস্ট", ja: "お気に入り" }, language);
   const [count, setCount] = useState(0);
 
   useEffect(() => {
@@ -29,10 +33,10 @@ export default function WishlistNavLink({ className, showLabel = false }: Wishli
         showLabel && "w-auto gap-2 px-3",
         className,
       )}
-      aria-label="Wishlist"
+      aria-label={label}
     >
       <Heart className="h-4 w-4" />
-      {showLabel ? <span className="text-sm font-medium">Wishlist</span> : null}
+      {showLabel ? <span className="text-sm font-medium">{label}</span> : null}
       {count > 0 ? <span className="absolute -right-1 -top-1 rounded-full bg-rose-500 px-1.5 text-[10px] font-semibold text-white">{count}</span> : null}
     </Link>
   );
