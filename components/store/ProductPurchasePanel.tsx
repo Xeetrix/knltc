@@ -25,6 +25,11 @@ type ProductPanelProps = {
 
 export default function ProductPurchasePanel({ product }: ProductPanelProps) {
   const { language } = useLanguage();
+  const t = translate({
+    en: { imageSoon: "Premium product image coming soon", uncategorized: "Uncategorized", sku: "SKU", notAvailable: "N/A", quantity: "Quantity", selectedSubtotal: "Selected subtotal", buyNow: "Buy Now" },
+    bn: { imageSoon: "প্রিমিয়াম পণ্যের ছবি শীঘ্রই আসছে", uncategorized: "ক্যাটাগরি নেই", sku: "SKU", notAvailable: "N/A", quantity: "পরিমাণ", selectedSubtotal: "নির্বাচিত সাবটোটাল", buyNow: "এখন কিনুন" },
+    ja: { imageSoon: "プレミアム商品画像は近日公開", uncategorized: "未分類", sku: "SKU", notAvailable: "N/A", quantity: "数量", selectedSubtotal: "選択小計", buyNow: "今すぐ購入" },
+  }, language);
   const [quantity, setQuantity] = useState(1);
   const effectivePrice = useMemo(() => (product.sale_price ?? product.price) * quantity, [product.price, product.sale_price, quantity]);
 
@@ -34,12 +39,12 @@ export default function ProductPurchasePanel({ product }: ProductPanelProps) {
         {product.featured_image ? (
           <img src={product.featured_image} alt={product.name} className="aspect-square w-full object-cover" />
         ) : (
-          <div className="flex aspect-square items-center justify-center text-sm text-slate-500">Premium product image coming soon</div>
+          <div className="flex aspect-square items-center justify-center text-sm text-slate-500">{t.imageSoon}</div>
         )}
       </div>
 
       <div className="rounded-2xl border border-stone-200 bg-stone-50 p-5">
-        <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">{product.categories?.name ?? "Uncategorized"}</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">{product.categories?.name ?? t.uncategorized}</p>
         <h1 className="mt-2 text-3xl font-bold text-slate-900">{product.name}</h1>
 
         <div className="mt-4 flex items-center gap-2">
@@ -51,13 +56,13 @@ export default function ProductPurchasePanel({ product }: ProductPanelProps) {
           <span className={`rounded-full border px-2 py-1 text-center ${product.stock > 0 ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-rose-200 bg-rose-50 text-rose-700"}`}>
             {product.stock > 0 ? translate({ en: "Stock Available", bn: "স্টক আছে", ja: "在庫あり" }, language) : translate({ en: "Out of Stock", bn: "স্টক নেই", ja: "在庫なし" }, language)}
           </span>
-          <span className="rounded-full border border-stone-300 bg-white px-2 py-1 text-center">SKU: {product.sku ?? "N/A"}</span>
+          <span className="rounded-full border border-stone-300 bg-white px-2 py-1 text-center">{t.sku}: {product.sku ?? t.notAvailable}</span>
         </div>
 
         <p className="mt-4 text-sm text-slate-700">{product.short_description}</p>
 
         <div className="mt-5">
-          <p className="mb-2 text-sm text-slate-600">Quantity</p>
+          <p className="mb-2 text-sm text-slate-600">{t.quantity}</p>
           <div className="inline-flex items-center rounded-lg border border-stone-300 bg-white">
             <button type="button" className="px-3 py-2 hover:bg-stone-100" onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}>
               -
@@ -71,14 +76,14 @@ export default function ProductPurchasePanel({ product }: ProductPanelProps) {
               +
             </button>
           </div>
-          <p className="mt-2 text-sm text-slate-600">Selected subtotal: ৳{effectivePrice}</p>
+          <p className="mt-2 text-sm text-slate-600">{t.selectedSubtotal}: ৳{effectivePrice}</p>
         </div>
 
         <div className="mt-5 flex flex-wrap items-center gap-2">
           <AddToCartButton product={product} quantity={quantity} disabled={product.stock <= 0} className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400" />
           <WishlistButton product={product} className="border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50" />
           <Link href="/checkout" className="rounded-md border border-emerald-200 bg-emerald-50 px-6 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100">
-            Buy Now
+            {t.buyNow}
           </Link>
         </div>
       </div>

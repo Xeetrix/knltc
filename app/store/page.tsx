@@ -16,7 +16,7 @@ export default async function StorePage() {
         <Suspense
           fallback={
             <div className="rounded-2xl border border-stone-200 bg-white p-6 text-sm text-slate-600 shadow-sm">
-              Loading store catalog...
+              Loading store catalog... / স্টোর ক্যাটালগ লোড হচ্ছে... / ストアカタログを読み込み中...
             </div>
           }
         >

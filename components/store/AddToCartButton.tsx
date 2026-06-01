@@ -27,6 +27,8 @@ export default function AddToCartButton({ product, disabled = false, quantity = 
     out: translate({ en: "Out of Stock", bn: "স্টক নেই", ja: "在庫なし" }, language),
     added: translate({ en: "Added", bn: "যোগ হয়েছে", ja: "追加済み" }, language),
     add: translate({ en: "Add to Cart", bn: "কার্টে যোগ করুন", ja: "カートに追加" }, language),
+    unavailable: translate({ en: "This product is currently unavailable.", bn: "এই পণ্যটি এখন উপলভ্য নয়।", ja: "この商品は現在ご利用いただけません。" }, language),
+    addedToCart: translate({ en: "added to cart.", bn: "কার্টে যোগ হয়েছে।", ja: "カートに追加されました。" }, language),
   };
 
   return (
@@ -36,7 +38,7 @@ export default function AddToCartButton({ product, disabled = false, quantity = 
         className,
       )}
       onClick={() => {
-        if (disabled) { notify("warning", labels.out, "This product is currently unavailable."); return; }
+        if (disabled) { notify("warning", labels.out, labels.unavailable); return; }
         addToCart({
           productId: product.id,
           name: product.name,
@@ -45,7 +47,7 @@ export default function AddToCartButton({ product, disabled = false, quantity = 
           image: product.featured_image,
         });
         setAdded(true);
-        notify("success", labels.added, `${product.name} added to cart.`);
+        notify("success", labels.added, `${product.name} ${labels.addedToCart}`);
         setTimeout(() => setAdded(false), 1200);
       }}
       type="button"
