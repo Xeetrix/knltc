@@ -33,9 +33,37 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
+  const organizationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: siteConfig.name,
+    description: siteConfig.description,
+    email: siteConfig.email,
+    telephone: siteConfig.phoneDisplay,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: siteConfig.address.streetAddress,
+      addressLocality: siteConfig.address.addressLocality,
+      postalCode: siteConfig.address.postalCode,
+      addressCountry: siteConfig.address.addressCountry,
+    },
+    contactPoint: {
+      "@type": "ContactPoint",
+      telephone: siteConfig.phoneDisplay,
+      email: siteConfig.email,
+      contactType: "customer service",
+      areaServed: "BD",
+      availableLanguage: ["Bangla", "English", "Japanese"],
+    },
+  };
+
   return (
     <html lang="en" className={`${hindSiliguri.variable} ${inter.variable} ${notoSansJp.variable}`}>
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
         <MetaPixel />
         <Providers>
           <Suspense fallback={null}>
