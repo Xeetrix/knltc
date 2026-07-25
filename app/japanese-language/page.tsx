@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import type { LucideIcon } from "lucide-react";
 import {
   BookOpen,
   CheckCircle2,
@@ -23,36 +24,87 @@ export const metadata: Metadata = {
     "KNLTC Japan Gateway-এ Minna No Nihongo মেথডে N5 ও N4, JLPT, JFT-Basic এবং স্পোকেন জাপানিজ প্রস্তুতি।",
 };
 
-const methodologyCards = [
+type MethodologyCard = {
+  value: string;
+  title: string;
+  description: string;
+  icon: LucideIcon;
+};
+
+const methodologyCards: MethodologyCard[] = [
   {
+    value: "alphabet",
     title: "বর্ণমালা (Hiragana & Katakana)",
     description: "হিরাগানা ও কাতাকানা স্ক্রিপ্ট সহজে মনে রাখার বৈজ্ঞানিক টেকনিক।",
     icon: Languages,
   },
   {
-    title: "শব্দভাণ্ডার (Kotoba)",
+    value: "vocabulary",
+    title: "শব্দভাণ্ডার (Kotoba - Lesson 1 & 2)",
     description: "Minna No Nihongo বইয়ের অধ্যায়ভিত্তিক জাপানি শব্দের নির্ভুল বাংলা অর্থ ও উচ্চারণ।",
     icon: BookOpen,
   },
   {
+    value: "grammar",
     title: "ব্যাকরণ (Bunkei & Reibun)",
-    description: "বাংলা ব্যাকরণের সাথে তুলনা করে সহজ নিয়মে বাক্য গঠন ও পার্টিকেল (は, が, を, に, で) প্র্যাকটিস।",
+    description: "বাংলা ব্যাকরণের সাথে তুলনা করে সহজ নিয়মে বাক্য গঠন ও পার্টিকেল প্র্যাকটিস।",
     icon: FileText,
   },
   {
-    title: "কথোপকথন (Kaiwa)",
-    description:
-      "বাস্তব জীবনের বিভিন্ন পরিস্থিতিতে (যেমন: শপিং, ইন্টারভিউ, কর্মক্ষেত্র) জাপানি ভাষায় কথা বলার নিয়মিত অনুশীলন।",
+    value: "conversation",
+    title: "কথোপকথন (Kaiwa - Self Introduction / 自己紹介)",
+    description: "বাস্তব জীবনের বিভিন্ন পরিস্থিতিতে জাপানি ভাষায় কথা বলার নিয়মিত অনুশীলন।",
     icon: MessageCircle,
   },
 ];
 
+const vowelRows = [
+  { label: "Hiragana", characters: ["あ (আ)", "い (ই)", "う (উ)", "え (এ)", "お (ও)"] },
+  { label: "Katakana", characters: ["ア (আ)", "イ (ই)", "ウ (উ)", "エ (এ)", "オ (ও)"] },
+];
+
 const vocabulary = [
-  { japanese: "わたし", romaji: "Watashi", meaning: "আমি" },
+  { japanese: "わたし (私)", romaji: "Watashi", meaning: "আমি" },
   { japanese: "あなた", romaji: "Anata", meaning: "আপনি / তুমি" },
-  { japanese: "せんせい", romaji: "Sensei", meaning: "শিক্ষক" },
-  { japanese: "がくせい", romaji: "Gakusei", meaning: "শিক্ষার্থী" },
-  { japanese: "にほん", romaji: "Nihon", meaning: "জাপান" },
+  { japanese: "せんせい (先生)", romaji: "Sensei", meaning: "শিক্ষক" },
+  { japanese: "がくせい (学生)", romaji: "Gakusei", meaning: "শিক্ষার্থী" },
+  { japanese: "にほん (日本)", romaji: "Nihon", meaning: "জাপান" },
+];
+
+const grammarRules = [
+  {
+    rule: "[A] は [B] です",
+    meaning: "A হলো B",
+    example: "わたしは がくせい です。",
+    translation: "আমি একজন শিক্ষার্থী।",
+  },
+  {
+    rule: "[A] は [B] じゃありません",
+    meaning: "না বোধক",
+    example: "わたしは せんせい じゃありません。",
+    translation: "আমি শিক্ষক নই।",
+  },
+  {
+    rule: "[A] は [B] ですか",
+    meaning: "প্রশ্নবোধক",
+    example: "あなたは かいしゃいん ですか。",
+    translation: "আপনি কি চাকরিজীবী?",
+  },
+];
+
+const conversationLines = [
+  { speaker: "রহিম", text: "はじめまして。 (Hajimemashite.)", meaning: "প্রথম সাক্ষাতে শুভেচ্ছা।" },
+  {
+    speaker: "রহিম",
+    text: "わたしは ラヒム です。 バングラデシュ から きました。",
+    meaning: "আমি রহিম। বাংলাদেশ থেকে এসেছি।",
+  },
+  { speaker: "রহিম", text: "どうぞ よろしく おねがいします。", meaning: "আপনার সাথে পরিচিত হয়ে ভালো লাগলো।" },
+  {
+    speaker: "তানাকা",
+    text: "はじめまして。 たなか です。 どうぞ よろしく。",
+    meaning: "শুভদিন। আমি তানাকা। আপনার সাথে পরিচিত হয়েও ভালো লাগলো।",
+  },
 ];
 
 const benefits = [
@@ -61,6 +113,81 @@ const benefits = [
   "Student Visa এবং SSW Job Visa-র ইন্টারভিউয়ের জন্য স্পেশাল প্রস্তুতি।",
   "নিয়মিত মক টেস্ট এবং দুর্বল শিক্ষার্থীদের জন্য এক্সট্রা কেয়ার।",
 ];
+
+function MethodologyContent({ value }: { value: string }) {
+  if (value === "alphabet") {
+    return (
+      <div className="space-y-4">
+        <div className="grid gap-3 sm:grid-cols-2">
+          {vowelRows.map((row) => (
+            <div key={row.label} className="rounded-2xl border border-green-200 bg-green-50/70 p-4">
+              <h3 className="font-bold leading-relaxed text-green-700">{row.label}</h3>
+              <div className="mt-3 grid grid-cols-5 gap-2 text-center">
+                {row.characters.map((character) => (
+                  <span key={character} className="rounded-xl bg-white px-2 py-3 text-lg font-semibold text-red-700 shadow-sm">
+                    {character}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="rounded-2xl bg-red-50 p-4 leading-loose text-red-800">
+          হিরাগানা মূল জাপানি শব্দের জন্য এবং কাতাকানা বিদেশি নাম বা শব্দের জন্য ব্যবহৃত হয়। যেমন: バングラデシュ
+          (বাংলাদেশ)।
+        </p>
+      </div>
+    );
+  }
+
+  if (value === "vocabulary") {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-red-100 bg-white">
+        {vocabulary.map((item) => (
+          <div key={item.japanese} className="grid gap-2 border-b border-red-100 p-3 last:border-b-0 sm:grid-cols-3">
+            <span className="text-xl font-bold text-red-700">{item.japanese}</span>
+            <span className="font-semibold text-slate-700">➔ {item.romaji}</span>
+            <span className="leading-relaxed text-green-700">➔ {item.meaning}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (value === "grammar") {
+    return (
+      <div className="space-y-4">
+        {grammarRules.map((item) => (
+          <div key={item.rule} className="rounded-2xl border border-red-100 bg-red-50/70 p-4 leading-loose">
+            <p className="font-bold text-red-700">
+              {item.rule} <span className="text-slate-600">({item.meaning})</span>
+            </p>
+            <p className="mt-2 text-slate-700">
+              <span className="font-semibold">Example:</span> {item.example} ({item.translation})।
+            </p>
+          </div>
+        ))}
+        <div className="rounded-2xl border border-green-200 bg-green-50 p-4 leading-loose text-green-800">
+          💡 টিপস: বাক্যের বিষয় নির্দেশক পার্টিকেল ‘は’ (Ha) যখন বাক্যে বসে, তখন এর উচ্চারণ হয় ‘ওয়া (Wa)’।
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 rounded-2xl bg-slate-50 p-4 leading-loose">
+      {conversationLines.map((line, index) => (
+        <div key={`${line.speaker}-${index}`} className="rounded-2xl bg-white p-4 shadow-sm">
+          <p>
+            <strong className={line.speaker === "রহিম" ? "text-red-700" : "text-green-700"}>{line.speaker}:</strong>{" "}
+            {line.text}
+          </p>
+          <p className="text-muted-foreground">— <em>{line.meaning}</em></p>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function JapaneseLanguagePage() {
   return (
@@ -113,19 +240,32 @@ export default function JapaneseLanguagePage() {
             <Badge variant="outline" className="border-red-200 text-red-700">KNLTC মেথড</Badge>
             <h2 className="mt-3 text-3xl font-bold leading-relaxed text-red-700">আমাদের পাঠদান পদ্ধতি</h2>
           </div>
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-            {methodologyCards.map(({ title, description, icon: Icon }) => (
-              <Card key={title} className="border-red-100 bg-white transition hover:-translate-y-1 hover:shadow-md">
-                <CardHeader>
-                  <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-green-50 text-green-700">
-                    <Icon className="h-6 w-6" />
-                  </div>
-                  <CardTitle className="text-xl leading-relaxed text-red-700">{title}</CardTitle>
-                  <CardDescription className="leading-relaxed">{description}</CardDescription>
-                </CardHeader>
-              </Card>
+          <Accordion type="single" collapsible className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+            {methodologyCards.map(({ value, title, description, icon: Icon }) => (
+              <AccordionItem
+                key={value}
+                value={value}
+                className="overflow-hidden rounded-3xl border border-red-100 bg-white shadow-sm transition hover:-translate-y-1 hover:border-red-200 hover:shadow-md"
+              >
+                <AccordionTrigger className="group p-0 text-left hover:no-underline">
+                  <Card className="w-full border-0 bg-transparent shadow-none">
+                    <CardHeader className="space-y-3 p-5">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-green-50 text-green-700 transition group-hover:bg-green-100">
+                          <Icon className="h-6 w-6" />
+                        </div>
+                      </div>
+                      <CardTitle className="text-xl leading-relaxed text-red-700">{title}</CardTitle>
+                      <CardDescription className="leading-relaxed text-muted-foreground">{description}</CardDescription>
+                    </CardHeader>
+                  </Card>
+                </AccordionTrigger>
+                <AccordionContent className="px-5 pb-5 pt-0 leading-loose text-slate-700">
+                  <MethodologyContent value={value} />
+                </AccordionContent>
+              </AccordionItem>
             ))}
-          </div>
+          </Accordion>
         </section>
 
         <section className="space-y-6">
