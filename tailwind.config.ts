@@ -1,160 +1,105 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+import type { Config } from "tailwindcss";
 
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 7%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 7%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 7%;
-
-    --primary: 157 80% 30%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 0 0% 97%;
-    --secondary-foreground: 0 0% 7%;
-
-    --muted: 0 0% 97%;
-    --muted-foreground: 0 0% 35%;
-
-    --accent: 352 100% 42%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 157 80% 30%;
-
-    --radius: 0.65rem;
-
-    --whatsapp: 157 80% 30%;
-    --whatsapp-foreground: 0 0% 100%;
-
-    --surface: 0 0% 97%;
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 0 0% 20%;
-    --sidebar-primary: 0 0% 7%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 0 0% 95%;
-    --sidebar-accent-foreground: 0 0% 10%;
-    --sidebar-border: 0 0% 90%;
-    --sidebar-ring: 157 80% 30%;
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply overflow-x-hidden bg-background text-foreground antialiased;
-    font-family: var(--font-bangla), var(--font-body), var(--font-japanese), "Tiro Bangla", serif;
-    font-size: clamp(0.97rem, 0.94rem + 0.2vw, 1.06rem);
-    line-height: 1.72;
-    letter-spacing: 0.003em;
-    text-rendering: optimizeLegibility;
-    font-feature-settings: "kern" 1, "liga" 1;
-  }
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-bangla), var(--font-body), var(--font-japanese), "Tiro Bangla", serif;
-    letter-spacing: -0.01em;
-    line-height: 1.4;
-    text-wrap: balance;
-  }
-
-  p {
-    max-width: 72ch;
-  }
-
-  section {
-    scroll-margin-top: 5rem;
-  }
-
-  button,
-  [role="button"] {
-    letter-spacing: 0.01em;
-  }
-}
-
-@layer utilities {
-  .section-padding {
-    @apply py-16 md:py-24 lg:py-28;
-  }
-  .container-narrow {
-    @apply mx-auto w-full max-w-screen-xl px-4 md:px-6 lg:px-8;
-  }
-  .text-balance-safe {
-    text-wrap: balance;
-    word-break: keep-all;
-    overflow-wrap: anywhere;
-  }
-  /* Explicit opt-in for any element that needs Tiro Bangla regardless of
-     inherited font context (e.g. inside a Poppins/Inter-styled component). */
-  .font-bangla,
-  [lang="bn"] {
-    font-family: "Tiro Bangla", var(--font-bangla), serif;
-    line-height: 1.6;
-  }
-}
-
-@layer components {
-  .rich-editor:focus {
-    box-shadow: inset 0 0 0 2px hsl(var(--ring) / 0.2);
-  }
-  .rich-editor :is(p, ul, ol, blockquote, h1, h2, h3, hr, img) {
-    margin-top: 0.85rem;
-    margin-bottom: 0.85rem;
-  }
-  .rich-editor h1 { @apply text-3xl font-bold; }
-  .rich-editor h2 { @apply text-2xl font-semibold; }
-  .rich-editor h3 { @apply text-xl font-semibold; }
-  .rich-editor ul { @apply list-disc pl-6; }
-  .rich-editor ol { @apply list-decimal pl-6; }
-  .rich-editor blockquote { @apply border-l-4 border-slate-300 bg-slate-50 px-4 py-2 italic; }
-  .rich-editor a { @apply text-blue-700 underline underline-offset-2; }
-  .rich-editor img,
-  .blog-content-image {
-    max-width: 100%;
-    height: auto;
-    border-radius: 0.9rem;
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
-    margin: 1.25rem auto;
-  }
-}
-
-@layer utilities {
-  .fade-up {
-    animation: fadeUp 0.7s ease both;
-  }
-  .card-lift {
-    @apply transition duration-300 hover:-translate-y-1 hover:shadow-lg;
-  }
-  .section-title {
-    @apply text-3xl font-bold leading-tight text-red-700 md:text-4xl;
-  }
-  .btn-premium-red {
-    @apply bg-red-600 transition duration-300 hover:-translate-y-1 hover:bg-red-700;
-  }
-  .btn-premium-green {
-    @apply text-green-700 transition duration-300 hover:-translate-y-1 hover:bg-green-50;
-  }
-  .timeline-step {
-    @apply flex items-center gap-3 rounded-xl border bg-white p-4;
-  }
-  .timeline-dot {
-    @apply inline-flex h-8 w-8 items-center justify-center rounded-full bg-green-100 text-sm font-bold text-green-700;
-  }
-}
-
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+export default {
+  darkMode: ["class"],
+  content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
+  prefix: "",
+  theme: {
+    container: {
+      center: true,
+      padding: {
+        DEFAULT: "1rem",
+        md: "1.5rem",
+        lg: "2rem",
+      },
+      screens: {
+        xl: "1280px",
+        "2xl": "1320px",
+      },
+    },
+    extend: {
+      fontFamily: {
+        display: ["Poppins", "sans-serif"],
+        body: ["Inter", "sans-serif"],
+        // Explicit utility for Bengali text: `font-tiro` or `font-bangla`.
+        tiro: ["var(--font-bangla)", "Tiro Bangla", "serif"],
+        bangla: ["var(--font-bangla)", "Tiro Bangla", "serif"],
+      },
+      colors: {
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
+        whatsapp: {
+          DEFAULT: "hsl(var(--whatsapp))",
+          foreground: "hsl(var(--whatsapp-foreground))",
+        },
+        surface: "hsl(var(--surface))",
+        sidebar: {
+          DEFAULT: "hsl(var(--sidebar-background))",
+          foreground: "hsl(var(--sidebar-foreground))",
+          primary: "hsl(var(--sidebar-primary))",
+          "primary-foreground": "hsl(var(--sidebar-primary-foreground))",
+          accent: "hsl(var(--sidebar-accent))",
+          "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
+          border: "hsl(var(--sidebar-border))",
+          ring: "hsl(var(--sidebar-ring))",
+        },
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+      },
+      keyframes: {
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+        "fade-in-up": {
+          from: { opacity: "0", transform: "translateY(20px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+        "fade-in-up": "fade-in-up 0.6s ease-out forwards",
+      },
+    },
+  },
+  plugins: [require("tailwindcss-animate")],
+} satisfies Config;
