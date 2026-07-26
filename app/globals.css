@@ -56,7 +56,7 @@
   }
   body {
     @apply overflow-x-hidden bg-background text-foreground antialiased;
-    font-family: var(--font-bangla), var(--font-body), var(--font-japanese), "Noto Sans Bengali", "Hind Siliguri", "Noto Sans", sans-serif;
+    font-family: var(--font-bangla), var(--font-body), var(--font-japanese), "Tiro Bangla", serif;
     font-size: clamp(0.97rem, 0.94rem + 0.2vw, 1.06rem);
     line-height: 1.72;
     letter-spacing: 0.003em;
@@ -64,9 +64,9 @@
     font-feature-settings: "kern" 1, "liga" 1;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-bangla), var(--font-body), var(--font-japanese), sans-serif;
+    font-family: var(--font-bangla), var(--font-body), var(--font-japanese), "Tiro Bangla", serif;
     letter-spacing: -0.01em;
-    line-height: 1.25;
+    line-height: 1.4;
     text-wrap: balance;
   }
 
@@ -95,6 +95,13 @@
     text-wrap: balance;
     word-break: keep-all;
     overflow-wrap: anywhere;
+  }
+  /* Explicit opt-in for any element that needs Tiro Bangla regardless of
+     inherited font context (e.g. inside a Poppins/Inter-styled component). */
+  .font-bangla,
+  [lang="bn"] {
+    font-family: "Tiro Bangla", var(--font-bangla), serif;
+    line-height: 1.6;
   }
 }
 
