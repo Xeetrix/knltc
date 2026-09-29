@@ -6,7 +6,7 @@ export const siteConfig = {
   phoneHref: "tel:+8801805013633",
   whatsappDisplay: "+8801805013633",
   whatsappHref: "https://wa.me/8801805013633",
-  email: "contact.knltc@gmail.com",
+  email: "info@knltc.com",
   location:
     "Sky View Trade Valley (8th Floor), 66/1 V.I.P Road, Naya Paltan, Dhaka-1000, Bangladesh",
   locations: {
