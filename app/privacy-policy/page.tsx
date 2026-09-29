@@ -261,10 +261,10 @@ export default function PrivacyPolicyPage() {
             <p>
               Email:{" "}
               <a
-                href="mailto:contact.knltc@gmail.com"
+                href="mailto:info@knltc.com"
                 className="text-blue-600 underline hover:text-blue-800"
               >
-                contact.knltc@gmail.com
+                info@knltc.com
               </a>
             </p>
             <p>
