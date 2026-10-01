@@ -1,0 +1,303 @@
+// ==============================================================================
+// KNLTC (Japan Gateway) - Japanese Language Course Platform & RBAC Schema
+// Database Engine: PostgreSQL
+// ==============================================================================
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ------------------------------------------------------------------------------
+// ENUMS
+// ------------------------------------------------------------------------------
+
+enum UserRole {
+  MAIN_ADMIN    // Super Admin: Central oversight, financial analytics, branch & admin management
+  BRANCH_ADMIN  // Branch Admin: Local admissions, fee verification, branch batch schedules
+  TEACHER       // Instructor: Live classes, lecture sheets, attendance recording, test grading
+  STUDENT       // Learner: Class access, resource downloads, assignment submissions, visa tracker
+}
+
+enum EnrollmentStatus {
+  PENDING       // Initial web inquiry or registration submitted
+  APPROVED      // Fee confirmed, seat allocated in batch
+  REJECTED      // Ineligible, canceled, or duplicate
+  COMPLETED     // Course completed, certificate issued
+}
+
+enum PaymentStatus {
+  PENDING       // Slip / Transaction ID submitted by student
+  VERIFIED      // Confirmed by Branch Admin or Accounts
+  REJECTED      // Fraudulent or incorrect transaction
+  REFUNDED      // Processed refund
+}
+
+enum PaymentMethod {
+  BKASH
+  NAGAD
+  BANK_TRANSFER
+  CASH_OFFICE
+}
+
+enum DeliveryMode {
+  ONLINE_LIVE         // Zoom / Google Meet interactive live classes
+  OFFLINE_CLASSROOM   // In-person multimedia campus classroom
+}
+
+enum VisaCategory {
+  STUDENT_VISA        // University / Senmon Gakko / Language School
+  SSW_JOB             // Specified Skilled Worker (Caregiver, Agriculture, Food Service, etc.)
+  TITP_INTERN         // Technical Intern Training Program
+  GENERAL_LANGUAGE    // Self-development / Business / Career advancement
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum ResourceType {
+  LECTURE_SHEET
+  AUDIO_MP3
+  KANJI_WORKBOOK
+  MOCK_EXAM
+  INTERVIEW_PREP
+}
+
+// ------------------------------------------------------------------------------
+// MODELS
+// ------------------------------------------------------------------------------
+
+/// Branches across Bangladesh and virtual campuses
+model Branch {
+  id              String      @id @default(uuid())
+  name            String      // e.g. "Dhaka Head Office (VIP Road, Naya Paltan)"
+  code            String      @unique // e.g. "DHK-HQ", "CTG-01", "ONL-GLB"
+  city            String      // "Dhaka", "Chattogram", "Sylhet", etc.
+  address         String
+  phone           String
+  email           String
+  isActive        Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Relations
+  users           User[]      @relation("BranchStaffAndStudents")
+  batches         Batch[]
+  enrollments     Enrollment[]
+
+  @@index([city])
+  @@map("branches")
+}
+
+/// System users across all 4 RBAC tiers
+model User {
+  id              String       @id @default(uuid())
+  name            String
+  email           String       @unique
+  phone           String
+  whatsapp        String?
+  passwordHash    String
+  role            UserRole     @default(STUDENT)
+  avatarUrl       String?
+  isActive        Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Optional Branch affiliation (Required for Branch Admin & offline students)
+  branchId        String?
+  branch          Branch?      @relation("BranchStaffAndStudents", fields: [branchId], references: [id], onDelete: SetNull)
+
+  // Teacher relations
+  assignedBatches Batch[]      @relation("TeacherBatches")
+  uploadedFiles   Resource[]   @relation("TeacherResources")
+  markedAttendances Attendance[] @relation("TeacherAttendances")
+
+  // Student relations
+  enrollments     Enrollment[] @relation("StudentEnrollments")
+  payments        Payment[]    @relation("StudentPayments")
+  attendances     Attendance[] @relation("StudentAttendanceRecords")
+
+  // Admin audit relations
+  verifiedPayments Payment[]   @relation("AdminVerifiedPayments")
+
+  @@index([role])
+  @@index([branchId])
+  @@map("users")
+}
+
+/// Master course catalog (N5, N4, Specialized Bonus modules)
+model Course {
+  id              String       @id @default(uuid())
+  title           String       // e.g. "Japanese N5 Foundation Course"
+  slug            String       @unique
+  level           String       // "N5", "N4", "N5+N4", "SPOKEN"
+  durationMonths  Int          // e.g. 3
+  regularFee      Decimal      @db.Decimal(10, 2)
+  discountedFee   Decimal?     @db.Decimal(10, 2)
+  description     String       @db.Text
+  curriculumJson  Json?        // Structured modules and lesson roadmap
+  includedBonuses String[]     // e.g. ["15-Day Embassy Interview", "10-Day Resume Course"]
+  isActive        Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Relations
+  batches         Batch[]
+  enrollments     Enrollment[]
+  resources       Resource[]
+
+  @@map("courses")
+}
+
+/// Specific classes/cohorts for a course at a branch
+model Batch {
+  id              String       @id @default(uuid())
+  name            String       // e.g. "Batch N5-102 (Morning Live)"
+  batchCode       String       @unique // e.g. "DHK-N5-2026-04"
+  scheduleTime    String       // e.g. "Sun, Tue, Thu | 10:00 AM - 12:00 PM"
+  startDate       DateTime
+  endDate         DateTime?
+  deliveryMode    DeliveryMode @default(ONLINE_LIVE)
+  maxCapacity     Int          @default(30)
+  currentEnrolled Int          @default(0)
+  meetingUrl      String?      // Zoom / Google Meet recurring link for live batches
+  classroomRoom   String?      // Offline campus room number (e.g. "Room 802, 8th Floor")
+  isActive        Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Relations
+  courseId        String
+  course          Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  branchId        String
+  branch          Branch       @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  teacherId       String?
+  teacher         User?        @relation("TeacherBatches", fields: [teacherId], references: [id], onDelete: SetNull)
+
+  enrollments     Enrollment[]
+  attendances     Attendance[]
+  resources       Resource[]
+
+  @@index([courseId])
+  @@index([branchId])
+  @@index([teacherId])
+  @@map("batches")
+}
+
+/// Student admission record into a course & batch
+model Enrollment {
+  id              String           @id @default(uuid())
+  enrollmentNo    String           @unique // e.g. "KNLTC-2026-8941"
+  status          EnrollmentStatus @default(PENDING)
+  deliveryMode    DeliveryMode     @default(ONLINE_LIVE)
+  visaCategory    VisaCategory     @default(STUDENT_VISA)
+  totalPayable    Decimal          @db.Decimal(10, 2)
+  paidAmount      Decimal          @default(0) @db.Decimal(10, 2)
+  dueAmount       Decimal          @default(0) @db.Decimal(10, 2)
+  applicantName   String
+  applicantPhone  String
+  applicantEmail  String?
+  applicantWa     String?
+  highestDegree   String?
+  remarks         String?          @db.Text
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  // Relations
+  studentId       String?
+  student         User?            @relation("StudentEnrollments", fields: [studentId], references: [id], onDelete: SetNull)
+  courseId        String
+  course          Course           @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  batchId         String?
+  batch           Batch?           @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  branchId        String
+  branch          Branch           @relation(fields: [branchId], references: [id], onDelete: Restrict)
+
+  payments        Payment[]
+
+  @@index([status])
+  @@index([studentId])
+  @@index([courseId])
+  @@index([branchId])
+  @@map("enrollments")
+}
+
+/// Course fee payments and verification log
+model Payment {
+  id              String        @id @default(uuid())
+  receiptNo       String        @unique // e.g. "RCP-2026-0045"
+  amount          Decimal       @db.Decimal(10, 2)
+  method          PaymentMethod
+  transactionId   String?       // bKash / Nagad / Bank trx ID
+  senderAccount   String?       // Mobile number or Bank Account
+  status          PaymentStatus @default(PENDING)
+  notes           String?
+  verifiedAt      DateTime?
+  createdAt       DateTime      @default(now())
+
+  // Relations
+  enrollmentId    String
+  enrollment      Enrollment    @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  studentId       String?
+  student         User?         @relation("StudentPayments", fields: [studentId], references: [id], onDelete: SetNull)
+  verifiedById    String?
+  verifiedBy      User?         @relation("AdminVerifiedPayments", fields: [verifiedById], references: [id], onDelete: SetNull)
+
+  @@index([enrollmentId])
+  @@index([status])
+  @@map("payments")
+}
+
+/// Lecture sheets, MP3 audio, Kanji guides, mock exams
+model Resource {
+  id              String       @id @default(uuid())
+  title           String       // e.g. "Minna No Nihongo Lesson 1-5 Kotoba & Audio"
+  description     String?
+  type            ResourceType @default(LECTURE_SHEET)
+  fileUrl         String       // CDN or storage path
+  fileSizeMb      Decimal?     @db.Decimal(5, 2)
+  downloadCount   Int          @default(0)
+  createdAt       DateTime     @default(now())
+
+  // Relations
+  courseId        String
+  course          Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  batchId         String?
+  batch           Batch?       @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  teacherId       String?
+  teacher         User?        @relation("TeacherResources", fields: [teacherId], references: [id], onDelete: SetNull)
+
+  @@index([courseId])
+  @@index([batchId])
+  @@map("resources")
+}
+
+/// Daily batch attendance recorded by teachers
+model Attendance {
+  id              String           @id @default(uuid())
+  date            DateTime         @db.Date
+  status          AttendanceStatus @default(PRESENT)
+  remarks         String?
+  createdAt       DateTime         @default(now())
+
+  // Relations
+  batchId         String
+  batch           Batch            @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  studentId       String
+  student         User             @relation("StudentAttendanceRecords", fields: [studentId], references: [id], onDelete: Cascade)
+  teacherId       String?
+  teacher         User?            @relation("TeacherAttendances", fields: [teacherId], references: [id], onDelete: SetNull)
+
+  @@unique([batchId, studentId, date])
+  @@index([batchId, date])
+  @@index([studentId])
+  @@map("attendances")
+}

@@ -13,8 +13,8 @@ const FinalCTA = () => {
   const t = translate(
     {
       en: { title: "Ready to Start Your Journey to Japan?", desc: "Book a free consultation and get your personalized roadmap for study or work in Japan.", apply: "Apply Now", consult: "Free Consultation", whatsapp: "WhatsApp Now" },
-      bn: { title: "জাপান যাত্রা শুরু করতে প্রস্তুত?", desc: "ফ্রি কনসাল্টেশন বুক করে জাপানে পড়াশোনা বা কাজের জন্য আপনার ব্যক্তিগত রোডম্যাপ নিন।", apply: "Apply Now", consult: "Free Consultation", whatsapp: "WhatsApp Now" },
-      ja: { title: "日本への一歩を始めませんか？", desc: "無料相談で、留学・就職に向けたあなた専用のロードマップを受け取りましょう。", apply: "Apply Now", consult: "Free Consultation", whatsapp: "WhatsApp Now" },
+      bn: { title: "জাপান যাত্রা শুরু করতে প্রস্তুত?", desc: "ফ্রি কনসাল্টেশন বুক করে জাপানে পড়াশোনা বা কাজের জন্য আপনার ব্যক্তিগত রোডম্যাপ নিন।", apply: "এখনই আবেদন করুন", consult: "ফ্রি কাউন্সেলিং", whatsapp: "হোয়াটসঅ্যাপে যোগাযোগ" },
+      ja: { title: "日本への一歩を始めませんか？", desc: "無料相談で、留学・就職に向けたあなた専用のロードマップを受け取りましょう。", apply: "今すぐ応募", consult: "無料相談", whatsapp: "WhatsAppで相談" },
     },
     language,
   );

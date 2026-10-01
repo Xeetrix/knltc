@@ -1,0 +1,7 @@
+{
+  "name": "KNLTC | Bangladesh to Japan Guidance",
+  "description": "Bangladesh-based Japan recruiting and training agency for language learning, study support, and career placement guidance.",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
