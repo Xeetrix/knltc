@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
 import HeroCourseSection from "@/components/japanese-language/HeroCourseSection";
 import TrustMetricsSection from "@/components/japanese-language/TrustMetricsSection";
+import HowItWorksSection from "@/components/japanese-language/HowItWorksSection";
 import CoursePackagesSection from "@/components/japanese-language/CoursePackagesSection";
 import BonusSection from "@/components/japanese-language/BonusSection";
 import MethodologyInteractiveSection from "@/components/japanese-language/MethodologyInteractiveSection";
 import EnrollmentForm from "@/components/japanese-language/EnrollmentForm";
 import CurriculumFaqSection from "@/components/japanese-language/CurriculumFaqSection";
-import RbacArchitecturePreview from "@/components/japanese-language/RbacArchitecturePreview";
 
 export const metadata: Metadata = {
-  title: "Japanese Language Course (N5 & N4) | KNLTC Japan Gateway Dhaka",
+  title: "Japanese Language Course (N5, N4 & Irodori) | KNLTC Japan Gateway Dhaka",
   description:
-    "Complete N5 & N4 Japanese Language Course at KNLTC Dhaka with Minna No Nihongo method. Course fee ৳12,000. Includes 3 Free Bonus Courses for Embassy Visa Interview and Japanese CV.",
+    "Learn Japanese language the easy way at KNLTC Dhaka. Preparation for JLPT/NAT/JFT from N5 to N1 and Irodori Japanese. Includes 3 free bonus courses for Embassy Visa Interview and Japanese CV. Online LMS at npw.bd/knltc.",
 };
 
 export default function JapaneseLanguagePage() {
@@ -23,23 +23,23 @@ export default function JapaneseLanguagePage() {
       {/* 2. Trust Metrics & Certified Curriculum Badges */}
       <TrustMetricsSection />
 
-      {/* 3. Course Packages (N5 - ৳12,000, N4, N5+N4 Combo) */}
+      {/* 3. How It Works (৩টি সহজ ধাপে আপনার যাত্রা শুরু করুন & LMS Access) */}
+      <HowItWorksSection />
+
+      {/* 4. Course Packages (N5 - ৳12,000, N4 - SSW, Advanced & Irodori) */}
       <CoursePackagesSection />
 
-      {/* 4. Exclusive Free Bonus Section (N5 Special - ৳15,000 Value FREE) */}
+      {/* 5. Exclusive Free Bonus Section (N5 Special - ৳15,000 Value FREE) */}
       <BonusSection />
 
-      {/* 5. Interactive Methodology & Lesson Preview (Alphabet, Kotoba, Grammar, Kaiwa) */}
+      {/* 6. Interactive Methodology & Lesson Preview (Alphabet, Kotoba, Grammar, Kaiwa) */}
       <MethodologyInteractiveSection />
 
-      {/* 6. Comprehensive Student Enrollment Form */}
+      {/* 7. Comprehensive Student Enrollment Form with Immediate Confirmation */}
       <EnrollmentForm />
 
-      {/* 7. Curriculum Roadmap & FAQ Accordion */}
+      {/* 8. Curriculum Roadmap & FAQ Accordion */}
       <CurriculumFaqSection />
-
-      {/* 8. Four-Tier Role-Based Access Control (RBAC) Architecture Showcase */}
-      <RbacArchitecturePreview />
     </main>
   );
 }

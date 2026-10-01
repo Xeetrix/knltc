@@ -86,23 +86,24 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
             ],
           },
           {
-            id: "course-combo",
-            level: "N5+N4",
-            title: "N5 + N4 Complete Career Mastery Combo",
-            tagline: "Zero to Direct Japan Departure Full-Stack Preparation",
-            fee: 24000,
-            discountedFee: 21500,
+            id: "course-advanced-irodori",
+            level: "N3-N1 & Irodori",
+            title: "Advanced & Practical (N3, N2, N1 & Irodori)",
+            tagline: "Special Job-Ready & Practical Japanese Conversation",
+            fee: 18000,
             popular: false,
-            desc: "Comprehensive N5 + N4 curriculum in a single journey. From beginner alphabet to clearing Japanese job interviews. Highly recommended and most cost-effective package.",
+            desc: "Practical speaking, Irodori Japanese for real workplace communication in Japan, business etiquette, and advanced JLPT preparation.",
             features: [
-              "6 Months intensive mentorship & supervision",
-              "All textbooks, Kanji notes & drill sheets delivered free",
-              "Mastery of 350+ Kanji and 1,500+ Japanese vocabulary",
-              "Ideal for both Student Visa & SSW Job candidates",
-              "10 Full mock exams & personal academic counseling",
+              "Irodori Japanese practical real-life task-based communication",
+              "Advanced Kanji (500+) and complex business grammar",
+              "Corporate interview coaching and Japanese work culture",
+              "Direct mentorship from senior sensei and native speakers",
+              "JLPT N3/N2 exam simulations & question bank",
+              "LMS access for audio listening and speaking drills",
             ],
             bonuses: [
-              "Complete Japan Visa Documentation Checklist & COE Audit",
+              "Japanese Business Etiquette & Keigo Masterclass",
+              "Japan Job Placement & Interview Portfolio Guide",
             ],
           },
         ],
@@ -170,23 +171,23 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
             ],
           },
           {
-            id: "course-combo",
-            level: "N5+N4",
-            title: "N5 + N4 Complete Career Mastery Combo",
-            tagline: "জিরো থেকে সরাসরি জাপান যাত্রার ফুল-স্ট্যাক প্রস্তুতি",
-            fee: 24000,
-            discountedFee: 21500,
+            id: "course-advanced-irodori",
+            level: "N3-N1 & Irodori",
+            title: "Advanced & Practical (N3, N2, N1 & Irodori)",
+            tagline: "স্পেশাল জব রেডি ও প্র্যাকটিক্যাল জাপানিজ কথোপকথন",
+            fee: 18000,
             popular: false,
-            desc: "একই কোর্সে N5 ও N4 কমপ্লিট কভারেজ। বর্ণমালা থেকে শুরু করে জাপানি জব ইন্টারভিউতে সফল হওয়া পর্যন্ত সব ধাপ কভার করা হয়। সবচেয়ে জনপ্রিয় ও সাশ্রয়ী অল-ইন-ওয়ান প্যাকেজ।",
+            desc: "জাপানে দৈনন্দিন জীবন ও কর্মক্ষেত্রে ন্যাচারাল স্পিকিংয়ের জন্য 'ইরোদেরি' (Irodori Japanese) এবং উচ্চতর লেভেলের (N3/N2/N1) গ্রামার ও বিজনেস এটিকেট সমৃদ্ধ বিশেষ প্রোগ্রাম।",
             features: [
-              "৬ মাসের সম্পূর্ণ নিবিড় মেন্টরশিপ ও সুপারভিশন",
-              "সব পাঠ্যবই, কাঞ্জি নোট ও ড্রিল শিট ফ্রি ডেলিভারি",
-              "৩৫০+ কাঞ্জি ও ১৫০০+ জাপানি শব্দের শক্ত দখল",
-              "স্টুডেন্ট ও SSW দুই ধরনের ভিসার জন্যই উপযুক্ত",
-              "সব মিলিয়ে ১০টি পূর্ণাঙ্গ মক টেস্ট ও ব্যক্তিগত কাউন্সেলিং",
+              "ইরোদেরি জাপানিজ বাস্তবমুখী সিচুয়েশনাল স্পিকিং ও লিসেনিং",
+              "উচ্চতর কাঞ্জি (৫০০+) ও কর্পোরেট যোগাযোগের বিশেষ অনুশীলন",
+              "জাপানিজ কর্মসংস্কৃতি (Work Ethics) ও বিজনেস কেইগো",
+              "অভিজ্ঞ সিনিয়র সেনসিদের প্রত্যক্ষ মেন্টরশিপ",
+              "জব ইন্টারভিউ ও রিজিউমি প্রেজেন্টেশন ড্রিলস",
+              "LMS ক্লাসরুমে অডিও-ভিডিও রিসোর্স ও প্র্যাকটিস পেপারস",
             ],
             bonuses: [
-              "কমপ্লিট ভিসা ডকুমেন্টেশন চেকলিস্ট অডিট",
+              "বিজনেস জাপানিজ কমিউনিকেশন ও কর্পোরেট ইন্টারভিউ গাইড",
             ],
           },
         ],
@@ -254,23 +255,23 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
             ],
           },
           {
-            id: "course-combo",
-            level: "N5+N4",
-            title: "N5 + N4 キャリアコンプリートパック（6ヶ月）",
-            tagline: "入門から日本出国までを完全網羅するオールインワン",
-            fee: 24000,
-            discountedFee: 21500,
+            id: "course-advanced-irodori",
+            level: "N3-N1 & いろどり",
+            title: "実践・上級日本語（N3〜N1＆いろどり）",
+            tagline: "即戦力就労と実践的な日本語コミュニケーション",
+            fee: 18000,
             popular: false,
-            desc: "ゼロからN4合格・現地就業までを最短ルートで進む総合コース。個別進路指導とビザ書類審査つきの特別割引パッケージ。",
+            desc: "『いろどり 生活の日本語』を活用した実践的会話力と、N3/N2/N1合格を目指す総合キャリア支援プログラム。",
             features: [
-              "6ヶ月間の専任講師による徹底個別指導",
-              "全冊テキスト・漢字帳・教材の自宅無料配送",
-              "漢字350字・必須語彙1,500語の確実な定着",
-              "留学・特定技能双方の進路に対応",
-              "計10回のフル模擬試験と進路カウンセリング",
+              "『いろどり』生活・職場シチュエーション会話特訓",
+              "上級漢字500字および高度ビジネス文書作成",
+              "日本の企業文化・ビジネスマナーの徹底指導",
+              "経験豊富な日本人・熟練講師陣の直接指導",
+              "JLPT N3/N2問題演習および模擬試験",
+              "LMSオンライン教室での常時リスニング演習",
             ],
             bonuses: [
-              "ビザ申請書類・COE書類チェック＆個別監査",
+              "日本企業採用面接ポートフォリオ添削",
             ],
           },
         ],
@@ -346,12 +347,9 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
                   {/* Pricing Box */}
                   <div className="mt-5 rounded-2xl bg-stone-50 border border-stone-200 p-4">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-extrabold text-slate-900">
-                        ৳{course.discountedFee || course.fee}
+                      <span className="text-3xl font-extrabold text-[#b91c1c]">
+                        ৳{course.fee.toLocaleString()}
                       </span>
-                      {course.discountedFee && (
-                        <span className="text-sm text-slate-400 line-through">৳{course.fee}</span>
-                      )}
                     </div>
                     <p className="mt-1 text-xs text-slate-600">
                       {isN5 ? t.installmentN5 : t.installmentOther}

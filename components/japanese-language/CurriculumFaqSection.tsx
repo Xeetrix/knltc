@@ -77,8 +77,12 @@ export default function CurriculumFaqSection() {
             a: "Yes! All regularly enrolled N5 students receive our 3 exclusive specialized bonus courses (Embassy Interview, Japanese Resume Writing, and Part-time Job Interview Training worth ৳15,000) completely free.",
           },
           {
+            q: "How does the online LMS classroom work and how do I log in?",
+            a: "All online courses, live Zoom classes, and recorded lectures are hosted on our dedicated platform: https://npw.bd/knltc. After submitting your enrollment form, our team verifies your payment and delivers your LMS username and password directly via WhatsApp. You can log in anytime from phone or PC.",
+          },
+          {
             q: "Will class recordings be provided for online batches?",
-            a: "Yes! Every single live interactive class is recorded in HD and uploaded to our Student Portal. If you miss a class or want to revise, you can stream it anytime.",
+            a: "Yes! Every single live interactive class is recorded in HD and archived inside your https://npw.bd/knltc student account. If you miss a class or want to revise, you can watch it anytime.",
           },
           {
             q: "Does KNLTC assist with official JLPT and JFT-Basic exam registrations?",
@@ -153,8 +157,12 @@ export default function CurriculumFaqSection() {
             a: "হ্যাঁ, N5 কোর্সের নিয়মিত শিক্ষার্থীদের জন্য ১৫,০০০ টাকা সমমূল্যের ৩টি স্পেশাল কোর্স (এম্বাসি ইন্টারভিউ, জাপানি রিজিউমি/সিভি রাইটিং এবং পার্ট-টাইম জব ইন্টারভিউ) সম্পূর্ণ বিনামূল্যে উপহার দেওয়া হয়।",
           },
           {
+            q: "অনলাইন লার্নিং প্ল্যাটফর্ম (LMS) কীভাবে কাজ করে এবং ক্লাসে কীভাবে যুক্ত হব?",
+            a: "KNLTC-এর সমস্ত অনলাইন কোর্স, লাইভ জুম সেশন ও রিসোর্স সরাসরি https://npw.bd/knltc পোর্টালে হোস্ট করা। নিচের ফর্মে আবেদন করার পর আমাদের টিম আপনার তথ্য ও পেমেন্ট ভেরিফাই করে সরাসরি আপনার হোয়াটসঅ্যাপে LMS আইডি ও পাসওয়ার্ড পাঠিয়ে দেবে। লিংকে গিয়ে ইউজারনেম ও পাসওয়ার্ড দিয়ে খুব সহজেই ক্লাসরুমে প্রবেশ করতে পারবেন।",
+          },
+          {
             q: "অনলাইন ব্যাচে ক্লাস করলে কি রেকর্ডিং পাওয়া যাবে?",
-            a: "হ্যাঁ, প্রতিটি লাইভ ক্লাসের হাই-ডেফিনিশন রেকর্ডিং এবং লেকচার স্লাইড আমাদের স্টুডেন্ট পোর্টালে আপলোড থাকে। কোনো কারণে ক্লাস মিস হলে আপনি যেকোনো সময় রেকর্ডিং দেখে রিভিশন দিতে পারবেন।",
+            a: "হ্যাঁ, প্রতিটি লাইভ ক্লাসের হাই-ডেফিনিশন রেকর্ডিং এবং লেকচার স্লাইড সরাসরি আপনার https://npw.bd/knltc একাউন্টে সংরক্ষিত থাকে। কোনো কারণে ক্লাস মিস হলে আপনি যেকোনো সময় রেকর্ডিং দেখে রিভিশন দিতে পারবেন।",
           },
           {
             q: "JLPT ও JFT-Basic পরীক্ষার রেজিস্ট্রেশনে কি সহায়তা করা হয়?",
@@ -229,8 +237,12 @@ export default function CurriculumFaqSection() {
             a: "はい、N5通常受講生には、15,000タカ相当の大使館面接・履歴書作成・アルバイト面接の3大特典講座が全額無料で付帯します。",
           },
           {
+            q: "オンラインLMS教室のログイン方法はどのようになりますか？",
+            a: "受講講座およびオンライン授業は https://npw.bd/knltc にて提供されます。受講申請完了後、事務局より確認の上、WhatsAppにてログイン用IDとパスワードをお送りします。スマートフォンやPCからいつでもアクセス可能です。",
+          },
+          {
             q: "オンライン受講の場合、授業の録画は視聴できますか？",
-            a: "はい、すべてのライブ授業はハイビジョン録画され、専用ポータルにていつでも復習視聴が可能です。",
+            a: "はい、すべてのライブ授業はハイビジョン録画され、公式LMS（https://npw.bd/knltc）にていつでも復習視聴が可能です。",
           },
           {
             q: "JLPTやJFT-Basicの本番申し込みもサポートしてもらえますか？",
