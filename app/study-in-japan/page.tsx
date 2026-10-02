@@ -457,11 +457,13 @@ export default function StudyInJapanClient() {
           </div>
         </section>
 
-        <section className="fade-up rounded-3xl bg-gradient-to-r from-red-700 to-green-700 p-8 text-center text-white">
-          <h2 className="text-3xl font-bold">{t.finalTitle}</h2>
-          <Link href="/contact" className="mt-5 inline-block rounded-full bg-white px-6 py-3 font-semibold text-red-700 transition hover:-translate-y-1">
-            {t.consult}
-          </Link>
+        <section className="fade-up rounded-3xl border border-stone-200 bg-white p-8 sm:p-10 text-center shadow-xs">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">{t.finalTitle}</h2>
+          <div className="mt-5">
+            <Link href="/contact" className="inline-block rounded-xl bg-[#15803d] hover:bg-emerald-700 px-6 py-3 font-semibold text-white shadow-xs transition">
+              {t.consult}
+            </Link>
+          </div>
         </section>
       </div>
     </main>

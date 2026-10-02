@@ -1,10 +1,12 @@
 "use client";
 
+import { MessageCircle } from "lucide-react";
 import {
-  MessageCircle,
-} from "lucide-react";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
@@ -15,74 +17,37 @@ export default function CurriculumFaqSection() {
   const t = translate(
     {
       en: {
-        syllabusBadge: "Curriculum Roadmap",
-        syllabusTitle: "N5 Course Week-by-Week Syllabus",
-        syllabusSub:
-          "Structured 12-week roadmap ensuring every student masters the syllabus and mock revisions before official exams.",
-        hoursLabel: "10 Hours Lecture + Practice",
         faqBadge: "Frequently Asked Questions",
         faqTitle: "Common Inquiries & Answers (FAQ)",
         faqSub:
-          "Clear answers regarding course enrollment, installment fee options, class recordings, and visa milestones.",
+          "Clear answers regarding course enrollment, installment fee options, online LMS access, and visa processing.",
         helpTitle: "Have any other questions?",
-        helpSub: "Speak directly with our senior admission counseling team.",
+        helpSub: "Speak directly with our senior admission counseling team on WhatsApp.",
         btnHelp: "Ask on WhatsApp",
-        weeks: [
-          {
-            w: "Weeks 1 - 2",
-            t: "Alphabet & Phonetic Accuracy (Script Mastery)",
-            d: "All 92 Hiragana and Katakana characters, Dakuon, Handakuon, long vowels, and standard Romaji pronunciation.",
-          },
-          {
-            w: "Weeks 3 - 4",
-            t: "Minna No Nihongo Lessons 1 to 6",
-            d: "Self-introductions, question formation (Ka), demonstrative pronouns (Kore/Sore/Are), location, and daily activities.",
-          },
-          {
-            w: "Weeks 5 - 6",
-            t: "Minna No Nihongo Lessons 7 to 12 + Kanji 01",
-            d: "Tools & instruments (De particle), transactions (Ageru/Morau), adjectives (I/Na-adjectives), and first 50 basic Kanji.",
-          },
-          {
-            w: "Weeks 7 - 8",
-            t: "Minna No Nihongo Lessons 13 to 18 + Kanji 02",
-            d: "Desires (Tai-form), directional verbs, polite requests (Te-kudasai), prohibitions, and continuous states (Te-iru).",
-          },
-          {
-            w: "Weeks 9 - 10",
-            t: "Minna No Nihongo Lessons 19 to 25",
-            d: "Past experiences (Ta-form koto ga aru), casual speech (Futsuukei), opinions (To omoimasu), and conditional (Tara-form).",
-          },
-          {
-            w: "Weeks 11 - 12",
-            t: "5 Full-Length Mock Tests & Embassy Interview Drills",
-            d: "JLPT N5 and JFT-Basic simulation questions, listening speed reflexes, and embassy visa officer mock simulations.",
-          },
-        ],
         faqs: [
           {
-            q: "Can the course fee be paid in installments?",
-            a: "Yes! At KNLTC, students can conveniently pay their course fee in 2 equal installments. Confirm your seat with 50% at admission, and clear the remaining 50% after 30 days of classes.",
+            q: "Is it possible to pay the course fee in installments?",
+            a: "Yes! At KNLTC, students can pay in 2 easy installments. You can book your seat with a 50% deposit and pay the remaining 50% thirty days after classes commence.",
           },
           {
-            q: "I have zero prior knowledge of Japanese. Can I start this course?",
-            a: "Absolutely! Our N5 course is built from the ground up for complete beginners. Class 1 starts with basic Hiragana and Katakana stroke orders and phonetic pronunciation. No prior knowledge is needed.",
-          },
-          {
-            q: "Are there any separate or hidden charges for textbooks and worksheets?",
-            a: "No, there are zero hidden fees. Upon enrollment, Minna No Nihongo Part 1 & 2 textbooks, Kanji practice workbooks, grammar note handouts, and audio files are provided 100% free of charge.",
-          },
-          {
-            q: "Are the 15-Day Embassy Interview & CV courses truly free?",
-            a: "Yes! All regularly enrolled N5 students receive our 3 exclusive specialized bonus courses (Embassy Interview, Japanese Resume Writing, and Part-time Job Interview Training worth ৳15,000) completely free.",
+            q: "I have no prior Japanese knowledge. Can I start from scratch?",
+            a: "Absolutely! The N5 course is designed from ground zero. Starting from proper stroke orders of Hiragana and Katakana alphabets and native pronunciation, no prior experience is required.",
           },
           {
             q: "How does the online LMS classroom work and how do I log in?",
             a: "All online courses, live Zoom classes, and recorded lectures are hosted on our dedicated platform: https://npw.bd/knltc. After submitting your enrollment form, our team verifies your payment and delivers your LMS username and password directly via WhatsApp. You can log in anytime from phone or PC.",
           },
           {
+            q: "Are there any separate or hidden charges for textbooks and worksheets?",
+            a: "No, there are zero hidden fees. Upon enrollment, Minna No Nihongo textbooks, Kanji practice workbooks, grammar note handouts, and audio files are provided 100% free of charge.",
+          },
+          {
+            q: "Are the 15-Day Embassy Interview & CV courses truly free?",
+            a: "Yes! All regularly enrolled N5 students receive our 3 exclusive specialized bonus courses (Embassy Interview, Japanese Resume Writing, and Part-time Job Interview Training worth ৳15,000) completely free.",
+          },
+          {
             q: "Will class recordings be provided for online batches?",
-            a: "Yes! Every single live interactive class is recorded in HD and archived inside your https://npw.bd/knltc student account. If you miss a class or want to revise, you can watch it anytime.",
+            a: "Yes! Every single live interactive class is recorded in HD and archived inside your KNLTC LMS student account. If you miss a class or want to revise, you can watch it anytime.",
           },
           {
             q: "Does KNLTC assist with official JLPT and JFT-Basic exam registrations?",
@@ -95,50 +60,13 @@ export default function CurriculumFaqSection() {
         ],
       },
       bn: {
-        syllabusBadge: "সিলেবাস রোডম্যাপ",
-        syllabusTitle: "N5 কোর্সের সপ্তাহভিত্তিক সিলেবাস",
-        syllabusSub:
-          "১২ সপ্তাহের সুনির্দিষ্ট পরিকল্পনা, যাতে প্রতিটি শিক্ষার্থী পরীক্ষার আগেই সিলেবাস ও রিভিশন শেষ করতে পারেন।",
-        hoursLabel: "১০ ঘণ্টা লেকচার + প্র্যাকটিস",
         faqBadge: "সাধারণ জিজ্ঞাসা ও উত্তর",
         faqTitle: "সচরাচর জিজ্ঞাসিত প্রশ্নাবলি (FAQ)",
         faqSub:
-          "ভর্তি প্রক্রিয়া, ফি এবং ক্লাস সম্পর্কিত আপনার প্রয়োজনীয় সব উত্তর এখানে দেওয়া হয়েছে।",
-        helpTitle: "অন্য কোনো প্রশ্ন আছে?",
-        helpSub: "আমাদের সিনিয়র কাউন্সিলরদের সাথে সরাসরি কথা বলুন।",
-        btnHelp: "হোয়াটসঅ্যাপে প্রশ্ন করুন",
-        weeks: [
-          {
-            w: "সপ্তাহ ১ - ২",
-            t: "বর্ণমালা ও প্রমিত উচ্চারণ (Script Mastery)",
-            d: "হিরাগানা ও কাতাকানার ৯২টি ক্যারেক্টার, ডাকুঅন, হান্দাকুঅন, দীর্ঘস্বর এবং রোমাজি উচ্চারণ নিয়মাবলি।",
-          },
-          {
-            w: "সপ্তাহ ৩ - ৪",
-            t: "Minna No Nihongo অধ্যায় ১ থেকে ৬",
-            d: "আত্মপরিচয়, প্রশ্ন গঠন (Ka), নির্দেশক সর্বনাম (Kore/Sore/Are), স্থান ও অবস্থান এবং প্রতিদিনের কাজ।",
-          },
-          {
-            w: "সপ্তাহ ৫ - ৬",
-            t: "Minna No Nihongo অধ্যায় ৭ থেকে ১২ + কাঞ্জি ০১",
-            d: "টুল ও মাধ্যম (De particle), লেনদেন (Ageru/Morau), বিশেষণ (I/Na-adjective) এবং ৫০টি মৌলিক কাঞ্জি।",
-          },
-          {
-            w: "সপ্তাহ ৭ - ৮",
-            t: "Minna No Nihongo অধ্যায় ১৩ থেকে ১৮ + কাঞ্জি ০২",
-            d: "ইচ্ছা প্রকাশ (Tai), স্থান পরিবর্তন, অনুরোধ (Te-form kudasai), নিষেধ ও বর্তমান অবস্থা (Te-iru)।",
-          },
-          {
-            w: "সপ্তাহ ৯ - ১০",
-            t: "Minna No Nihongo অধ্যায় ১৯ থেকে ২৫",
-            d: "অভিজ্ঞতা (Ta-form koto ga aru), সাধারণ ভঙ্গি (Futsuukei), মতামত (To omoimasu), শর্ত (Tara-form)।",
-          },
-          {
-            w: "সপ্তাহ ১১ - ১২",
-            t: "পূর্ণাঙ্গ ৫টি মক টেস্ট ও ইন্টারভিউ ড্রিল",
-            d: "JLPT N5 ও JFT-Basic অনুরূপ প্রশ্নব্যাংক সমাধান, লিসেনিং স্পিড টেস্ট এবং এম্বাসি ইন্টারভিউ ওয়ার্কশপ।",
-          },
-        ],
+          "কোর্স ফি, কিস্তির সুবিধা, অনলাইন LMS এক্সেস এবং ভিসা প্রসেসিং সংক্রান্ত স্পষ্ট উত্তর।",
+        helpTitle: "আপনার কি আরো কিছু জানার আছে?",
+        helpSub: "আমাদের সিনিয়র এডমিশন কাউন্সেলিং টিমের সাথে সরাসরি হোয়াটসঅ্যাপে কথা বলুন।",
+        btnHelp: "WhatsApp-এ জিজ্ঞাসা করুন",
         faqs: [
           {
             q: "কোর্স ফি কি কিস্তিতে পরিশোধ করা সম্ভব?",
@@ -149,6 +77,10 @@ export default function CurriculumFaqSection() {
             a: "অবশ্যই! আমাদের N5 কোর্সটি সম্পূর্ণ শূন্য (Zero Level) থেকে ডিজাইন করা হয়েছে। একদম প্রথম ক্লাসে হিরাগানা ও কাতাকানা বর্ণমালার সঠিক স্ট্রোক অর্ডার ও ধ্বনি দিয়ে ক্লাস শুরু হয়। সুতরাং পূর্ব অভিজ্ঞতার কোনো প্রয়োজন নেই।",
           },
           {
+            q: "অনলাইন লার্নিং প্ল্যাটফর্ম (LMS) কীভাবে কাজ করে এবং ক্লাসে কীভাবে যুক্ত হব?",
+            a: "KNLTC-এর সমস্ত অনলাইন কোর্স, লাইভ জুম সেশন ও রিসোর্স সরাসরি https://npw.bd/knltc পোর্টালে হোস্ট করা। নিচের ফর্মে আবেদন করার পর আমাদের টিম আপনার তথ্য ও পেমেন্ট ভেরিফাই করে সরাসরি আপনার হোয়াটসঅ্যাপে LMS আইডি ও পাসওয়ার্ড পাঠিয়ে দেবে। লিংকে গিয়ে ইউজারনেম ও পাসওয়ার্ড দিয়ে খুব সহজেই ক্লাসরুমে প্রবেশ করতে পারবেন।",
+          },
+          {
             q: "বই এবং লেকচার শিটের জন্য আলাদা কোনো খরচ আছে কি?",
             a: "না, কোনো লুকানো বা অতিরিক্ত খরচ নেই। ভর্তির সাথে সাথেই মিন্না নো নিহোঙ্গো ১ ও ২ পাঠ্যবই, কাঞ্জি প্র্যাকটিস শিট, শব্দার্থ ও ব্যাকরণ নোট এবং অডিও ড্রিলস সম্পূর্ণ বিনামূল্যে সরবরাহ করা হয়।",
           },
@@ -157,12 +89,8 @@ export default function CurriculumFaqSection() {
             a: "হ্যাঁ, N5 কোর্সের নিয়মিত শিক্ষার্থীদের জন্য ১৫,০০০ টাকা সমমূল্যের ৩টি স্পেশাল কোর্স (এম্বাসি ইন্টারভিউ, জাপানি রিজিউমি/সিভি রাইটিং এবং পার্ট-টাইম জব ইন্টারভিউ) সম্পূর্ণ বিনামূল্যে উপহার দেওয়া হয়।",
           },
           {
-            q: "অনলাইন লার্নিং প্ল্যাটফর্ম (LMS) কীভাবে কাজ করে এবং ক্লাসে কীভাবে যুক্ত হব?",
-            a: "KNLTC-এর সমস্ত অনলাইন কোর্স, লাইভ জুম সেশন ও রিসোর্স সরাসরি https://npw.bd/knltc পোর্টালে হোস্ট করা। নিচের ফর্মে আবেদন করার পর আমাদের টিম আপনার তথ্য ও পেমেন্ট ভেরিফাই করে সরাসরি আপনার হোয়াটসঅ্যাপে LMS আইডি ও পাসওয়ার্ড পাঠিয়ে দেবে। লিংকে গিয়ে ইউজারনেম ও পাসওয়ার্ড দিয়ে খুব সহজেই ক্লাসরুমে প্রবেশ করতে পারবেন।",
-          },
-          {
             q: "অনলাইন ব্যাচে ক্লাস করলে কি রেকর্ডিং পাওয়া যাবে?",
-            a: "হ্যাঁ, প্রতিটি লাইভ ক্লাসের হাই-ডেফিনিশন রেকর্ডিং এবং লেকচার স্লাইড সরাসরি আপনার https://npw.bd/knltc একাউন্টে সংরক্ষিত থাকে। কোনো কারণে ক্লাস মিস হলে আপনি যেকোনো সময় রেকর্ডিং দেখে রিভিশন দিতে পারবেন।",
+            a: "হ্যাঁ, প্রতিটি লাইভ ক্লাসের হাই-ডেফিনিশন রেকর্ডিং এবং লেকচার স্লাইড সরাসরি আপনার KNLTC শিক্ষার্থী অ্যাকাউন্টে সংরক্ষিত থাকে। কোনো কারণে ক্লাস মিস হলে আপনি যেকোনো সময় রেকর্ডিং দেখে রিভিশন দিতে পারবেন।",
           },
           {
             q: "JLPT ও JFT-Basic পরীক্ষার রেজিস্ট্রেশনে কি সহায়তা করা হয়?",
@@ -175,70 +103,33 @@ export default function CurriculumFaqSection() {
         ],
       },
       ja: {
-        syllabusBadge: "カリキュラム工程表",
-        syllabusTitle: "N5コース 週次詳細シラバス",
-        syllabusSub:
-          "本番試験前の復習と模擬演習を完全網羅した12週間の体系的学習計画。",
-        hoursLabel: "週10時間 講義＆実践演習",
         faqBadge: "よくあるご質問",
         faqTitle: "受講検討時のFAQ（よくある質問と回答）",
         faqSub:
-          "受講料の分割払い、教材手配、ビザ申請支援に関する疑問を解消いたします。",
+          "受講料の分割払い、LMSログイン、教材手配、ビザ申請支援に関する疑問を解消いたします。",
         helpTitle: "その他にご不明点はございますか？",
         helpSub: "専任カウンセラーがWhatsAppにて直接ご相談を承ります。",
         btnHelp: "WhatsAppで質問する",
-        weeks: [
-          {
-            w: "第1〜2週",
-            t: "文字・発音の完全習得（ひらがな・カタカナ）",
-            d: "清音・濁音・半濁音・拗音・長音・促音の書き順と正確な日本語標準発音。",
-          },
-          {
-            w: "第3〜4週",
-            t: "『みんなの日本語』第1課〜第6課",
-            d: "自己紹介文、助詞（は・の・を・で）、指示代名詞（これ・それ・あれ）、日常行動表現。",
-          },
-          {
-            w: "第5〜6週",
-            t: "『みんなの日本語』第7課〜第12課 ＋ 漢字基礎",
-            d: "授受表現（あげます・もらいます）、イ形容詞・ナ形容詞、比較表現、基本漢字50字。",
-          },
-          {
-            w: "第7〜8週",
-            t: "『みんなの日本語』第13課〜第18課 ＋ 漢字応用",
-            d: "希望表現（たい）、て形（依頼・許可・禁止・現在進行形）、動詞辞書形。",
-          },
-          {
-            w: "第9〜10週",
-            t: "『みんなの日本語』第19課〜第25課",
-            d: "経験（たことがある）、普通体会話（友達ことば）、推量・意見（と思います）、条件（たら形）。",
-          },
-          {
-            w: "第11〜12週",
-            t: "JLPT本番形式フル模擬テスト（5回）＆面接演習",
-            d: "過去問分析、リスニング反射神経特訓、大使館ビザ面接シミュレーション演習。",
-          },
-        ],
         faqs: [
           {
             q: "受講料の分割払いは可能ですか？",
-            a: "はい、可能です。KNLTCでは受講生の負担を軽減するため、2回の分割払いに対応しています。お申込み時に50%、開講30日後に残り50%をお支払いいただけます。",
+            a: "はい、2回の分割払いが可能です。申込時に50%をお支払いいただき、開講30日後に残りの50%をお支払いいただけます。",
           },
           {
             q: "日本語の学習経験が全くありませんが、受講できますか？",
-            a: "全く問題ありません。当校のN5コースは完全な初学者向けに設計されており、ひらがなの1画目から日本人講師が丁寧に発音と筆順を教えます。",
-          },
-          {
-            q: "教科書代やプリント代は別途かかりますか？",
-            a: "追加費用は一切かかりません。『みんなの日本語』テキスト、オリジナル漢字テキスト、文法プリント、音声音源はすべて受講料に含まれています。",
-          },
-          {
-            q: "面接対策講座や履歴書講座は本当に無料ですか？",
-            a: "はい、N5通常受講生には、15,000タカ相当の大使館面接・履歴書作成・アルバイト面接の3大特典講座が全額無料で付帯します。",
+            a: "はい、完全な初心者向けに設計されています。ひらがな・カタカナの正確な書き順や発音指導から丁寧にスタートしますので、事前知識は一切不要です。",
           },
           {
             q: "オンラインLMS教室のログイン方法はどのようになりますか？",
             a: "受講講座およびオンライン授業は https://npw.bd/knltc にて提供されます。受講申請完了後、事務局より確認の上、WhatsAppにてログイン用IDとパスワードをお送りします。スマートフォンやPCからいつでもアクセス可能です。",
+          },
+          {
+            q: "教材代やテキスト代は別途必要ですか？",
+            a: "いいえ、別途料金は一切かかりません。『みんなの日本語』教科書、漢字ワークブック、文法プリント、音声教材はすべて受講料に含まれています。",
+          },
+          {
+            q: "15日間の大使館面接対策や履歴書作成講座は本当に無料ですか？",
+            a: "はい、N5通常受講生には、15,000タカ相当の大使館面接・履歴書作成・アルバイト面接の3大特典講座が全額無料で付帯します。",
           },
           {
             q: "オンライン受講の場合、授業の録画は視聴できますか？",
@@ -259,89 +150,59 @@ export default function CurriculumFaqSection() {
   );
 
   return (
-    <section className="bg-white py-16 md:py-24 border-b border-stone-200">
-      <div className="container-narrow">
-        <div className="grid gap-12 lg:grid-cols-2">
-          {/* Left: Syllabus Breakdown */}
-          <div>
-            <Badge className="border-red-200 bg-red-50 text-[#b91c1c] text-xs font-semibold px-3 py-1">
-              {t.syllabusBadge}
-            </Badge>
-            <h2 className="mt-3 text-2xl font-bold text-slate-900 sm:text-3xl">
-              {t.syllabusTitle}
-            </h2>
-            <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed mb-6">
-              {t.syllabusSub}
-            </p>
+    <section className="bg-[#fcfaf7]/50 py-16 md:py-24 border-b border-stone-200">
+      <div className="container-narrow max-w-3xl">
+        {/* Centered Header */}
+        <div className="text-center mb-10 md:mb-12">
+          <p className="text-xs font-bold uppercase tracking-widest text-[#b91c1c] mb-2">
+            {t.faqBadge}
+          </p>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
+            {t.faqTitle}
+          </h2>
+          <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed max-w-xl mx-auto">
+            {t.faqSub}
+          </p>
+        </div>
 
-            <div className="space-y-3">
-              {t.weeks.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="rounded-2xl border border-stone-200 bg-[#fcfaf7] p-4 transition hover:border-red-200 hover:bg-white hover:shadow-xs"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-extrabold text-[#b91c1c] bg-red-50 px-2.5 py-0.5 rounded-full border border-red-100">
-                      {item.w}
-                    </span>
-                    <span className="text-[11px] text-slate-400 font-medium">{t.hoursLabel}</span>
-                  </div>
-                  <h4 className="mt-2 text-sm font-bold text-slate-900">{item.t}</h4>
-                  <p className="mt-1 text-xs text-slate-600 leading-relaxed">{item.d}</p>
-                </div>
-              ))}
-            </div>
+        {/* Clean, Centered FAQ Accordion */}
+        <Accordion type="single" collapsible className="space-y-3">
+          {t.faqs.map((faq, fi) => (
+            <AccordionItem
+              key={fi}
+              value={`faq-${fi}`}
+              className="rounded-2xl border border-stone-200 bg-white px-5 py-1 shadow-xs data-[state=open]:border-red-200 transition"
+            >
+              <AccordionTrigger className="text-left text-sm sm:text-base font-bold text-slate-900 hover:no-underline hover:text-[#b91c1c] py-4">
+                {faq.q}
+              </AccordionTrigger>
+              <AccordionContent className="text-xs sm:text-sm text-slate-600 leading-relaxed pb-4 pt-1 border-t border-stone-100 mt-2">
+                {faq.a}
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+
+        {/* Helpline Callout Box */}
+        <div className="mt-10 rounded-2xl border border-stone-200 bg-white p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
+          <div className="text-center sm:text-left">
+            <h4 className="text-sm sm:text-base font-bold text-slate-900">{t.helpTitle}</h4>
+            <p className="text-xs text-slate-600 mt-0.5">{t.helpSub}</p>
           </div>
-
-          {/* Right: FAQ Accordion */}
-          <div>
-            <Badge className="border-green-200 bg-green-50 text-[#15803d] text-xs font-semibold px-3 py-1">
-              {t.faqBadge}
-            </Badge>
-            <h2 className="mt-3 text-2xl font-bold text-slate-900 sm:text-3xl">
-              {t.faqTitle}
-            </h2>
-            <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed mb-6">
-              {t.faqSub}
-            </p>
-
-            <Accordion type="single" collapsible className="space-y-3">
-              {t.faqs.map((faq, fi) => (
-                <AccordionItem
-                  key={fi}
-                  value={`faq-${fi}`}
-                  className="rounded-2xl border border-stone-200 bg-[#fcfaf7] px-5 py-1 shadow-xs data-[state=open]:border-red-200 data-[state=open]:bg-white"
-                >
-                  <AccordionTrigger className="text-left text-sm font-bold text-slate-900 hover:no-underline hover:text-[#b91c1c] py-4">
-                    {faq.q}
-                  </AccordionTrigger>
-                  <AccordionContent className="text-xs sm:text-sm text-slate-600 leading-relaxed pb-4 pt-1 border-t border-stone-100 mt-2">
-                    {faq.a}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-
-            {/* Helpline Box */}
-            <div className="mt-8 rounded-2xl border border-stone-200 bg-stone-50 p-5 flex items-center justify-between gap-4">
-              <div>
-                <h4 className="text-sm font-bold text-slate-900">{t.helpTitle}</h4>
-                <p className="text-xs text-slate-600">{t.helpSub}</p>
-              </div>
-              <Button
-                asChild
-                className="bg-[#15803d] hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shrink-0"
-              >
-                <a
-                  href="https://wa.me/8801805013633?text=Hello%20KNLTC,%20I%20have%20questions%20about%20the%20Japanese%20Language%20Course."
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <MessageCircle className="mr-1.5 h-4 w-4" /> {t.btnHelp}
-                </a>
-              </Button>
-            </div>
-          </div>
+          <Button
+            asChild
+            className="bg-[#15803d] hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shrink-0 px-4 py-2"
+          >
+            <a
+              href="https://wa.me/8801805013633?text=Hello%20KNLTC,%20I%20have%20questions%20about%20the%20Japanese%20Language%20Course."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5"
+            >
+              <MessageCircle className="h-4 w-4" />
+              <span>{t.btnHelp}</span>
+            </a>
+          </Button>
         </div>
       </div>
     </section>

@@ -31,16 +31,16 @@ export default function TrustMetricsSection() {
         stat4Value: "12+",
         stat4Label: "Years Japan Experience",
         stat4Sub: "Modern campus in Dhaka & global online live learning hub",
-        badge: "Trust & Credibility",
-        title: "Why Learn Japanese With KNLTC?",
-        h1Title: "JLPT, NAT-TEST & JFT-Basic Certified Syllabus",
-        h1Desc: "Designed according to Japan Foundation and JEES standards.",
-        h2Title: "Native Japanese & N2/N1 Certified Sensei",
+        badge: "Accreditation & Standards",
+        title: "Why Learn Japanese with KNLTC?",
+        h1Title: "JLPT, NAT-TEST & JFT Certified Syllabus",
+        h1Desc: "Designed in accordance with Japan Foundation and JEES standards.",
+        h2Title: "Native Japanese & N2/N1 Sensei",
         h2Desc: "Authentic pronunciation, accent training & bilingual instructors.",
-        h3Title: "Audio-Visual Listening Lab & Spoken Drills",
-        h3Desc: "Regular conversational practice for real Japanese workplaces.",
-        h4Title: "Embassy File & COE Documentation Guidance",
-        h4Desc: "Full support for sponsorship papers, COE filing and visa interviews.",
+        h3Title: "Listening Lab & Spoken Drills",
+        h3Desc: "Practical conversational practice for real Japanese workplaces.",
+        h4Title: "COE & Embassy Visa Guidance",
+        h4Desc: "Full support for sponsorship documents and visa interviews.",
       },
       bn: {
         stat1Value: "১,২০০+",
@@ -55,12 +55,12 @@ export default function TrustMetricsSection() {
         stat4Value: "১২+",
         stat4Label: "বছরের জাপান অভিজ্ঞতা",
         stat4Sub: "ঢাকায় নিজস্ব ক্যাম্পাস ও অনলাইন গ্লোবাল লার্নিং হাব",
-        badge: "Trust & Credibility",
+        badge: "বিশ্বাস ও নির্ভরযোগ্যতা",
         title: "কেন KNLTC জাপানিজ ল্যাঙ্গুয়েজ কোর্স সেরা?",
-        h1Title: "JLPT, NAT-TEST ও JFT-Basic সার্টিফাইড সিলেবাস",
-        h1Desc: "জাপান ফাউন্ডেশন এবং জাপান আন্তর্জাতিক শিক্ষা সমিতি (JEES) অনুমোদিত পাঠ্যক্রম অনুযায়ী সাজানো。",
+        h1Title: "JLPT, NAT-TEST ও JFT সার্টিফাইড সিলেবাস",
+        h1Desc: "জাপান ফাউন্ডেশন এবং জাপান আন্তর্জাতিক শিক্ষা সমিতি (JEES) অনুমোদিত পাঠ্যক্রম অনুযায়ী সাজানো।",
         h2Title: "নেটিভ জাপানি ও N2/N1 সার্টিফাইড ইন্সট্রাক্টর",
-        h2Desc: "সঠিক উচ্চারণ ও এক্সেন্ট শেখার জন্য নেটিভ স্পিকার সেশন এবং অভিজ্ঞ বাংলাদেশি মেন্টর。",
+        h2Desc: "সঠিক উচ্চারণ ও এক্সেন্ট শেখার জন্য নেটিভ স্পিকার সেশন এবং অভিজ্ঞ বাংলাদেশি মেন্টর।",
         h3Title: "অডিও-ভিজুয়াল লিসেনিং ল্যাব ও স্পোকেন ড্রিলস",
         h3Desc: "শুধুমাত্র বইয়ের পড়া নয়, প্র্যাকটিক্যাল জাপানিজ শোনার ও দ্রুত জবাব দেওয়ার নিয়মিত প্র্যাকটিস।",
         h4Title: "এম্বাসি ফাইল ও COE প্রসেসিং ফুল গাইডেন্স",
@@ -79,7 +79,7 @@ export default function TrustMetricsSection() {
         stat4Value: "12年+",
         stat4Label: "日本専門ガイダンス実績",
         stat4Sub: "ダッカ中心部キャンパス＆世界中から参加できるオンライン",
-        badge: "信頼と実績",
+        badge: "実績と信頼",
         title: "KNLTC日本語アカデミーが選ばれる理由",
         h1Title: "JLPT・NAT・JFT-Basic公式基準カリキュラム",
         h1Desc: "国際交流基金（Japan Foundation）認定基準に準拠した教育内容。",
@@ -100,36 +100,24 @@ export default function TrustMetricsSection() {
       label: t.stat1Label,
       subtext: t.stat1Sub,
       icon: Award,
-      color: "text-[#b91c1c]",
-      bgColor: "bg-red-50",
-      borderColor: "border-red-100",
     },
     {
       value: t.stat2Value,
       label: t.stat2Label,
       subtext: t.stat2Sub,
       icon: CheckCircle,
-      color: "text-[#15803d]",
-      bgColor: "bg-green-50",
-      borderColor: "border-green-100",
     },
     {
       value: t.stat3Value,
       label: t.stat3Label,
       subtext: t.stat3Sub,
       icon: BookCheck,
-      color: "text-amber-700",
-      bgColor: "bg-amber-50",
-      borderColor: "border-amber-100",
     },
     {
       value: t.stat4Value,
       label: t.stat4Label,
       subtext: t.stat4Sub,
       icon: Globe2,
-      color: "text-blue-700",
-      bgColor: "bg-blue-50",
-      borderColor: "border-blue-100",
     },
   ];
 
@@ -141,49 +129,64 @@ export default function TrustMetricsSection() {
   ];
 
   return (
-    <section className="bg-white py-14 border-b border-stone-200">
+    <section className="py-14 bg-[#fcfaf7] border-b border-stone-200">
       <div className="container-narrow">
-        {/* Stat Metric Cards */}
+        {/* Sleek, Minimalist Stats Row */}
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {stats.map((s, idx) => {
             const Icon = s.icon;
             return (
               <div
                 key={idx}
-                className={`rounded-2xl border ${s.borderColor} ${s.bgColor} p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md`}
+                className="rounded-2xl border border-stone-200 bg-white p-5 shadow-xs transition hover:border-stone-300"
               >
                 <div className="flex items-center justify-between">
-                  <span className={`text-3xl font-extrabold sm:text-4xl ${s.color}`}>{s.value}</span>
-                  <div className={`p-2 rounded-xl bg-white/80 shadow-xs ${s.color}`}>
-                    <Icon className="h-5 w-5" />
+                  <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                    {s.value}
+                  </span>
+                  <div className="p-2 rounded-xl bg-stone-50 text-[#b91c1c]">
+                    <Icon className="h-4 w-4" />
                   </div>
                 </div>
-                <h4 className="mt-2 text-base font-bold text-slate-900">{s.label}</h4>
-                <p className="mt-1 text-xs text-slate-600 leading-relaxed">{s.subtext}</p>
+                <h4 className="mt-2 text-sm font-bold text-slate-900 leading-snug">
+                  {s.label}
+                </h4>
+                <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                  {s.subtext}
+                </p>
               </div>
             );
           })}
         </div>
 
-        {/* Credibility & Guarantee Row */}
-        <div className="mt-12 rounded-3xl border border-stone-200 bg-[#fcfaf7] p-6 md:p-8">
+        {/* 4 Pillars Grid */}
+        <div className="mt-10 pt-10 border-t border-stone-200">
           <div className="text-center max-w-xl mx-auto mb-8">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#b91c1c]">{t.badge}</span>
-            <h2 className="mt-1 text-2xl font-bold text-slate-900 md:text-3xl">
+            <p className="text-xs font-bold uppercase tracking-widest text-[#b91c1c]">
+              {t.badge}
+            </p>
+            <h2 className="mt-1 text-xl sm:text-2xl font-bold text-slate-900">
               {t.title}
             </h2>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {highlights.map((h, i) => {
               const HIcon = h.icon;
               return (
-                <div key={i} className="rounded-2xl bg-white p-5 border border-stone-200 shadow-xs">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-green-50 text-[#15803d]">
-                    <HIcon className="h-6 w-6" />
+                <div
+                  key={i}
+                  className="rounded-xl bg-white p-5 border border-stone-200 shadow-xs hover:border-stone-300 transition"
+                >
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-stone-100 text-[#15803d]">
+                    <HIcon className="h-4 w-4" />
                   </div>
-                  <h3 className="mt-3 text-sm font-bold text-slate-900 leading-snug">{h.title}</h3>
-                  <p className="mt-1.5 text-xs text-slate-600 leading-relaxed">{h.desc}</p>
+                  <h3 className="mt-3 text-xs sm:text-sm font-bold text-slate-900 leading-snug">
+                    {h.title}
+                  </h3>
+                  <p className="mt-1.5 text-xs text-slate-600 leading-relaxed">
+                    {h.desc}
+                  </p>
                 </div>
               );
             })}

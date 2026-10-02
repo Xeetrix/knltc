@@ -22,12 +22,20 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       document.documentElement.lang = val;
     };
 
-    const stored = window.localStorage.getItem(languageStorageKey) as Language | null;
-    if (stored === "en" || stored === "bn" || stored === "ja") {
-      applyLang(stored);
-    } else {
-      applyLang("en");
+    // Ensure default English migration once so old cached "bn" is reset to "en"
+    const hasDefaultEnMigrated = window.localStorage.getItem("knltc-default-en-v2");
+    if (!hasDefaultEnMigrated) {
       window.localStorage.setItem(languageStorageKey, "en");
+      window.localStorage.setItem("knltc-default-en-v2", "true");
+      applyLang("en");
+    } else {
+      const stored = window.localStorage.getItem(languageStorageKey) as Language | null;
+      if (stored === "en" || stored === "bn" || stored === "ja") {
+        applyLang(stored);
+      } else {
+        applyLang("en");
+        window.localStorage.setItem(languageStorageKey, "en");
+      }
     }
 
     const onCustomEvent = () => {

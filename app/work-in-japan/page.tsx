@@ -109,10 +109,9 @@ export default function WorkInJapanPage() {
   return (
     <main className="section-padding bg-[#fcfaf7]">
       <div className="container-narrow space-y-8">
-        <section className="fade-up relative overflow-hidden rounded-3xl border border-red-100 bg-white p-8 shadow-xl md:p-10">
-          <div className="absolute -top-10 right-0 h-40 w-40 rounded-full bg-red-200/40 blur-2xl" />
-          <h1 className="relative text-3xl font-black text-red-700 md:text-4xl">{t.title}</h1>
-          <p className="relative mt-3 text-zinc-700">{t.subtitle}</p>
+        <section className="fade-up relative overflow-hidden rounded-3xl border border-stone-200 bg-white p-8 shadow-xs md:p-10">
+          <h1 className="text-3xl font-extrabold text-slate-900 md:text-4xl tracking-tight">{t.title}</h1>
+          <p className="mt-3 text-slate-600 text-sm sm:text-base leading-relaxed">{t.subtitle}</p>
         </section>
 
         <section>
@@ -179,11 +178,13 @@ export default function WorkInJapanPage() {
           </div>
         </section>
 
-        <section className="fade-up rounded-3xl bg-gradient-to-r from-red-700 to-green-700 p-8 text-center text-white">
-          <h2 className="text-3xl font-bold">{t.finalTitle}</h2>
-          <Link href="/contact" className="mt-5 inline-block rounded-full bg-white px-6 py-3 font-semibold text-red-700 transition hover:-translate-y-1">
-            {t.consult}
-          </Link>
+        <section className="fade-up rounded-3xl border border-stone-200 bg-white p-8 sm:p-10 text-center shadow-xs">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">{t.finalTitle}</h2>
+          <div className="mt-5">
+            <Link href="/contact" className="inline-block rounded-xl bg-[#15803d] hover:bg-emerald-700 px-6 py-3 font-semibold text-white shadow-xs transition">
+              {t.consult}
+            </Link>
+          </div>
         </section>
       </div>
     </main>

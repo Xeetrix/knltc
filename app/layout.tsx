@@ -8,15 +8,11 @@ import MetaPixel from "@/components/analytics/MetaPixel";
 import PageViewTracker from "@/components/analytics/PageViewTracker";
 import { siteConfig } from "@/lib/site";
 
-const tiroBangla = { variable: "font-bangla" };
-const inter = { variable: "font-body" };
-const notoSansJp = { variable: "font-japanese" };
-
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.knltc.com"),
   title: {
-    default: "KNLTC | Bangladesh to Japan Guidance",
-    template: "%s | KNLTC",
+    default: "KNLTC | Japan Gateway Dhaka — Study, Work & Japanese Language",
+    template: "%s | KNLTC Japan Gateway",
   },
   description: siteConfig.description,
   verification: {
@@ -57,8 +53,16 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   };
 
   return (
-    <html lang="en" className={`${tiroBangla.variable} ${inter.variable} ${notoSansJp.variable}`}>
-      <body>
+    <html lang="en" className="scroll-smooth">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,300..800&family=Noto+Sans+JP:wght@400;500;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="min-h-screen bg-background text-foreground antialiased selection:bg-red-100 selection:text-red-900">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
@@ -68,9 +72,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <Suspense fallback={null}>
             <PageViewTracker />
           </Suspense>
-          <div className="min-h-screen bg-background">
+          <div className="flex min-h-screen flex-col bg-background">
             <Header />
-            <main>{children}</main>
+            <main className="flex-1">{children}</main>
             <Footer />
           </div>
         </Providers>

@@ -4,7 +4,6 @@ import TrustMetricsSection from "@/components/japanese-language/TrustMetricsSect
 import HowItWorksSection from "@/components/japanese-language/HowItWorksSection";
 import CoursePackagesSection from "@/components/japanese-language/CoursePackagesSection";
 import BonusSection from "@/components/japanese-language/BonusSection";
-import MethodologyInteractiveSection from "@/components/japanese-language/MethodologyInteractiveSection";
 import EnrollmentForm from "@/components/japanese-language/EnrollmentForm";
 import CurriculumFaqSection from "@/components/japanese-language/CurriculumFaqSection";
 
@@ -32,13 +31,10 @@ export default function JapaneseLanguagePage() {
       {/* 5. Exclusive Free Bonus Section (N5 Special - ৳15,000 Value FREE) */}
       <BonusSection />
 
-      {/* 6. Interactive Methodology & Lesson Preview (Alphabet, Kotoba, Grammar, Kaiwa) */}
-      <MethodologyInteractiveSection />
-
-      {/* 7. Comprehensive Student Enrollment Form with Immediate Confirmation */}
+      {/* 6. Comprehensive Student Enrollment Form with Immediate Confirmation */}
       <EnrollmentForm />
 
-      {/* 8. Curriculum Roadmap & FAQ Accordion */}
+      {/* 7. Frequently Asked Questions (FAQ) */}
       <CurriculumFaqSection />
     </main>
   );

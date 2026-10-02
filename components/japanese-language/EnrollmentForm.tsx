@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   AlertCircle,
-  ArrowRight,
   CheckCircle2,
   Copy,
   ExternalLink,
@@ -13,12 +12,10 @@ import {
   MessageCircle,
   Phone,
   Send,
-  Sparkles,
   User,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
 import { trackLead } from "@/lib/meta-pixel";
@@ -33,41 +30,57 @@ export default function EnrollmentForm() {
   const t = translate(
     {
       en: {
-        badge: "Online Admission • Fast Processing",
+        kicker: "Direct Admission Portal",
         title: "Japanese Language Course Enrollment Form",
         subtitle:
-          "Submit your application below. Our admission team will contact you to verify details and provision your student login on the official LMS platform (https://npw.bd/knltc).",
-        cardTitle: "Applicant Registration",
-        labelName: "Full Name (English or Bangla) *",
+          "Submit your details below. Our admission office will verify your application and send your official LMS (https://npw.bd/knltc) username and password via WhatsApp.",
+        labelName: "Full Name *",
         placeholderName: "e.g. Md. Tanvir Ahmed",
-        labelPhone: "Mobile / Phone Number *",
+        labelPhone: "Phone Number *",
         placeholderPhone: "e.g. 01711 223344",
         labelWhatsapp: "WhatsApp Number *",
         placeholderWhatsapp: "e.g. 01711 223344 (for LMS login delivery)",
-        labelCourse: "Select Course *",
+        labelCourse: "Course Name *",
         labelClassMode: "Class Delivery Mode *",
-        labelPurpose: "Purpose of Going to Japan *",
-        modeOnline: "Online Live Class (Zoom Live)",
-        modePaltan: "Paltan Head Office (Sky View Trade Valley)",
-        modeDhanmondi: "Dhanmondi Branch Campus",
+        labelPurpose: "Target Visa / Career Purpose *",
+        modeOnline: "Online Live Class (Zoom)",
+        modePaltan: "Paltan Head Office (Offline)",
+        modeDhanmondi: "Dhanmondi Branch (Offline)",
         purposeStudent: "Student Visa (Higher Study in Japan)",
         purposeSSW: "SSW Specified Skilled Worker (Job Visa)",
-        purposeTITP: "TITP Technical Intern Training Program",
+        purposeTITP: "TITP Technical Intern Training",
         purposeCareer: "Japanese Language & Professional Career",
-        courses: {
-          N5_COURSE: "Japanese N5 Level Course (3 Months Intensive • Fee ৳12,000)",
-          N4_COURSE: "Japanese N4 Level Course (3 Months Intermediate • SSW Prep)",
-          IRODORI_JAPANESE: "Irodori Japanese (Practical Spoken & Job Ready)",
-          ADVANCED_LEVELS: "Advanced Levels (JLPT N3, N2, N1 Preparation)",
-        },
+        courses: [
+          {
+            id: "N5_COURSE" as CourseOption,
+            name: "Japanese N5 Level Course",
+            details: "3 Months • ৳12,000 (3 Free Bonus Courses Included)",
+          },
+          {
+            id: "N4_COURSE" as CourseOption,
+            name: "Japanese N4 Level Course",
+            details: "3 Months • ৳14,500 (SSW Job Visa & University Preparation)",
+          },
+          {
+            id: "IRODORI_JAPANESE" as CourseOption,
+            name: "Irodori Japanese Course",
+            details: "Practical Conversational & Workplace Living Japanese",
+          },
+          {
+            id: "ADVANCED_LEVELS" as CourseOption,
+            name: "Advanced Levels (JLPT N3 / N2 / N1)",
+            details: "4 Months • ৳18,000 (Corporate & Higher Career Fluency)",
+          },
+        ],
         btnSubmit: "Submit Enrollment Application",
         submitting: "Submitting application...",
-        securityNote: "🔒 Your details are protected. Official Hotline: +880 1805 013633",
+        securityNote: "Your data is confidential. Official hotline: +880 1805 013633",
+        selectedLabel: "Selected Course:",
         errorName: "Please enter your full name.",
         errorPhone: "Please enter a valid phone number (at least 10 digits).",
         modal: {
           title: "Application Successfully Submitted!",
-          msg: "Your application has been received successfully! Our admission team will quickly contact you via WhatsApp to verify your details and deliver your username and password for the https://npw.bd/knltc classroom.",
+          msg: "Your application has been received successfully! Our admission team will contact you via WhatsApp to verify your admission and hand over your username and password for the https://npw.bd/knltc classroom.",
           refLabel: "Application Reference ID",
           copied: "Copied!",
           copyBtn: "Copy ID",
@@ -79,41 +92,57 @@ export default function EnrollmentForm() {
           modeLabel: "Class Mode:",
           purposeLabel: "Purpose:",
           btnWhatsapp: "Expedite on WhatsApp",
-          btnLms: "Go to LMS Classroom (npw.bd/knltc)",
+          btnLms: "Enter LMS Classroom (npw.bd/knltc)",
           btnClose: "Close",
         },
       },
       bn: {
-        badge: "অনলাইন ভর্তি • দ্রুত প্রসেসিং",
+        kicker: "অনলাইন ভর্তি আবেদন",
         title: "জাপানি ভাষা কোর্সে ভর্তির আবেদন ফরম",
         subtitle:
-          "নিচের ফর্মে ভর্তির আবেদন সম্পন্ন করুন। আমাদের টিম দ্রুত আপনার সাথে যোগাযোগ করে পেমেন্ট ভেরিফাই করবে এবং আপনার LMS অ্যাকাউন্ট তৈরি করে ইউজারনেম ও পাসওয়ার্ড হোয়াটসঅ্যাপে পাঠিয়ে দেবে।",
-        cardTitle: "শিক্ষার্থীর ভর্তি রেজিস্ট্রেশন",
+          "নিচের ফর্মে ভর্তির আবেদন সম্পন্ন করুন। আমাদের টিম আপনার আবেদন ভেরিফাই করে সরাসরি আপনার হোয়াটসঅ্যাপে https://npw.bd/knltc ক্লাসরুমের আইডি ও পাসওয়ার্ড বুঝিয়ে দেবে।",
         labelName: "শিক্ষার্থীর পূর্ণ নাম *",
         placeholderName: "যেমন: মোঃ তানভীর আহমেদ",
         labelPhone: "মোবাইল নম্বর (Phone) *",
         placeholderPhone: "যেমন: 01711 223344",
         labelWhatsapp: "হোয়াটসঅ্যাপ নম্বর (WhatsApp) *",
-        placeholderWhatsapp: "যেমন: 01711 223344 (LMS আইডি পাঠানোর জন্য)",
+        placeholderWhatsapp: "যেমন: 01711 223344 (LMS আইডি পাওয়ার জন্য)",
         labelCourse: "কোর্সের নাম *",
         labelClassMode: "ক্লাসের মাধ্যম *",
         labelPurpose: "জাপান গমনের উদ্দেশ্য *",
-        modeOnline: "অনলাইন লাইভ ক্লাস (Zoom Live)",
-        modePaltan: "পল্টন হেড অফিস অফলাইন (স্কাই ভিউ ট্রেড ভ্যালি)",
-        modeDhanmondi: "ধানমন্ডি শাখা অফলাইন",
-        purposeStudent: "স্টুডেন্ট ভিসা (জাপানে উচ্চশিক্ষা)",
-        purposeSSW: "SSW দক্ষ কর্মী (Specified Skilled Worker)",
-        purposeTITP: "TITP টেকনিক্যাল ইন্টার্ন (কারিগরি প্রশিক্ষণ)",
+        modeOnline: "অনলাইন লাইভ ক্লাস (Zoom)",
+        modePaltan: "পল্টন হেড অফিস (অফলাইন)",
+        modeDhanmondi: "ধানমন্ডি শাখা (অফলাইন)",
+        purposeStudent: "Student Visa (জাপানে উচ্চশিক্ষা)",
+        purposeSSW: "SSW দক্ষ কর্মী (Job Visa)",
+        purposeTITP: "TITP টেকনিক্যাল ইন্টার্ন",
         purposeCareer: "জাপানি ভাষা ও সাধারণ ক্যারিয়ার",
-        courses: {
-          N5_COURSE: "Japanese N5 Level Course (৩ মাস মেয়াদি • ফি: ৳১২,০০০)",
-          N4_COURSE: "Japanese N4 Level Course (৩ মাস মেয়াদি • SSW জব প্রস্তুতি)",
-          IRODORI_JAPANESE: "Irodori Japanese (প্র্যাকটিক্যাল স্পোকেন ও জব রেডি)",
-          ADVANCED_LEVELS: "Advanced Levels (JLPT N3, N2, N1 প্রস্তুতি)",
-        },
-        btnSubmit: "এখনই ভর্তির আবেদন সম্পন্ন করুন",
+        courses: [
+          {
+            id: "N5_COURSE" as CourseOption,
+            name: "Japanese N5 Level Course",
+            details: "৩ মাস মেয়াদি • ফি: ৳১২,০০০ (৩টি স্পেশাল ফ্রি বোনাস কোর্সসহ)",
+          },
+          {
+            id: "N4_COURSE" as CourseOption,
+            name: "Japanese N4 Level Course",
+            details: "৩ মাস মেয়াদি • ফি: ৳১৪,৫০০ (SSW জব ভিসা ও বিশ্ববিদ্যালয় প্রস্তুতি)",
+          },
+          {
+            id: "IRODORI_JAPANESE" as CourseOption,
+            name: "Irodori Japanese Course",
+            details: "প্র্যাকটিক্যাল স্পোকেন ও কর্মক্ষেত্রের রিয়েল-লাইফ জাপানিজ",
+          },
+          {
+            id: "ADVANCED_LEVELS" as CourseOption,
+            name: "Advanced Levels (JLPT N3, N2, N1)",
+            details: "৪ মাস মেয়াদি • ফি: ৳১৮,০০০ (কর্পোরেট ও ক্যারিয়ার বিশেষ প্রস্তুতি)",
+          },
+        ],
+        btnSubmit: "ভর্তির আবেদন জমা দিন",
         submitting: "আবেদন জমা হচ্ছে...",
-        securityNote: "🔒 আপনার তথ্য সম্পূর্ণ নিরাপদ। অফিশিয়াল হটলাইন: +৮৮০ ১৮০৫ ০১৩৬৩৩",
+        securityNote: "আপনার তথ্য সম্পূর্ণ নিরাপদ। অফিশিয়াল হটলাইন: +৮৮০ ১৮০৫ ০১৩৬৩৩",
+        selectedLabel: "নির্বাচিত কোর্স:",
         errorName: "অনুগ্রহ করে আপনার পূর্ণ নাম লিখুন।",
         errorPhone: "একটি সঠিক মোবাইল নম্বর লিখুন (কমপক্ষে ১০ ডিজিট)।",
         modal: {
@@ -135,36 +164,52 @@ export default function EnrollmentForm() {
         },
       },
       ja: {
-        badge: "オンライン受講申請 • 迅速対応",
+        kicker: "オンライン受講申請",
         title: "日本語講座 受講申込みフォーム",
         subtitle:
-          "フォームを入力して送信してください。スタッフより確認の上、公式LMS（https://npw.bd/knltc）のアカウントID・パスワードを発行・送付します。",
-        cardTitle: "受講生登録情報",
-        labelName: "受講生氏名 *",
+          "以下のフォームにご入力ください。受講手続確認後、公式LMS（https://npw.bd/knltc）のアカウントID・パスワードをWhatsAppにてご案内します。",
+        labelName: "氏名 *",
         placeholderName: "例：Md. Tanvir Ahmed",
         labelPhone: "電話番号 *",
         placeholderPhone: "例：01711 223344",
         labelWhatsapp: "WhatsApp番号 *",
-        placeholderWhatsapp: "例：01711 223344（ID送信用）",
-        labelCourse: "受講コース *",
-        labelClassMode: "受講形態 *",
+        placeholderWhatsapp: "例：01711 223344 (ID送信用)",
+        labelCourse: "希望コース（Dropdown）*",
+        labelClassMode: "受講形式 *",
         labelPurpose: "渡航・学習目的 *",
-        modeOnline: "オンラインLIVE授業（Zoom）",
+        modeOnline: "オンラインLIVE講義（Zoom）",
         modePaltan: "パルタン本部校舎（対面）",
         modeDhanmondi: "ダンモンディ校舎（対面）",
-        purposeStudent: "留学ビザ（大学・専門学校進学）",
+        purposeStudent: "留学ビザ（大学・大学院・専門学校）",
         purposeSSW: "特定技能（SSW就労ビザ）",
         purposeTITP: "技能実習生プログラム",
-        purposeCareer: "一般教養・ビジネス日本語",
-        courses: {
-          N5_COURSE: "日本語N5基礎コース（3ヶ月集中・受講料 ৳12,000）",
-          N4_COURSE: "日本語N4中級コース（3ヶ月・特定技能対策）",
-          IRODORI_JAPANESE: "いろどり日本語（実践会話・即戦力就職）",
-          ADVANCED_LEVELS: "上級コース（JLPT N3・N2・N1対策）",
-        },
+        purposeCareer: "ビジネス実務・キャリアアップ",
+        courses: [
+          {
+            id: "N5_COURSE" as CourseOption,
+            name: "日本語N5集中講座",
+            details: "3ヶ月 • ৳12,000 (大使館面接・履歴書3大特典付帯)",
+          },
+          {
+            id: "N4_COURSE" as CourseOption,
+            name: "日本語N4中級講座",
+            details: "3ヶ月 • ৳14,500 (特定技能就労・進学対策)",
+          },
+          {
+            id: "IRODORI_JAPANESE" as CourseOption,
+            name: "いろどり日本語 実践会話",
+            details: "生活・職場コミュニケーション特訓",
+          },
+          {
+            id: "ADVANCED_LEVELS" as CourseOption,
+            name: "上級マスター（JLPT N3 / N2 / N1）",
+            details: "4ヶ月 • ৳18,000 (高度ビジネス日本語)",
+          },
+        ],
         btnSubmit: "受講申請を送信する",
         submitting: "送信中...",
-        securityNote: "🔒 ご入力いただいた情報は保護されます。公式窓口: +880 1805 013633",
+        securityNote: "個人情報は厳格に保護されます。公式ホットライン: +880 1805 013633",
+        selectedLabel: "選択中のコース:",
         errorName: "お名前をご入力ください。",
         errorPhone: "有効な電話番号をご入力ください。",
         modal: {
@@ -212,6 +257,21 @@ export default function EnrollmentForm() {
   } | null>(null);
   const [copiedId, setCopiedId] = useState(false);
 
+  // Listen for course selection from package cards
+  useEffect(() => {
+    const handleCourseSelect = (e: Event) => {
+      const customEvent = e as CustomEvent<{ courseId: string }>;
+      if (customEvent.detail?.courseId) {
+        const targetId = customEvent.detail.courseId as CourseOption;
+        setCourse(targetId);
+      }
+    };
+    window.addEventListener("knltc-select-course", handleCourseSelect);
+    return () => {
+      window.removeEventListener("knltc-select-course", handleCourseSelect);
+    };
+  }, []);
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     setFormError(null);
@@ -232,12 +292,12 @@ export default function EnrollmentForm() {
 
     setIsSubmitting(true);
 
-    // Generate readable reference ID
     const randomNum = Math.floor(1000 + Math.random() * 9000);
     const referenceId = `KNLTC-2026-${randomNum}`;
 
-    // Resolve human labels
-    const courseLabel = t.courses[course];
+    const selectedCourseObj = t.courses.find((c) => c.id === course);
+    const courseLabel = selectedCourseObj ? `${selectedCourseObj.name} (${selectedCourseObj.details})` : course;
+
     const classModeLabel =
       classMode === "ONLINE_LIVE"
         ? t.modeOnline
@@ -254,7 +314,6 @@ export default function EnrollmentForm() {
         ? t.purposeTITP
         : t.purposeCareer;
 
-    // Simulate fast client-side submission & tracking
     setTimeout(() => {
       setSubmittedData({
         id: referenceId,
@@ -266,7 +325,6 @@ export default function EnrollmentForm() {
         purposeLabel,
       });
 
-      // Fire meta pixel lead event safely
       try {
         trackLead();
       } catch {
@@ -275,7 +333,7 @@ export default function EnrollmentForm() {
 
       setIsSubmitting(false);
       setSuccessModalOpen(true);
-    }, 450);
+    }, 400);
   };
 
   const handleCopyId = () => {
@@ -288,60 +346,67 @@ export default function EnrollmentForm() {
 
   const buildWhatsAppExpediteLink = () => {
     if (!submittedData) return "https://wa.me/8801805013633";
-    const message = `আসসালামু আলাইকুম KNLTC,\nআমি ${submittedData.name}।\nআমি ${submittedData.courseLabel} কোর্সে ভর্তির আবেদন করেছি।\nরেফারেন্স আইডি: ${submittedData.id}\nমোবাইল: ${submittedData.phone}\nহোয়াটসঅ্যাপ: ${submittedData.whatsapp}\nক্লাস মোড: ${submittedData.classModeLabel}\n\nআমার https://npw.bd/knltc ক্লাসরুমের আইডি ও পাসওয়ার্ড পাওয়ার জন্য যোগাযোগ করছি। ধন্যবাদ!`;
+    const message =
+      language === "bn"
+        ? `আসসালামু আলাইকুম KNLTC,\nআমি ${submittedData.name}।\nআমি ${submittedData.courseLabel} কোর্সে ভর্তির আবেদন করেছি।\nরেফারেন্স আইডি: ${submittedData.id}\nমোবাইল: ${submittedData.phone}\nহোয়াটসঅ্যাপ: ${submittedData.whatsapp}\nক্লাস মোড: ${submittedData.classModeLabel}\n\nআমার https://npw.bd/knltc ক্লাসরুমের আইডি ও পাসওয়ার্ড পাওয়ার জন্য যোগাযোগ করছি। ধন্যবাদ!`
+        : language === "ja"
+        ? `こんにちは KNLTC事務局様、\n${submittedData.name}と申します。\nコース「${submittedData.courseLabel}」への受講申請を完了しました。\n受付ID: ${submittedData.id}\n電話番号: ${submittedData.phone}\nWhatsApp: ${submittedData.whatsapp}\n受講形式: ${submittedData.classModeLabel}\n\n公式LMS（https://npw.bd/knltc）のログイン情報のご案内をお願いいたします。`
+        : `Hello KNLTC Admissions,\nMy name is ${submittedData.name}.\nI submitted an application for: ${submittedData.courseLabel}.\nReference ID: ${submittedData.id}\nPhone: ${submittedData.phone}\nWhatsApp: ${submittedData.whatsapp}\nClass Mode: ${submittedData.classModeLabel}\n\nI am contacting you to verify my admission and receive my https://npw.bd/knltc LMS classroom login credentials. Thank you!`;
     return `https://wa.me/8801805013633?text=${encodeURIComponent(message)}`;
   };
 
+  const currentCourseObj = t.courses.find((c) => c.id === course);
+
   return (
-    <section id="enrollment-form" className="section-padding bg-white relative scroll-mt-20">
-      <div className="container-narrow max-w-4xl">
-        {/* Header */}
+    <section id="enrollment-form" className="py-16 md:py-24 bg-[#fcfaf7] border-b border-stone-200 scroll-mt-16">
+      <div className="container-narrow max-w-2xl">
+        {/* Header - Quiet & Executive */}
         <div className="text-center mb-10">
-          <Badge className="border-red-200 bg-red-50 text-[#b91c1c] mb-3 px-3.5 py-1.5 font-semibold text-xs shadow-xs">
-            <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-            {t.badge}
-          </Badge>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
+          <p className="text-xs font-bold uppercase tracking-widest text-[#b91c1c]">
+            {t.kicker}
+          </p>
+          <h2 className="mt-2 text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
             {t.title}
           </h2>
-          <p className="mt-3 text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
+          <p className="mt-2.5 text-xs sm:text-sm text-slate-600 leading-relaxed max-w-lg mx-auto">
             {t.subtitle}
           </p>
         </div>
 
-        {/* Enrollment Form Card */}
-        <div className="rounded-3xl border-2 border-stone-200 bg-gradient-to-b from-[#fcfaf7] to-white p-6 sm:p-10 shadow-lg shadow-stone-200/50">
+        {/* Form Card - Minimalist, Pristine White on Cream */}
+        <div className="rounded-2xl border border-stone-200 bg-white p-6 sm:p-9 shadow-sm">
           {formError && (
-            <div className="mb-6 flex items-center gap-2.5 rounded-xl border border-red-200 bg-red-50 p-4 text-xs sm:text-sm text-red-700">
-              <AlertCircle className="h-5 w-5 shrink-0" />
+            <div className="mb-6 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-xs sm:text-sm text-red-700">
+              <AlertCircle className="h-4 w-4 shrink-0" />
               <span>{formError}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* 1. Name & Contact Fields */}
-            <div className="grid gap-5 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <label className="block text-xs sm:text-sm font-bold text-slate-800 mb-1.5">
-                  {t.labelName}
-                </label>
-                <div className="relative">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
-                    <User className="h-4 w-4" />
-                  </div>
-                  <input
-                    type="text"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder={t.placeholderName}
-                    className="w-full rounded-xl border border-stone-300 bg-white py-3 pl-10 pr-4 text-sm text-slate-900 shadow-xs focus:border-[#b91c1c] focus:ring-1 focus:ring-[#b91c1c] focus:outline-none transition"
-                  />
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* 1. Student Name */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-800 mb-1.5">
+                {t.labelName}
+              </label>
+              <div className="relative">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                  <User className="h-4 w-4" />
                 </div>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={t.placeholderName}
+                  className="w-full rounded-xl border border-stone-300 bg-white py-2.5 pl-10 pr-3.5 text-sm text-slate-900 shadow-xs focus:border-[#b91c1c] focus:ring-1 focus:ring-[#b91c1c] focus:outline-none transition"
+                />
               </div>
+            </div>
 
+            {/* 2. Phone & WhatsApp in a 2-column layout */}
+            <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="block text-xs sm:text-sm font-bold text-slate-800 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-800 mb-1.5">
                   {t.labelPhone}
                 </label>
                 <div className="relative">
@@ -354,18 +419,16 @@ export default function EnrollmentForm() {
                     value={phone}
                     onChange={(e) => {
                       setPhone(e.target.value);
-                      if (!whatsapp) {
-                        setWhatsapp(e.target.value);
-                      }
+                      if (!whatsapp) setWhatsapp(e.target.value);
                     }}
                     placeholder={t.placeholderPhone}
-                    className="w-full rounded-xl border border-stone-300 bg-white py-3 pl-10 pr-4 text-sm text-slate-900 shadow-xs focus:border-[#b91c1c] focus:ring-1 focus:ring-[#b91c1c] focus:outline-none transition"
+                    className="w-full rounded-xl border border-stone-300 bg-white py-2.5 pl-10 pr-3.5 text-sm text-slate-900 shadow-xs focus:border-[#b91c1c] focus:ring-1 focus:ring-[#b91c1c] focus:outline-none transition"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs sm:text-sm font-bold text-slate-800 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-800 mb-1.5">
                   {t.labelWhatsapp}
                 </label>
                 <div className="relative">
@@ -378,94 +441,80 @@ export default function EnrollmentForm() {
                     value={whatsapp}
                     onChange={(e) => setWhatsapp(e.target.value)}
                     placeholder={t.placeholderWhatsapp}
-                    className="w-full rounded-xl border border-stone-300 bg-white py-3 pl-10 pr-4 text-sm text-slate-900 shadow-xs focus:border-[#15803d] focus:ring-1 focus:ring-[#15803d] focus:outline-none transition"
+                    className="w-full rounded-xl border border-stone-300 bg-white py-2.5 pl-10 pr-3.5 text-sm text-slate-900 shadow-xs focus:border-[#15803d] focus:ring-1 focus:ring-[#15803d] focus:outline-none transition"
                   />
                 </div>
               </div>
             </div>
 
-            {/* 2. Course Name Selection */}
+            {/* 3. Minimalist, Professional Course Option (Dropdown) */}
             <div>
-              <label className="block text-xs sm:text-sm font-bold text-slate-800 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-800 mb-1.5">
                 {t.labelCourse}
               </label>
               <select
                 value={course}
                 onChange={(e) => setCourse(e.target.value as CourseOption)}
-                className="w-full rounded-xl border border-stone-300 bg-white p-3 text-sm text-slate-900 shadow-xs focus:border-[#b91c1c] focus:ring-1 focus:ring-[#b91c1c] focus:outline-none transition"
+                className="w-full rounded-xl border border-stone-300 bg-white p-3 text-xs sm:text-sm font-medium text-slate-900 shadow-xs focus:border-[#b91c1c] focus:ring-1 focus:ring-[#b91c1c] focus:outline-none transition cursor-pointer"
               >
-                <option value="N5_COURSE">{t.courses.N5_COURSE}</option>
-                <option value="N4_COURSE">{t.courses.N4_COURSE}</option>
-                <option value="IRODORI_JAPANESE">{t.courses.IRODORI_JAPANESE}</option>
-                <option value="ADVANCED_LEVELS">{t.courses.ADVANCED_LEVELS}</option>
+                {t.courses.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} — {c.details}
+                  </option>
+                ))}
               </select>
+              {currentCourseObj && (
+                <p className="mt-1.5 text-[11px] text-slate-500 font-medium pl-1">
+                  {t.selectedLabel} <span className="text-slate-800 font-semibold">{currentCourseObj.name}</span> ({currentCourseObj.details})
+                </p>
+              )}
             </div>
 
-            {/* 3. Class Delivery Mode (Radio / Select) */}
+            {/* 4. Class Mode (Radio Selection) */}
             <div>
-              <label className="block text-xs sm:text-sm font-bold text-slate-800 mb-2">
+              <label className="block text-xs font-semibold text-slate-800 mb-1.5">
                 {t.labelClassMode}
               </label>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <button
-                  type="button"
-                  onClick={() => setClassMode("ONLINE_LIVE")}
-                  className={`rounded-xl border p-3.5 text-left text-xs sm:text-sm font-medium transition ${
-                    classMode === "ONLINE_LIVE"
-                      ? "border-[#b91c1c] bg-red-50/70 text-[#b91c1c] font-semibold ring-1 ring-[#b91c1c]"
-                      : "border-stone-200 bg-white text-slate-700 hover:bg-stone-50"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold">অনলাইন লাইভ (Zoom)</span>
-                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  </div>
-                  <span className="text-[11px] text-slate-500 block">সরাসরি ঘরে বসে লাইভ ক্লাস</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setClassMode("OFFLINE_PALTAN")}
-                  className={`rounded-xl border p-3.5 text-left text-xs sm:text-sm font-medium transition ${
-                    classMode === "OFFLINE_PALTAN"
-                      ? "border-[#b91c1c] bg-red-50/70 text-[#b91c1c] font-semibold ring-1 ring-[#b91c1c]"
-                      : "border-stone-200 bg-white text-slate-700 hover:bg-stone-50"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold">পল্টন হেড অফিস</span>
-                    <span className="h-2 w-2 rounded-full bg-red-500" />
-                  </div>
-                  <span className="text-[11px] text-slate-500 block">স্কাই ভিউ ট্রেড ভ্যালি (৮ম তলা)</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setClassMode("OFFLINE_DHANMONDI")}
-                  className={`rounded-xl border p-3.5 text-left text-xs sm:text-sm font-medium transition ${
-                    classMode === "OFFLINE_DHANMONDI"
-                      ? "border-[#b91c1c] bg-red-50/70 text-[#b91c1c] font-semibold ring-1 ring-[#b91c1c]"
-                      : "border-stone-200 bg-white text-slate-700 hover:bg-stone-50"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold">ধানমন্ডি শাখা</span>
-                    <span className="h-2 w-2 rounded-full bg-blue-500" />
-                  </div>
-                  <span className="text-[11px] text-slate-500 block">ক্যাম্পাস ক্লাসরুম ও ল্যাব</span>
-                </button>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {[
+                  { id: "ONLINE_LIVE" as ClassModeOption, label: t.modeOnline },
+                  { id: "OFFLINE_PALTAN" as ClassModeOption, label: t.modePaltan },
+                  { id: "OFFLINE_DHANMONDI" as ClassModeOption, label: t.modeDhanmondi },
+                ].map((item) => {
+                  const isChecked = classMode === item.id;
+                  return (
+                    <label
+                      key={item.id}
+                      onClick={() => setClassMode(item.id)}
+                      className={`flex items-center gap-2 rounded-xl border p-2.5 text-xs font-medium cursor-pointer transition ${
+                        isChecked
+                          ? "border-[#b91c1c] bg-red-50/40 text-slate-900"
+                          : "border-stone-200 bg-white text-slate-600 hover:border-stone-300"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="classMode"
+                        checked={isChecked}
+                        onChange={() => setClassMode(item.id)}
+                        className="text-[#b91c1c] focus:ring-[#b91c1c]"
+                      />
+                      <span>{item.label}</span>
+                    </label>
+                  );
+                })}
               </div>
             </div>
 
-            {/* 4. Purpose of Going to Japan */}
+            {/* 5. Purpose Selection */}
             <div>
-              <label className="block text-xs sm:text-sm font-bold text-slate-800 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-800 mb-1.5">
                 {t.labelPurpose}
               </label>
               <select
                 value={purpose}
                 onChange={(e) => setPurpose(e.target.value as VisaPurposeOption)}
-                className="w-full rounded-xl border border-stone-300 bg-white p-3 text-sm text-slate-900 shadow-xs focus:border-[#b91c1c] focus:ring-1 focus:ring-[#b91c1c] focus:outline-none transition"
+                className="w-full rounded-xl border border-stone-300 bg-white p-3 text-xs sm:text-sm font-medium text-slate-900 shadow-xs focus:border-[#b91c1c] focus:ring-1 focus:ring-[#b91c1c] focus:outline-none transition cursor-pointer"
               >
                 <option value="STUDENT_VISA">{t.purposeStudent}</option>
                 <option value="SSW_JOB">{t.purposeSSW}</option>
@@ -475,21 +524,20 @@ export default function EnrollmentForm() {
             </div>
 
             {/* Submit Button */}
-            <div className="pt-2">
+            <div className="pt-3">
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                size="lg"
-                className="w-full bg-[#b91c1c] hover:bg-red-800 text-white font-bold text-base py-6 rounded-xl shadow-lg shadow-red-700/20 transition-all hover:shadow-xl"
+                className="w-full bg-[#15803d] hover:bg-emerald-700 text-white font-bold text-sm sm:text-base py-6 rounded-xl shadow-xs transition-all"
               >
                 {isSubmitting ? (
                   <span className="flex items-center justify-center gap-2">
-                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin" />
                     {t.submitting}
                   </span>
                 ) : (
                   <span className="flex items-center justify-center gap-2">
-                    <Send className="h-5 w-5" />
+                    <Send className="h-4 w-4" />
                     {t.btnSubmit}
                   </span>
                 )}
@@ -497,51 +545,45 @@ export default function EnrollmentForm() {
             </div>
 
             {/* Security note */}
-            <p className="text-center text-xs text-slate-500 flex items-center justify-center gap-1.5">
-              <Lock className="h-3.5 w-3.5 text-slate-400" />
+            <p className="text-center text-[11px] text-slate-500 flex items-center justify-center gap-1.5 pt-1">
+              <Lock className="h-3 w-3 text-slate-400" />
               <span>{t.securityNote}</span>
             </p>
           </form>
         </div>
       </div>
 
-      {/* Success Modal / Notification as explicitly requested */}
+      {/* Confirmation Modal */}
       {successModalOpen && submittedData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="relative w-full max-w-lg rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-stone-200 animate-in fade-in zoom-in duration-200">
-            {/* Close Button */}
+          <div className="relative w-full max-w-lg rounded-2xl bg-white p-6 sm:p-7 shadow-2xl border border-stone-200 animate-in fade-in zoom-in duration-150">
             <button
               onClick={() => setSuccessModalOpen(false)}
-              className="absolute top-5 right-5 rounded-full p-2 text-slate-400 hover:bg-stone-100 hover:text-slate-600 transition"
+              className="absolute top-4 right-4 rounded-full p-1.5 text-slate-400 hover:bg-stone-100 hover:text-slate-600 transition"
               aria-label="Close"
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4" />
             </button>
 
-            {/* Modal Icon & Header */}
             <div className="text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 text-[#15803d] mb-4">
-                <CheckCircle2 className="h-8 w-8" />
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-[#15803d] mb-3">
+                <CheckCircle2 className="h-6 w-6" />
               </div>
-              <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 leading-snug">
+              <h3 className="text-xl font-bold text-slate-900">
                 {t.modal.title}
               </h3>
             </div>
 
-            {/* Core Notification Text as requested */}
-            <div className="mt-4 rounded-2xl bg-emerald-50/80 border border-emerald-200 p-4 text-xs sm:text-sm text-emerald-900 leading-relaxed text-center sm:text-left">
-              <p className="font-medium">
-                {t.modal.msg}
-              </p>
+            <div className="mt-3 rounded-xl bg-emerald-50/70 border border-emerald-200 p-3.5 text-xs text-emerald-900 leading-relaxed text-center sm:text-left">
+              <p className="font-medium">{t.modal.msg}</p>
             </div>
 
-            {/* Reference ID Pill */}
-            <div className="mt-4 flex items-center justify-between rounded-xl border border-stone-200 bg-stone-50 px-4 py-2.5">
+            <div className="mt-3 flex items-center justify-between rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2">
               <div>
-                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
                   {t.modal.refLabel}
                 </span>
-                <span className="text-base font-extrabold text-[#b91c1c]">
+                <span className="text-sm font-extrabold text-[#b91c1c]">
                   {submittedData.id}
                 </span>
               </div>
@@ -550,16 +592,14 @@ export default function EnrollmentForm() {
                 onClick={handleCopyId}
                 variant="outline"
                 size="sm"
-                className="h-8 rounded-lg text-xs font-semibold gap-1"
+                className="h-7 rounded-lg text-xs font-semibold gap-1"
               >
                 <Copy className="h-3 w-3" />
                 {copiedId ? t.modal.copied : t.modal.copyBtn}
               </Button>
             </div>
 
-            {/* Summary Details */}
-            <div className="mt-4 rounded-xl border border-stone-100 bg-stone-50/60 p-3.5 text-xs text-slate-700 space-y-1.5">
-              <p className="font-bold text-slate-900 mb-1">{t.modal.summaryTitle}</p>
+            <div className="mt-3 rounded-xl border border-stone-100 bg-stone-50/60 p-3 text-xs text-slate-700 space-y-1">
               <div className="flex justify-between">
                 <span className="text-slate-500">{t.modal.nameLabel}</span>
                 <span className="font-semibold text-slate-900">{submittedData.name}</span>
@@ -572,26 +612,21 @@ export default function EnrollmentForm() {
                 <span className="text-slate-500">{t.modal.modeLabel}</span>
                 <span className="font-semibold text-slate-900">{submittedData.classModeLabel}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">{t.modal.purposeLabel}</span>
-                <span className="font-semibold text-slate-900">{submittedData.purposeLabel}</span>
-              </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="mt-6 space-y-3">
+            <div className="mt-5 space-y-2.5">
               <Button
                 asChild
                 size="lg"
-                className="w-full bg-[#15803d] hover:bg-emerald-700 text-white font-bold text-sm py-5 rounded-xl shadow-md"
+                className="w-full bg-[#15803d] hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm py-4 rounded-xl shadow-xs"
               >
                 <a
                   href={buildWhatsAppExpediteLink()}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2"
+                  className="flex items-center justify-center gap-1.5"
                 >
-                  <MessageCircle className="h-5 w-5" />
+                  <MessageCircle className="h-4 w-4" />
                   <span>{t.modal.btnWhatsapp}</span>
                 </a>
               </Button>
@@ -600,17 +635,17 @@ export default function EnrollmentForm() {
                 asChild
                 variant="outline"
                 size="lg"
-                className="w-full border-red-200 text-[#b91c1c] hover:bg-red-50 font-bold text-sm py-5 rounded-xl"
+                className="w-full border-red-200 text-[#b91c1c] hover:bg-red-50 font-bold text-xs sm:text-sm py-4 rounded-xl"
               >
                 <a
                   href="https://npw.bd/knltc"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2"
+                  className="flex items-center justify-center gap-1.5"
                 >
-                  <GraduationCap className="h-5 w-5" />
+                  <GraduationCap className="h-4 w-4" />
                   <span>{t.modal.btnLms}</span>
-                  <ExternalLink className="h-4 w-4 opacity-80" />
+                  <ExternalLink className="h-3.5 w-3.5 opacity-80" />
                 </a>
               </Button>
             </div>
