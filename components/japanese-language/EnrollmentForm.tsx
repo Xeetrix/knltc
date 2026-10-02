@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import {
   AlertCircle,
   CheckCircle2,
@@ -554,104 +555,118 @@ export default function EnrollmentForm() {
       </div>
 
       {/* Confirmation Modal */}
-      {successModalOpen && submittedData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="relative w-full max-w-lg rounded-2xl bg-white p-6 sm:p-7 shadow-2xl border border-stone-200 animate-in fade-in zoom-in duration-150">
-            <button
-              onClick={() => setSuccessModalOpen(false)}
-              className="absolute top-4 right-4 rounded-full p-1.5 text-slate-400 hover:bg-stone-100 hover:text-slate-600 transition"
-              aria-label="Close"
+      <AnimatePresence>
+        {successModalOpen && submittedData && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto"
+          >
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0, y: 16 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: 16 }}
+              transition={{ type: "spring", stiffness: 350, damping: 25 }}
+              className="relative w-full max-w-lg rounded-2xl bg-white p-6 sm:p-7 shadow-2xl border border-stone-200"
             >
-              <X className="h-4 w-4" />
-            </button>
-
-            <div className="text-center">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-[#15803d] mb-3">
-                <CheckCircle2 className="h-6 w-6" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900">
-                {t.modal.title}
-              </h3>
-            </div>
-
-            <div className="mt-3 rounded-xl bg-emerald-50/70 border border-emerald-200 p-3.5 text-xs text-emerald-900 leading-relaxed text-center sm:text-left">
-              <p className="font-medium">{t.modal.msg}</p>
-            </div>
-
-            <div className="mt-3 flex items-center justify-between rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2">
-              <div>
-                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
-                  {t.modal.refLabel}
-                </span>
-                <span className="text-sm font-extrabold text-[#b91c1c]">
-                  {submittedData.id}
-                </span>
-              </div>
-              <Button
-                type="button"
-                onClick={handleCopyId}
-                variant="outline"
-                size="sm"
-                className="h-7 rounded-lg text-xs font-semibold gap-1"
+              <button
+                onClick={() => setSuccessModalOpen(false)}
+                className="absolute top-4 right-4 rounded-full p-1.5 text-slate-400 hover:bg-stone-100 hover:text-slate-600 transition"
+                aria-label="Close"
               >
-                <Copy className="h-3 w-3" />
-                {copiedId ? t.modal.copied : t.modal.copyBtn}
-              </Button>
-            </div>
+                <X className="h-4 w-4" />
+              </button>
 
-            <div className="mt-3 rounded-xl border border-stone-100 bg-stone-50/60 p-3 text-xs text-slate-700 space-y-1">
-              <div className="flex justify-between">
-                <span className="text-slate-500">{t.modal.nameLabel}</span>
-                <span className="font-semibold text-slate-900">{submittedData.name}</span>
+              <div className="text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-[#15803d] mb-3">
+                  <CheckCircle2 className="h-6 w-6" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900">
+                  {t.modal.title}
+                </h3>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">{t.modal.courseLabel}</span>
-                <span className="font-semibold text-slate-900 text-right">{submittedData.courseLabel}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">{t.modal.modeLabel}</span>
-                <span className="font-semibold text-slate-900">{submittedData.classModeLabel}</span>
-              </div>
-            </div>
 
-            <div className="mt-5 space-y-2.5">
-              <Button
-                asChild
-                size="lg"
-                className="w-full bg-[#15803d] hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm py-4 rounded-xl shadow-xs"
-              >
-                <a
-                  href={buildWhatsAppExpediteLink()}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-1.5"
+              <div className="mt-3 rounded-xl bg-emerald-50/70 border border-emerald-200 p-3.5 text-xs text-emerald-900 leading-relaxed text-center sm:text-left">
+                <p className="font-medium">{t.modal.msg}</p>
+              </div>
+
+              <div className="mt-3 flex items-center justify-between rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2">
+                <div>
+                  <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
+                    {t.modal.refLabel}
+                  </span>
+                  <span className="text-sm font-extrabold text-[#b91c1c]">
+                    {submittedData.id}
+                  </span>
+                </div>
+                <Button
+                  type="button"
+                  onClick={handleCopyId}
+                  variant="outline"
+                  size="sm"
+                  className="h-7 rounded-lg text-xs font-semibold gap-1 active:scale-95 transition-transform"
                 >
-                  <MessageCircle className="h-4 w-4" />
-                  <span>{t.modal.btnWhatsapp}</span>
-                </a>
-              </Button>
+                  <Copy className="h-3 w-3" />
+                  {copiedId ? t.modal.copied : t.modal.copyBtn}
+                </Button>
+              </div>
 
-              <Button
-                asChild
-                variant="outline"
-                size="lg"
-                className="w-full border-red-200 text-[#b91c1c] hover:bg-red-50 font-bold text-xs sm:text-sm py-4 rounded-xl"
-              >
-                <a
-                  href="https://npw.bd/knltc"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-1.5"
+              <div className="mt-3 rounded-xl border border-stone-100 bg-stone-50/60 p-3 text-xs text-slate-700 space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">{t.modal.nameLabel}</span>
+                  <span className="font-semibold text-slate-900">{submittedData.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">{t.modal.courseLabel}</span>
+                  <span className="font-semibold text-slate-900 text-right">{submittedData.courseLabel}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">{t.modal.modeLabel}</span>
+                  <span className="font-semibold text-slate-900">{submittedData.classModeLabel}</span>
+                </div>
+              </div>
+
+              <div className="mt-5 space-y-2.5">
+                <Button
+                  asChild
+                  size="lg"
+                  className="w-full bg-[#15803d] hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm py-4 rounded-xl shadow-xs active:scale-[0.98] transition-transform"
                 >
-                  <GraduationCap className="h-4 w-4" />
-                  <span>{t.modal.btnLms}</span>
-                  <ExternalLink className="h-3.5 w-3.5 opacity-80" />
-                </a>
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+                  <a
+                    href={buildWhatsAppExpediteLink()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-1.5"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    <span>{t.modal.btnWhatsapp}</span>
+                  </a>
+                </Button>
+
+                <Button
+                  asChild
+                  variant="outline"
+                  size="lg"
+                  className="w-full border-red-200 text-[#b91c1c] hover:bg-red-50 font-bold text-xs sm:text-sm py-4 rounded-xl active:scale-[0.98] transition-transform"
+                >
+                  <a
+                    href="https://npw.bd/knltc"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-1.5"
+                  >
+                    <GraduationCap className="h-4 w-4" />
+                    <span>{t.modal.btnLms}</span>
+                    <ExternalLink className="h-3.5 w-3.5 opacity-80" />
+                  </a>
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }

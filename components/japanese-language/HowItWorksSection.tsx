@@ -1,9 +1,32 @@
 "use client";
 
+import { motion } from "motion/react";
 import { ArrowRight, CheckCircle2, ExternalLink, GraduationCap, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.45,
+      ease: [0.16, 1, 0.3, 1] as const,
+    },
+  },
+};
 
 export default function HowItWorksSection() {
   const { language } = useLanguage();
@@ -28,14 +51,14 @@ export default function HowItWorksSection() {
         step3Tag: "Step 03",
         step3Title: "Enter LMS Classroom & Begin Learning",
         step3Desc:
-          "Log in to our dedicated digital LMS classroom with your username and password to attend live Zoom classes, watch recorded lectures, and download worksheets.",
+          "Log in to https://npw.bd/knltc with your username and password to attend live Zoom classes, watch recorded lectures, and download worksheets.",
         step3Action: "Visit LMS Portal",
       },
       bn: {
         kicker: "ভর্তি প্রক্রিয়া",
         title: "৩টি সহজ ধাপে আপনার যাত্রা শুরু করুন",
         subtitle:
-          "ভর্তি ফর্ম পূরণ করা থেকে শুরু করে অফিশিয়াল LMS ক্লাসরুমে প্রবেশ পর্যন্ত—সবকিছুই সহজ, স্বচ্ছ এবং দ্রুততম সময়ে সম্পন্ন হয়।",
+          "ভর্তি ফর্ম পূরণ করা থেকে শুরু করে npw.bd/knltc ক্লাসরুমে প্রবেশ পর্যন্ত—সবকিছুই সহজ, স্বচ্ছ এবং দ্রুততম সময়ে সম্পন্ন হয়।",
         step1Tag: "ধাপ ০১",
         step1Title: "নিচের ফর্মে ভর্তির আবেদন সম্পন্ন করুন",
         step1Desc:
@@ -49,14 +72,14 @@ export default function HowItWorksSection() {
         step3Tag: "ধাপ ০৩",
         step3Title: "LMS ক্লাসরুমে প্রবেশ ও ক্লাস শুরু",
         step3Desc:
-          "সরাসরি KNLTC অফিশিয়াল ক্লাসরুমে লগইন করে লাইভ ক্লাস, রেকর্ডেড ভিডিও, পিডিএফ শিট ও মক টেস্ট রিসোর্স এক্সেস করুন।",
+          "সরাসরি https://npw.bd/knltc পোর্টালে লগইন করে লাইভ ক্লাস, রেকর্ডেড ভিডিও, পিডিএফ শিট ও মক টেস্ট রিসোর্স এক্সেস করুন।",
         step3Action: "LMS পোর্টালে প্রবেশ",
       },
       ja: {
         kicker: "受講までの流れ",
         title: "3つの簡単なステップで学習をスタート",
         subtitle:
-          "受講申請から公式LMS教室へのアクセスまでスムーズにご案内します。",
+          "受講申請から専用LMSプラットフォーム（https://npw.bd/knltc）へのアクセスまでスムーズにご案内します。",
         step1Tag: "ステップ 01",
         step1Title: "受講申込みフォームの送信",
         step1Desc:
@@ -65,12 +88,12 @@ export default function HowItWorksSection() {
         step2Tag: "ステップ 02",
         step2Title: "受講料確認とLMSアカウント発行",
         step2Desc:
-          "スタッフが確認後、公式LMSのアカウントID・パスワードをWhatsAppまたはSMSにて送付します。",
+          "スタッフが確認後、公式LMS（https://npw.bd/knltc）のアカウントID・パスワードをWhatsAppまたはSMSにて送付します。",
         step2Badge: "迅速対応",
         step3Tag: "ステップ 03",
         step3Title: "LMSにログインして受講開始",
         step3Desc:
-          "公式LMSにログインし、ライブ講義、録画アーカイブ、テキスト教材、模擬試験をご利用いただけます。",
+          "https://npw.bd/knltc にログインし、ライブ講義、録画アーカイブ、テキスト教材、模擬試験をご利用いただけます。",
         step3Action: "LMSポータルへ",
       },
     },
@@ -88,7 +111,13 @@ export default function HowItWorksSection() {
     <section className="py-16 md:py-20 bg-white border-b border-stone-200">
       <div className="container-narrow">
         {/* Header */}
-        <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-14">
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-40px" }}
+          transition={{ duration: 0.4 }}
+          className="text-center max-w-2xl mx-auto mb-12 sm:mb-14"
+        >
           <p className="text-xs font-bold uppercase tracking-widest text-[#b91c1c]">
             {t.kicker}
           </p>
@@ -98,12 +127,22 @@ export default function HowItWorksSection() {
           <p className="mt-2.5 text-xs sm:text-sm text-slate-600 leading-relaxed">
             {t.subtitle}
           </p>
-        </div>
+        </motion.div>
 
         {/* 3 Step Cards Grid - Clean, Architectural, Minimalist */}
-        <div className="grid gap-6 md:grid-cols-3">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-40px" }}
+          className="grid gap-6 md:grid-cols-3"
+        >
           {/* Step 1 */}
-          <div className="flex flex-col justify-between rounded-2xl border border-stone-200 bg-[#fcfaf7] p-6 sm:p-7 shadow-xs hover:border-stone-300 transition">
+          <motion.div
+            variants={itemVariants}
+            whileHover={{ y: -5, transition: { duration: 0.2 } }}
+            className="flex flex-col justify-between rounded-2xl border border-stone-200 bg-[#fcfaf7] p-6 sm:p-7 shadow-xs hover:border-stone-300 hover:shadow-md transition-shadow"
+          >
             <div>
               <div className="flex items-center justify-between mb-4">
                 <span className="font-mono text-xs font-bold uppercase tracking-wider text-[#b91c1c]">
@@ -126,15 +165,19 @@ export default function HowItWorksSection() {
                 onClick={scrollToForm}
                 variant="outline"
                 size="sm"
-                className="w-full border-stone-300 hover:bg-white text-slate-800 font-semibold text-xs rounded-xl"
+                className="w-full border-stone-300 hover:bg-white text-slate-800 font-semibold text-xs rounded-xl active:scale-95 transition-transform"
               >
                 {t.step1Action} <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
               </Button>
             </div>
-          </div>
+          </motion.div>
 
           {/* Step 2 */}
-          <div className="flex flex-col justify-between rounded-2xl border border-stone-200 bg-[#fcfaf7] p-6 sm:p-7 shadow-xs hover:border-stone-300 transition">
+          <motion.div
+            variants={itemVariants}
+            whileHover={{ y: -5, transition: { duration: 0.2 } }}
+            className="flex flex-col justify-between rounded-2xl border border-stone-200 bg-[#fcfaf7] p-6 sm:p-7 shadow-xs hover:border-stone-300 hover:shadow-md transition-shadow"
+          >
             <div>
               <div className="flex items-center justify-between mb-4">
                 <span className="font-mono text-xs font-bold uppercase tracking-wider text-[#15803d]">
@@ -158,10 +201,14 @@ export default function HowItWorksSection() {
                 <span>WhatsApp / SMS Credential Delivery</span>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Step 3 */}
-          <div className="flex flex-col justify-between rounded-2xl border border-stone-200 bg-[#fcfaf7] p-6 sm:p-7 shadow-xs hover:border-stone-300 transition">
+          <motion.div
+            variants={itemVariants}
+            whileHover={{ y: -5, transition: { duration: 0.2 } }}
+            className="flex flex-col justify-between rounded-2xl border border-stone-200 bg-[#fcfaf7] p-6 sm:p-7 shadow-xs hover:border-stone-300 hover:shadow-md transition-shadow"
+          >
             <div>
               <div className="flex items-center justify-between mb-4">
                 <span className="font-mono text-xs font-bold uppercase tracking-wider text-slate-800">
@@ -183,7 +230,7 @@ export default function HowItWorksSection() {
               <Button
                 asChild
                 size="sm"
-                className="w-full bg-[#b91c1c] hover:bg-red-800 text-white font-semibold text-xs rounded-xl shadow-xs"
+                className="w-full bg-[#b91c1c] hover:bg-red-800 text-white font-semibold text-xs rounded-xl shadow-xs active:scale-95 transition-transform"
               >
                 <a
                   href="https://npw.bd/knltc"
@@ -194,8 +241,8 @@ export default function HowItWorksSection() {
                 </a>
               </Button>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </div>
     </section>
   );

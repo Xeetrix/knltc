@@ -1,13 +1,17 @@
 "use client";
 
+import { motion } from "motion/react";
 import {
   ArrowRight,
+  BookCheck,
   CheckCircle2,
   ExternalLink,
   GraduationCap,
   MessageCircle,
   PhoneCall,
   ShieldCheck,
+  Award,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/components/layout/LanguageProvider";
@@ -19,113 +23,143 @@ export default function HeroCourseSection() {
   const t = translate(
     {
       en: {
-        kicker: "KNLTC Japan Gateway • Dhaka Center",
+        badge: "Official Japanese Language Academy • Dhaka Center",
         headlinePart1: "Learn Japanese the Easy Way — ",
-        headlineHighlight: "Your Trusted Gateway to Higher Study & Career in Japan",
+        headlineHighlight: "Gateway to Higher Study & Career in Japan",
         subtitle:
-          "Comprehensive JLPT, NAT-TEST, and JFT-Basic preparation from N5 to N1 along with practical Irodori Japanese. Enrolled students access live classes, lecture notes, and recorded sessions directly on our LMS portal.",
-        pill1: "All Books & Sheets Free",
-        pill2: "Online Live & Offline Batches",
-        pill3: "Native Speaker Interaction",
-        ctaEnroll: "Enroll in Course Now",
+          "Targeted JLPT, NAT-TEST, and JFT-Basic preparation from N5 to N1 and practical Irodori Japanese. Live online interactive classes, classroom training, and 24/7 digital LMS portal at npw.bd/knltc.",
+        stat1: "98% Pass Rate",
+        stat1Sub: "JLPT & NAT First Attempt",
+        stat2: "1,200+ Visas",
+        stat2Sub: "Student & SSW to Japan",
+        stat3: "100% Free Materials",
+        stat3Sub: "Textbooks, Sheets & Audio",
+        ctaEnroll: "Explore Courses & Enroll",
         ctaLms: "Enter LMS Classroom",
-        phoneLabel: "Admission Hotline:",
-        phoneHours: "(10:00 AM – 8:00 PM)",
-        cardTag: "Official Japanese Academy",
-        cardTitle: "KNLTC Digital Classroom Portal",
+        hotlineLabel: "Admission Hotline:",
+        cardTag: "Official KNLTC Portal",
+        cardTitle: "Digital Classroom & LMS Gateway",
         cardSub: "Connected to https://npw.bd/knltc",
-        cardBadge: "Active LMS Platform",
-        stat1Label: "Curriculum Level",
-        stat1Value: "N5 to N1 & Irodori",
-        stat2Label: "LMS Access",
-        stat2Value: "Live & Recorded",
-        bullet1: "JLPT, NAT-TEST & JFT-Basic certified structured syllabus",
-        bullet2: "Complete Minna No Nihongo textbooks & audio files provided free",
-        bullet3: "Includes 3 special Embassy & CV bonus courses (৳15,000 value free)",
-        btnEnrollNow: "Apply for Seat in Form",
+        cardBadge: "Admissions Open",
+        startingFee: "Starting from ৳12,000",
+        feeNote: "2 Easy Installments (50% + 50%)",
+        feature1: "Minna No Nihongo textbooks & audio free",
+        feature2: "Live interactive Zoom & offline Dhaka campus",
+        feature3: "Includes 3 free bonus courses worth ৳15,000",
+        btnEnrollNow: "Apply for Admission",
         btnLmsPortal: "Open LMS Portal",
         waChat: "Chat on WhatsApp",
       },
       bn: {
-        kicker: "KNLTC জাপান গেটওয়ে • ঢাকা অফিশিয়াল সেন্টার",
+        badge: "KNLTC অফিশিয়াল জাপানিজ একাডেমি • ঢাকা হেড অফিস",
         headlinePart1: "সহজ পদ্ধতিতে জাপানি ভাষা শিখুন — ",
         headlineHighlight: "জাপানে উচ্চশিক্ষা ও নিশ্চিত ক্যারিয়ারের বিশ্বস্ত গেটওয়ে",
         subtitle:
-          "N5 থেকে শুরু করে N1 লেভেল এবং প্র্যাকটিক্যাল ইরোদোরি (Irodori Japanese) সমন্বিত পূর্ণাঙ্গ প্রস্তুতি। JLPT, NAT-TEST ও JFT-Basic পরীক্ষায় শতভাগ পাসের নিশ্চয়তা এবং সরাসরি KNLTC ডিজিটাল LMS ক্লাসরুম সুবিধা।",
-        pill1: "সব পাঠ্যবই ও লেকচার শিট ফ্রি",
-        pill2: "অনলাইন লাইভ ও হেড অফিস অফলাইন",
-        pill3: "নেটিভ জাপানিজ মেন্টর সেশন",
-        ctaEnroll: "এখনই কোর্সে ভর্তি হন",
-        ctaLms: "LMS ক্লাসরুমে প্রবেশ করুন",
-        phoneLabel: "এডমিশন হটলাইন:",
-        phoneHours: "(সকাল ১০:০০ - রাত ৮:০০)",
-        cardTag: "অফিশিয়াল জাপানিজ একাডেমি",
-        cardTitle: "KNLTC ডিজিটাল ক্লাসরুম পোর্টাল",
+          "N5 থেকে N1 লেভেল এবং প্র্যাকটিক্যাল ইরোদোরি (Irodori Japanese) সমন্বিত সুবিন্যস্ত প্রস্তুতি। JLPT, NAT-TEST ও JFT-Basic পরীক্ষায় শতভাগ পাসের নিশ্চয়তা এবং সরাসরি KNLTC ডিজিটাল LMS ক্লাসরুম সুবিধা।",
+        stat1: "৯৮% পাসের হার",
+        stat1Sub: "JLPT ও NAT প্রথমবারই",
+        stat2: "১,২০০+ ভিসা",
+        stat2Sub: "জাপানে অধ্যয়ন ও জব ভিসা",
+        stat3: "১০০% ফ্রি পাঠ্যবই",
+        stat3Sub: "মিন্না নো নিহোঙ্গো ও শিট",
+        ctaEnroll: "কোর্স অপশন ও ভর্তি",
+        ctaLms: "LMS ক্লাসরুমে প্রবেশ",
+        hotlineLabel: "এডমিশন হটলাইন:",
+        cardTag: "অফিশিয়াল KNLTC পোর্টাল",
+        cardTitle: "ডিজিটাল ক্লাসরুম ও LMS গেটওয়ে",
         cardSub: "সরাসরি যুক্ত: https://npw.bd/knltc",
-        cardBadge: "সক্রিয় LMS প্ল্যাটফর্ম",
-        stat1Label: "পাঠ্যক্রম লেভেল",
-        stat1Value: "N5 থেকে N1 ও ইরোদোরি",
-        stat2Label: "LMS এক্সেস",
-        stat2Value: "লাইভ ক্লাস ও রেকর্ডিং",
-        bullet1: "JLPT, NAT-TEST ও JFT-Basic অনুমোদিত সুবিন্যস্ত সিলেবাস",
-        bullet2: "মিন্না নো নিহোঙ্গো ১ ও ২ পাঠ্যবই এবং প্র্যাকটিস শিট সম্পূর্ণ ফ্রি",
-        bullet3: "১৫,০০০ টাকা মূল্যের ৩টি স্পেশাল ইন্টারভিউ ও সিভি কোর্স সম্পূর্ণ ফ্রি",
+        cardBadge: "ভর্তি চলছে",
+        startingFee: "কোর্স ফি শুরু ৳১২,০০০ থেকে",
+        feeNote: "২টি সহজ কিস্তিতে পরিশোধযোগ্য (৫০% + ৫০%)",
+        feature1: "মিন্না নো নিহোঙ্গো ১ ও ২ পাঠ্যবই ও অডিও ফাইল সম্পূর্ণ ফ্রি",
+        feature2: "অনলাইন লাইভ জুম ও পল্টন/ধানমন্ডি ক্যাম্পাসে ক্লাস",
+        feature3: "১৫,০০০ টাকা মূল্যের ৩টি স্পেশাল ইন্টারভিউ ও সিভি কোর্স ফ্রি",
         btnEnrollNow: "ভর্তির আবেদন করুন",
-        btnLmsPortal: "LMS ক্লাসরুমে প্রবেশ",
-        waChat: "হোয়াটসঅ্যাপে যোগাযোগ",
+        btnLmsPortal: "LMS পোর্টালে প্রবেশ",
+        waChat: "হোয়াটসঅ্যাপে পরামর্শ",
       },
       ja: {
-        kicker: "KNLTC ジャパンゲートウェイ • ダッカ本部センター",
+        badge: "公認 日本語アカデミー • ダッカ本部センター",
         headlinePart1: "わかりやすい日本語学習 — ",
-        headlineHighlight: "日本留学・確実なキャリアへの信頼のゲートウェイ",
+        headlineHighlight: "日本留学・就職への確かなゲートウェイ",
         subtitle:
-          "N5〜N1および実践的な『いろどり日本語』に対応。JLPT・NAT・JFT合格とオンラインLMS教室（npw.bd/knltc）による徹底サポート。",
-        pill1: "教科書・プリント完全無料",
-        pill2: "対面＆オンライン同時開講",
-        pill3: "日本人ネイティブ特別指導",
-        ctaEnroll: "今すぐ受講登録",
-        ctaLms: "LMS教室へ入室する",
-        phoneLabel: "受講相談窓口:",
-        phoneHours: "（10:00〜20:00）",
-        cardTag: "公認 日本語アカデミー",
-        cardTitle: "KNLTC 公式LMSクラスルーム",
+          "N5〜N1および実践『いろどり日本語』に対応。JLPT・NAT・JFT合格とオンラインLMS教室（npw.bd/knltc）による徹底サポート。",
+        stat1: "98%合格率",
+        stat1Sub: "JLPT・NAT一発合格",
+        stat2: "1,200名ビザ取得",
+        stat2Sub: "留学生・特定技能人材",
+        stat3: "教材完全無料",
+        stat3Sub: "テキスト・音声配布",
+        ctaEnroll: "コース詳細・受講申請",
+        ctaLms: "LMS教室へ入室",
+        hotlineLabel: "相談窓口:",
+        cardTag: "公式 KNLTCポータル",
+        cardTitle: "デジタル教室・公式LMSゲートウェイ",
         cardSub: "アクセス先: https://npw.bd/knltc",
-        cardBadge: "稼働中ポータル",
-        stat1Label: "対象レベル",
-        stat1Value: "N5〜N1・いろどり",
-        stat2Label: "LMS学習環境",
-        stat2Value: "LIVE講義＆録画アーカイブ",
-        bullet1: "JLPT・NAT・JFT-Basic公式基準カリキュラム",
-        bullet2: "『みんなの日本語』教科書および練習プリント無償提供",
-        bullet3: "15,000タカ相当の大使館面接・履歴書3大特典講座無料",
-        btnEnrollNow: "受講申込みへ進む",
+        cardBadge: "受講受付中",
+        startingFee: "受講料 ৳12,000〜",
+        feeNote: "2回分割払い可能（50% + 50%）",
+        feature1: "『みんなの日本語』教科書＆音声データ無償提供",
+        feature2: "オンラインLIVE講義およびダッカ対面授業",
+        feature3: "15,000タカ相当の面接・履歴書3大特典講座無料",
+        btnEnrollNow: "受講申込みへ",
         btnLmsPortal: "LMSポータルを開く",
-        waChat: "WhatsAppで相談",
+        waChat: "WhatsApp相談",
       },
     },
     language,
   );
 
+  const scrollToCourses = () => {
+    const el = document.getElementById("course-options");
+    if (el) el.scrollIntoView({ behavior: "smooth" });
+  };
+
   const scrollToForm = () => {
     const el = document.getElementById("enrollment-form");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth" });
-    }
+    if (el) el.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
-    <section className="relative overflow-hidden bg-white pt-10 pb-16 md:pt-14 md:pb-22 border-b border-stone-200">
-      <div className="container-narrow">
-        {/* Top Kicker */}
-        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#b91c1c] mb-4">
-          <ShieldCheck className="h-4 w-4" />
-          <span>{t.kicker}</span>
+    <section className="relative overflow-hidden bg-[#fcfaf7] pt-8 pb-14 md:pt-12 md:pb-20 border-b border-stone-200">
+      <div className="container-narrow relative z-10">
+        {/* Top Trust Strip - Smart & Minimalist */}
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-6 mb-8 border-b border-stone-200/80 text-xs text-slate-600">
+          <div className="flex items-center gap-2">
+            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="font-bold text-[#b91c1c] uppercase tracking-wider text-[11px]">
+              {t.badge}
+            </span>
+          </div>
+
+          <div className="hidden sm:flex items-center gap-6 font-medium text-slate-700">
+            <div className="flex items-center gap-1.5">
+              <Award className="h-3.5 w-3.5 text-[#15803d]" />
+              <span>{t.stat1}</span>
+            </div>
+            <span className="text-stone-300">|</span>
+            <div className="flex items-center gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5 text-[#b91c1c]" />
+              <span>{t.stat2}</span>
+            </div>
+            <span className="text-stone-300">|</span>
+            <div className="flex items-center gap-1.5">
+              <BookCheck className="h-3.5 w-3.5 text-slate-800" />
+              <span>{t.stat3}</span>
+            </div>
+          </div>
         </div>
 
-        {/* Main Grid: Headline & Value Prop on Left, Portal Preview on Right */}
-        <div className="grid gap-10 lg:grid-cols-[1.2fr_0.9fr] lg:items-center">
-          <div className="space-y-6">
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 leading-[1.28] sm:text-4xl md:text-5xl lg:text-[2.65rem]">
+        {/* Main 2-Column Hero */}
+        <div className="grid gap-10 lg:grid-cols-12 lg:items-center">
+          {/* Left Column (Headline + Value + CTAs) */}
+          <motion.div
+            initial={{ opacity: 0, x: -16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] as const }}
+            className="lg:col-span-7 space-y-6"
+          >
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 leading-[1.25] sm:text-4xl md:text-5xl lg:text-[2.75rem]">
               {t.headlinePart1}
               <span className="text-[#b91c1c] underline decoration-red-300 underline-offset-4">
                 {t.headlineHighlight}
@@ -136,58 +170,64 @@ export default function HeroCourseSection() {
               {t.subtitle}
             </p>
 
-            {/* Quiet Feature Indicators */}
-            <div className="flex flex-wrap gap-x-5 gap-y-2 pt-1 text-xs sm:text-sm text-slate-700 font-medium">
-              <div className="flex items-center gap-1.5">
+            {/* Inclusions Row */}
+            <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs sm:text-sm text-slate-700 font-medium pt-1">
+              <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-[#15803d]" />
-                <span>{t.pill1}</span>
+                <span>JLPT, NAT & JFT সার্টিফাইড</span>
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-[#15803d]" />
-                <span>{t.pill2}</span>
+                <span>নেটিভ জাপানিজ শিক্ষক</span>
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-[#15803d]" />
-                <span>{t.pill3}</span>
+                <span>৩টি বোনাস কোর্স ফ্রি</span>
               </div>
             </div>
 
-            {/* The Two Main CTAs as requested */}
+            {/* CTAs */}
             <div className="flex flex-col gap-3 pt-2 sm:flex-row">
-              <Button
-                onClick={scrollToForm}
-                size="lg"
-                className="bg-[#b91c1c] hover:bg-red-800 text-white font-semibold text-base px-7 py-6 rounded-xl shadow-sm transition"
-              >
-                {t.ctaEnroll} <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="border-stone-300 text-slate-800 hover:bg-stone-50 font-semibold text-base px-6 py-6 rounded-xl transition"
-              >
-                <a
-                  href="https://npw.bd/knltc"
-                  target="_blank"
-                  rel="noopener noreferrer"
+              <motion.div whileHover={{ y: -2, scale: 1.015 }} whileTap={{ scale: 0.97 }}>
+                <Button
+                  onClick={scrollToCourses}
+                  size="lg"
+                  className="w-full sm:w-auto bg-[#b91c1c] hover:bg-red-800 text-white font-semibold text-sm sm:text-base px-7 py-6 rounded-xl shadow-xs transition-colors"
                 >
-                  <GraduationCap className="mr-2 h-5 w-5 text-[#b91c1c]" />
-                  {t.ctaLms}
-                  <ExternalLink className="ml-2 h-4 w-4 text-slate-400" />
-                </a>
-              </Button>
+                  <span>{t.ctaEnroll}</span>
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </motion.div>
+
+              <motion.div whileHover={{ y: -2, scale: 1.015 }} whileTap={{ scale: 0.97 }}>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="w-full sm:w-auto border-stone-300 text-slate-800 hover:bg-white font-semibold text-sm sm:text-base px-6 py-6 rounded-xl transition-colors shadow-2xs"
+                >
+                  <a
+                    href="https://npw.bd/knltc"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <GraduationCap className="mr-2 h-5 w-5 text-[#b91c1c]" />
+                    <span>{t.ctaLms}</span>
+                    <ExternalLink className="ml-2 h-4 w-4 text-slate-400" />
+                  </a>
+                </Button>
+              </motion.div>
             </div>
 
-            {/* Hotline & WhatsApp Quick Contact */}
-            <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600 pt-2 border-t border-stone-100">
+            {/* Hotline & WhatsApp strip */}
+            <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600 pt-3 border-t border-stone-200/80">
               <div className="flex items-center gap-2">
                 <PhoneCall className="h-3.5 w-3.5 text-[#b91c1c]" />
                 <span>
-                  {t.phoneLabel}{" "}
+                  {t.hotlineLabel}{" "}
                   <a
                     href="tel:+8801805013633"
-                    className="font-bold text-slate-900 hover:text-[#b91c1c]"
+                    className="font-bold text-slate-900 hover:text-[#b91c1c] transition-colors"
                   >
                     +880 1805 013633
                   </a>
@@ -198,79 +238,84 @@ export default function HeroCourseSection() {
                 href="https://wa.me/8801805013633?text=Hello%20KNLTC,%20I%20want%20to%20enroll%20in%20the%20Japanese%20Language%20Course."
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 font-semibold text-[#15803d] hover:underline"
+                className="inline-flex items-center gap-1.5 font-semibold text-[#15803d] hover:underline transition-colors"
               >
                 <MessageCircle className="h-3.5 w-3.5" />
                 <span>{t.waChat}</span>
               </a>
             </div>
-          </div>
+          </motion.div>
 
-          {/* Right Portal Card - Architectural, Sleek, High-End */}
-          <div className="relative">
-            <div className="rounded-2xl border border-stone-200 bg-[#fcfaf7] p-6 sm:p-7 shadow-xs">
-              <div className="flex items-center justify-between pb-4 border-b border-stone-200/80">
+          {/* Right Column - Smart Institutional Portal Preview Card */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.12, ease: [0.16, 1, 0.3, 1] as const }}
+            className="lg:col-span-5"
+          >
+            <div className="relative rounded-2xl border border-stone-200 bg-white p-6 sm:p-7 shadow-xs hover:border-stone-300 transition-colors">
+              {/* Header */}
+              <div className="flex items-center justify-between pb-4 border-b border-stone-100">
                 <div>
                   <span className="text-[11px] font-bold tracking-wider uppercase text-[#b91c1c]">
                     {t.cardTag}
                   </span>
-                  <h3 className="text-lg font-bold text-slate-900 mt-0.5">
+                  <h3 className="text-lg font-bold text-slate-900 mt-0.5 leading-snug">
                     {t.cardTitle}
                   </h3>
                   <p className="text-xs text-slate-500 font-mono mt-0.5">
                     {t.cardSub}
                   </p>
                 </div>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold text-emerald-800">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-[11px] font-semibold text-emerald-800">
                   <span className="h-1.5 w-1.5 rounded-full bg-[#15803d] animate-pulse" />
-                  {t.cardBadge}
+                  <span>{t.cardBadge}</span>
                 </span>
               </div>
 
-              {/* Quick Specs 2-Column Grid */}
-              <div className="grid grid-cols-2 gap-3 py-4 border-b border-stone-200/80 text-xs">
-                <div className="rounded-xl bg-white p-3 border border-stone-200/60">
-                  <span className="text-slate-500 block text-[11px]">{t.stat1Label}</span>
-                  <span className="font-bold text-slate-900 mt-0.5 block text-xs sm:text-sm">
-                    {t.stat1Value}
+              {/* Price Banner */}
+              <div className="mt-4 rounded-xl bg-[#fcfaf7] border border-stone-200/80 p-4">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-xl font-extrabold text-slate-900 tracking-tight">
+                    {t.startingFee}
+                  </span>
+                  <span className="text-xs font-semibold text-[#15803d] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                    N5 to N1
                   </span>
                 </div>
-                <div className="rounded-xl bg-white p-3 border border-stone-200/60">
-                  <span className="text-slate-500 block text-[11px]">{t.stat2Label}</span>
-                  <span className="font-bold text-slate-900 mt-0.5 block text-xs sm:text-sm">
-                    {t.stat2Value}
-                  </span>
+                <p className="mt-1 text-xs text-slate-600 font-medium">
+                  {t.feeNote}
+                </p>
+              </div>
+
+              {/* Inclusions Checklist */}
+              <div className="mt-4 space-y-2 text-xs text-slate-700">
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-[#15803d] shrink-0 mt-0.5" />
+                  <span className="leading-snug">{t.feature1}</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-[#15803d]" />
+                  <span className="leading-snug">{t.feature2}</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-[#15803d]" />
+                  <span className="leading-snug">{t.feature3}</span>
                 </div>
               </div>
 
-              {/* Inclusions */}
-              <div className="py-4 space-y-2.5 text-xs text-slate-700">
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-[#15803d] shrink-0 mt-0.5" />
-                  <span className="leading-snug">{t.bullet1}</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-[#15803d] shrink-0 mt-0.5" />
-                  <span className="leading-snug">{t.bullet2}</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-[#15803d] shrink-0 mt-0.5" />
-                  <span className="leading-snug">{t.bullet3}</span>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="pt-2 flex gap-2.5">
+              {/* Quick Actions */}
+              <div className="mt-6 pt-4 border-t border-stone-100 flex gap-2.5">
                 <Button
                   onClick={scrollToForm}
-                  className="flex-1 bg-[#b91c1c] hover:bg-red-800 text-white font-semibold text-xs py-5 rounded-xl transition"
+                  className="flex-1 bg-[#b91c1c] hover:bg-red-800 text-white font-semibold text-xs py-5 rounded-xl shadow-xs active:scale-[0.98] transition-transform"
                 >
                   {t.btnEnrollNow}
                 </Button>
                 <Button
                   asChild
                   variant="outline"
-                  className="border-stone-300 hover:bg-white text-slate-800 text-xs font-semibold py-5 px-3.5 rounded-xl shrink-0"
+                  className="border-stone-300 hover:bg-stone-50 text-slate-800 text-xs font-semibold py-5 px-3.5 rounded-xl shrink-0 active:scale-[0.98] transition-transform"
                 >
                   <a
                     href="https://npw.bd/knltc"
@@ -284,7 +329,7 @@ export default function HeroCourseSection() {
                 </Button>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>

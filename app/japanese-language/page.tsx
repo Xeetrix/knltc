@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import HeroCourseSection from "@/components/japanese-language/HeroCourseSection";
-import TrustMetricsSection from "@/components/japanese-language/TrustMetricsSection";
-import HowItWorksSection from "@/components/japanese-language/HowItWorksSection";
 import CoursePackagesSection from "@/components/japanese-language/CoursePackagesSection";
 import BonusSection from "@/components/japanese-language/BonusSection";
 import EnrollmentForm from "@/components/japanese-language/EnrollmentForm";
@@ -16,25 +14,19 @@ export const metadata: Metadata = {
 export default function JapaneseLanguagePage() {
   return (
     <main className="min-h-screen bg-white">
-      {/* 1. High Impact Hero Section */}
+      {/* 1. Smart Executive Hero Section */}
       <HeroCourseSection />
 
-      {/* 2. Trust Metrics & Certified Curriculum Badges */}
-      <TrustMetricsSection />
-
-      {/* 3. How It Works (৩টি সহজ ধাপে আপনার যাত্রা শুরু করুন & LMS Access) */}
-      <HowItWorksSection />
-
-      {/* 4. Course Packages (N5 - ৳12,000, N4 - SSW, Advanced & Irodori) */}
+      {/* 2. Smart Interactive Course Explorer & Pricing (N5, N4, Advanced) */}
       <CoursePackagesSection />
 
-      {/* 5. Exclusive Free Bonus Section (N5 Special - ৳15,000 Value FREE) */}
+      {/* 3. Free Career Bonus Value (৳15,000 Free Inclusions with N5) */}
       <BonusSection />
 
-      {/* 6. Comprehensive Student Enrollment Form with Immediate Confirmation */}
+      {/* 4. Streamlined 1-Step Student Admission Form */}
       <EnrollmentForm />
 
-      {/* 7. Frequently Asked Questions (FAQ) */}
+      {/* 5. Essential FAQ & WhatsApp Counseling */}
       <CurriculumFaqSection />
     </main>
   );

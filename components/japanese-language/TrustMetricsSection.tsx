@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "motion/react";
 import {
   Award,
   BookCheck,
@@ -12,6 +13,28 @@ import {
 } from "lucide-react";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 14 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.4,
+      ease: [0.16, 1, 0.3, 1] as const,
+    },
+  },
+};
 
 export default function TrustMetricsSection() {
   const { language } = useLanguage();
@@ -131,20 +154,28 @@ export default function TrustMetricsSection() {
   return (
     <section className="py-14 bg-[#fcfaf7] border-b border-stone-200">
       <div className="container-narrow">
-        {/* Sleek, Minimalist Stats Row */}
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {/* Sleek, Animated Stats Row */}
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-40px" }}
+          className="grid grid-cols-2 gap-4 lg:grid-cols-4"
+        >
           {stats.map((s, idx) => {
             const Icon = s.icon;
             return (
-              <div
+              <motion.div
                 key={idx}
-                className="rounded-2xl border border-stone-200 bg-white p-5 shadow-xs transition hover:border-stone-300"
+                variants={itemVariants}
+                whileHover={{ y: -4, transition: { duration: 0.18 } }}
+                className="rounded-2xl border border-stone-200 bg-white p-5 shadow-xs transition-shadow hover:border-stone-300 hover:shadow-md"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                     {s.value}
                   </span>
-                  <div className="p-2 rounded-xl bg-stone-50 text-[#b91c1c]">
+                  <div className="p-2 rounded-xl bg-stone-50 text-[#b91c1c] border border-stone-200/60 shadow-2xs">
                     <Icon className="h-4 w-4" />
                   </div>
                 </div>
@@ -154,29 +185,43 @@ export default function TrustMetricsSection() {
                 <p className="mt-1 text-xs text-slate-500 leading-relaxed">
                   {s.subtext}
                 </p>
-              </div>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
 
         {/* 4 Pillars Grid */}
         <div className="mt-10 pt-10 border-t border-stone-200">
-          <div className="text-center max-w-xl mx-auto mb-8">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.35 }}
+            className="text-center max-w-xl mx-auto mb-8"
+          >
             <p className="text-xs font-bold uppercase tracking-widest text-[#b91c1c]">
               {t.badge}
             </p>
             <h2 className="mt-1 text-xl sm:text-2xl font-bold text-slate-900">
               {t.title}
             </h2>
-          </div>
+          </motion.div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-40px" }}
+            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+          >
             {highlights.map((h, i) => {
               const HIcon = h.icon;
               return (
-                <div
+                <motion.div
                   key={i}
-                  className="rounded-xl bg-white p-5 border border-stone-200 shadow-xs hover:border-stone-300 transition"
+                  variants={itemVariants}
+                  whileHover={{ y: -4, transition: { duration: 0.18 } }}
+                  className="rounded-xl bg-white p-5 border border-stone-200 shadow-xs hover:border-stone-300 hover:shadow-md transition-shadow"
                 >
                   <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-stone-100 text-[#15803d]">
                     <HIcon className="h-4 w-4" />
@@ -187,10 +232,10 @@ export default function TrustMetricsSection() {
                   <p className="mt-1.5 text-xs text-slate-600 leading-relaxed">
                     {h.desc}
                   </p>
-                </div>
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>

@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "motion/react";
 import { MessageCircle } from "lucide-react";
 import {
   Accordion,
@@ -47,7 +48,7 @@ export default function CurriculumFaqSection() {
           },
           {
             q: "Will class recordings be provided for online batches?",
-            a: "Yes! Every single live interactive class is recorded in HD and archived inside your KNLTC LMS student account. If you miss a class or want to revise, you can watch it anytime.",
+            a: "Yes! Every single live interactive class is recorded in HD and archived inside your https://npw.bd/knltc student account. If you miss a class or want to revise, you can watch it anytime.",
           },
           {
             q: "Does KNLTC assist with official JLPT and JFT-Basic exam registrations?",
@@ -90,7 +91,7 @@ export default function CurriculumFaqSection() {
           },
           {
             q: "অনলাইন ব্যাচে ক্লাস করলে কি রেকর্ডিং পাওয়া যাবে?",
-            a: "হ্যাঁ, প্রতিটি লাইভ ক্লাসের হাই-ডেফিনিশন রেকর্ডিং এবং লেকচার স্লাইড সরাসরি আপনার KNLTC শিক্ষার্থী অ্যাকাউন্টে সংরক্ষিত থাকে। কোনো কারণে ক্লাস মিস হলে আপনি যেকোনো সময় রেকর্ডিং দেখে রিভিশন দিতে পারবেন।",
+            a: "হ্যাঁ, প্রতিটি লাইভ ক্লাসের হাই-ডেফিনিশন রেকর্ডিং এবং লেকচার স্লাইড সরাসরি আপনার https://npw.bd/knltc একাউন্টে সংরক্ষিত থাকে। কোনো কারণে ক্লাস মিস হলে আপনি যেকোনো সময় রেকর্ডিং দেখে রিভিশন দিতে পারবেন।",
           },
           {
             q: "JLPT ও JFT-Basic পরীক্ষার রেজিস্ট্রেশনে কি সহায়তা করা হয়?",
@@ -98,50 +99,49 @@ export default function CurriculumFaqSection() {
           },
           {
             q: "ভাষা কোর্স শেষ করার পর ভিসা প্রসেসিংয়ে KNLTC কীভাবে সাহায্য করে?",
-            a: "KNLTC শুধুমাত্র একটি ল্যাঙ্গুয়েজ স্কুল নয়, এটি পূর্ণাঙ্গ জাপান গেটওয়ে। ভাষা সফলভাবে শেষ করার পর আমরা শিক্ষার্থী ও চাকরিপ্রার্থীদের জন্য জাপানের স্বীকৃত স্কুল ও কোম্পানিতে স্পনসরশিপ ডকুমেন্টেশন, COE ফাইল সাবমিশন এবং এম্বাসি ফেস করার সম্পূর্ণ গাইডলাইন দিয়ে থাকি।",
+            a: "KNLTC একটি পূর্ণাঙ্গ জাপান গেটওয়ে। ভাষা কোর্স সফলভাবে সম্পন্ন করার পর আমাদের এক্সপার্ট টিম উপযুক্ত জাপানি শিক্ষাপ্রতিষ্ঠান বা নিয়োগকারী প্রতিষ্ঠানের সাথে সংযোগ করিয়ে দেয় এবং স্টুডেন্ট বা SSW ভিসার COE ফাইল প্রসেসিং সম্পন্ন করে।",
           },
         ],
       },
       ja: {
         faqBadge: "よくあるご質問",
-        faqTitle: "受講検討時のFAQ（よくある質問と回答）",
-        faqSub:
-          "受講料の分割払い、LMSログイン、教材手配、ビザ申請支援に関する疑問を解消いたします。",
-        helpTitle: "その他にご不明点はございますか？",
-        helpSub: "専任カウンセラーがWhatsAppにて直接ご相談を承ります。",
-        btnHelp: "WhatsAppで質問する",
+        faqTitle: "受講・申請に関するQ&A",
+        faqSub: "受講料の分割払い、LMSログイン、教材、日本渡航サポートについての回答。",
+        helpTitle: "その他にご質問はございますか？",
+        helpSub: "公式カウンセラーがWhatsAppにて個別にご相談に応じます。",
+        btnHelp: "WhatsAppで相談する",
         faqs: [
           {
             q: "受講料の分割払いは可能ですか？",
-            a: "はい、2回の分割払いが可能です。申込時に50%をお支払いいただき、開講30日後に残りの50%をお支払いいただけます。",
+            a: "はい、2回分割でのお支払いが可能です。申込時に初回50%をお支払いいただき、授業開始から30日後に残り50%をお支払いいただけます。",
           },
           {
-            q: "日本語の学習経験が全くありませんが、受講できますか？",
-            a: "はい、完全な初心者向けに設計されています。ひらがな・カタカナの正確な書き順や発音指導から丁寧にスタートしますので、事前知識は一切不要です。",
+            q: "日本語を全く勉強したことがなくても受講できますか？",
+            a: "はい、大歓迎です。N5コースはひらがな・カタカナの筆順と発音からスタートするため、予備知識ゼロから安心して受講いただけます。",
           },
           {
-            q: "オンラインLMS教室のログイン方法はどのようになりますか？",
-            a: "受講講座およびオンライン授業は https://npw.bd/knltc にて提供されます。受講申請完了後、事務局より確認の上、WhatsAppにてログイン用IDとパスワードをお送りします。スマートフォンやPCからいつでもアクセス可能です。",
+            q: "専用LMS（https://npw.bd/knltc）はどのように利用しますか？",
+            a: "受講申請フォーム送信後、スタッフからWhatsAppで個別の受講生ID・パスワードをお送りします。スマートフォンやPCからいつでもログインして講義や教材をご利用いただけます。",
           },
           {
-            q: "教材代やテキスト代は別途必要ですか？",
-            a: "いいえ、別途料金は一切かかりません。『みんなの日本語』教科書、漢字ワークブック、文法プリント、音声教材はすべて受講料に含まれています。",
+            q: "教材代金は受講料に含まれていますか？",
+            a: "はい、教材費・プリント代は全て受講料に含まれており、追加料金は一切発生いたしません。",
           },
           {
-            q: "15日間の大使館面接対策や履歴書作成講座は本当に無料ですか？",
-            a: "はい、N5通常受講生には、15,000タカ相当の大使館面接・履歴書作成・アルバイト面接の3大特典講座が全額無料で付帯します。",
+            q: "面接対策・履歴書作成などの無料特典講座とは何ですか？",
+            a: "N5コース受講生全員に、15,000タカ相当の大使館ビザ面接対策講座、JIS規格履歴書作成講座、アルバイト面接対策講座を無料で提供しています。",
           },
           {
-            q: "オンライン受講の場合、授業の録画は視聴できますか？",
-            a: "はい、すべてのライブ授業はハイビジョン録画され、公式LMS（https://npw.bd/knltc）にていつでも復習視聴が可能です。",
+            q: "講義の録画アーカイブは視聴できますか？",
+            a: "はい、すべてのオンライン生中継講義は録画され、専用ポータル内で24時間いつでも復習が可能です。",
           },
           {
-            q: "JLPTやJFT-Basicの本番申し込みもサポートしてもらえますか？",
-            a: "はい、国際交流基金の公式試験日程の告知から願書記入、受験料納付、受験票受取までスタッフが全面的に代行・支援します。",
+            q: "JLPT・JFT-Basicの公式試験申込みサポートはありますか？",
+            a: "はい、試験申込み日程の案内からオンライン出願手続き、受験料納付、受験票発行まで全面的にサポートします。",
           },
           {
-            q: "語学修了後のビザ申請手続きも支援してくれますか？",
-            a: "はい、KNLTCは日本渡航総合機関として、語学修了後に提携する日本語学校・専門学校・受入れ企業へのCOE申請やビザ取得までワンストップでサポートします。",
+            q: "講座修了後のビザ申請サポートはどうなっていますか？",
+            a: "語学修了後は提携日本語学校や受け入れ機関へのマッチング、在留資格（COE）申請、大使館面接指導まで一貫して支援します。",
           },
         ],
       },
@@ -152,8 +152,14 @@ export default function CurriculumFaqSection() {
   return (
     <section className="bg-[#fcfaf7]/50 py-16 md:py-24 border-b border-stone-200">
       <div className="container-narrow max-w-3xl">
-        {/* Centered Header */}
-        <div className="text-center mb-10 md:mb-12">
+        {/* Centered Header with motion */}
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-40px" }}
+          transition={{ duration: 0.4 }}
+          className="text-center mb-10 md:mb-12"
+        >
           <p className="text-xs font-bold uppercase tracking-widest text-[#b91c1c] mb-2">
             {t.faqBadge}
           </p>
@@ -163,35 +169,48 @@ export default function CurriculumFaqSection() {
           <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed max-w-xl mx-auto">
             {t.faqSub}
           </p>
-        </div>
+        </motion.div>
 
         {/* Clean, Centered FAQ Accordion */}
-        <Accordion type="single" collapsible className="space-y-3">
-          {t.faqs.map((faq, fi) => (
-            <AccordionItem
-              key={fi}
-              value={`faq-${fi}`}
-              className="rounded-2xl border border-stone-200 bg-white px-5 py-1 shadow-xs data-[state=open]:border-red-200 transition"
-            >
-              <AccordionTrigger className="text-left text-sm sm:text-base font-bold text-slate-900 hover:no-underline hover:text-[#b91c1c] py-4">
-                {faq.q}
-              </AccordionTrigger>
-              <AccordionContent className="text-xs sm:text-sm text-slate-600 leading-relaxed pb-4 pt-1 border-t border-stone-100 mt-2">
-                {faq.a}
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-40px" }}
+          transition={{ duration: 0.45 }}
+        >
+          <Accordion type="single" collapsible className="space-y-3">
+            {t.faqs.map((faq, fi) => (
+              <AccordionItem
+                key={fi}
+                value={`faq-${fi}`}
+                className="rounded-2xl border border-stone-200 bg-white px-5 py-1 shadow-xs data-[state=open]:border-red-200 transition"
+              >
+                <AccordionTrigger className="text-left text-sm sm:text-base font-bold text-slate-900 hover:no-underline hover:text-[#b91c1c] py-4">
+                  {faq.q}
+                </AccordionTrigger>
+                <AccordionContent className="text-xs sm:text-sm text-slate-600 leading-relaxed pb-4 pt-1 border-t border-stone-100 mt-2">
+                  {faq.a}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </motion.div>
 
-        {/* Helpline Callout Box */}
-        <div className="mt-10 rounded-2xl border border-stone-200 bg-white p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
+        {/* Helpline Callout Box with Motion */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98, y: 12 }}
+          whileInView={{ opacity: 1, scale: 1, y: 0 }}
+          viewport={{ once: true, margin: "-40px" }}
+          transition={{ duration: 0.35 }}
+          className="mt-10 rounded-2xl border border-stone-200 bg-white p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs"
+        >
           <div className="text-center sm:text-left">
             <h4 className="text-sm sm:text-base font-bold text-slate-900">{t.helpTitle}</h4>
             <p className="text-xs text-slate-600 mt-0.5">{t.helpSub}</p>
           </div>
           <Button
             asChild
-            className="bg-[#15803d] hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shrink-0 px-4 py-2"
+            className="bg-[#15803d] hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shrink-0 px-4 py-2 active:scale-95 transition-transform"
           >
             <a
               href="https://wa.me/8801805013633?text=Hello%20KNLTC,%20I%20have%20questions%20about%20the%20Japanese%20Language%20Course."
@@ -203,7 +222,7 @@ export default function CurriculumFaqSection() {
               <span>{t.btnHelp}</span>
             </a>
           </Button>
-        </div>
+        </motion.div>
       </div>
     </section>
   );

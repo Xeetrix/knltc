@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import {
   BookOpen,
   BriefcaseBusiness,
@@ -32,9 +33,18 @@ function StoreHeader() {
 
 function MainHeader({ pathname }: { pathname: string }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const menuPanelRef = useRef<HTMLDivElement | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
   const { language, setLanguage } = useLanguage();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 15);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const t = useMemo(
     () =>
@@ -146,13 +156,13 @@ function MainHeader({ pathname }: { pathname: string }) {
   return (
     <>
       {/* Top Utility Bar - Clean, Slim & Professional */}
-      <div className="bg-[#b91c1c] text-white text-[11px] sm:text-xs font-medium py-1.5 border-b border-red-800/40">
+      <div className="bg-[#b91c1c] text-white text-[11px] sm:text-xs font-medium py-1.5 border-b border-red-800/40 relative z-40">
         <div className="container-narrow flex items-center justify-between gap-3">
           {/* Left contact info */}
           <div className="flex items-center gap-4">
             <a
               href={siteConfig.phoneHref}
-              className="flex items-center gap-1.5 opacity-90 hover:opacity-100 transition"
+              className="flex items-center gap-1.5 opacity-90 hover:opacity-100 transition-opacity"
             >
               <Phone className="h-3 w-3 text-red-200" />
               <span>{siteConfig.phoneDisplay}</span>
@@ -164,7 +174,7 @@ function MainHeader({ pathname }: { pathname: string }) {
               href={siteConfig.whatsappHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden sm:flex items-center gap-1.5 opacity-90 hover:opacity-100 transition"
+              className="hidden sm:flex items-center gap-1.5 opacity-90 hover:opacity-100 transition-opacity"
             >
               <MessageCircle className="h-3 w-3 text-emerald-300" />
               <span>WhatsApp: {siteConfig.whatsappDisplay}</span>
@@ -181,7 +191,7 @@ function MainHeader({ pathname }: { pathname: string }) {
             <span className="text-white/40 hidden md:inline">|</span>
 
             {/* Top Language Switcher */}
-            <div className="flex items-center gap-1.5 bg-black/20 rounded-lg px-2 py-0.5">
+            <div className="flex items-center gap-1.5 bg-black/20 rounded-lg px-2 py-0.5 hover:bg-black/30 transition-colors">
               <Globe className="h-3 w-3 text-red-200" />
               <select
                 aria-label={t.language}
@@ -200,9 +210,15 @@ function MainHeader({ pathname }: { pathname: string }) {
         </div>
       </div>
 
-      {/* Main Navbar */}
-      <header className="sticky top-0 z-50 border-b border-stone-200/80 bg-white/98 backdrop-blur-md transition-all">
-        <div className="container-narrow flex h-17 items-center justify-between gap-3">
+      {/* Main Navbar with Scroll Dynamics */}
+      <header
+        className={`sticky top-0 z-50 transition-all duration-300 ${
+          scrolled
+            ? "border-b border-stone-200/90 bg-white/95 backdrop-blur-md shadow-xs py-1"
+            : "border-b border-stone-200/60 bg-white/98 backdrop-blur-sm py-2"
+        }`}
+      >
+        <div className="container-narrow flex h-14 md:h-15 items-center justify-between gap-3">
           {/* Brand Logo */}
           <div className="min-w-0 shrink-0">
             <BrandLogo />
@@ -216,44 +232,57 @@ function MainHeader({ pathname }: { pathname: string }) {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`relative px-2.5 xl:px-3 py-1.5 text-xs xl:text-[13.5px] font-semibold transition-colors rounded-lg ${
+                  className={`relative px-2.5 xl:px-3 py-1.5 text-xs xl:text-[13.5px] font-semibold transition-all duration-200 rounded-lg ${
                     active
-                      ? "text-[#b91c1c] bg-red-50/60 font-bold"
-                      : "text-slate-700 hover:text-slate-900 hover:bg-stone-50"
+                      ? "text-[#b91c1c] font-bold"
+                      : "text-slate-700 hover:text-slate-950 hover:bg-stone-100/70"
                   }`}
                 >
-                  <span>{link.label}</span>
+                  <span className="relative z-10">{link.label}</span>
                   {active && (
-                    <span className="absolute inset-x-2.5 -bottom-2.5 h-0.5 bg-[#b91c1c] rounded-full" />
+                    <motion.span
+                      layoutId="activeNavIndicator"
+                      className="absolute inset-0 rounded-lg bg-red-50/80 -z-0 border border-red-100/60"
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
                   )}
                 </Link>
               );
             })}
           </nav>
 
-          {/* Right Action Cluster - Streamlined and balanced */}
+          {/* Right Action Cluster */}
           <div className="hidden lg:flex shrink-0 items-center gap-2.5">
-            {/* High-Visibility Student LMS Login */}
-            <a
+            {/* High-Visibility Student LMS Login with Live Pulse */}
+            <motion.a
               href="https://npw.bd/knltc"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-red-300 bg-red-50/70 hover:bg-red-100/80 px-3.5 text-xs font-bold text-[#b91c1c] shadow-2xs transition-all hover:-translate-y-0.5"
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ duration: 0.15 }}
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-red-300 bg-red-50/80 hover:bg-red-100 px-3.5 text-xs font-bold text-[#b91c1c] shadow-2xs transition-colors"
               title="Enter Official KNLTC Student LMS Classroom"
             >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#b91c1c]"></span>
+              </span>
               <GraduationCap className="h-3.5 w-3.5 text-[#b91c1c]" />
               <span>{t.lmsLogin}</span>
               <ExternalLink className="h-3 w-3 opacity-75" />
-            </a>
+            </motion.a>
 
             {/* Free Consultation CTA */}
-            <Button
-              asChild
-              size="sm"
-              className="h-9 rounded-xl bg-[#15803d] hover:bg-emerald-700 text-white text-xs font-semibold px-4 shadow-2xs transition-all hover:-translate-y-0.5"
-            >
-              <Link href="/contact">{t.cta}</Link>
-            </Button>
+            <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }} transition={{ duration: 0.15 }}>
+              <Button
+                asChild
+                size="sm"
+                className="h-9 rounded-xl bg-[#15803d] hover:bg-emerald-700 text-white text-xs font-semibold px-4 shadow-2xs transition-colors"
+              >
+                <Link href="/contact">{t.cta}</Link>
+              </Button>
+            </motion.div>
           </div>
 
           {/* Tablet & Mobile Right Bar (< 1024px) */}
@@ -263,8 +292,9 @@ function MainHeader({ pathname }: { pathname: string }) {
               href="https://npw.bd/knltc"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-[11px] font-bold text-[#b91c1c] shadow-2xs"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-[11px] font-bold text-[#b91c1c] shadow-2xs active:scale-95 transition-transform"
             >
+              <span className="h-1.5 w-1.5 rounded-full bg-[#b91c1c] animate-pulse" />
               <GraduationCap className="h-3.5 w-3.5" />
               <span>LMS</span>
               <ExternalLink className="h-3 w-3" />
@@ -273,7 +303,7 @@ function MainHeader({ pathname }: { pathname: string }) {
             {/* Mobile Menu Hamburger */}
             <button
               ref={menuButtonRef}
-              className="rounded-lg p-2 text-slate-700 hover:bg-stone-100 hover:text-slate-900 transition focus:outline-none"
+              className="rounded-lg p-2 text-slate-700 hover:bg-stone-100 hover:text-slate-900 transition focus:outline-none active:scale-90"
               onClick={() => setMobileOpen((prev) => !prev)}
               aria-label={t.toggleMenu}
             >
@@ -282,112 +312,126 @@ function MainHeader({ pathname }: { pathname: string }) {
           </div>
         </div>
 
-        {/* Mobile & Tablet Full-Width Drawer */}
-        {mobileOpen && (
-          <div className="absolute inset-x-0 top-full z-50 border-t border-stone-200 bg-white/98 backdrop-blur-md px-4 py-5 shadow-xl lg:hidden animate-in fade-in slide-in-from-top-2 duration-150">
-            <nav ref={menuPanelRef} className="space-y-3">
-              {/* Language Switcher Bar in Mobile Drawer */}
-              <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#fcfaf7] border border-stone-200/80">
-                <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-                  <Globe className="h-3.5 w-3.5 text-[#b91c1c]" />
-                  <span>{t.language}:</span>
-                </span>
-                <div className="flex items-center gap-1">
-                  {languageOptions.map((opt) => {
-                    const isSelected = language === opt.value;
+        {/* Mobile & Tablet Full-Width Animated Drawer */}
+        <AnimatePresence>
+          {mobileOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] as const }}
+              className="overflow-hidden border-t border-stone-200 bg-white/98 backdrop-blur-md shadow-xl lg:hidden"
+            >
+              <nav ref={menuPanelRef} className="container-narrow py-5 space-y-3">
+                {/* Language Switcher Bar in Mobile Drawer */}
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#fcfaf7] border border-stone-200/80">
+                  <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                    <Globe className="h-3.5 w-3.5 text-[#b91c1c]" />
+                    <span>{t.language}:</span>
+                  </span>
+                  <div className="flex items-center gap-1">
+                    {languageOptions.map((opt) => {
+                      const isSelected = language === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setLanguage(opt.value)}
+                          className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
+                            isSelected
+                              ? "bg-[#b91c1c] text-white shadow-2xs scale-105"
+                              : "text-slate-600 hover:bg-stone-200/60"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Navigation Links with Staggered Entrance */}
+                <div className="space-y-1 pt-1">
+                  {navLinks.map((link, idx) => {
+                    const active = isActive(link.href);
+                    const Icon = link.icon;
                     return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => setLanguage(opt.value)}
-                        className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition ${
-                          isSelected
-                            ? "bg-[#b91c1c] text-white shadow-2xs"
-                            : "text-slate-600 hover:bg-stone-200/60"
-                        }`}
+                      <motion.div
+                        key={link.href}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.03, duration: 0.18 }}
                       >
-                        {opt.label}
-                      </button>
+                        <Link
+                          href={link.href}
+                          className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all ${
+                            active
+                              ? "bg-red-50 text-[#b91c1c] font-bold"
+                              : "text-slate-700 hover:bg-stone-100 hover:translate-x-1"
+                          }`}
+                          onClick={() => setMobileOpen(false)}
+                        >
+                          <Icon className={`h-4 w-4 shrink-0 ${active ? "text-[#b91c1c]" : "text-slate-500"}`} />
+                          <span>{link.label}</span>
+                        </Link>
+                      </motion.div>
                     );
                   })}
                 </div>
-              </div>
 
-              {/* Navigation Links */}
-              <div className="space-y-1 pt-1">
-                {navLinks.map((link) => {
-                  const active = isActive(link.href);
-                  const Icon = link.icon;
-                  return (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition ${
-                        active
-                          ? "bg-red-50 text-[#b91c1c] font-bold"
-                          : "text-slate-700 hover:bg-stone-100"
-                      }`}
-                      onClick={() => setMobileOpen(false)}
-                    >
-                      <Icon className="h-4 w-4 shrink-0 text-slate-500" />
-                      <span>{link.label}</span>
+                {/* High-Visibility LMS Banner in Drawer */}
+                <div className="pt-2 border-t border-stone-100 space-y-2">
+                  <a
+                    href="https://npw.bd/knltc"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-xs font-bold text-[#b91c1c] shadow-2xs hover:bg-red-100 active:scale-[0.99] transition"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100 text-[#b91c1c]">
+                        <GraduationCap className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <span className="block text-xs font-extrabold">{t.lmsLogin}</span>
+                        <span className="block text-[10px] text-red-600/80 font-mono">https://npw.bd/knltc</span>
+                      </div>
+                    </div>
+                    <ExternalLink className="h-4 w-4 shrink-0 text-[#b91c1c]" />
+                  </a>
+
+                  {/* Free Consultation CTA */}
+                  <Button
+                    asChild
+                    size="sm"
+                    className="w-full rounded-xl bg-[#15803d] hover:bg-emerald-700 text-white font-semibold text-xs py-3 active:scale-[0.99]"
+                  >
+                    <Link href="/contact" onClick={() => setMobileOpen(false)}>
+                      {t.cta}
                     </Link>
-                  );
-                })}
-              </div>
+                  </Button>
+                </div>
 
-              {/* High-Visibility LMS Banner in Drawer */}
-              <div className="pt-2 border-t border-stone-100 space-y-2">
-                <a
-                  href="https://npw.bd/knltc"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-xs font-bold text-[#b91c1c] shadow-2xs hover:bg-red-100 transition"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100 text-[#b91c1c]">
-                      <GraduationCap className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <span className="block text-xs font-extrabold">{t.lmsLogin}</span>
-                      <span className="block text-[10px] text-red-600/80 font-mono">https://npw.bd/knltc</span>
-                    </div>
-                  </div>
-                  <ExternalLink className="h-4 w-4 shrink-0 text-[#b91c1c]" />
-                </a>
-
-                {/* Free Consultation CTA */}
-                <Button
-                  asChild
-                  size="sm"
-                  className="w-full rounded-xl bg-[#15803d] hover:bg-emerald-700 text-white font-semibold text-xs py-3"
-                >
-                  <Link href="/contact" onClick={() => setMobileOpen(false)}>
-                    {t.cta}
-                  </Link>
-                </Button>
-              </div>
-
-              {/* Quick Contacts */}
-              <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-xs text-slate-500">
-                <a href={siteConfig.phoneHref} className="flex items-center gap-1 hover:text-slate-900">
-                  <Phone className="h-3.5 w-3.5 text-[#b91c1c]" />
-                  <span>{siteConfig.phoneDisplay}</span>
-                </a>
-                <a
-                  href={siteConfig.whatsappHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-[#15803d] font-bold hover:underline"
-                >
-                  <MessageCircle className="h-3.5 w-3.5" />
-                  <span>WhatsApp</span>
-                </a>
-              </div>
-            </nav>
-          </div>
-        )}
+                {/* Quick Contacts */}
+                <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-xs text-slate-500">
+                  <a href={siteConfig.phoneHref} className="flex items-center gap-1 hover:text-slate-900 transition-colors">
+                    <Phone className="h-3.5 w-3.5 text-[#b91c1c]" />
+                    <span>{siteConfig.phoneDisplay}</span>
+                  </a>
+                  <a
+                    href={siteConfig.whatsappHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-[#15803d] font-bold hover:underline"
+                  >
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    <span>WhatsApp</span>
+                  </a>
+                </div>
+              </nav>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
     </>
   );

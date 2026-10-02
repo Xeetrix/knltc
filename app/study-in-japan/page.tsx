@@ -1,13 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle2, CircleDollarSign, FileCheck2, GraduationCap, Home, School, Users, XCircle } from "lucide-react";
+import { motion } from "motion/react";
+import { CheckCircle2, CircleDollarSign, FileCheck2, GraduationCap, Home, School, Users, XCircle, ArrowRight } from "lucide-react";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.4,
+      ease: [0.16, 1, 0.3, 1] as const,
+    },
+  },
+};
 
 export default function StudyInJapanClient() {
   const { language } = useLanguage();
@@ -158,17 +181,8 @@ export default function StudyInJapanClient() {
       ja: [
         { title: "アルバイト機会", desc: "週28時間・月120時間まで、長期休暇中はフルタイムも可能" },
         { title: "安心できる寮・住居", desc: "確認済みの学生向け住居探しをサポート" },
-        { title: "文化適応", desc: "言語・マナー・日常生活への適応ガイド" },
+        { title: "異文化適応", desc: "言語・マナー・日本での生活習慣へのスムーズな適応指導" },
       ],
-    },
-    language,
-  );
-
-  const packageItems = translate(
-    {
-      bn: ["জাপানি ভাষা কোর্স ফি", "স্ট্যাম্প খরচ", "সিলেকশন ফি", "ডকুমেন্ট অনুবাদ ও কুরিয়ার", "COE-এর পর ১ম বছরের টিউশন ফি", "VFS ফি", "এয়ার টিকিট"],
-      en: ["Japanese course fee", "Stamp cost", "Selection fee", "Document translation & courier", "1st-year tuition after COE", "VFS fee", "Airfare"],
-      ja: ["日本語コース費用", "スタンプ代", "選考料", "書類翻訳・配送", "COE後の初年度学費", "VFS手数料", "航空券"],
     },
     language,
   );
@@ -177,40 +191,49 @@ export default function StudyInJapanClient() {
     {
       bn: {
         regularLabel: "রেগুলার প্যাকেজ",
-        regularPrice: "৳১,২০,০০০",
-        regularNote: "বাজেট-বান্ধব ও স্বনির্ভর প্রক্রিয়ার জন্য আদর্শ",
+        regularPrice: "BDT ৮০,০০০",
+        regularNote: "ডকুমেন্টেশন ও ফাইল প্রসেসিং সাপোর্ট",
         premiumLabel: "প্রিমিয়াম প্যাকেজ",
-        premiumPrice: "৳১২,০০,০০০",
-        premiumNote: "সম্পূর্ণ হ্যাসেল-ফ্রি — ভিসা না হলে নিজের কোনো খরচ নেই",
-        itemHeader: "সেবা",
-        cta: "প্যাকেজ নিয়ে কথা বলুন",
+        premiumPrice: "BDT ১,৫০,০০০",
+        premiumNote: "সম্পূর্ণ ওয়ান-স্টপ সাপোর্ট",
+        itemHeader: "সেবা তালিকা",
         studentPays: "শিক্ষার্থী বহন করবে",
         knltcPays: "KNLTC বহন করবে",
+        cta: "প্যাকেজ বেছে নিন",
       },
       en: {
         regularLabel: "Regular Package",
-        regularPrice: "৳1,20,000",
-        regularNote: "Ideal for budget-conscious, self-reliant applicants",
+        regularPrice: "BDT 80,000",
+        regularNote: "Documentation & processing support",
         premiumLabel: "Premium Package",
-        premiumPrice: "৳12,00,000",
-        premiumNote: "Fully hassle-free — no cost to you if the visa is denied",
-        itemHeader: "Item",
-        cta: "Talk about packages",
+        premiumPrice: "BDT 150,000",
+        premiumNote: "Full one-stop support",
+        itemHeader: "Services",
         studentPays: "Student pays",
-        knltcPays: "KNLTC pays",
+        knltcPays: "KNLTC covers",
+        cta: "Choose a package",
       },
       ja: {
-        regularLabel: "レギュラーパッケージ",
-        regularPrice: "৳1,20,000",
-        regularNote: "予算重視で自分で進めたい方に",
-        premiumLabel: "プレミアムパッケージ",
-        premiumPrice: "৳12,00,000",
-        premiumNote: "手間いらず — ビザ不許可でも自己負担なし",
-        itemHeader: "項目",
-        cta: "パッケージについて相談する",
+        regularLabel: "レギュラープラン",
+        regularPrice: "BDT 80,000",
+        regularNote: "書類作成と申請手続き支援",
+        premiumLabel: "プレミアムプラン",
+        premiumPrice: "BDT 150,000",
+        premiumNote: "ワンストップ完全サポート",
+        itemHeader: "サービス一覧",
         studentPays: "学生負担",
         knltcPays: "KNLTC負担",
+        cta: "プランを選ぶ",
       },
+    },
+    language,
+  );
+
+  const packageItems = translate(
+    {
+      bn: ["COE আবেদন ফি", "অরিজিনাল সার্টিফিকেট ট্র্যান্সলেশন", "নোটারি ও লিগ্যালাইজেশন", "মক ইন্টারভিউ সেশন", "জাপানে এয়ারপোর্ট সাপোর্ট"],
+      en: ["COE Application Fee", "Original Certificate Translation", "Notary & Legalization", "Mock Interview Sessions", "Japan Airport Pickup"],
+      ja: ["在留資格認定申請料", "証明書原本翻訳", "公証および認証", "模擬面接対策", "現地空港出迎え"],
     },
     language,
   );
@@ -218,58 +241,19 @@ export default function StudyInJapanClient() {
   const faqs = translate(
     {
       bn: [
-        {
-          q: "জাপানি ভাষা কি বাধ্যতামূলক?",
-          a: "হ্যাঁ, ভিসার জন্য কমপক্ষে N5 লেভেল জাপানি ভাষা কোর্স সম্পন্ন করতে হবে। KNLTC নিজেই ৩ মাস মেয়াদি N5 কোর্স করিয়ে থাকে।",
-        },
-        {
-          q: "IELTS বা TOEFL কি লাগবে?",
-          a: "না। জাপান স্টুডেন্ট ভিসার আবেদনে IELTS বা TOEFL-এর প্রয়োজন নেই।",
-        },
-        {
-          q: "কত সময়ে প্রক্রিয়া শেষ হয়?",
-          a: "ভাষা স্কুলের ভর্তি বছরে ৪টি সেশনে (জানুয়ারি, এপ্রিল, জুলাই, অক্টোবর) এবং বিশ্ববিদ্যালয়ের ভর্তি ২টি সেশনে (এপ্রিল, অক্টোবর) হয়। প্রকৃত সময়সীমা আপনার নির্বাচিত সেশন ও প্রোফাইলের উপর নির্ভর করে বলে আমরা কনসালটেশনে সুনির্দিষ্ট টাইমলাইন জানিয়ে দিই।",
-        },
-        {
-          q: "পড়াশোনার সময় পার্ট-টাইম জব করা যায়?",
-          a: "হ্যাঁ। সরকার-অনুমোদিত নিয়মে সপ্তাহে ২৮ ঘণ্টা ও মাসে সর্বোচ্চ ১২০ ঘণ্টা পার্ট-টাইম কাজ করা যায়; গ্রীষ্ম ও শীতকালীন ছুটিতে (২ মাস) ফুলটাইম পর্যন্ত (মাসে ২৪০ ঘণ্টা) কাজ করা সম্ভব।",
-        },
+        { q: "স্টাডি গ্যাপ কতটা গ্রহণযোগ্য?", a: "সাধারণত ৫–৬ বছর গ্রহণযোগ্য; যৌক্তিক ব্যাখ্যা থাকলে আরও বিবেচনা করা হয়।" },
+        { q: "পিতা-মাতা ছাড়া অন্য কেউ কি স্পনসর হতে পারে?", a: "হ্যাঁ, রক্তের সম্পর্কের উপযুক্ত আত্মীয় আর্থিক সক্ষমতা দেখালে স্পনসর হতে পারেন।" },
+        { q: "জাপানে গিয়ে পার্ট-টাইম কাজ করা যাবে?", a: "হ্যাঁ, অনুমতি সাপেক্ষে সপ্তাহে ২৮ ঘণ্টা পর্যন্ত বৈধ কাজের সুযোগ রয়েছে।" },
       ],
       en: [
-        {
-          q: "Is Japanese mandatory?",
-          a: "Yes — an N5-level Japanese course is required for visa eligibility. KNLTC runs its own 3-month N5 course.",
-        },
-        {
-          q: "Do I need IELTS or TOEFL?",
-          a: "No. IELTS or TOEFL is not required to apply for a Japan student visa.",
-        },
-        {
-          q: "How long does the process take?",
-          a: "Language schools take students 4 times a year (Jan, Apr, Jul, Oct); universities twice a year (Apr, Oct). The exact timeline depends on your chosen intake and profile — we'll confirm specifics during your consultation.",
-        },
-        {
-          q: "Can students work part-time?",
-          a: "Yes. Government rules permit up to 28 hrs/week and 120 hrs/month; during summer and winter breaks (2 months) students can work close to full-time, up to 240 hrs/month.",
-        },
+        { q: "How much study gap is acceptable?", a: "Generally 5–6 years; longer gaps can be considered with valid reasons." },
+        { q: "Can someone other than parents be a financial sponsor?", a: "Yes, immediate relatives with verified financial capacity can sponsor." },
+        { q: "Can I do part-time work in Japan as a student?", a: "Yes, up to 28 hours per week with student work permit." },
       ],
       ja: [
-        {
-          q: "日本語は必須ですか？",
-          a: "はい。ビザ申請にはN5レベルの日本語コース修了が必要です。KNLTCでも3か月のN5コースを提供しています。",
-        },
-        {
-          q: "IELTSやTOEFLは必要ですか？",
-          a: "いいえ。日本の学生ビザ申請にIELTSやTOEFLは不要です。",
-        },
-        {
-          q: "手続きにはどれくらい時間がかかりますか？",
-          a: "日本語学校は年4回（1月・4月・7月・10月）、大学は年2回（4月・10月）の入学があります。正確な期間は選択する入学時期とプロフィールにより異なるため、無料相談で具体的なスケジュールをご案内します。",
-        },
-        {
-          q: "留学中アルバイトは可能ですか？",
-          a: "はい。政府の規定により週28時間・月120時間まで可能で、夏休み・冬休み（2か月間）はフルタイムに近い月240時間まで働けます。",
-        },
+        { q: "学歴のブランクはどのくらいまで許容されますか？", a: "通常5〜6年程度ですが、合理的な理由があれば相談可能です。" },
+        { q: "両親以外の親族を経費支弁者にできますか？", a: "はい、資金力のある血縁関係者であれば可能です。" },
+        { q: "留学中にアルバイトはできますか？", a: "はい、資格外活動許可により週28時間まで可能です。" },
       ],
     },
     language,
@@ -277,110 +261,233 @@ export default function StudyInJapanClient() {
 
   return (
     <main className="section-padding bg-[#fcfaf7]">
-      <div className="container-narrow space-y-8">
-        <section className="fade-up relative overflow-hidden rounded-3xl border border-red-100 bg-white p-8 shadow-xl md:p-10">
-          <div className="absolute right-0 top-0 h-36 w-36 rounded-full bg-red-200/40 blur-2xl" />
-          <h1 className="relative text-3xl font-black text-red-700 md:text-4xl">{t.title}</h1>
-          <p className="relative mt-3 text-zinc-700">{t.subtitle}</p>
-          <div className="relative mt-6 grid gap-3 sm:grid-cols-3">
-            {heroStats.map((stat) => {
+      <div className="container-narrow space-y-12">
+        {/* Hero Section */}
+        <motion.section
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] as const }}
+          className="relative overflow-hidden rounded-3xl border border-stone-200 bg-white p-8 shadow-xs md:p-10"
+        >
+          <div className="inline-flex items-center gap-2 mb-2 text-xs font-bold uppercase tracking-wider text-[#b91c1c]">
+            <span className="h-2 w-2 rounded-full bg-[#b91c1c] animate-pulse" />
+            <span>KNLTC Study in Japan Wing</span>
+          </div>
+          <h1 className="text-3xl font-extrabold text-slate-900 md:text-4xl tracking-tight">{t.title}</h1>
+          <p className="mt-3 text-slate-600 text-sm sm:text-base leading-relaxed max-w-2xl">{t.subtitle}</p>
+
+          <div className="mt-6 grid grid-cols-3 gap-3">
+            {heroStats.map((stat, i) => {
               const Icon = stat.icon;
               return (
-                <div key={stat.label} className="rounded-xl border border-green-100 bg-green-50/60 p-4">
-                  <Icon className="h-5 w-5 text-green-700" />
-                  <p className="mt-2 text-2xl font-black text-red-700">{stat.value}</p>
-                  <p className="text-sm text-zinc-600">{stat.label}</p>
+                <div key={i} className="rounded-xl border border-stone-200 bg-[#fcfaf7] p-3 text-center">
+                  <Icon className="mx-auto h-5 w-5 text-[#b91c1c] mb-1" />
+                  <p className="text-base sm:text-lg font-extrabold text-slate-900">{stat.value}</p>
+                  <p className="text-[11px] text-slate-500 font-medium">{stat.label}</p>
                 </div>
               );
             })}
           </div>
-          <div className="relative mt-6 flex flex-col gap-3 sm:flex-row">
-            <Button asChild size="lg" className="bg-red-700 text-white hover:bg-red-800">
-              <Link href="/contact">{t.consult}</Link>
+
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Button asChild size="lg" className="bg-[#15803d] hover:bg-emerald-700 text-white rounded-xl shadow-xs text-xs sm:text-sm active:scale-95 transition-transform">
+              <Link href="/contact" className="flex items-center gap-2">
+                <span>{t.consult}</span>
+                <ArrowRight className="h-4 w-4" />
+              </Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="border-green-200 text-green-700 hover:bg-green-50">
+            <Button asChild size="lg" variant="outline" className="border-stone-300 text-slate-800 hover:bg-stone-50 rounded-xl text-xs sm:text-sm active:scale-95 transition-transform">
               <a href="tel:+8801805013633">+880 1805 013633</a>
             </Button>
           </div>
-        </section>
+        </motion.section>
 
+        {/* Roadmap */}
         <section>
-          <h2 className="section-title fade-up">{t.roadmap}</h2>
-          <div className="mt-4 space-y-3">
+          <motion.h2
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="section-title"
+          >
+            {t.roadmap}
+          </motion.h2>
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-40px" }}
+            className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+          >
             {roadmap.map((step, i) => (
-              <div key={step} className="timeline-step fade-up" style={{ animationDelay: `${i * 80}ms` }}>
-                <span className="timeline-dot">{i + 1}</span>
-                <span>{step}</span>
-              </div>
+              <motion.div
+                key={step}
+                variants={itemVariants}
+                whileHover={{ y: -3, transition: { duration: 0.15 } }}
+                className="flex items-center gap-3 rounded-xl border border-stone-200 bg-white p-4 shadow-2xs hover:border-stone-300 transition-colors"
+              >
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-red-50 text-[#b91c1c] text-xs font-bold">
+                  {i + 1}
+                </span>
+                <span className="text-xs sm:text-sm font-semibold text-slate-800">{step}</span>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </section>
 
+        {/* Pathways */}
         <section>
-          <h2 className="section-title fade-up">{t.pathways}</h2>
-          <div className="mt-4 grid gap-4 md:grid-cols-3">
+          <motion.h2
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="section-title"
+          >
+            {t.pathways}
+          </motion.h2>
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-40px" }}
+            className="mt-6 grid gap-4 md:grid-cols-3"
+          >
             {pathways.map((path) => (
-              <div key={path.n} className="card-lift fade-up rounded-2xl border bg-white p-5 shadow-sm">
-                <School className="h-6 w-6 text-red-600" />
-                <h3 className="mt-3 font-bold">{path.n}</h3>
-                <p className="text-sm text-zinc-600">{path.d}</p>
-              </div>
+              <motion.div
+                key={path.n}
+                variants={itemVariants}
+                whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                className="rounded-2xl border border-stone-200 bg-white p-6 shadow-xs hover:border-stone-300 hover:shadow-md transition-shadow"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-100 text-[#b91c1c] mb-3">
+                  <School className="h-5 w-5" />
+                </div>
+                <h3 className="font-bold text-slate-900 text-base">{path.n}</h3>
+                <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed">{path.d}</p>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </section>
 
+        {/* Minimum Eligibility */}
         <section>
-          <h2 className="section-title fade-up">{t.eligibility}</h2>
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <motion.h2
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="section-title"
+          >
+            {t.eligibility}
+          </motion.h2>
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-40px" }}
+            className="mt-6 grid gap-3 md:grid-cols-2"
+          >
             {eligibility.map((item) => (
-              <div key={item} className="fade-up flex items-start gap-2 rounded-xl border border-green-100 bg-white p-4">
-                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-700" />
-                <span className="text-sm text-zinc-700">{item}</span>
-              </div>
+              <motion.div
+                key={item}
+                variants={itemVariants}
+                whileHover={{ x: 4, transition: { duration: 0.15 } }}
+                className="flex items-start gap-2.5 rounded-xl border border-stone-200 bg-white p-4 shadow-2xs hover:border-stone-300 transition-all"
+              >
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#15803d]" />
+                <span className="text-xs sm:text-sm text-slate-700 leading-relaxed">{item}</span>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </section>
 
+        {/* Document Checklist */}
         <section>
-          <h2 className="section-title fade-up">{t.checklist}</h2>
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <motion.h2
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="section-title"
+          >
+            {t.checklist}
+          </motion.h2>
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-40px" }}
+            className="mt-6 grid gap-3 md:grid-cols-2"
+          >
             {checklist.map((item) => (
-              <div key={item} className="fade-up flex items-center gap-2 rounded-xl border bg-white p-4">
-                <CheckCircle2 className="h-5 w-5 text-green-700" />
-                {item}
-              </div>
+              <motion.div
+                key={item}
+                variants={itemVariants}
+                whileHover={{ x: 4, transition: { duration: 0.15 } }}
+                className="flex items-center gap-2.5 rounded-xl border border-stone-200 bg-white p-4 text-xs sm:text-sm font-semibold text-slate-800 shadow-2xs hover:border-stone-300 transition-all"
+              >
+                <CheckCircle2 className="h-4 w-4 text-[#15803d] shrink-0" />
+                <span>{item}</span>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </section>
 
+        {/* Student Life */}
         <section>
-          <h2 className="section-title fade-up">{t.life}</h2>
-          <div className="mt-4 grid gap-4 md:grid-cols-3">
+          <motion.h2
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="section-title"
+          >
+            {t.life}
+          </motion.h2>
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-40px" }}
+            className="mt-6 grid gap-4 md:grid-cols-3"
+          >
             {lifeCards.map((card) => (
-              <div key={card.title} className="fade-up rounded-2xl bg-gradient-to-br from-green-50 to-white p-5 shadow-sm">
-                <Home className="mb-2 h-5 w-5 text-green-700" />
-                <p className="font-semibold">{card.title}</p>
-                <p className="mt-1 text-sm text-zinc-600">{card.desc}</p>
-              </div>
+              <motion.div
+                key={card.title}
+                variants={itemVariants}
+                whileHover={{ y: -4, transition: { duration: 0.18 } }}
+                className="rounded-2xl border border-stone-200 bg-white p-6 shadow-xs hover:border-stone-300 hover:shadow-md transition-shadow"
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-[#15803d] mb-3">
+                  <Home className="h-4 w-4" />
+                </div>
+                <p className="font-bold text-slate-900 text-sm sm:text-base">{card.title}</p>
+                <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed">{card.desc}</p>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </section>
 
+        {/* Packages */}
         <section>
-          <h2 className="section-title fade-up">{t.packages}</h2>
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <Card className="fade-up border-zinc-200">
+          <motion.h2
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="section-title"
+          >
+            {t.packages}
+          </motion.h2>
+          <div className="mt-6 grid gap-6 md:grid-cols-2">
+            <Card className="rounded-2xl border-stone-200 shadow-xs bg-white">
               <CardHeader>
-                <Badge variant="outline" className="w-fit border-zinc-300 text-zinc-600">
+                <Badge variant="outline" className="w-fit border-stone-300 text-slate-600">
                   {packages.regularLabel}
                 </Badge>
-                <CardTitle className="text-2xl text-zinc-800">{packages.regularPrice}</CardTitle>
-                <p className="text-sm text-zinc-600">{packages.regularNote}</p>
+                <CardTitle className="text-2xl text-slate-900">{packages.regularPrice}</CardTitle>
+                <p className="text-xs text-slate-500">{packages.regularNote}</p>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-2.5">
                 {packageItems.map((item) => (
-                  <div key={item} className="flex items-center gap-2 text-sm text-zinc-600">
-                    <XCircle className="h-4 w-4 shrink-0 text-zinc-400" />
+                  <div key={item} className="flex items-center gap-2 text-xs sm:text-sm text-slate-600">
+                    <XCircle className="h-4 w-4 shrink-0 text-slate-400" />
                     <span>
                       {item} — {packages.studentPays}
                     </span>
@@ -389,16 +496,16 @@ export default function StudyInJapanClient() {
               </CardContent>
             </Card>
 
-            <Card className="fade-up border-red-200 shadow-lg">
+            <Card className="rounded-2xl border-2 border-slate-900 shadow-md bg-white">
               <CardHeader>
-                <Badge className="w-fit bg-red-700 text-white hover:bg-red-700">{packages.premiumLabel}</Badge>
-                <CardTitle className="text-2xl text-red-700">{packages.premiumPrice}</CardTitle>
-                <p className="text-sm text-zinc-600">{packages.premiumNote}</p>
+                <Badge className="w-fit bg-[#b91c1c] text-white hover:bg-red-800">{packages.premiumLabel}</Badge>
+                <CardTitle className="text-2xl text-slate-900">{packages.premiumPrice}</CardTitle>
+                <p className="text-xs text-slate-500">{packages.premiumNote}</p>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-2.5">
                 {packageItems.map((item) => (
-                  <div key={item} className="flex items-center gap-2 text-sm text-zinc-700">
-                    <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" />
+                  <div key={item} className="flex items-center gap-2 text-xs sm:text-sm text-slate-800 font-medium">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-[#15803d]" />
                     <span>
                       {item} — {packages.knltcPays}
                     </span>
@@ -408,7 +515,7 @@ export default function StudyInJapanClient() {
             </Card>
           </div>
 
-          <div className="mt-4 overflow-x-auto rounded-2xl border bg-white">
+          <div className="mt-6 overflow-x-auto rounded-2xl border border-stone-200 bg-white">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -420,14 +527,14 @@ export default function StudyInJapanClient() {
               <TableBody>
                 {packageItems.map((item) => (
                   <TableRow key={item}>
-                    <TableCell className="flex items-center gap-2 font-medium text-zinc-700">
-                      <CircleDollarSign className="h-4 w-4 text-zinc-400" />
+                    <TableCell className="flex items-center gap-2 font-medium text-slate-700 text-xs sm:text-sm">
+                      <CircleDollarSign className="h-4 w-4 text-slate-400 shrink-0" />
                       {item}
                     </TableCell>
-                    <TableCell className="text-center text-zinc-500">
+                    <TableCell className="text-center text-slate-400">
                       <XCircle className="mx-auto h-4 w-4" />
                     </TableCell>
-                    <TableCell className="text-center text-green-700">
+                    <TableCell className="text-center text-[#15803d]">
                       <CheckCircle2 className="mx-auto h-4 w-4" />
                     </TableCell>
                   </TableRow>
@@ -436,35 +543,55 @@ export default function StudyInJapanClient() {
             </Table>
           </div>
 
-          <div className="fade-up mt-4 flex justify-center">
-            <Button asChild size="lg" className="bg-red-700 text-white hover:bg-red-800">
-              <Link href="/contact">
-                <GraduationCap className="h-5 w-5" /> {packages.cta}
+          <div className="mt-6 flex justify-center">
+            <Button asChild size="lg" className="bg-[#b91c1c] text-white hover:bg-red-800 rounded-xl px-7 py-6 text-xs sm:text-sm active:scale-95 transition-transform">
+              <Link href="/contact" className="flex items-center gap-2">
+                <GraduationCap className="h-4 w-4" />
+                <span>{packages.cta}</span>
               </Link>
             </Button>
           </div>
         </section>
 
+        {/* FAQ */}
         <section>
-          <h2 className="section-title fade-up">{t.faq}</h2>
-          <div className="mt-4 space-y-3">
-            {faqs.map((item, i) => (
-              <details key={item.q} className="fade-up rounded-xl border bg-white p-4" style={{ animationDelay: `${i * 70}ms` }}>
-                <summary className="cursor-pointer font-semibold">{item.q}</summary>
-                <p className="mt-2 text-sm leading-relaxed text-zinc-600">{item.a}</p>
+          <motion.h2
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="section-title"
+          >
+            {t.faq}
+          </motion.h2>
+          <div className="mt-6 space-y-3">
+            {faqs.map((item) => (
+              <details key={item.q} className="rounded-xl border border-stone-200 bg-white p-4 shadow-2xs group">
+                <summary className="cursor-pointer font-bold text-slate-900 text-xs sm:text-sm group-hover:text-[#b91c1c] transition-colors">{item.q}</summary>
+                <p className="mt-2 text-xs sm:text-sm leading-relaxed text-slate-600">{item.a}</p>
               </details>
             ))}
           </div>
         </section>
 
-        <section className="fade-up rounded-3xl border border-stone-200 bg-white p-8 sm:p-10 text-center shadow-xs">
+        {/* Final CTA */}
+        <motion.section
+          initial={{ opacity: 0, scale: 0.98, y: 16 }}
+          whileInView={{ opacity: 1, scale: 1, y: 0 }}
+          viewport={{ once: true, margin: "-40px" }}
+          transition={{ duration: 0.4 }}
+          className="rounded-3xl border border-stone-200 bg-white p-8 sm:p-10 text-center shadow-xs"
+        >
           <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">{t.finalTitle}</h2>
-          <div className="mt-5">
-            <Link href="/contact" className="inline-block rounded-xl bg-[#15803d] hover:bg-emerald-700 px-6 py-3 font-semibold text-white shadow-xs transition">
-              {t.consult}
+          <div className="mt-6">
+            <Link
+              href="/contact"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#15803d] hover:bg-emerald-700 px-6 py-3.5 font-semibold text-white shadow-xs active:scale-95 transition-all text-sm"
+            >
+              <span>{t.consult}</span>
+              <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
-        </section>
+        </motion.section>
       </div>
     </main>
   );

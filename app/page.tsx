@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { motion } from "motion/react";
 import {
   ArrowRight,
   BriefcaseBusiness,
@@ -17,11 +18,46 @@ import {
   Award,
   Globe2,
   BookCheck,
+  Sparkles,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
 import { siteConfig } from "@/lib/site";
+
+// Motion Variants for High-Performance GPU Staggering
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.05,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.45,
+      ease: [0.16, 1, 0.3, 1] as const,
+    },
+  },
+};
+
+const cardHoverVariants = {
+  rest: { y: 0, scale: 1 },
+  hover: {
+    y: -5,
+    scale: 1.008,
+    transition: { duration: 0.2, ease: "easeOut" },
+  },
+};
 
 export default function HomePage() {
   const { language } = useLanguage();
@@ -37,6 +73,13 @@ export default function HomePage() {
         c2: "Japanese Language Course",
         waBtn: "Talk on WhatsApp",
         hotlineLabel: "Hotline:",
+        portalCardKicker: "Dhaka Central Gateway",
+        portalCardTitle: "Study, Work & Japanese Language",
+        portalCardSub: "Official KNLTC Japan Admissions & Career Liaison",
+        portalTag1: "1,200+ Visas",
+        portalTag2: "98% Pass Rate",
+        portalTag3: "LMS Digital",
+        portalLmsBtn: "Enter Student LMS Classroom",
         pathKicker: "Pathways to Japan",
         pathHeading: "Three Core Pathways to Your Journey in Japan",
         pathSub: "Select the ideal program based on your academic background and professional aspirations.",
@@ -122,181 +165,248 @@ export default function HomePage() {
         ],
         opportunities: [
           {
-            title: "SSW Caregiver (介護)",
-            role: "Specified Skilled Worker in Elderly Healthcare",
-            salary: "180,000 – 220,000 Yen / Month",
-            eligibility: "JLPT N4 / JFT-Basic + Caregiver Skill Test",
+            title: "SSW Caregiving (Kaigo)",
+            role: "Specified Skilled Worker (Nursing Care / Caregiver)",
+            salary: "¥180,000 – ¥240,000 / month",
+            eligibility: "JLPT N4 / JFT-Basic + Nursing Skill Evaluation Test",
             href: "/work-in-japan",
           },
           {
-            title: "SSW Agriculture (農業)",
-            role: "Crop & Livestock Agricultural Specialist",
-            salary: "150,000 – 200,000 Yen / Month",
+            title: "SSW Agriculture (Nogyo)",
+            role: "Crop & Livestock Farming Specialist",
+            salary: "¥160,000 – ¥210,000 / month",
             eligibility: "JLPT N4 / JFT-Basic + Agriculture Skill Test",
             href: "/work-in-japan",
           },
           {
-            title: "Student Visa (留学)",
-            role: "Language Academy & University Admission",
-            salary: "Legal 28 hrs/week part-time work permitted",
-            eligibility: "HSC / Diploma / Degree + Basic Japanese (N5)",
+            title: "Study in Japan (Language & University)",
+            role: "Top-Tier Japanese Language Schools & Universities",
+            salary: "Part-time work permitted up to 28 hrs/week",
+            eligibility: "HSC / Diploma / Bachelor + Min. 150 hrs Japanese (N5)",
             href: "/study-in-japan",
           },
           {
-            title: "TITP Technical Intern (技能実習)",
-            role: "Construction & Manufacturing Training",
-            salary: "160,000 – 190,000 Yen + Subsidized Housing",
-            eligibility: "Basic Japanese + Physical Fitness",
+            title: "TITP Technical Intern Training",
+            role: "Construction, Manufacturing & Logistics",
+            salary: "¥160,000 – ¥190,000 / month + Subsidized Housing",
+            eligibility: "Basic Japanese proficiency + Good physical fitness",
             href: "/work-in-japan",
           },
         ],
         processSteps: [
-          { num: "01", title: "Free Profile Assessment", desc: "Evaluating your eligibility for study or employment." },
-          { num: "02", title: "Japanese Language Training", desc: "Intensive classroom and digital LMS preparation." },
-          { num: "03", title: "COE Application Filing", desc: "Filing Certificate of Eligibility dossiers with Japan Immigration." },
-          { num: "04", title: "Visa Interview & Stamping", desc: "Mock interview coaching and embassy visa stamping." },
-          { num: "05", title: "Fly to Japan & Settle In", desc: "Pre-departure briefing and safe arrival in Japan." },
+          {
+            num: "01",
+            title: "Profile Assessment",
+            desc: "Comprehensive evaluation of your education, career goals, and eligibility for study or work in Japan.",
+          },
+          {
+            num: "02",
+            title: "Language & Skill Mastery",
+            desc: "Daily intensive classes in Dhaka and 24/7 digital LMS access for JLPT/NAT or SSW Prometric prep.",
+          },
+          {
+            num: "03",
+            title: "COE & Sponsor Documentation",
+            desc: "Rigorous sponsor auditing and flawless Certificate of Eligibility (COE) submission to Japan Immigration.",
+          },
+          {
+            num: "04",
+            title: "Embassy Interview & Visa",
+            desc: "High-intensity mock interview training ensuring confidence before the Embassy of Japan.",
+          },
+          {
+            num: "05",
+            title: "Pre-Departure & Arrival Support",
+            desc: "Flight ticketing, airport reception in Japan, residence card registration, and part-time job guidance.",
+          },
         ],
         trustStats: [
-          { num: "1,200+", label: "Visa Success Track Record", sub: "Students & workers departed to Japan", icon: Award },
-          { num: "98%", label: "JLPT / NAT Pass Rate", sub: "Through our weekly structured mock exams", icon: BookCheck },
-          { num: "12+", label: "Years Japan Experience", sub: "Dhaka campus & Japan partner network", icon: Globe2 },
-          { num: "100%", label: "Transparent Processing", sub: "With zero hidden or unexpected fees", icon: ShieldCheck },
+          {
+            num: "1,200+",
+            label: "Japan Visas Secured",
+            sub: "Student and SSW visas issued successfully",
+            icon: Award,
+          },
+          {
+            num: "98%",
+            label: "JLPT / NAT Pass Rate",
+            sub: "First-attempt success with certified teachers",
+            icon: BookCheck,
+          },
+          {
+            num: "12+ Yrs",
+            label: "Expertise in Japan Consultancy",
+            sub: "Dedicated team in Dhaka and partners across Japan",
+            icon: Globe2,
+          },
+          {
+            num: "100%",
+            label: "Transparent Process",
+            sub: "No hidden fees, ethical and legal procedures",
+            icon: ShieldCheck,
+          },
         ],
       },
       bn: {
         kicker: "KNLTC • জাপান এডুকেশন অ্যান্ড ক্যারিয়ার কনসালটেন্সি",
-        headline: "জাপানে উচ্চশিক্ষা, ক্যারিয়ার ও ভিসা প্রসেসিংয়ের বিশ্বস্ত গেটওয়ে",
+        headline: "জাপানে উচ্চশিক্ষা, ক্যারিয়ার ও স্থায়ী ভিসার বিশ্বস্ত প্রবেশদ্বার",
         subtitle:
-          "স্টুডেন্ট ভিসা, SSW জব ভিসা, TITP টেকনিক্যাল ট্রেইনিং, জাপানি ভাষা শিক্ষা (N5–N1), স্কিল ট্রেনিং, নিখুঁত ডকুমেন্টেশন ও এম্বাসি ইন্টারভিউ প্রস্তুতি—এক ছাদের নিচে KNLTC ঢাকা।",
+          "স্টুডেন্ট ভিসা, SSW জব ভিসা, TITP টেকনিক্যাল ইন্টার্নশিপ, জাপানি ভাষা শিক্ষা (N5–N1), প্র্যাকটিক্যাল স্কিল ও জাপান এম্বাসি ইন্টারভিউ প্রস্তুতি—সবকিছু KNLTC ঢাকা সেন্টারে এক ছাদের নিচে।",
         c1: "ফ্রি কাউন্সেলিং বুক করুন",
         c2: "জাপানি ভাষা কোর্স",
-        waBtn: "হোয়াটসঅ্যাপে সরাসরি কথা বলুন",
+        waBtn: "হোয়াটসঅ্যাপে পরামর্শ",
         hotlineLabel: "হটলাইন:",
-        pathKicker: "জাপান পাথওয়ে",
-        pathHeading: "আপনার জাপান গমনের মূল ৩টি পাথওয়ে",
-        pathSub: "আপনার শিক্ষাগত যোগ্যতা ও ক্যারিয়ারের লক্ষ্য অনুযায়ী সঠিক প্রোগ্রাম নির্বাচন করুন।",
-        supportKicker: "KNLTC সমন্বিত সেবা",
-        supportTitle: "জাপান গমনের সম্পূর্ণ প্রস্তুতি — এক ছাদের নিচে",
+        portalCardKicker: "ঢাকা সেন্ট্রাল গেটওয়ে",
+        portalCardTitle: "উচ্চশিক্ষা, ক্যারিয়ার ও জাপানি ভাষা",
+        portalCardSub: "KNLTC অফিশিয়াল জাপান এডমিশন ও ভিসা উইং",
+        portalTag1: "১,২০০+ ভিসা",
+        portalTag2: "৯৮% পাসের হার",
+        portalTag3: "ডিজিটাল LMS",
+        portalLmsBtn: "LMS ক্লাসরুমে প্রবেশ করুন",
+        pathKicker: "জাপান যাত্রার পথসমূহ",
+        pathHeading: "জাপান গমনের তিনটি মূল পাথওয়ে",
+        pathSub: "আপনার শিক্ষাগত যোগ্যতা ও ক্যারিয়ারের লক্ষ্যের সাথে মানানসই সেরা প্রোগ্রামটি বেছে নিন।",
+        supportKicker: "KNLTC ওয়ান-স্টপ সমাধান",
+        supportTitle: "জাপান যাত্রার যাবতীয় প্রস্তুতি — এক ছাদের নিচে",
         supportSub:
-          "ভাষা শিক্ষা থেকে শুরু করে ফাইল ওপেনিং, ইন্টারভিউ, স্পনসর ভেরিফিকেশন ও জাপানে পৌঁছানোর পরও নিবিড় সহায়তা।",
-        oppKicker: "চলমান নিয়োগ ও ভিসা সুযোগ",
-        oppTitle: "বর্তমানে চলমান ভিসা ও ক্যারিয়ারের সুযোগসমূহ",
-        oppSub: "জাপান সরকারের অনুমোদিত বিভিন্ন ক্যাটাগরিতে নিয়মিত আবেদন চলছে।",
-        processKicker: "সুনির্দিষ্ট রোডম্যাপ",
-        processTitle: "জাপান যাত্রার সুনির্দিষ্ট ধাপসমূহ",
-        processSub: "স্বচ্ছ ও নিয়মতান্ত্রিক প্রক্রিয়ায় শুরু থেকে শেষ পর্যন্ত প্রতিটি ধাপে শতভাগ দিকনির্দেশনা।",
-        trustKicker: "বিশ্বাস ও অর্জন",
-        trustTitle: "বিশ্বাসের সাথে আপনার জাপান যাত্রা",
-        finalKicker: "আজই আপনার আবেদন শুরু করুন",
-        finalTitle: "আপনার জাপান যাত্রা শুরু করতে প্রস্তুত?",
-        finalSub: "আমাদের অভিজ্ঞ কাউন্সেলরদের সাথে কথা বলে জেনে নিন আপনার প্রোফাইল অনুযায়ী সেরা প্রোগ্রাম কোনটি।",
+          "ভাষা শিক্ষা থেকে শুরু করে COE ফাইল তৈরি, স্পন্সর অডিট ও জাপানে পৌঁছানোর পর সকল সহযোগিতা।",
+        oppKicker: "চলমান ইনটেক ও চাকরির বিজ্ঞপ্তি",
+        oppTitle: "বর্তমান ভিসা ও ক্যারিয়ারের সুযোগসমূহ",
+        oppSub: "জাপান সরকার অনুমোদিত স্টুডেন্ট ও প্রফেশনাল জব সেক্টরের চলমান সার্কুলার।",
+        processKicker: "পরিকল্পিত রোডম্যাপ",
+        processTitle: "জাপান যাত্রার সহজ ও স্পষ্ট ধাপসমূহ",
+        processSub: "প্রতিটি ধাপে স্বচ্ছ, নির্ভরযোগ্য এবং অভিজ্ঞ কনসালট্যান্টদের প্রত্যক্ষ গাইডলাইন।",
+        trustKicker: "আমাদের নির্ভরতা ও সুনাম",
+        trustTitle: "প্রমাণিত সফলতার সাথে শুরু হোক আপনার যাত্রা",
+        finalKicker: "আজই আবেদন শুরু করুন",
+        finalTitle: "জাপান যাত্রার স্বপ্ন পূরণে প্রস্তুত?",
+        finalSub: "আপনার প্রোফাইল মূল্যায়ন এবং সঠিক দিকনির্দেশনার জন্য আমাদের সিনিয়র কাউন্সেলিং টিমের সাথে কথা বলুন।",
         applyBtn: "আবেদন করুন",
-        salaryLabel: "মাসিক বেতন / আয়",
+        salaryLabel: "সম্ভাব্য বেতন / আয়",
         eligibilityLabel: "যোগ্যতা",
         stepLabel: "ধাপ",
-        badgeOpen: "ভর্তি/আবেদন চলছে",
-        viewDetails: "বিস্তারিত জানুন",
-        verifiedStep: "ভেরিফাইড ধাপ",
+        badgeOpen: "আবেদন চলছে",
+        viewDetails: "বিস্তারিত দেখুন",
+        verifiedStep: "যাচাইকৃত ধাপ",
         pathways: [
           {
             icon: GraduationCap,
-            title: "জাপানে পড়াশোনা (Student Visa)",
-            desc: "ভাষা স্কুল, আন্ডারগ্র্যাজুয়েট ও মাস্টার্স ডিগ্রি। COE ফাইল প্রসেসিং, স্কলারশিপ ও ভিসা গাইডেন্স।",
+            title: "জাপানে পড়াশোনা (স্টুডেন্ট ভিসা)",
+            desc: "জাপানিজ ল্যাঙ্গুয়েজ স্কুল, ব্যাচেলর ও মাস্টার্স ডিগ্রি প্রোগ্রাম। নিখুঁত COE আবেদন ও স্কলারশিপ মেন্টরিং।",
             cta: "স্টুডেন্ট ভিসা সম্পর্কে জানুন",
             href: "/study-in-japan",
             highlight: "উচ্চশিক্ষা ও পার্ট-টাইম কাজ",
           },
           {
             icon: BriefcaseBusiness,
-            title: "জাপানে কাজ (SSW & TITP)",
-            desc: "কেয়ারগিভার, এগ্রিকালচার ও ফুড সার্ভিস খাতে আকর্ষণীয় বেতন ও অফিসিয়াল চুক্তিতে চাকরি।",
+            title: "জাপানে চাকরি (SSW ও TITP)",
+            desc: "কেয়ারগিভার, এগ্রিকালচার ও ফুড সার্ভিস ক্যাটাগরিতে স্পেসিফাইড স্কিলড ওয়ার্কার ভিসায় আকর্ষণীয় বেতনে চাকরি।",
             cta: "জব ভিসা সম্পর্কে জানুন",
             href: "/work-in-japan",
-            highlight: "মাসিক আকর্ষণীয় বেতন",
+            highlight: "আকর্ষণীয় মাসিক বেতন",
           },
           {
             icon: Languages,
             title: "জাপানি ভাষা কোর্স (N5–N1)",
-            desc: "JLPT, NAT-TEST ও JFT প্রস্তুতি। ডিজিটাল LMS এক্সেস এবং ১৫,০০০ টাকার ৩টি ফ্রি বোনাস কোর্স।",
-            cta: "কোর্স বিস্তারিত ও ভর্তি",
+            desc: "JLPT, NAT-TEST ও JFT পরীক্ষার ১০০% নিশ্চয়তা। ডিজিটাল LMS ক্লাসরুম এবং ৩টি ফ্রি বোনাস ইন্টারভিউ কোর্স।",
+            cta: "কোর্স দেখুন ও ভর্তি হন",
             href: "/japanese-language",
-            highlight: "৩টি বোনাস কোর্স ফ্রি",
+            highlight: "৩টি ফ্রি বোনাস কোর্স",
           },
         ],
         supportPillars: [
           {
             icon: Languages,
-            title: "ল্যাঙ্গুয়েজ প্রোগ্রাম",
-            desc: "অভিজ্ঞ বাংলাদেশি ও নেটিভ সেনসিদের তত্ত্বাবধানে N5 থেকে N1 এবং স্পোকেন জাপানিজ।",
+            title: "পূর্ণাঙ্গ ভাষা প্রশিক্ষণ",
+            desc: "N5 থেকে N1 লেভেল পর্যন্ত সার্টিফাইড ও নেটিভ স্পিকারদের সমন্বয়ে নিবিড় ক্লাসরুম প্রশিক্ষণ।",
           },
           {
             icon: Wrench,
-            title: "স্কিল ট্রেইনিং সাপোর্ট",
-            desc: "SSW কেয়ারগিভার, এগ্রিকালচার ও ফুড সার্ভিস টেস্টের অফিসিয়াল টেকনিক্যাল ড্রিলস।",
+            title: "SSW স্কিল টেস্ট প্রস্তুতি",
+            desc: "কেয়ারগিভার, এগ্রিকালচার ও ফুড সার্ভিস খাতের প্রোমেট্রিক স্কিল টেস্টের স্পেশাল প্রস্তুতি।",
           },
           {
             icon: FileCheck2,
-            title: "নিখুঁত ডকুমেন্টেশন",
-            desc: "ব্যাংক স্পনসরশিপ, ট্যাক্স অডিট, COE ফাইল সাবমিশন ও এম্বাসি পেপারস রিভিউ।",
+            title: "নির্ভুল ডকুমেন্টেশন ও COE",
+            desc: "ব্যাংক স্পন্সর অডিট, ট্যাক্স ক্লিয়ারেন্স ও জাপানি ইমিগ্রেশনে নিখুঁত COE ফাইল প্রসেসিং।",
           },
           {
             icon: Users,
-            title: "এম্বাসি ইন্টারভিউ কোচিং",
-            desc: "ভিসা অফিসারের মুখোমুখি হওয়ার সঠিক ম্যানার, জাপানি রিজিউমি ও লাইভ মক ইন্টারভিউ।",
+            title: "এম্বাসি ইন্টারভিউ ট্রেনিং",
+            desc: "লাইভ ক্যামেরা মক ইন্টারভিউ, আবেদনকারীর স্টাডি প্ল্যান অডিট ও ভিসা অফিসারের আদবকায়দা প্রশিক্ষণ।",
           },
           {
             icon: Handshake,
-            title: "স্কুল ও জব ম্যাচিং",
-            desc: "জাপানের শীর্ষস্থানীয় ভাষা স্কুল ও স্বীকৃত রিক্রুটিং অর্গানাইজেশনের সাথে সরাসরি সংযোগ।",
+            title: "স্কুল ও নিয়োগকারী ম্যাচিং",
+            desc: "জাপানের প্রথম সারির ভাষা একাডেমি ও রেজিস্টার্ড সরকারি-বেসরকারি প্রতিষ্ঠানের সাথে সরাসরি সংযোগ।",
           },
           {
             icon: Globe2,
-            title: "আফটার-অ্যারাইভাল সাপোর্ট",
-            desc: "জাপানে পৌঁছানোর পর এয়ারপোর্ট পিকআপ, পার্ট-টাইম জব গাইডেন্স ও ব্যাংক অ্যাকাউন্ট খোলা।",
+            title: "জাপানে পৌঁছে সার্বিক সহায়তা",
+            desc: "এয়ারপোর্ট পিকআপ, সিটি কর্পোরেশন রেসিডেন্স কার্ড রেজিস্ট্রেশন, ব্যাংক অ্যাকাউন্ট ও পার্ট-টাইম কাজ পেতে সাহায্য।",
           },
         ],
         opportunities: [
           {
-            title: "SSW Caregiver (介護)",
-            role: "স্পেশিফাইড স্কিল্ড র্কেয়ারগিভার",
-            salary: "১৮০,০০০ – ২২০,০০০ ইয়েন (প্রায় ১.৫ – ১.৮ লাখ টাকা)",
+            title: "SSW কেয়ারগিভিং (নার্সিং কেয়ার)",
+            role: "স্পেসিফাইড স্কিলড ওয়ার্কার (কেয়ারগিভার)",
+            salary: "১,৮০,০০০ – ২,৪০,০০০ ইয়েন / মাস",
             eligibility: "JLPT N4 / JFT-Basic + কেয়ারগিভার স্কিল টেস্ট",
             href: "/work-in-japan",
           },
           {
-            title: "SSW Agriculture (農業)",
-            role: "কৃষি ও ফসল ব্যবস্থাপনা কর্মী",
-            salary: "১৫০,০০০ – ২০০,০০০ ইয়েন (প্রায় ১.৩ – ১.৬ লাখ টাকা)",
-            eligibility: "JLPT N4 / JFT-Basic + এগ্রিকালচার টেস্ট",
+            title: "SSW এগ্রিকালচার (কৃষি খাত)",
+            role: "কৃষি ও পশুপালন ফার্মিং স্পেশালিস্ট",
+            salary: "১,৬০,০০০ – ২,১০,০০০ ইয়েন / মাস",
+            eligibility: "JLPT N4 / JFT-Basic + এগ্রিকালচার স্কিল টেস্ট",
             href: "/work-in-japan",
           },
           {
-            title: "Student Visa (留学)",
-            role: "ভাষা স্কুল ও বিশ্ববিদ্যালয় ভর্তি",
-            salary: "সপ্তাহে ২৮ ঘণ্টা পার্ট-টাইম বৈধ কাজের সুযোগ",
-            eligibility: "HSC / ডিপ্লোমা / অনার্স + বেসিক জাপানিজ (N5)",
+            title: "জাপান স্টুডেন্ট ভিসা (ভাষা স্কুল ও বিশ্ববিদ্যালয়)",
+            role: "শীর্ষস্থানীয় ল্যাঙ্গুয়েজ স্কুল ও ডিগ্রি প্রোগ্রাম",
+            salary: "সপ্তাহে ২৮ ঘণ্টা বৈধ পার্ট-টাইম কাজের অনুমতি",
+            eligibility: "HSC / ডিপ্লোমা / ডিগ্রি + নূন্যতম ১৫০ ঘণ্টার ভাষা শিক্ষা (N5)",
             href: "/study-in-japan",
           },
           {
-            title: "TITP Technical Intern (技能実習)",
-            role: "কনস্ট্রাকশন ও ম্যানুফ্যাকচারিং",
-            salary: "১৬০,০০০ – ১৯০,০০০ ইয়েন + আবাসন সুবিধা",
-            eligibility: "বেসিক জাপানিজ + শারীরিক সুস্থতা",
+            title: "TITP টেকনিক্যাল ইন্টার্নশিপ",
+            role: "কনস্ট্রাকশন, ম্যানুফ্যাকচারিং ও প্যাকেজিং",
+            salary: "১,৬০,০০০ – ১,৯০,০০০ ইয়েন + সাশ্রয়ী আবাসন",
+            eligibility: "বেসিক জাপানি ভাষা + সুস্বাস্থ্যের অধিকারী",
             href: "/work-in-japan",
           },
         ],
         processSteps: [
-          { num: "০১", title: "ফ্রি প্রোফাইল এসেসমেন্ট", desc: "আপনার শিক্ষাগত ব্যাকগ্রাউন্ড অনুযায়ী সেরা পাথওয়ে নির্বাচন।" },
-          { num: "০২", title: "জাপানি ভাষা শিক্ষা (N5/N4)", desc: "KNLTC একাডেমিতে নিবিড় ক্লাসরুম ও ডিজিটাল LMS প্রস্তুতি।" },
-          { num: "০৩", title: "ডকুমেন্টেশন ও COE ফাইলিং", desc: "জাপান ইমিগ্রেশনে সঠিক কাগজপত্র ও স্পনসরশিপ সাবমিশন।" },
-          { num: "০৪", title: "এম্বাসি ইন্টারভিউ ও ভিসা প্রাপ্তি", desc: "মক ইন্টারভিউ প্রস্তুতি সম্পন্ন করে সফলভাবে ভিসা সংগ্রহ।" },
-          { num: "০৫", title: "জাপান যাত্রা ও ক্যারিয়ার শুরু", desc: "প্রি-ডিপার্চার ব্রিফিং এবং জাপানে নিরাপদ অবতরণ।" },
+          {
+            num: "০১",
+            title: "প্রোফাইল মূল্যায়ন ও পরামর্শ",
+            desc: "আপনার শিক্ষাগত পটভূমি ও আগ্রহ যাচাই করে জাপান যাওয়ার সঠিক পথ নির্ধারণ।",
+          },
+          {
+            num: "০২",
+            title: "জাপানি ভাষা ও স্কিল অর্জন",
+            desc: "ঢাকায় নিয়মিত ক্লাস এবং ২৪/৭ ডিজিটাল LMS ক্লাসরুমে পরীক্ষার সর্বোচ্চ প্রস্তুতি।",
+          },
+          {
+            num: "০৩",
+            title: "COE ফাইল ও স্পন্সর প্রসেসিং",
+            desc: "জাপান ইমিগ্রেশনের নিয়ম মেনে নির্ভুল ফাইল তৈরি ও স্পন্সর সংক্রান্ত অডিট সম্পন্ন।",
+          },
+          {
+            num: "০৪",
+            title: "এম্বাসি ইন্টারভিউ ও ভিসা প্রাপ্তি",
+            desc: "ক্যামেরা মক ইন্টারভিউয়ের মাধ্যমে আত্মবিশ্বাস তৈরি ও জাপানি এম্বাসি থেকে ভিসা সংগ্রহ।",
+          },
+          {
+            num: "০৫",
+            title: "জাপানে যাত্রা ও শুভ সূচনা",
+            desc: "বিমানের টিকিট বুকিং, প্রাক-যাত্রা ওরিয়েন্টেশন এবং জাপানে পৌঁছে প্রাথমিক সেটেলমেন্ট।",
+          },
         ],
         trustStats: [
-          { num: "১,২০০+", label: "ভিসা সাকসেস রেকর্ড", sub: "স্টুডেন্ট ও কর্মী জাপান পৌঁছেছেন", icon: Award },
-          { num: "৯৮%", label: "JLPT/NAT পাস রেট", sub: "আমাদের নিয়মিত নিবিড় পরীক্ষার মাধ্যমে", icon: BookCheck },
-          { num: "১২+", label: "বছরের জাপান অভিজ্ঞতা", sub: "ঢাকায় নিজস্ব অফিস ও জাপানে নেটওয়ার্ক", icon: Globe2 },
+          { num: "১,২০০+", label: "সফল ভিসা অর্জন", sub: "জাপানে অধ্যয়ন ও কর্মসংস্থানরত শিক্ষার্থী", icon: Award },
+          { num: "৯৮%", label: "JLPT / NAT পাস রেট", sub: "দক্ষ শিক্ষক ও মক টেস্টের মাধ্যমে সাফল্য", icon: BookCheck },
+          { num: "১২+ বছর", label: "বিশ্বস্ত অভিজ্ঞতার রেকর্ড", sub: "ঢাকা প্রধান অফিস ও জাপানে নিজস্ব নেটওয়ার্ক", icon: Globe2 },
           { num: "১০০%", label: "স্বচ্ছ ডকুমেন্টেশন", sub: "কোনো গোপন বা অপ্রত্যাশিত চার্জ ছাড়া", icon: ShieldCheck },
         ],
       },
@@ -309,6 +419,13 @@ export default function HomePage() {
         c2: "日本語コースを見る",
         waBtn: "WhatsAppで相談する",
         hotlineLabel: "窓口電話:",
+        portalCardKicker: "ダッカ中央ゲートウェイ",
+        portalCardTitle: "日本留学・就労・日本語アカデミー",
+        portalCardSub: "公式KNLTC日本渡航総合支援センター",
+        portalTag1: "1,200名ビザ取得",
+        portalTag2: "98%合格率",
+        portalTag3: "公式LMS完備",
+        portalLmsBtn: "公式受講生LMSにログイン",
         pathKicker: "日本進路プログラム",
         pathHeading: "日本渡航への3大基本進路",
         pathSub: "学歴・職歴や将来の目標に合わせた最適な進路プランをご案内します。",
@@ -441,79 +558,182 @@ export default function HomePage() {
   );
 
   return (
-    <div className="bg-white">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-[#fcfaf7] border-b border-stone-200 py-16 sm:py-20 md:py-24">
-        <div className="container-narrow">
-          <div className="max-w-3xl">
-            <p className="text-xs font-bold uppercase tracking-widest text-[#b91c1c] mb-3">
-              {t.kicker}
-            </p>
+    <div className="bg-white overflow-hidden">
+      {/* Hero Section with Interactive Staggered Entrance */}
+      <section className="relative overflow-hidden bg-[#fcfaf7] border-b border-stone-200 py-14 sm:py-20 lg:py-24">
+        {/* Subtle decorative background blur orbs */}
+        <div className="absolute -top-24 -left-24 h-96 w-96 rounded-full bg-red-100/40 blur-3xl pointer-events-none -z-0" />
+        <div className="absolute top-1/2 -right-24 h-96 w-96 rounded-full bg-emerald-100/30 blur-3xl pointer-events-none -z-0" />
 
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 leading-[1.22] sm:text-4xl md:text-5xl lg:text-[3.15rem]">
-              {t.headline}
-            </h1>
+        <div className="container-narrow relative z-10">
+          <div className="grid gap-12 lg:grid-cols-12 lg:items-center">
+            {/* Left Hero Column */}
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="lg:col-span-7"
+            >
+              <motion.div variants={itemVariants} className="inline-flex items-center gap-2 mb-3">
+                <span className="h-2 w-2 rounded-full bg-[#b91c1c] animate-pulse" />
+                <p className="text-xs font-bold uppercase tracking-widest text-[#b91c1c]">
+                  {t.kicker}
+                </p>
+              </motion.div>
 
-            <p className="mt-5 text-base sm:text-lg text-slate-700 leading-relaxed font-normal">
-              {t.subtitle}
-            </p>
-
-            {/* Main Action Group */}
-            <div className="mt-8 flex flex-col sm:flex-row gap-3.5">
-              <Button
-                asChild
-                size="lg"
-                className="bg-[#15803d] hover:bg-emerald-800 text-white font-semibold text-sm sm:text-base py-6 px-7 rounded-xl shadow-xs transition"
+              <motion.h1
+                variants={itemVariants}
+                className="text-3xl font-extrabold tracking-tight text-slate-900 leading-[1.2] sm:text-4xl md:text-5xl lg:text-[3.1rem]"
               >
-                <Link href="/contact" className="flex items-center gap-2">
-                  <span>{t.c1}</span>
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
+                {t.headline}
+              </motion.h1>
 
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="border-stone-300 hover:bg-white text-slate-900 font-semibold text-sm sm:text-base py-6 px-6 rounded-xl transition"
+              <motion.p
+                variants={itemVariants}
+                className="mt-5 text-base sm:text-lg text-slate-700 leading-relaxed font-normal"
               >
-                <Link href="/japanese-language" className="flex items-center gap-2">
-                  <Languages className="h-4 w-4 text-[#b91c1c]" />
-                  <span>{t.c2}</span>
-                </Link>
-              </Button>
-            </div>
+                {t.subtitle}
+              </motion.p>
 
-            {/* Quick Hotline Strip */}
-            <div className="mt-8 pt-6 border-t border-stone-200/80 flex flex-wrap items-center gap-5 text-xs sm:text-sm text-slate-600 font-medium">
-              <div className="flex items-center gap-2">
-                <PhoneCall className="h-4 w-4 text-[#b91c1c]" />
-                <span>
-                  {t.hotlineLabel}{" "}
-                  <a href={siteConfig.phoneHref} className="text-slate-900 font-bold hover:underline">
-                    {siteConfig.phoneDisplay}
+              {/* Main Action Group with Spring Hovers */}
+              <motion.div variants={itemVariants} className="mt-8 flex flex-col sm:flex-row gap-3.5">
+                <motion.div whileHover={{ y: -3, scale: 1.015 }} whileTap={{ scale: 0.97 }}>
+                  <Button
+                    asChild
+                    size="lg"
+                    className="w-full sm:w-auto bg-[#15803d] hover:bg-emerald-800 text-white font-semibold text-sm sm:text-base py-6 px-7 rounded-xl shadow-xs transition-colors"
+                  >
+                    <Link href="/contact" className="flex items-center justify-center gap-2">
+                      <span>{t.c1}</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </motion.div>
+
+                <motion.div whileHover={{ y: -3, scale: 1.015 }} whileTap={{ scale: 0.97 }}>
+                  <Button
+                    asChild
+                    size="lg"
+                    variant="outline"
+                    className="w-full sm:w-auto border-stone-300 hover:bg-white text-slate-900 font-semibold text-sm sm:text-base py-6 px-6 rounded-xl transition-colors"
+                  >
+                    <Link href="/japanese-language" className="flex items-center justify-center gap-2">
+                      <Languages className="h-4 w-4 text-[#b91c1c]" />
+                      <span>{t.c2}</span>
+                    </Link>
+                  </Button>
+                </motion.div>
+              </motion.div>
+
+              {/* Quick Hotline Strip */}
+              <motion.div
+                variants={itemVariants}
+                className="mt-8 pt-6 border-t border-stone-200/80 flex flex-wrap items-center gap-5 text-xs sm:text-sm text-slate-600 font-medium"
+              >
+                <div className="flex items-center gap-2">
+                  <PhoneCall className="h-4 w-4 text-[#b91c1c]" />
+                  <span>
+                    {t.hotlineLabel}{" "}
+                    <a href={siteConfig.phoneHref} className="text-slate-900 font-bold hover:underline">
+                      {siteConfig.phoneDisplay}
+                    </a>
+                  </span>
+                </div>
+                <span className="text-slate-300 hidden sm:inline">|</span>
+                <a
+                  href={siteConfig.whatsappHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-[#15803d] font-bold hover:underline transition-colors"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  <span>{t.waBtn}</span>
+                </a>
+              </motion.div>
+            </motion.div>
+
+            {/* Right Hero Column - Interactive Ambient Japan Gateway Card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.15, ease: [0.16, 1, 0.3, 1] as const }}
+              className="lg:col-span-5"
+            >
+              <div className="relative rounded-3xl border border-stone-200/90 bg-white p-7 sm:p-8 shadow-md">
+                {/* Floating Top Badge */}
+                <div className="flex items-center justify-between pb-4 border-b border-stone-100">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                      {t.portalCardKicker}
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-semibold text-[#b91c1c] bg-red-50 border border-red-200/70 px-2.5 py-0.5 rounded-md">
+                    ISO & Gov. Aligned
+                  </span>
+                </div>
+
+                <div className="mt-5">
+                  <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-snug">
+                    {t.portalCardTitle}
+                  </h3>
+                  <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                    {t.portalCardSub}
+                  </p>
+                </div>
+
+                {/* 3 Interactive Highlight Tags */}
+                <div className="mt-6 grid grid-cols-3 gap-2">
+                  <div className="rounded-xl border border-stone-200 bg-[#fcfaf7] p-2.5 text-center">
+                    <Award className="h-4 w-4 text-[#b91c1c] mx-auto mb-1" />
+                    <div className="text-xs font-bold text-slate-900">{t.portalTag1}</div>
+                  </div>
+                  <div className="rounded-xl border border-stone-200 bg-[#fcfaf7] p-2.5 text-center">
+                    <BookCheck className="h-4 w-4 text-[#15803d] mx-auto mb-1" />
+                    <div className="text-xs font-bold text-slate-900">{t.portalTag2}</div>
+                  </div>
+                  <div className="rounded-xl border border-stone-200 bg-[#fcfaf7] p-2.5 text-center">
+                    <GraduationCap className="h-4 w-4 text-slate-800 mx-auto mb-1" />
+                    <div className="text-xs font-bold text-slate-900">{t.portalTag3}</div>
+                  </div>
+                </div>
+
+                {/* Official LMS Entrance Card CTA */}
+                <div className="mt-6 pt-5 border-t border-stone-100">
+                  <a
+                    href="https://npw.bd/knltc"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex items-center justify-between rounded-xl bg-red-50/90 border border-red-200/90 p-3.5 text-xs font-bold text-[#b91c1c] hover:bg-red-100 transition-all active:scale-[0.98]"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100 text-[#b91c1c]">
+                        <GraduationCap className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <span className="block text-xs font-extrabold">{t.portalLmsBtn}</span>
+                        <span className="block text-[10px] text-red-600/80 font-mono">npw.bd/knltc</span>
+                      </div>
+                    </div>
+                    <ExternalLink className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                   </a>
-                </span>
+                </div>
               </div>
-              <span className="text-slate-300 hidden sm:inline">|</span>
-              <a
-                href={siteConfig.whatsappHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-[#15803d] font-bold hover:underline"
-              >
-                <MessageCircle className="h-4 w-4" />
-                <span>{t.waBtn}</span>
-              </a>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
 
-      {/* 3 Core Pathways */}
+      {/* 3 Core Pathways - Animated In-View */}
       <section className="py-16 md:py-20 border-b border-stone-200 bg-white">
         <div className="container-narrow">
-          <div className="max-w-2xl mb-12">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: 0.4 }}
+            className="max-w-2xl mb-12"
+          >
             <p className="text-xs font-bold uppercase tracking-widest text-[#b91c1c]">
               {t.pathKicker}
             </p>
@@ -523,19 +743,28 @@ export default function HomePage() {
             <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed">
               {t.pathSub}
             </p>
-          </div>
+          </motion.div>
 
-          <div className="grid gap-6 md:grid-cols-3">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-40px" }}
+            className="grid gap-6 md:grid-cols-3"
+          >
             {t.pathways.map((p, i) => {
               const Icon = p.icon;
               return (
-                <div
+                <motion.div
                   key={i}
-                  className="flex flex-col justify-between rounded-2xl border border-stone-200 bg-[#fcfaf7] p-7 transition hover:border-stone-300 hover:shadow-xs"
+                  variants={itemVariants}
+                  whileHover="hover"
+                  initial="rest"
+                  className="group flex flex-col justify-between rounded-2xl border border-stone-200 bg-[#fcfaf7] p-7 transition-colors hover:border-stone-300 hover:shadow-md"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-4">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white border border-stone-200 text-slate-900 shadow-2xs">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white border border-stone-200 text-slate-900 shadow-2xs group-hover:border-red-200 transition-colors">
                         <Icon className="h-5 w-5 text-[#b91c1c]" />
                       </div>
                       <span className="text-[11px] font-semibold text-[#15803d] bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
@@ -543,7 +772,7 @@ export default function HomePage() {
                       </span>
                     </div>
 
-                    <h3 className="text-lg font-bold text-slate-900 leading-snug">
+                    <h3 className="text-lg font-bold text-slate-900 leading-snug group-hover:text-[#b91c1c] transition-colors">
                       {p.title}
                     </h3>
                     <p className="mt-2.5 text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
@@ -554,23 +783,29 @@ export default function HomePage() {
                   <div className="mt-6 pt-5 border-t border-stone-200/80">
                     <Link
                       href={p.href}
-                      className="inline-flex items-center gap-1.5 text-xs font-bold text-[#b91c1c] hover:underline"
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-[#b91c1c] group-hover:underline"
                     >
                       <span>{p.cta}</span>
-                      <ArrowRight className="h-3.5 w-3.5" />
+                      <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
                     </Link>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* 6 Support Ecosystem Pillars */}
+      {/* 6 Support Ecosystem Pillars - Staggered entrance */}
       <section className="py-16 md:py-20 border-b border-stone-200 bg-[#fcfaf7]">
         <div className="container-narrow">
-          <div className="max-w-2xl mx-auto text-center mb-12">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: 0.4 }}
+            className="max-w-2xl mx-auto text-center mb-12"
+          >
             <p className="text-xs font-bold uppercase tracking-widest text-[#15803d]">
               {t.supportKicker}
             </p>
@@ -580,15 +815,23 @@ export default function HomePage() {
             <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed">
               {t.supportSub}
             </p>
-          </div>
+          </motion.div>
 
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-40px" }}
+            className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
+          >
             {t.supportPillars.map((s, idx) => {
               const SIcon = s.icon;
               return (
-                <div
+                <motion.div
                   key={idx}
-                  className="rounded-2xl border border-stone-200 bg-white p-6 shadow-2xs hover:border-stone-300 transition"
+                  variants={itemVariants}
+                  whileHover={{ y: -4, transition: { duration: 0.18 } }}
+                  className="rounded-2xl border border-stone-200 bg-white p-6 shadow-2xs hover:border-stone-300 hover:shadow-md transition-shadow"
                 >
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-100 text-slate-900 mb-4">
                     <SIcon className="h-5 w-5 text-[#15803d]" />
@@ -599,17 +842,23 @@ export default function HomePage() {
                   <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
                     {s.desc}
                   </p>
-                </div>
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* Ongoing Visa Opportunities */}
       <section className="py-16 md:py-20 border-b border-stone-200 bg-white">
         <div className="container-narrow">
-          <div className="max-w-2xl mb-12">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: 0.4 }}
+            className="max-w-2xl mb-12"
+          >
             <p className="text-xs font-bold uppercase tracking-widest text-[#b91c1c]">
               {t.oppKicker}
             </p>
@@ -619,19 +868,30 @@ export default function HomePage() {
             <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed">
               {t.oppSub}
             </p>
-          </div>
+          </motion.div>
 
-          <div className="grid gap-6 md:grid-cols-2">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-40px" }}
+            className="grid gap-6 md:grid-cols-2"
+          >
             {t.opportunities.map((opp, idx) => (
-              <div
+              <motion.div
                 key={idx}
-                className="rounded-2xl border border-stone-200 bg-[#fcfaf7] p-6 sm:p-7 flex flex-col justify-between shadow-2xs hover:border-stone-300 transition"
+                variants={itemVariants}
+                whileHover={{ y: -4, transition: { duration: 0.18 } }}
+                className="group rounded-2xl border border-stone-200 bg-[#fcfaf7] p-6 sm:p-7 flex flex-col justify-between shadow-2xs hover:border-stone-300 hover:shadow-md transition-shadow"
               >
                 <div>
                   <div className="flex items-center justify-between pb-3 border-b border-stone-200">
-                    <h3 className="text-lg font-bold text-slate-900">{opp.title}</h3>
-                    <span className="text-[11px] font-semibold text-[#15803d] bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200">
-                      {t.badgeOpen}
+                    <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#b91c1c] transition-colors">
+                      {opp.title}
+                    </h3>
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#15803d] bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>{t.badgeOpen}</span>
                     </span>
                   </div>
 
@@ -661,27 +921,33 @@ export default function HomePage() {
                     className="text-xs font-bold text-[#b91c1c] hover:underline flex items-center gap-1"
                   >
                     <span>{t.viewDetails}</span>
-                    <ArrowRight className="h-3.5 w-3.5" />
+                    <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
                   </Link>
 
                   <Button
                     asChild
                     size="sm"
-                    className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg px-3.5 h-8"
+                    className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg px-3.5 h-8 active:scale-95 transition-transform"
                   >
                     <Link href="/contact">{t.applyBtn}</Link>
                   </Button>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* 5-Step Process Roadmap */}
       <section className="py-16 md:py-20 border-b border-stone-200 bg-[#fcfaf7]">
         <div className="container-narrow">
-          <div className="max-w-2xl mx-auto text-center mb-12">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: 0.4 }}
+            className="max-w-2xl mx-auto text-center mb-12"
+          >
             <p className="text-xs font-bold uppercase tracking-widest text-[#b91c1c]">
               {t.processKicker}
             </p>
@@ -691,13 +957,21 @@ export default function HomePage() {
             <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed">
               {t.processSub}
             </p>
-          </div>
+          </motion.div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-40px" }}
+            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5"
+          >
             {t.processSteps.map((step, idx) => (
-              <div
+              <motion.div
                 key={idx}
-                className="rounded-2xl border border-stone-200 bg-white p-5 shadow-2xs hover:border-stone-300 transition flex flex-col justify-between"
+                variants={itemVariants}
+                whileHover={{ y: -4, transition: { duration: 0.18 } }}
+                className="rounded-2xl border border-stone-200 bg-white p-5 shadow-2xs hover:border-stone-300 hover:shadow-md transition-shadow flex flex-col justify-between"
               >
                 <div>
                   <span className="font-mono text-xs font-bold text-[#b91c1c] block mb-2">
@@ -714,33 +988,47 @@ export default function HomePage() {
                   <CheckCircle2 className="h-3.5 w-3.5" />
                   <span>{t.verifiedStep}</span>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* Trust & Track Record Metrics */}
+      {/* Trust & Track Record Metrics - Spring Scale Animation */}
       <section className="py-16 md:py-20 border-b border-stone-200 bg-white">
         <div className="container-narrow">
-          <div className="max-w-2xl mx-auto text-center mb-12">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: 0.4 }}
+            className="max-w-2xl mx-auto text-center mb-12"
+          >
             <p className="text-xs font-bold uppercase tracking-widest text-[#15803d]">
               {t.trustKicker}
             </p>
             <h2 className="mt-2 text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               {t.trustTitle}
             </h2>
-          </div>
+          </motion.div>
 
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-40px" }}
+            className="grid grid-cols-2 gap-4 lg:grid-cols-4"
+          >
             {t.trustStats.map((m, i) => {
               const MIcon = m.icon;
               return (
-                <div
+                <motion.div
                   key={i}
-                  className="rounded-2xl border border-stone-200 bg-[#fcfaf7] p-6 text-center shadow-2xs hover:border-stone-300 transition"
+                  variants={itemVariants}
+                  whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                  className="rounded-2xl border border-stone-200 bg-[#fcfaf7] p-6 text-center shadow-2xs hover:border-stone-300 hover:shadow-md transition-shadow"
                 >
-                  <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-white border border-stone-200 text-[#b91c1c] mb-3">
+                  <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-white border border-stone-200 text-[#b91c1c] mb-3 shadow-2xs">
                     <MIcon className="h-5 w-5" />
                   </div>
                   <div className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
@@ -748,57 +1036,72 @@ export default function HomePage() {
                   </div>
                   <div className="mt-1 text-sm font-bold text-slate-800">{m.label}</div>
                   <div className="mt-1 text-xs text-slate-500">{m.sub}</div>
-                </div>
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* Executive Final CTA Card */}
       <section className="py-16 md:py-20 bg-[#fcfaf7]">
         <div className="container-narrow">
-          <div className="rounded-3xl border border-stone-200 bg-white p-8 sm:p-12 text-center shadow-xs max-w-3xl mx-auto">
-            <p className="text-xs font-bold uppercase tracking-widest text-[#b91c1c] mb-2">
-              {t.finalKicker}
-            </p>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
-              {t.finalTitle}
-            </h2>
-            <p className="mt-3 text-xs sm:text-sm md:text-base text-slate-600 max-w-xl mx-auto leading-relaxed">
-              {t.finalSub}
-            </p>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98, y: 16 }}
+            whileInView={{ opacity: 1, scale: 1, y: 0 }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] as const }}
+            className="relative overflow-hidden rounded-3xl border border-stone-200 bg-white p-8 sm:p-12 text-center shadow-xs max-w-3xl mx-auto"
+          >
+            <div className="absolute top-0 right-0 -mr-16 -mt-16 h-40 w-40 rounded-full bg-red-100/40 blur-2xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 -ml-16 -mb-16 h-40 w-40 rounded-full bg-emerald-100/40 blur-2xl pointer-events-none" />
 
-            <div className="mt-8 flex flex-col sm:flex-row justify-center gap-3.5">
-              <Button
-                asChild
-                size="lg"
-                className="bg-[#15803d] hover:bg-emerald-700 text-white font-bold text-sm px-7 py-6 rounded-xl shadow-xs"
-              >
-                <Link href="/contact" className="flex items-center gap-2">
-                  <span>{t.c1}</span>
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
+            <div className="relative z-10">
+              <p className="text-xs font-bold uppercase tracking-widest text-[#b91c1c] mb-2">
+                {t.finalKicker}
+              </p>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
+                {t.finalTitle}
+              </h2>
+              <p className="mt-3 text-xs sm:text-sm md:text-base text-slate-600 max-w-xl mx-auto leading-relaxed">
+                {t.finalSub}
+              </p>
 
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="border-stone-300 hover:bg-stone-50 text-slate-800 font-semibold text-sm px-6 py-6 rounded-xl"
-              >
-                <a
-                  href={siteConfig.whatsappHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2"
-                >
-                  <MessageCircle className="h-4 w-4 text-[#15803d]" />
-                  <span>{t.waBtn}</span>
-                </a>
-              </Button>
+              <div className="mt-8 flex flex-col sm:flex-row justify-center gap-3.5">
+                <motion.div whileHover={{ y: -3, scale: 1.015 }} whileTap={{ scale: 0.97 }}>
+                  <Button
+                    asChild
+                    size="lg"
+                    className="w-full sm:w-auto bg-[#15803d] hover:bg-emerald-700 text-white font-bold text-sm px-7 py-6 rounded-xl shadow-xs transition-colors"
+                  >
+                    <Link href="/contact" className="flex items-center justify-center gap-2">
+                      <span>{t.c1}</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </motion.div>
+
+                <motion.div whileHover={{ y: -3, scale: 1.015 }} whileTap={{ scale: 0.97 }}>
+                  <Button
+                    asChild
+                    size="lg"
+                    variant="outline"
+                    className="w-full sm:w-auto border-stone-300 hover:bg-stone-50 text-slate-800 font-semibold text-sm px-6 py-6 rounded-xl transition-colors"
+                  >
+                    <a
+                      href={siteConfig.whatsappHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2"
+                    >
+                      <MessageCircle className="h-4 w-4 text-[#15803d]" />
+                      <span>{t.waBtn}</span>
+                    </a>
+                  </Button>
+                </motion.div>
+              </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
     </div>
