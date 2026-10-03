@@ -47,22 +47,22 @@ export default function StoreNavbar() {
         <div className="flex min-w-0 shrink-0 items-center gap-2 lg:gap-3">
           <BrandLogo compact className="max-w-[118px] sm:max-w-none" />
           <nav className="hidden items-center gap-0.5 lg:flex">
-            <Link href="/" className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm text-slate-700 transition hover:bg-white">
-              <Home className="h-4 w-4" />
+            <Link href="/" className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] font-medium text-slate-700 transition hover:bg-white hover:text-slate-900">
+              <Home className="h-3.5 w-3.5 text-slate-500" />
               {t.home}
             </Link>
             <Link
               href="/store"
-              className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-500/10 px-3 py-2 text-sm font-semibold text-emerald-700"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[12px] font-semibold text-emerald-800"
             >
-              <Store className="h-4 w-4" />
+              <Store className="h-3.5 w-3.5 text-emerald-700" />
               {t.store}
             </Link>
             <div className="group relative">
-              <button className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm text-slate-700 transition hover:bg-white" type="button">
-                <Grid3X3 className="h-4 w-4" />
+              <button className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] font-medium text-slate-700 transition hover:bg-white hover:text-slate-900" type="button">
+                <Grid3X3 className="h-3.5 w-3.5 text-slate-500" />
                 {t.categories}
-                <ChevronDown className="h-4 w-4" />
+                <ChevronDown className="h-3 w-3 text-slate-400" />
               </button>
               <div className="invisible absolute left-0 top-full mt-2 w-52 rounded-2xl border border-stone-200 bg-white p-2 opacity-0 shadow-xl shadow-stone-200/80 transition group-hover:visible group-hover:opacity-100">
                 {STORE_CATEGORIES.map((category) => (

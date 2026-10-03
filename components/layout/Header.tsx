@@ -17,6 +17,7 @@ import {
   Menu,
   MessageCircle,
   Phone,
+  PhoneCall,
   ShoppingBag,
   X,
 } from "lucide-react";
@@ -117,7 +118,7 @@ function MainHeader({ pathname }: { pathname: string }) {
     { label: t.nav[3], href: "/japanese-language", icon: Languages },
     { label: t.nav[4], href: "/store", icon: ShoppingBag },
     { label: t.nav[5], href: "/blog", icon: BookOpen },
-    { label: t.nav[6], href: "/contact", icon: Mail },
+    { label: t.nav[6], href: "/contact", icon: PhoneCall },
   ];
 
   const isActive = (href: string) =>
@@ -225,24 +226,30 @@ function MainHeader({ pathname }: { pathname: string }) {
           </div>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center justify-center gap-0.5 xl:gap-1.5 flex-1 px-2">
+          <nav className="hidden lg:flex items-center justify-center gap-1 xl:gap-2 flex-1 px-2">
             {navLinks.map((link) => {
               const active = isActive(link.href);
+              const Icon = link.icon;
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`relative px-2.5 xl:px-3 py-1.5 text-xs xl:text-[13.5px] font-semibold transition-all duration-200 rounded-lg ${
+                  className={`group relative inline-flex items-center gap-1.5 px-2 xl:px-2.5 py-1.5 text-[11px] xl:text-[12px] 2xl:text-[12.5px] font-medium tracking-tight transition-all duration-200 rounded-lg ${
                     active
-                      ? "text-[#b91c1c] font-bold"
-                      : "text-slate-700 hover:text-slate-950 hover:bg-stone-100/70"
+                      ? "text-[#b91c1c] font-semibold"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-stone-100/70"
                   }`}
                 >
-                  <span className="relative z-10">{link.label}</span>
+                  <Icon
+                    className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 group-hover:scale-105 ${
+                      active ? "text-[#b91c1c]" : "text-slate-400 group-hover:text-slate-700"
+                    }`}
+                  />
+                  <span className="relative z-10 whitespace-nowrap">{link.label}</span>
                   {active && (
                     <motion.span
                       layoutId="activeNavIndicator"
-                      className="absolute inset-0 rounded-lg bg-red-50/80 -z-0 border border-red-100/60"
+                      className="absolute inset-0 rounded-lg bg-red-50/90 -z-0 border border-red-200/60 shadow-2xs"
                       transition={{ type: "spring", stiffness: 380, damping: 30 }}
                     />
                   )}
@@ -252,16 +259,16 @@ function MainHeader({ pathname }: { pathname: string }) {
           </nav>
 
           {/* Right Action Cluster */}
-          <div className="hidden lg:flex shrink-0 items-center gap-2.5">
+          <div className="hidden lg:flex shrink-0 items-center gap-2">
             {/* High-Visibility Student LMS Login with Live Pulse */}
             <motion.a
               href="https://npw.bd/knltc"
               target="_blank"
               rel="noopener noreferrer"
-              whileHover={{ y: -2 }}
+              whileHover={{ y: -1 }}
               whileTap={{ scale: 0.97 }}
               transition={{ duration: 0.15 }}
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-red-300 bg-red-50/80 hover:bg-red-100 px-3.5 text-xs font-bold text-[#b91c1c] shadow-2xs transition-colors"
+              className="inline-flex h-8 xl:h-8.5 items-center gap-1.5 rounded-lg border border-red-300 bg-red-50/80 hover:bg-red-100 px-2.5 xl:px-3 text-[11px] xl:text-[11.5px] font-semibold text-[#b91c1c] shadow-2xs transition-colors"
               title="Enter Official KNLTC Student LMS Classroom"
             >
               <span className="relative flex h-2 w-2">
@@ -270,15 +277,15 @@ function MainHeader({ pathname }: { pathname: string }) {
               </span>
               <GraduationCap className="h-3.5 w-3.5 text-[#b91c1c]" />
               <span>{t.lmsLogin}</span>
-              <ExternalLink className="h-3 w-3 opacity-75" />
+              <ExternalLink className="h-2.5 w-2.5 opacity-75" />
             </motion.a>
 
             {/* Free Consultation CTA */}
-            <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }} transition={{ duration: 0.15 }}>
+            <motion.div whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }} transition={{ duration: 0.15 }}>
               <Button
                 asChild
                 size="sm"
-                className="h-9 rounded-xl bg-[#15803d] hover:bg-emerald-700 text-white text-xs font-semibold px-4 shadow-2xs transition-colors"
+                className="h-8 xl:h-8.5 rounded-lg bg-[#15803d] hover:bg-emerald-700 text-white text-[11px] xl:text-[11.5px] font-semibold px-3 shadow-2xs transition-colors"
               >
                 <Link href="/contact">{t.cta}</Link>
               </Button>
@@ -364,14 +371,14 @@ function MainHeader({ pathname }: { pathname: string }) {
                       >
                         <Link
                           href={link.href}
-                          className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all ${
+                          className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-all ${
                             active
-                              ? "bg-red-50 text-[#b91c1c] font-bold"
-                              : "text-slate-700 hover:bg-stone-100 hover:translate-x-1"
+                              ? "bg-red-50 text-[#b91c1c] font-semibold"
+                              : "text-slate-700 hover:bg-stone-100 hover:translate-x-0.5"
                           }`}
                           onClick={() => setMobileOpen(false)}
                         >
-                          <Icon className={`h-4 w-4 shrink-0 ${active ? "text-[#b91c1c]" : "text-slate-500"}`} />
+                          <Icon className={`h-4 w-4 shrink-0 ${active ? "text-[#b91c1c]" : "text-slate-400"}`} />
                           <span>{link.label}</span>
                         </Link>
                       </motion.div>
