@@ -37,7 +37,7 @@ export default function HowItWorksSection() {
         kicker: "Enrollment Workflow",
         title: "Start Your Japanese Language Journey in 3 Easy Steps",
         subtitle:
-          "From submitting the admission form to accessing your online LMS classroom on https://npw.bd/knltc — quick, transparent, and verified.",
+          "From submitting the admission form to accessing your dedicated online LMS classroom — quick, transparent, and verified.",
         step1Tag: "Step 01",
         step1Title: "Submit Enrollment Application",
         step1Desc:
@@ -46,19 +46,19 @@ export default function HowItWorksSection() {
         step2Tag: "Step 02",
         step2Title: "Verification & Account Setup",
         step2Desc:
-          "Our academic team contacts you to verify payment and creates your dedicated student account on https://npw.bd/knltc, sending your login credentials via WhatsApp/SMS.",
+          "Our academic team contacts you to verify payment and creates your dedicated student LMS account, sending your login credentials via WhatsApp/SMS.",
         step2Badge: "Fast Response",
         step3Tag: "Step 03",
         step3Title: "Enter LMS Classroom & Begin Learning",
         step3Desc:
-          "Log in to https://npw.bd/knltc with your username and password to attend live Zoom classes, watch recorded lectures, and download worksheets.",
+          "Log in to the official student LMS portal with your username and password to attend live Zoom classes, watch recorded lectures, and download worksheets.",
         step3Action: "Visit LMS Portal",
       },
       bn: {
         kicker: "ভর্তি প্রক্রিয়া",
         title: "৩টি সহজ ধাপে আপনার যাত্রা শুরু করুন",
         subtitle:
-          "ভর্তি ফর্ম পূরণ করা থেকে শুরু করে npw.bd/knltc ক্লাসরুমে প্রবেশ পর্যন্ত—সবকিছুই সহজ, স্বচ্ছ এবং দ্রুততম সময়ে সম্পন্ন হয়।",
+          "ভর্তি ফর্ম পূরণ করা থেকে শুরু করে ডিজিটাল LMS ক্লাসরুমে প্রবেশ পর্যন্ত—সবকিছুই সহজ, স্বচ্ছ এবং দ্রুততম সময়ে সম্পন্ন হয়।",
         step1Tag: "ধাপ ০১",
         step1Title: "নিচের ফর্মে ভর্তির আবেদন সম্পন্ন করুন",
         step1Desc:
@@ -72,14 +72,14 @@ export default function HowItWorksSection() {
         step3Tag: "ধাপ ০৩",
         step3Title: "LMS ক্লাসরুমে প্রবেশ ও ক্লাস শুরু",
         step3Desc:
-          "সরাসরি https://npw.bd/knltc পোর্টালে লগইন করে লাইভ ক্লাস, রেকর্ডেড ভিডিও, পিডিএফ শিট ও মক টেস্ট রিসোর্স এক্সেস করুন।",
+          "সরাসরি অফিশিয়াল LMS স্টুডেন্ট পোর্টালে লগইন করে লাইভ ক্লাস, রেকর্ডেড ভিডিও, পিডিএফ শিট ও মক টেস্ট রিসোর্স এক্সেস করুন।",
         step3Action: "LMS পোর্টালে প্রবেশ",
       },
       ja: {
         kicker: "受講までの流れ",
         title: "3つの簡単なステップで学習をスタート",
         subtitle:
-          "受講申請から専用LMSプラットフォーム（https://npw.bd/knltc）へのアクセスまでスムーズにご案内します。",
+          "受講申請から専用LMSプラットフォームへのアクセスまでスムーズにご案内します。",
         step1Tag: "ステップ 01",
         step1Title: "受講申込みフォームの送信",
         step1Desc:
@@ -88,12 +88,12 @@ export default function HowItWorksSection() {
         step2Tag: "ステップ 02",
         step2Title: "受講料確認とLMSアカウント発行",
         step2Desc:
-          "スタッフが確認後、公式LMS（https://npw.bd/knltc）のアカウントID・パスワードをWhatsAppまたはSMSにて送付します。",
+          "スタッフが確認後、公式LMSのアカウントID・パスワードをWhatsAppまたはSMSにて送付します。",
         step2Badge: "迅速対応",
         step3Tag: "ステップ 03",
         step3Title: "LMSにログインして受講開始",
         step3Desc:
-          "https://npw.bd/knltc にログインし、ライブ講義、録画アーカイブ、テキスト教材、模擬試験をご利用いただけます。",
+          "公式LMSポータルにログインし、ライブ講義、録画アーカイブ、テキスト教材、模擬試験をご利用いただけます。",
         step3Action: "LMSポータルへ",
       },
     },

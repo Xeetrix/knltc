@@ -34,7 +34,7 @@ export default function EnrollmentForm() {
         kicker: "Direct Admission Portal",
         title: "Japanese Language Course Enrollment Form",
         subtitle:
-          "Submit your details below. Our admission office will verify your application and send your official LMS (https://npw.bd/knltc) username and password via WhatsApp.",
+          "Submit your details below. Our admission office will verify your application and send your official LMS portal username and password via WhatsApp.",
         labelName: "Full Name *",
         placeholderName: "e.g. Md. Tanvir Ahmed",
         labelPhone: "Phone Number *",
@@ -81,7 +81,7 @@ export default function EnrollmentForm() {
         errorPhone: "Please enter a valid phone number (at least 10 digits).",
         modal: {
           title: "Application Successfully Submitted!",
-          msg: "Your application has been received successfully! Our admission team will contact you via WhatsApp to verify your admission and hand over your username and password for the https://npw.bd/knltc classroom.",
+          msg: "Your application has been received successfully! Our admission team will contact you via WhatsApp to verify your admission and hand over your username and password for the digital LMS classroom.",
           refLabel: "Application Reference ID",
           copied: "Copied!",
           copyBtn: "Copy ID",
@@ -93,7 +93,7 @@ export default function EnrollmentForm() {
           modeLabel: "Class Mode:",
           purposeLabel: "Purpose:",
           btnWhatsapp: "Expedite on WhatsApp",
-          btnLms: "Enter LMS Classroom (npw.bd/knltc)",
+          btnLms: "Enter LMS Classroom",
           btnClose: "Close",
         },
       },
@@ -101,7 +101,7 @@ export default function EnrollmentForm() {
         kicker: "অনলাইন ভর্তি আবেদন",
         title: "জাপানি ভাষা কোর্সে ভর্তির আবেদন ফরম",
         subtitle:
-          "নিচের ফর্মে ভর্তির আবেদন সম্পন্ন করুন। আমাদের টিম আপনার আবেদন ভেরিফাই করে সরাসরি আপনার হোয়াটসঅ্যাপে https://npw.bd/knltc ক্লাসরুমের আইডি ও পাসওয়ার্ড বুঝিয়ে দেবে।",
+          "নিচের ফর্মে ভর্তির আবেদন সম্পন্ন করুন। আমাদের টিম আপনার আবেদন ভেরিফাই করে সরাসরি আপনার হোয়াটসঅ্যাপে ডিজিটাল ক্লাসরুমের আইডি ও পাসওয়ার্ড বুঝিয়ে দেবে।",
         labelName: "শিক্ষার্থীর পূর্ণ নাম *",
         placeholderName: "যেমন: মোঃ তানভীর আহমেদ",
         labelPhone: "মোবাইল নম্বর (Phone) *",
@@ -148,7 +148,7 @@ export default function EnrollmentForm() {
         errorPhone: "একটি সঠিক মোবাইল নম্বর লিখুন (কমপক্ষে ১০ ডিজিট)।",
         modal: {
           title: "আপনার আবেদন সফলভাবে জমা হয়েছে!",
-          msg: "আপনার আবেদন সফলভাবে জমা হয়েছে! আমাদের অ্যাডমিশন টিম দ্রুত আপনার সাথে হোয়াটসঅ্যাপে যোগাযোগ করে আপনার https://npw.bd/knltc ক্লাসরুমের আইডি ও পাসওয়ার্ড বুঝিয়ে দেবে।",
+          msg: "আপনার আবেদন সফলভাবে জমা হয়েছে! আমাদের অ্যাডমিশন টিম দ্রুত আপনার সাথে হোয়াটসঅ্যাপে যোগাযোগ করে আপনার ডিজিটাল LMS ক্লাসরুমের আইডি ও পাসওয়ার্ড বুঝিয়ে দেবে।",
           refLabel: "আবেদন রেফারেন্স আইডি",
           copied: "কপি সম্পন্ন!",
           copyBtn: "কপি করুন",
@@ -160,7 +160,7 @@ export default function EnrollmentForm() {
           modeLabel: "ক্লাসের মাধ্যম:",
           purposeLabel: "উদ্দেশ্য:",
           btnWhatsapp: "হোয়াটসঅ্যাপে দ্রুত ভেরিফিকেশন করুন",
-          btnLms: "LMS ক্লাসরুমে যান (npw.bd/knltc)",
+          btnLms: "LMS ক্লাসরুমে যান",
           btnClose: "বন্ধ করুন",
         },
       },
@@ -168,7 +168,7 @@ export default function EnrollmentForm() {
         kicker: "オンライン受講申請",
         title: "日本語講座 受講申込みフォーム",
         subtitle:
-          "以下のフォームにご入力ください。受講手続確認後、公式LMS（https://npw.bd/knltc）のアカウントID・パスワードをWhatsAppにてご案内します。",
+          "以下のフォームにご入力ください。受講手続確認後、公式LMSのアカウントID・パスワードをWhatsAppにてご案内します。",
         labelName: "氏名 *",
         placeholderName: "例：Md. Tanvir Ahmed",
         labelPhone: "電話番号 *",
@@ -215,7 +215,7 @@ export default function EnrollmentForm() {
         errorPhone: "有効な電話番号をご入力ください。",
         modal: {
           title: "受講申請を受け付けました！",
-          msg: "あなたの申請は正常に送信されました！担当アドミッションチームが速やかにWhatsAppにてご連絡し、公式LMS（https://npw.bd/knltc）のログインIDとパスワードを発行・ご案内いたします。",
+          msg: "あなたの申請は正常に送信されました！担当アドミッションチームが速やかにWhatsAppにてご連絡し、公式LMSのログインIDとパスワードを発行・ご案内いたします。",
           refLabel: "受付整理番号 (ID)",
           copied: "コピー完了！",
           copyBtn: "IDをコピー",
@@ -227,7 +227,7 @@ export default function EnrollmentForm() {
           modeLabel: "受講形式:",
           purposeLabel: "渡航目的:",
           btnWhatsapp: "WhatsAppで優先確認する",
-          btnLms: "LMS教室を開く (npw.bd/knltc)",
+          btnLms: "LMS教室を開く",
           btnClose: "閉じる",
         },
       },
@@ -349,10 +349,10 @@ export default function EnrollmentForm() {
     if (!submittedData) return "https://wa.me/8801805013633";
     const message =
       language === "bn"
-        ? `আসসালামু আলাইকুম KNLTC,\nআমি ${submittedData.name}।\nআমি ${submittedData.courseLabel} কোর্সে ভর্তির আবেদন করেছি।\nরেফারেন্স আইডি: ${submittedData.id}\nমোবাইল: ${submittedData.phone}\nহোয়াটসঅ্যাপ: ${submittedData.whatsapp}\nক্লাস মোড: ${submittedData.classModeLabel}\n\nআমার https://npw.bd/knltc ক্লাসরুমের আইডি ও পাসওয়ার্ড পাওয়ার জন্য যোগাযোগ করছি। ধন্যবাদ!`
+        ? `আসসালামু আলাইকুম KNLTC,\nআমি ${submittedData.name}।\nআমি ${submittedData.courseLabel} কোর্সে ভর্তির আবেদন করেছি।\nরেফারেন্স আইডি: ${submittedData.id}\nমোবাইল: ${submittedData.phone}\nহোয়াটসঅ্যাপ: ${submittedData.whatsapp}\nক্লাস মোড: ${submittedData.classModeLabel}\n\nআমার ডিজিটাল ক্লাসরুমের LMS আইডি ও পাসওয়ার্ড পাওয়ার জন্য যোগাযোগ করছি। ধন্যবাদ!`
         : language === "ja"
-        ? `こんにちは KNLTC事務局様、\n${submittedData.name}と申します。\nコース「${submittedData.courseLabel}」への受講申請を完了しました。\n受付ID: ${submittedData.id}\n電話番号: ${submittedData.phone}\nWhatsApp: ${submittedData.whatsapp}\n受講形式: ${submittedData.classModeLabel}\n\n公式LMS（https://npw.bd/knltc）のログイン情報のご案内をお願いいたします。`
-        : `Hello KNLTC Admissions,\nMy name is ${submittedData.name}.\nI submitted an application for: ${submittedData.courseLabel}.\nReference ID: ${submittedData.id}\nPhone: ${submittedData.phone}\nWhatsApp: ${submittedData.whatsapp}\nClass Mode: ${submittedData.classModeLabel}\n\nI am contacting you to verify my admission and receive my https://npw.bd/knltc LMS classroom login credentials. Thank you!`;
+        ? `こんにちは KNLTC事務局様、\n${submittedData.name}と申します。\nコース「${submittedData.courseLabel}」への受講申請を完了しました。\n受付ID: ${submittedData.id}\n電話番号: ${submittedData.phone}\nWhatsApp: ${submittedData.whatsapp}\n受講形式: ${submittedData.classModeLabel}\n\n公式LMSのログイン情報のご案内をお願いいたします。`
+        : `Hello KNLTC Admissions,\nMy name is ${submittedData.name}.\nI submitted an application for: ${submittedData.courseLabel}.\nReference ID: ${submittedData.id}\nPhone: ${submittedData.phone}\nWhatsApp: ${submittedData.whatsapp}\nClass Mode: ${submittedData.classModeLabel}\n\nI am contacting you to verify my admission and receive my student LMS classroom login credentials. Thank you!`;
     return `https://wa.me/8801805013633?text=${encodeURIComponent(message)}`;
   };
 

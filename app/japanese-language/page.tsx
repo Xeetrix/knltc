@@ -11,7 +11,7 @@ import CurriculumFaqSection from "@/components/japanese-language/CurriculumFaqSe
 export const metadata: Metadata = {
   title: "Japanese Language Course (N5, N4 & Irodori) | KNLTC Japan Gateway Dhaka",
   description:
-    "Learn Japanese language the easy way at KNLTC Dhaka. Preparation for JLPT/NAT/JFT from N5 to N1 and Irodori Japanese. Includes 3 free bonus courses for Embassy Visa Interview and Japanese CV. Online LMS at npw.bd/knltc.",
+    "Learn Japanese language the easy way at KNLTC Dhaka. Preparation for JLPT/NAT/JFT from N5 to N1 and Irodori Japanese. Includes 3 free bonus courses for Embassy Visa Interview and Japanese CV with full digital LMS classroom access.",
 };
 
 export default function JapaneseLanguagePage() {

@@ -374,7 +374,7 @@ function MainHeader({ pathname }: { pathname: string }) {
                       </div>
                       <div>
                         <span className="block text-xs font-extrabold">{t.lmsLogin}</span>
-                        <span className="block text-[10px] text-red-600/80 font-mono">https://npw.bd/knltc</span>
+                        <span className="block text-[10px] text-red-700/80 font-medium">Official Student Portal</span>
                       </div>
                     </div>
                     <ExternalLink className="h-4 w-4 shrink-0 text-[#b91c1c]" />

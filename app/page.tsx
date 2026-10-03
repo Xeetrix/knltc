@@ -125,7 +125,7 @@ export default function HomePage() {
           {
             icon: Languages,
             title: "Japanese Language Course (N5–N1)",
-            desc: "Targeted JLPT, NAT-TEST, and JFT preparation. Digital LMS classroom at npw.bd/knltc plus 3 free bonus interview courses.",
+            desc: "Targeted JLPT, NAT-TEST, and JFT preparation. Digital LMS classroom plus 3 free bonus interview courses.",
             cta: "View Courses & Enroll",
             href: "/japanese-language",
             highlight: "3 Free Bonus Courses",
@@ -712,7 +712,7 @@ export default function HomePage() {
                       </div>
                       <div>
                         <span className="block text-xs font-extrabold">{t.portalLmsBtn}</span>
-                        <span className="block text-[10px] text-red-600/80 font-mono">npw.bd/knltc</span>
+                        <span className="block text-[10px] text-red-700/80 font-medium">Official Student Portal</span>
                       </div>
                     </div>
                     <ExternalLink className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />

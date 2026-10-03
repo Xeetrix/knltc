@@ -36,7 +36,7 @@ export default function CurriculumFaqSection() {
           },
           {
             q: "How does the online LMS classroom work and how do I log in?",
-            a: "All online courses, live Zoom classes, and recorded lectures are hosted on our dedicated platform: https://npw.bd/knltc. After submitting your enrollment form, our team verifies your payment and delivers your LMS username and password directly via WhatsApp. You can log in anytime from phone or PC.",
+            a: "All online courses, live Zoom classes, and recorded lectures are hosted on our dedicated KNLTC Student LMS Portal. After submitting your enrollment form, our team verifies your payment and delivers your LMS username and password directly via WhatsApp. You can log in anytime from phone or PC.",
           },
           {
             q: "Are there any separate or hidden charges for textbooks and worksheets?",
@@ -48,7 +48,7 @@ export default function CurriculumFaqSection() {
           },
           {
             q: "Will class recordings be provided for online batches?",
-            a: "Yes! Every single live interactive class is recorded in HD and archived inside your https://npw.bd/knltc student account. If you miss a class or want to revise, you can watch it anytime.",
+            a: "Yes! Every single live interactive class is recorded in HD and archived inside your personal student LMS account. If you miss a class or want to revise, you can watch it anytime.",
           },
           {
             q: "Does KNLTC assist with official JLPT and JFT-Basic exam registrations?",
@@ -79,7 +79,7 @@ export default function CurriculumFaqSection() {
           },
           {
             q: "অনলাইন লার্নিং প্ল্যাটফর্ম (LMS) কীভাবে কাজ করে এবং ক্লাসে কীভাবে যুক্ত হব?",
-            a: "KNLTC-এর সমস্ত অনলাইন কোর্স, লাইভ জুম সেশন ও রিসোর্স সরাসরি https://npw.bd/knltc পোর্টালে হোস্ট করা। নিচের ফর্মে আবেদন করার পর আমাদের টিম আপনার তথ্য ও পেমেন্ট ভেরিফাই করে সরাসরি আপনার হোয়াটসঅ্যাপে LMS আইডি ও পাসওয়ার্ড পাঠিয়ে দেবে। লিংকে গিয়ে ইউজারনেম ও পাসওয়ার্ড দিয়ে খুব সহজেই ক্লাসরুমে প্রবেশ করতে পারবেন।",
+            a: "KNLTC-এর সমস্ত অনলাইন কোর্স, লাইভ জুম সেশন ও রিসোর্স সরাসরি আমাদের নিবেদিত ক্লাসরুম পোর্টালে হোস্ট করা। নিচের ফর্মে আবেদন করার পর আমাদের টিম আপনার তথ্য ও পেমেন্ট ভেরিফাই করে সরাসরি আপনার হোয়াটসঅ্যাপে LMS আইডি ও পাসওয়ার্ড পাঠিয়ে দেবে। লিংকে গিয়ে ইউজারনেম ও পাসওয়ার্ড দিয়ে খুব সহজেই ক্লাসরুমে প্রবেশ করতে পারবেন।",
           },
           {
             q: "বই এবং লেকচার শিটের জন্য আলাদা কোনো খরচ আছে কি?",
@@ -91,7 +91,7 @@ export default function CurriculumFaqSection() {
           },
           {
             q: "অনলাইন ব্যাচে ক্লাস করলে কি রেকর্ডিং পাওয়া যাবে?",
-            a: "হ্যাঁ, প্রতিটি লাইভ ক্লাসের হাই-ডেফিনিশন রেকর্ডিং এবং লেকচার স্লাইড সরাসরি আপনার https://npw.bd/knltc একাউন্টে সংরক্ষিত থাকে। কোনো কারণে ক্লাস মিস হলে আপনি যেকোনো সময় রেকর্ডিং দেখে রিভিশন দিতে পারবেন।",
+            a: "হ্যাঁ, প্রতিটি লাইভ ক্লাসের হাই-ডেফিনিশন রেকর্ডিং এবং লেকচার স্লাইড সরাসরি আপনার পার্সোনাল স্টুডেন্ট একাউন্টে সংরক্ষিত থাকে। কোনো কারণে ক্লাস মিস হলে আপনি যেকোনো সময় রেকর্ডিং দেখে রিভিশন দিতে পারবেন।",
           },
           {
             q: "JLPT ও JFT-Basic পরীক্ষার রেজিস্ট্রেশনে কি সহায়তা করা হয়?",
@@ -120,7 +120,7 @@ export default function CurriculumFaqSection() {
             a: "はい、大歓迎です。N5コースはひらがな・カタカナの筆順と発音からスタートするため、予備知識ゼロから安心して受講いただけます。",
           },
           {
-            q: "専用LMS（https://npw.bd/knltc）はどのように利用しますか？",
+            q: "専用LMSポータルはどのように利用しますか？",
             a: "受講申請フォーム送信後、スタッフからWhatsAppで個別の受講生ID・パスワードをお送りします。スマートフォンやPCからいつでもログインして講義や教材をご利用いただけます。",
           },
           {
