@@ -329,36 +329,9 @@ function MainHeader({ pathname }: { pathname: string }) {
               transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] as const }}
               className="overflow-hidden border-t border-stone-200 bg-white/98 backdrop-blur-md shadow-xl lg:hidden"
             >
-              <nav ref={menuPanelRef} className="container-narrow py-5 space-y-3">
-                {/* Language Switcher Bar in Mobile Drawer */}
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#fcfaf7] border border-stone-200/80">
-                  <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-                    <Globe className="h-3.5 w-3.5 text-[#b91c1c]" />
-                    <span>{t.language}:</span>
-                  </span>
-                  <div className="flex items-center gap-1">
-                    {languageOptions.map((opt) => {
-                      const isSelected = language === opt.value;
-                      return (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          onClick={() => setLanguage(opt.value)}
-                          className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all ${
-                            isSelected
-                              ? "bg-[#b91c1c] text-white shadow-2xs scale-105"
-                              : "text-slate-600 hover:bg-stone-200/60"
-                          }`}
-                        >
-                          {opt.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
+              <nav ref={menuPanelRef} className="container-narrow py-4 space-y-3">
                 {/* Navigation Links with Staggered Entrance */}
-                <div className="space-y-1 pt-1">
+                <div className="space-y-1">
                   {navLinks.map((link, idx) => {
                     const active = isActive(link.href);
                     const Icon = link.icon;

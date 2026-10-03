@@ -24,7 +24,7 @@ export default function HeroCourseSection() {
     {
       en: {
         badge: "Official Japanese Language Academy • Dhaka Center",
-        headlinePart1: "Learn Japanese the Easy Way — ",
+        headlinePart1: "Learn Japanese the Easy Way",
         headlineHighlight: "Gateway to Higher Study & Career in Japan",
         subtitle:
           "Targeted JLPT, NAT-TEST, and JFT-Basic preparation from N5 to N1 and practical Irodori Japanese. Live online interactive classes, classroom training, and 24/7 digital LMS portal at npw.bd/knltc.",
@@ -46,13 +46,16 @@ export default function HeroCourseSection() {
         feature1: "Minna No Nihongo textbooks & audio free",
         feature2: "Live interactive Zoom & offline Dhaka campus",
         feature3: "Includes 3 free bonus courses worth ৳15,000",
+        inc1: "JLPT, NAT & JFT Certified",
+        inc2: "Native Japanese Instructors",
+        inc3: "3 Free Bonus Courses",
         btnEnrollNow: "Apply for Admission",
         btnLmsPortal: "Open LMS Portal",
         waChat: "Chat on WhatsApp",
       },
       bn: {
         badge: "KNLTC অফিশিয়াল জাপানিজ একাডেমি • ঢাকা হেড অফিস",
-        headlinePart1: "সহজ পদ্ধতিতে জাপানি ভাষা শিখুন — ",
+        headlinePart1: "সহজ পদ্ধতিতে জাপানি ভাষা শিখুন",
         headlineHighlight: "জাপানে উচ্চশিক্ষা ও নিশ্চিত ক্যারিয়ারের বিশ্বস্ত গেটওয়ে",
         subtitle:
           "N5 থেকে N1 লেভেল এবং প্র্যাকটিক্যাল ইরোদোরি (Irodori Japanese) সমন্বিত সুবিন্যস্ত প্রস্তুতি। JLPT, NAT-TEST ও JFT-Basic পরীক্ষায় শতভাগ পাসের নিশ্চয়তা এবং সরাসরি KNLTC ডিজিটাল LMS ক্লাসরুম সুবিধা।",
@@ -74,13 +77,16 @@ export default function HeroCourseSection() {
         feature1: "মিন্না নো নিহোঙ্গো ১ ও ২ পাঠ্যবই ও অডিও ফাইল সম্পূর্ণ ফ্রি",
         feature2: "অনলাইন লাইভ জুম ও পল্টন/ধানমন্ডি ক্যাম্পাসে ক্লাস",
         feature3: "১৫,০০০ টাকা মূল্যের ৩টি স্পেশাল ইন্টারভিউ ও সিভি কোর্স ফ্রি",
+        inc1: "JLPT, NAT ও JFT সার্টিফাইড",
+        inc2: "নেটিভ জাপানিজ শিক্ষক",
+        inc3: "৩টি বোনাস কোর্স ফ্রি",
         btnEnrollNow: "ভর্তির আবেদন করুন",
         btnLmsPortal: "LMS পোর্টালে প্রবেশ",
         waChat: "হোয়াটসঅ্যাপে পরামর্শ",
       },
       ja: {
         badge: "公認 日本語アカデミー • ダッカ本部センター",
-        headlinePart1: "わかりやすい日本語学習 — ",
+        headlinePart1: "わかりやすい日本語学習",
         headlineHighlight: "日本留学・就職への確かなゲートウェイ",
         subtitle:
           "N5〜N1および実践『いろどり日本語』に対応。JLPT・NAT・JFT合格とオンラインLMS教室（npw.bd/knltc）による徹底サポート。",
@@ -102,6 +108,9 @@ export default function HeroCourseSection() {
         feature1: "『みんなの日本語』教科書＆音声データ無償提供",
         feature2: "オンラインLIVE講義およびダッカ対面授業",
         feature3: "15,000タカ相当の面接・履歴書3大特典講座無料",
+        inc1: "JLPT・NAT・JFT認定",
+        inc2: "日本人ネイティブ講師",
+        inc3: "3大特典講座が無料",
         btnEnrollNow: "受講申込みへ",
         btnLmsPortal: "LMSポータルを開く",
         waChat: "WhatsApp相談",
@@ -159,9 +168,9 @@ export default function HeroCourseSection() {
             transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] as const }}
             className="lg:col-span-7 space-y-6"
           >
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 leading-[1.25] sm:text-4xl md:text-5xl lg:text-[2.75rem]">
-              {t.headlinePart1}
-              <span className="text-[#b91c1c] underline decoration-red-300 underline-offset-4">
+            <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl lg:text-[2.85rem] leading-[1.18]">
+              <span className="block text-slate-900">{t.headlinePart1}</span>
+              <span className="block mt-2 font-extrabold text-[#b91c1c] text-2xl sm:text-3xl lg:text-[2.25rem] leading-snug">
                 {t.headlineHighlight}
               </span>
             </h1>
@@ -174,15 +183,15 @@ export default function HeroCourseSection() {
             <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs sm:text-sm text-slate-700 font-medium pt-1">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-[#15803d]" />
-                <span>JLPT, NAT & JFT সার্টিফাইড</span>
+                <span>{t.inc1}</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-[#15803d]" />
-                <span>নেটিভ জাপানিজ শিক্ষক</span>
+                <span>{t.inc2}</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-[#15803d]" />
-                <span>৩টি বোনাস কোর্স ফ্রি</span>
+                <span>{t.inc3}</span>
               </div>
             </div>
 
