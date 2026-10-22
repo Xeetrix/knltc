@@ -1,4 +1,4 @@
-import { deleteRow, insertRow, selectRows, updateRow } from "@/lib/supabase";
+import { deleteRow, insertRow, selectRows, updateRow, upsertRow } from "@/lib/supabase";
 
 export type Status = "draft" | "published";
 export type CategoryType = "product" | "blog";
@@ -465,10 +465,74 @@ export async function deleteReview(id: string) {
   await deleteRow("product_reviews", id, true);
 }
 
+function mapWebsiteLeadToEnterprisePayload(lead: CrmLead) {
+  const rawInterest = (lead.interest || "").toLowerCase();
+  const mappedInterest = rawInterest.includes("caregiver")
+    ? "SSW_CAREGIVER"
+    : rawInterest.includes("agriculture")
+      ? "SSW_AGRICULTURE"
+      : rawInterest.includes("n4")
+        ? "JAPANESE_N4"
+        : rawInterest.includes("n5") || rawInterest.includes("course")
+          ? "JAPANESE_N5"
+          : "STUDENT_VISA_REGULAR";
+
+  const mappedSource =
+    lead.source === "SSW Visa Landing Page"
+      ? "FACEBOOK_META"
+      : "WEBSITE_FORM";
+
+  const mappedStatus =
+    lead.status === "contacted"
+      ? "CONTACTED"
+      : lead.status === "interested"
+        ? "COUNSELED"
+        : lead.status === "converted"
+          ? "ADMITTED"
+          : lead.status === "lost"
+            ? "ARCHIVED"
+            : "NEW";
+
+  return {
+    id: String(lead.id).startsWith("web-") ? String(lead.id) : `web-${lead.id}`,
+    name: lead.name,
+    phone: lead.phone,
+    whatsapp: lead.phone,
+    email: lead.email || null,
+    city: "Dhaka",
+    source: mappedSource,
+    interest: mappedInterest,
+    status: mappedStatus,
+    education: "HSC / Equivalent",
+    japanese_proficiency: "NONE",
+    study_gap_years: 0,
+    assigned_to: "সুমাইয়া সুলতানা",
+    branch: "DHK-HQ",
+    notes: [lead.interest ? `[${lead.interest}]` : "", lead.message || "", lead.notes || ""]
+      .filter(Boolean)
+      .join(" — ") || "Submitted via Website Form",
+    follow_up_date: new Date().toISOString().slice(0, 10),
+    last_contacted_at: lead.updated_at || lead.created_at || new Date().toISOString(),
+    created_at: lead.created_at || new Date().toISOString(),
+  };
+}
+
 export async function createCrmLead(
   payload: Omit<CrmLead, "id" | "created_at" | "updated_at" | "status" | "notes"> & { status?: LeadStatus; notes?: string | null },
 ) {
-  return (await insertRow("crm_leads", { ...payload, status: payload.status ?? "new", notes: payload.notes ?? null }, true)) as CrmLead;
+  const created = (await insertRow(
+    "crm_leads",
+    { ...payload, status: payload.status ?? "new", notes: payload.notes ?? null },
+    true,
+  )) as CrmLead;
+
+  try {
+    await upsertRow("knltc_crm_leads", mapWebsiteLeadToEnterprisePayload(created), true);
+  } catch (err) {
+    logCmsError("Failed to mirror website lead into knltc_crm_leads", err);
+  }
+
+  return created;
 }
 
 export async function getAllCrmLeads() {
@@ -476,5 +540,13 @@ export async function getAllCrmLeads() {
 }
 
 export async function updateCrmLead(id: string, payload: Partial<Pick<CrmLead, "status" | "notes">>) {
-  return (await updateRow("crm_leads", id, payload, true)) as CrmLead;
+  const updated = (await updateRow("crm_leads", id, payload, true)) as CrmLead;
+  try {
+    if (updated && updated.id) {
+      await upsertRow("knltc_crm_leads", mapWebsiteLeadToEnterprisePayload(updated), true);
+    }
+  } catch (err) {
+    logCmsError("Failed to sync updated website lead into knltc_crm_leads", err);
+  }
+  return updated;
 }

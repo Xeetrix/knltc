@@ -41,7 +41,6 @@ export default function AdminLoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [showDemoAccounts, setShowDemoAccounts] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -244,13 +243,6 @@ export default function AdminLoginForm() {
       ),
     [language],
   );
-
-  const demoAccounts = [
-    { label: "Main Admin", email: "admin@knltc.com", pass: "knltc2026", badge: "Full Access" },
-    { label: "Tele-Counselor", email: "counselor@knltc.com", pass: "counselor123", badge: "CRM & Visa" },
-    { label: "Language Teacher", email: "teacher@knltc.com", pass: "teacher123", badge: "LMS & Batches" },
-    { label: "Enrolled Student", email: "student@knltc.com", pass: "student123", badge: "My File & LMS" },
-  ];
 
   const onLoginSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -565,51 +557,6 @@ export default function AdminLoginForm() {
                   )}
                 </button>
               </form>
-
-              {/* Collapsible Demo Credentials Helper */}
-              <div className="rounded-xl border border-slate-200 bg-slate-50/70 overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => setShowDemoAccounts((prev) => !prev)}
-                  className="w-full flex items-center justify-between px-4 py-2.5 text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
-                >
-                  <span className="inline-flex items-center gap-1.5">
-                    <KeyRound className="h-3.5 w-3.5 text-[#b91c1c]" />
-                    <span>{t.demoToggle}</span>
-                  </span>
-                  <ChevronDown
-                    className={`h-3.5 w-3.5 transition-transform ${showDemoAccounts ? "rotate-180" : ""}`}
-                  />
-                </button>
-
-                {showDemoAccounts && (
-                  <div className="px-4 pb-3.5 pt-1 border-t border-slate-200/80 space-y-2">
-                    <p className="text-[11px] text-slate-500">{t.demoSub}</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                      {demoAccounts.map((acc) => (
-                        <button
-                          key={acc.email}
-                          type="button"
-                          onClick={() => {
-                            setEmail(acc.email);
-                            setPassword(acc.pass);
-                            setError(null);
-                          }}
-                          className="flex flex-col items-start rounded-lg border border-slate-200 bg-white p-2 text-left hover:border-red-300 hover:bg-red-50/30 transition"
-                        >
-                          <div className="flex items-center justify-between w-full">
-                            <span className="text-xs font-bold text-slate-800">{acc.label}</span>
-                            <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded">
-                              {acc.badge}
-                            </span>
-                          </div>
-                          <span className="text-[11px] font-mono text-slate-500 mt-0.5">{acc.email}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
           ) : regSuccess ? (
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-6 text-center space-y-3.5">
