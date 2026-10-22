@@ -309,19 +309,6 @@ export default function AdminLoginForm() {
         followUpDate: new Date().toISOString().slice(0, 10),
       });
 
-      await fetch("/api/crm-leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: regName.trim(),
-          phone: regPhone.trim(),
-          email: regEmail.trim() || null,
-          interest: regInterest,
-          source: "portal_registration",
-          message: `City: ${regCity || "Dhaka"}, Education: ${regEducation}`,
-        }),
-      }).catch(() => null);
-
       setRegSuccess(true);
     } catch {
       setError(t.serverError);

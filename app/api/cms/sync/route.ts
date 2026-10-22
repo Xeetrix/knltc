@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { selectRows, upsertRow, insertRow } from "@/lib/supabase";
+import { selectRows, upsertRow, insertRow, deleteRow } from "@/lib/supabase";
 import { getAdminSession } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
@@ -8,7 +8,6 @@ export async function GET() {
   try {
     const [
       leads,
-      webLeads,
       applicants,
       lmsBridges,
       b2bAgents,
@@ -17,8 +16,7 @@ export async function GET() {
       staffMembers,
       cmsRoot,
     ] = await Promise.allSettled([
-      selectRows("knltc_crm_leads", { order: "created_at.desc", limit: 200 }, true),
-      selectRows("crm_leads", { order: "created_at.desc", limit: 100 }, true),
+      selectRows("knltc_crm_leads", { order: "created_at.desc", limit: 300 }, true),
       selectRows("knltc_visa_applicants", { order: "created_at.desc", limit: 200 }, true),
       selectRows("knltc_lms_bridges", { order: "created_at.desc", limit: 200 }, true),
       selectRows("knltc_b2b_agents", { order: "created_at.desc", limit: 100 }, true),
@@ -30,45 +28,9 @@ export async function GET() {
 
     const knltcLeadsList =
       leads.status === "fulfilled" && Array.isArray(leads.value) ? leads.value : [];
-    const webLeadsList =
-      webLeads.status === "fulfilled" && Array.isArray(webLeads.value) ? webLeads.value : [];
-
-    // Deduplicate & merge any website leads from `crm_leads` that aren't in `knltc_crm_leads`
-    const existingIds = new Set(knltcLeadsList.map((r: any) => String(r.id)));
-    const existingPhones = new Set(knltcLeadsList.map((r: any) => String(r.phone || "").trim()));
-
-    const mergedWebLeads = webLeadsList
-      .filter((w: any) => {
-        const webId = `web-${w.id}`;
-        return !existingIds.has(webId) && !existingPhones.has(String(w.phone || "").trim());
-      })
-      .map((w: any) => ({
-        id: `web-${w.id}`,
-        name: w.name,
-        phone: w.phone,
-        whatsapp: w.phone,
-        email: w.email || null,
-        city: "Dhaka",
-        source: w.source === "SSW Visa Landing Page" ? "FACEBOOK_META" : "WEBSITE_FORM",
-        interest: "STUDENT_VISA_REGULAR",
-        status: "NEW",
-        education: "HSC / Equivalent",
-        japanese_proficiency: "NONE",
-        study_gap_years: 0,
-        assigned_to: "সুমাইয়া সুলতানা",
-        branch: "DHK-HQ",
-        notes: [w.interest ? `[${w.interest}]` : "", w.message || "", w.notes || ""]
-          .filter(Boolean)
-          .join(" — "),
-        follow_up_date: new Date().toISOString().slice(0, 10),
-        last_contacted_at: w.updated_at || w.created_at || new Date().toISOString(),
-        created_at: w.created_at || new Date().toISOString(),
-      }));
-
-    const combinedLeads = [...knltcLeadsList, ...mergedWebLeads];
 
     const result = {
-      crmLeads: combinedLeads,
+      crmLeads: knltcLeadsList,
       visaApplicants: applicants.status === "fulfilled" && Array.isArray(applicants.value) ? applicants.value : [],
       lmsBridges: lmsBridges.status === "fulfilled" && Array.isArray(lmsBridges.value) ? lmsBridges.value : [],
       b2bAgents: b2bAgents.status === "fulfilled" && Array.isArray(b2bAgents.value) ? b2bAgents.value : [],
@@ -89,11 +51,10 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const session = await getAdminSession();
-    // Allow if authenticated or internal call
+    await getAdminSession();
     const body = await request.json();
     const { type, entity, payload } = body as {
-      type: "UPSERT" | "INSERT" | "CMS_UPDATE";
+      type: "UPSERT" | "INSERT" | "DELETE" | "CMS_UPDATE";
       entity?: string;
       payload: any;
     };
@@ -108,7 +69,10 @@ export async function POST(request: Request) {
     }
 
     if (entity && payload) {
-      if (type === "UPSERT") {
+      if (type === "DELETE" && payload.id) {
+        await deleteRow(entity, String(payload.id));
+        return NextResponse.json({ ok: true, deletedId: payload.id });
+      } else if (type === "UPSERT") {
         const saved = await upsertRow(entity, payload);
         return NextResponse.json({ ok: true, data: saved });
       } else {

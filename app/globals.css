@@ -163,7 +163,36 @@
   }
 
   .card-clean {
-    @apply rounded-2xl border border-stone-200/90 bg-white p-6 shadow-xs transition hover:border-stone-300;
+    @apply relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-6 shadow-2xs transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md;
+  }
+
+  .hover-spotlight {
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.28s ease, box-shadow 0.28s ease;
+  }
+
+  .hover-spotlight::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    background: radial-gradient(
+      420px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+      rgba(185, 28, 28, 0.055),
+      transparent 60%
+    );
+  }
+
+  .hover-spotlight:hover::before {
+    opacity: 1;
+  }
+
+  .hover-spotlight:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px -8px rgba(15, 23, 42, 0.07), 0 4px 10px -4px rgba(185, 28, 28, 0.04);
   }
 }
 
@@ -197,15 +226,15 @@
     animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
   .card-lift {
-    @apply transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg;
+    @apply transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg hover:border-slate-300;
     transform: translateZ(0);
     will-change: transform, box-shadow;
   }
   .btn-primary-red {
-    @apply bg-[#b91c1c] text-white hover:bg-red-800 transition-all duration-200 active:scale-[0.98] rounded-xl font-semibold;
+    @apply relative overflow-hidden bg-[#b91c1c] text-white hover:bg-red-800 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 active:scale-[0.98] rounded-xl font-semibold;
   }
   .btn-accent-green {
-    @apply bg-[#15803d] text-white hover:bg-emerald-800 transition-all duration-200 active:scale-[0.98] rounded-xl font-semibold;
+    @apply relative overflow-hidden bg-[#15803d] text-white hover:bg-emerald-800 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 active:scale-[0.98] rounded-xl font-semibold;
   }
   .animate-float-slow {
     animation: floatSlow 5s ease-in-out infinite;

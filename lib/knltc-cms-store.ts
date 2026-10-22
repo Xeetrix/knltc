@@ -925,7 +925,7 @@ export function saveCmsStore(updated: MasterKnlTcStore) {
   }
 }
 
-async function syncToServer(type: "UPSERT" | "INSERT" | "CMS_UPDATE", entity?: string, payload?: any) {
+async function syncToServer(type: "UPSERT" | "INSERT" | "DELETE" | "CMS_UPDATE", entity?: string, payload?: any) {
   if (typeof window === "undefined") return;
   try {
     await fetch("/api/cms/sync", {
@@ -1569,4 +1569,189 @@ export function updateStoreOrderStatus(orderId: string, status: CustomerStoreOrd
     syncToServer("CMS_UPDATE", undefined, cms);
   }
 }
+
+// ------------------------------------------------------------------------------
+// B2B Partner Schools & B2B Sub-Agents CRUD
+// ------------------------------------------------------------------------------
+export function addPartnerSchool(school: Omit<JapanesePartnerSchool, "id">): JapanesePartnerSchool {
+  const store = getCmsStore();
+  const newSchool: JapanesePartnerSchool = {
+    ...school,
+    id: `sch-${Date.now()}`,
+  };
+  store.partnerSchools.unshift(newSchool);
+  saveCmsStore(store);
+
+  syncToServer("INSERT", "knltc_partner_schools", {
+    id: newSchool.id,
+    name: newSchool.name,
+    japanese_name: newSchool.japaneseName,
+    location: newSchool.location,
+    contact_person: newSchool.contactPerson,
+    email: newSchool.email,
+    commission_per_student_yen: newSchool.commissionPerStudentYen,
+    commission_per_student_bdt: newSchool.commissionPerStudentBdt,
+    active_students_count: newSchool.activeStudentsCount,
+    total_commission_received_yen: newSchool.totalCommissionReceivedYen,
+    status: newSchool.status,
+  });
+
+  return newSchool;
+}
+
+export function updatePartnerSchool(id: string, updates: Partial<JapanesePartnerSchool>): JapanesePartnerSchool | null {
+  const store = getCmsStore();
+  const idx = store.partnerSchools.findIndex((s) => s.id === id);
+  if (idx === -1) return null;
+  store.partnerSchools[idx] = { ...store.partnerSchools[idx], ...updates };
+  const s = store.partnerSchools[idx];
+  saveCmsStore(store);
+
+  syncToServer("UPSERT", "knltc_partner_schools", {
+    id: s.id,
+    name: s.name,
+    japanese_name: s.japaneseName,
+    location: s.location,
+    contact_person: s.contactPerson,
+    email: s.email,
+    commission_per_student_yen: s.commissionPerStudentYen,
+    commission_per_student_bdt: s.commissionPerStudentBdt,
+    active_students_count: s.activeStudentsCount,
+    total_commission_received_yen: s.totalCommissionReceivedYen,
+    status: s.status,
+  });
+
+  return s;
+}
+
+export function deletePartnerSchool(id: string) {
+  const store = getCmsStore();
+  store.partnerSchools = store.partnerSchools.filter((s) => s.id !== id);
+  saveCmsStore(store);
+  syncToServer("DELETE", "knltc_partner_schools", { id });
+}
+
+export function addB2bAgent(agent: Omit<B2bAgent, "id">): B2bAgent {
+  const store = getCmsStore();
+  const newAgent: B2bAgent = {
+    ...agent,
+    id: `agent-${Date.now()}`,
+  };
+  store.b2bAgents.unshift(newAgent);
+  saveCmsStore(store);
+
+  syncToServer("INSERT", "knltc_b2b_agents", {
+    id: newAgent.id,
+    organization_name: newAgent.organizationName,
+    agent_type: newAgent.agentType,
+    contact_person: newAgent.contactPerson,
+    phone: newAgent.phone,
+    city: newAgent.city,
+    referred_students_count: newAgent.referredStudentsCount,
+    successful_visas_count: newAgent.successfulVisasCount,
+    agreed_commission_bdt: newAgent.agreedCommissionBdt,
+    pending_commission_bdt: newAgent.pendingCommissionBdt,
+    paid_commission_bdt: newAgent.paidCommissionBdt,
+  });
+
+  return newAgent;
+}
+
+export function updateB2bAgent(id: string, updates: Partial<B2bAgent>): B2bAgent | null {
+  const store = getCmsStore();
+  const idx = store.b2bAgents.findIndex((a) => a.id === id);
+  if (idx === -1) return null;
+  store.b2bAgents[idx] = { ...store.b2bAgents[idx], ...updates };
+  const a = store.b2bAgents[idx];
+  saveCmsStore(store);
+
+  syncToServer("UPSERT", "knltc_b2b_agents", {
+    id: a.id,
+    organization_name: a.organizationName,
+    agent_type: a.agentType,
+    contact_person: a.contactPerson,
+    phone: a.phone,
+    city: a.city,
+    referred_students_count: a.referredStudentsCount,
+    successful_visas_count: a.successfulVisasCount,
+    agreed_commission_bdt: a.agreedCommissionBdt,
+    pending_commission_bdt: a.pendingCommissionBdt,
+    paid_commission_bdt: a.paidCommissionBdt,
+  });
+
+  return a;
+}
+
+export function deleteB2bAgent(id: string) {
+  const store = getCmsStore();
+  store.b2bAgents = store.b2bAgents.filter((a) => a.id !== id);
+  saveCmsStore(store);
+  syncToServer("DELETE", "knltc_b2b_agents", { id });
+}
+
+// ------------------------------------------------------------------------------
+// HR & Team Member Payroll CRUD
+// ------------------------------------------------------------------------------
+export function addStaffMember(staff: Omit<StaffMember, "id">): StaffMember {
+  const store = getCmsStore();
+  const newStaff: StaffMember = {
+    ...staff,
+    id: `stf-${Date.now()}`,
+  };
+  store.staffList.unshift(newStaff);
+  saveCmsStore(store);
+
+  syncToServer("INSERT", "knltc_staff_members", {
+    id: newStaff.id,
+    name: newStaff.name,
+    role: newStaff.role,
+    location: newStaff.location,
+    phone: newStaff.phone,
+    email: newStaff.email,
+    monthly_base_salary_bdt: newStaff.monthlyBaseSalaryBdt,
+    calls_target_monthly: newStaff.callsTargetMonthly,
+    calls_completed: newStaff.callsCompleted,
+    admissions_target: newStaff.admissionsTarget,
+    admissions_achieved: newStaff.admissionsAchieved,
+    performance_bonus_bdt: newStaff.performanceBonusBdt,
+    status: newStaff.status,
+  });
+
+  return newStaff;
+}
+
+export function updateStaffMember(id: string, updates: Partial<StaffMember>): StaffMember | null {
+  const store = getCmsStore();
+  const idx = store.staffList.findIndex((s) => s.id === id);
+  if (idx === -1) return null;
+  store.staffList[idx] = { ...store.staffList[idx], ...updates };
+  const s = store.staffList[idx];
+  saveCmsStore(store);
+
+  syncToServer("UPSERT", "knltc_staff_members", {
+    id: s.id,
+    name: s.name,
+    role: s.role,
+    location: s.location,
+    phone: s.phone,
+    email: s.email,
+    monthly_base_salary_bdt: s.monthlyBaseSalaryBdt,
+    calls_target_monthly: s.callsTargetMonthly,
+    calls_completed: s.callsCompleted,
+    admissions_target: s.admissionsTarget,
+    admissions_achieved: s.admissionsAchieved,
+    performance_bonus_bdt: s.performanceBonusBdt,
+    status: s.status,
+  });
+
+  return s;
+}
+
+export function deleteStaffMember(id: string) {
+  const store = getCmsStore();
+  store.staffList = store.staffList.filter((s) => s.id !== id);
+  saveCmsStore(store);
+  syncToServer("DELETE", "knltc_staff_members", { id });
+}
+
 

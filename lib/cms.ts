@@ -292,7 +292,7 @@ export async function getAdminSummary() {
     selectRows("blog_posts", { select: "id,status" }, true),
     selectRows("orders", { select: "id", status: "eq.pending" }, true),
     selectRows("product_reviews", { select: "id", status: "eq.pending" }, true),
-    selectRows("crm_leads", { select: "id", status: "eq.new" }, true),
+    selectRows("knltc_crm_leads", { select: "id", status: "eq.NEW" }, true),
   ]);
 
   if (productsResult.status === "rejected") {
@@ -333,7 +333,7 @@ export async function getAdminNotificationCounts(): Promise<AdminNotificationCou
   const [ordersResult, reviewsResult, leadsResult, productsResult] = await Promise.allSettled([
     selectRows("orders", { select: "id", status: "eq.pending" }, true),
     selectRows("product_reviews", { select: "id", status: "eq.pending" }, true),
-    selectRows("crm_leads", { select: "id", status: "eq.new" }, true),
+    selectRows("knltc_crm_leads", { select: "id", status: "eq.NEW" }, true),
     selectRows("products", { select: "id,stock" }, true),
   ]);
 
@@ -465,7 +465,9 @@ export async function deleteReview(id: string) {
   await deleteRow("product_reviews", id, true);
 }
 
-function mapWebsiteLeadToEnterprisePayload(lead: CrmLead) {
+function mapWebsiteLeadToEnterprisePayload(
+  lead: Partial<CrmLead> & { name: string; phone: string },
+) {
   const rawInterest = (lead.interest || "").toLowerCase();
   const mappedInterest = rawInterest.includes("caregiver")
     ? "SSW_CAREGIVER"
@@ -493,8 +495,12 @@ function mapWebsiteLeadToEnterprisePayload(lead: CrmLead) {
             ? "ARCHIVED"
             : "NEW";
 
+  const generatedId = lead.id
+    ? String(lead.id)
+    : `web-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+
   return {
-    id: String(lead.id).startsWith("web-") ? String(lead.id) : `web-${lead.id}`,
+    id: generatedId,
     name: lead.name,
     phone: lead.phone,
     whatsapp: lead.phone,
@@ -508,9 +514,10 @@ function mapWebsiteLeadToEnterprisePayload(lead: CrmLead) {
     study_gap_years: 0,
     assigned_to: "সুমাইয়া সুলতানা",
     branch: "DHK-HQ",
-    notes: [lead.interest ? `[${lead.interest}]` : "", lead.message || "", lead.notes || ""]
-      .filter(Boolean)
-      .join(" — ") || "Submitted via Website Form",
+    notes:
+      [lead.interest ? `[${lead.interest}]` : "", lead.message || "", lead.notes || ""]
+        .filter(Boolean)
+        .join(" — ") || "Submitted via Website Form",
     follow_up_date: new Date().toISOString().slice(0, 10),
     last_contacted_at: lead.updated_at || lead.created_at || new Date().toISOString(),
     created_at: lead.created_at || new Date().toISOString(),
@@ -520,33 +527,42 @@ function mapWebsiteLeadToEnterprisePayload(lead: CrmLead) {
 export async function createCrmLead(
   payload: Omit<CrmLead, "id" | "created_at" | "updated_at" | "status" | "notes"> & { status?: LeadStatus; notes?: string | null },
 ) {
-  const created = (await insertRow(
-    "crm_leads",
-    { ...payload, status: payload.status ?? "new", notes: payload.notes ?? null },
-    true,
-  )) as CrmLead;
+  const enterprisePayload = mapWebsiteLeadToEnterprisePayload({
+    ...payload,
+    status: payload.status ?? "new",
+    notes: payload.notes ?? null,
+  });
 
-  try {
-    await upsertRow("knltc_crm_leads", mapWebsiteLeadToEnterprisePayload(created), true);
-  } catch (err) {
-    logCmsError("Failed to mirror website lead into knltc_crm_leads", err);
-  }
-
-  return created;
+  const saved = await upsertRow("knltc_crm_leads", enterprisePayload, true);
+  return (saved || enterprisePayload) as unknown as CrmLead;
 }
 
 export async function getAllCrmLeads() {
-  return await safeSelectRows<CrmLead>("crm_leads", { select: "*", order: "created_at.desc" }, true, "crm leads query failed");
+  return await safeSelectRows<CrmLead>(
+    "knltc_crm_leads",
+    { select: "*", order: "created_at.desc" },
+    true,
+    "knltc_crm_leads query failed",
+  );
 }
 
 export async function updateCrmLead(id: string, payload: Partial<Pick<CrmLead, "status" | "notes">>) {
-  const updated = (await updateRow("crm_leads", id, payload, true)) as CrmLead;
-  try {
-    if (updated && updated.id) {
-      await upsertRow("knltc_crm_leads", mapWebsiteLeadToEnterprisePayload(updated), true);
-    }
-  } catch (err) {
-    logCmsError("Failed to sync updated website lead into knltc_crm_leads", err);
-  }
-  return updated;
+  const mappedStatus =
+    payload.status === "contacted"
+      ? "CONTACTED"
+      : payload.status === "interested"
+        ? "COUNSELED"
+        : payload.status === "converted"
+          ? "ADMITTED"
+          : payload.status === "lost"
+            ? "ARCHIVED"
+            : payload.status
+              ? "NEW"
+              : undefined;
+
+  const updatePayload: Record<string, unknown> = {};
+  if (mappedStatus) updatePayload.status = mappedStatus;
+  if (payload.notes !== undefined) updatePayload.notes = payload.notes;
+
+  return (await updateRow("knltc_crm_leads", id, updatePayload, true)) as CrmLead;
 }

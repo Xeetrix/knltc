@@ -656,7 +656,7 @@ export default function HomePage() {
               transition={{ duration: 0.45, delay: 0.1, ease: [0.16, 1, 0.3, 1] as const }}
               className="lg:col-span-5"
             >
-              <div className="relative rounded-2xl border border-slate-200 bg-white p-7 sm:p-8 shadow-sm">
+              <div className="hover-spotlight relative rounded-2xl border border-slate-200 bg-white p-7 sm:p-8 shadow-sm">
                 {/* Top Header with Official Brand Emblem */}
                 <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                   <div className="flex items-center gap-3">
@@ -773,7 +773,7 @@ export default function HomePage() {
                   variants={itemVariants}
                   whileHover="hover"
                   initial="rest"
-                  className="group flex flex-col justify-between rounded-2xl border border-stone-200 bg-[#fcfaf7] p-7 transition-colors hover:border-stone-300 hover:shadow-md"
+                  className="hover-spotlight group flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-7 transition-all hover:border-slate-300"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-4">
@@ -844,7 +844,7 @@ export default function HomePage() {
                   key={idx}
                   variants={itemVariants}
                   whileHover={{ y: -4, transition: { duration: 0.18 } }}
-                  className="rounded-2xl border border-stone-200 bg-white p-6 shadow-2xs hover:border-stone-300 hover:shadow-md transition-shadow"
+                  className="hover-spotlight group rounded-2xl border border-slate-200/90 bg-white p-6 shadow-2xs hover:border-slate-300 transition-all"
                 >
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-100 text-slate-900 mb-4">
                     <SIcon className="h-5 w-5 text-[#15803d]" />
@@ -895,7 +895,7 @@ export default function HomePage() {
                 key={idx}
                 variants={itemVariants}
                 whileHover={{ y: -4, transition: { duration: 0.18 } }}
-                className="group rounded-2xl border border-stone-200 bg-[#fcfaf7] p-6 sm:p-7 flex flex-col justify-between shadow-2xs hover:border-stone-300 hover:shadow-md transition-shadow"
+                className="hover-spotlight group rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-7 flex flex-col justify-between shadow-2xs hover:border-slate-300 transition-all"
               >
                 <div>
                   <div className="flex items-center justify-between pb-3 border-b border-stone-200">
@@ -984,7 +984,7 @@ export default function HomePage() {
                 key={idx}
                 variants={itemVariants}
                 whileHover={{ y: -4, transition: { duration: 0.18 } }}
-                className="rounded-2xl border border-stone-200 bg-white p-5 shadow-2xs hover:border-stone-300 hover:shadow-md transition-shadow flex flex-col justify-between"
+                className="hover-spotlight rounded-2xl border border-slate-200/90 bg-white p-5 shadow-2xs hover:border-slate-300 transition-all flex flex-col justify-between"
               >
                 <div>
                   <span className="font-mono text-xs font-bold text-[#b91c1c] block mb-2">
@@ -1039,7 +1039,7 @@ export default function HomePage() {
                   key={i}
                   variants={itemVariants}
                   whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                  className="rounded-2xl border border-stone-200 bg-[#fcfaf7] p-6 text-center shadow-2xs hover:border-stone-300 hover:shadow-md transition-shadow"
+                  className="hover-spotlight rounded-2xl border border-slate-200/90 bg-white p-6 text-center shadow-2xs hover:border-slate-300 transition-all"
                 >
                   <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-white border border-stone-200 text-[#b91c1c] mb-3 shadow-2xs">
                     <MIcon className="h-5 w-5" />
@@ -1064,7 +1064,7 @@ export default function HomePage() {
             whileInView={{ opacity: 1, scale: 1, y: 0 }}
             viewport={{ once: true, margin: "-40px" }}
             transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] as const }}
-            className="relative overflow-hidden rounded-3xl border border-stone-200 bg-white p-8 sm:p-12 text-center shadow-xs max-w-3xl mx-auto"
+            className="hover-spotlight relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-8 sm:p-12 text-center shadow-xs max-w-3xl mx-auto"
           >
             <div className="absolute top-0 right-0 -mr-16 -mt-16 h-40 w-40 rounded-full bg-red-100/40 blur-2xl pointer-events-none" />
             <div className="absolute bottom-0 left-0 -ml-16 -mb-16 h-40 w-40 rounded-full bg-emerald-100/40 blur-2xl pointer-events-none" />
