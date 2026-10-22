@@ -12,6 +12,7 @@ import {
   GraduationCap,
   Home,
   Languages,
+  LayoutDashboard,
   Mail,
   MapPin,
   Menu,
@@ -68,6 +69,8 @@ function MainHeader({ pathname }: { pathname: string }) {
             lmsLogin: "Student LMS Login",
             address: "Naya Paltan, Dhaka",
             directLmsTitle: "Official Student LMS Portal",
+            dashboard: "Dashboard",
+            dashboardTitle: "KNLTC Central Dashboard & CMS",
           },
           bn: {
             nav: [
@@ -86,6 +89,8 @@ function MainHeader({ pathname }: { pathname: string }) {
             lmsLogin: "শিক্ষার্থী LMS লগইন",
             address: "নয়া পল্টন, ঢাকা",
             directLmsTitle: "অফিশিয়াল শিক্ষার্থী LMS পোর্টাল",
+            dashboard: "ড্যাশবোর্ড",
+            dashboardTitle: "KNLTC সেন্ট্রাল ড্যাশবোর্ড ও সিএমএস",
           },
           ja: {
             nav: [
@@ -104,6 +109,8 @@ function MainHeader({ pathname }: { pathname: string }) {
             lmsLogin: "受講生 LMSログイン",
             address: "ダッカ・パルタン本部",
             directLmsTitle: "公式受講生LMSポータル",
+            dashboard: "ダッシュボード",
+            dashboardTitle: "KNLTC ダッシュボード＆CMS",
           },
         },
         language,
@@ -194,10 +201,11 @@ function MainHeader({ pathname }: { pathname: string }) {
             {/* Dashboard Link */}
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-1 rounded bg-black/30 hover:bg-black/50 px-2 py-0.5 text-[11px] font-bold text-white transition"
-              title="KNLTC সেন্ট্রাল ড্যাশবোর্ড ও সিএমএস"
+              className="inline-flex items-center gap-1.5 rounded-md bg-black/25 hover:bg-black/45 px-2.5 py-0.5 text-[11px] font-bold text-white transition-colors duration-150 border border-white/15 shadow-2xs"
+              title={t.dashboardTitle}
             >
-              <span>ড্যাশবোর্ড</span>
+              <LayoutDashboard className="h-3 w-3 text-red-200 shrink-0" />
+              <span className="tracking-wide">{t.dashboard}</span>
             </Link>
 
             {/* Top Language Switcher */}
@@ -406,7 +414,7 @@ function MainHeader({ pathname }: { pathname: string }) {
                     onClick={() => setMobileOpen(false)}
                     className="flex items-center justify-center gap-1.5 w-full rounded-xl border border-stone-200 bg-stone-100 hover:bg-stone-200 text-slate-800 font-bold text-xs py-2.5 transition"
                   >
-                    <span>কমান্ড সেন্টার ও ড্যাশবোর্ড</span>
+                    <span>{t.dashboard}</span>
                   </Link>
                 </div>
 
