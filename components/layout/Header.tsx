@@ -191,6 +191,15 @@ function MainHeader({ pathname }: { pathname: string }) {
 
             <span className="text-white/40 hidden md:inline">|</span>
 
+            {/* Dashboard Link */}
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-1 rounded bg-black/30 hover:bg-black/50 px-2 py-0.5 text-[11px] font-bold text-white transition"
+              title="KNLTC সেন্ট্রাল ড্যাশবোর্ড ও সিএমএস"
+            >
+              <span>ড্যাশবোর্ড</span>
+            </Link>
+
             {/* Top Language Switcher */}
             <div className="flex items-center gap-1.5 bg-black/20 rounded-lg px-2 py-0.5 hover:bg-black/30 transition-colors">
               <Globe className="h-3 w-3 text-red-200" />
@@ -390,6 +399,15 @@ function MainHeader({ pathname }: { pathname: string }) {
                       {t.cta}
                     </Link>
                   </Button>
+
+                  {/* Dashboard Link */}
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center justify-center gap-1.5 w-full rounded-xl border border-stone-200 bg-stone-100 hover:bg-stone-200 text-slate-800 font-bold text-xs py-2.5 transition"
+                  >
+                    <span>কমান্ড সেন্টার ও ড্যাশবোর্ড</span>
+                  </Link>
                 </div>
 
                 {/* Quick Contacts */}
