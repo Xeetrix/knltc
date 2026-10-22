@@ -42,6 +42,15 @@ import {
   Trash2,
   Edit3,
   UserPlus,
+  Receipt,
+  Printer,
+  Download,
+  TrendingUp,
+  TrendingDown,
+  Filter,
+  Search,
+  ArrowDownRight,
+  Coins,
 } from "lucide-react";
 import {
   getCmsStore,
@@ -52,6 +61,8 @@ import {
   updateVisaStage,
   addLmsCredentials,
   addFinancialTransaction,
+  updateFinancialTransaction,
+  deleteFinancialTransaction,
   updateStoreOrderStatus,
   getSystemAccounts,
   addPartnerSchool,
@@ -107,6 +118,8 @@ type ActiveModalType =
   | "ADD_B2B_AGENT"
   | "ADD_STAFF"
   | "ADD_PAYMENT"
+  | "ADD_EXPENSE"
+  | "VIEW_RECEIPT"
   | "ADD_CIRCULAR";
 
 export default function DashboardPage() {
@@ -129,6 +142,12 @@ export default function DashboardPage() {
   const [storeSubTab, setStoreSubTab] = useState<
     "summary" | "products" | "orders" | "blog" | "categories" | "reviews" | "uploads"
   >("summary");
+
+  // Finance Sub Tabs, Search & Filter states
+  const [financeSubTab, setFinanceSubTab] = useState<"overview" | "ledger" | "investor">("overview");
+  const [financeFilterCategory, setFinanceFilterCategory] = useState<"ALL" | "INCOME" | "EXPENSE">("ALL");
+  const [financeSearchQuery, setFinanceSearchQuery] = useState("");
+  const [selectedTxForReceipt, setSelectedTxForReceipt] = useState<FinancialTransaction | null>(null);
 
   // Clean Custom Modals State (Replaces all ugly browser prompts)
   const [activeModal, setActiveModal] = useState<ActiveModalType>(null);
@@ -187,15 +206,18 @@ export default function DashboardPage() {
     pendingCommissionBdt: 0,
   });
 
-  // Form states for HR Staff Member
+  // Form states for HR Staff Member (Role-specific KPIs)
   const [staffForm, setStaffForm] = useState({
     name: "",
     role: "TELE_COUNSELOR" as StaffMember["role"],
     location: "DHAKA_OFFICE" as StaffMember["location"],
     phone: "",
     email: "",
-    monthlyBaseSalaryBdt: 15000,
-    callsTargetMonthly: 600,
+    monthlyBaseSalaryBdt: 18000,
+    kpiType: "CALLS" as NonNullable<StaffMember["kpiType"]>,
+    kpiTarget: 500,
+    kpiAchieved: 0,
+    callsTargetMonthly: 500,
     callsCompleted: 0,
     admissionsTarget: 10,
     admissionsAchieved: 0,
@@ -203,13 +225,26 @@ export default function DashboardPage() {
     status: "ACTIVE" as StaffMember["status"],
   });
 
-  // Form states for Finance Payment
+  // Form states for Finance Payment (Income)
   const [paymentForm, setPaymentForm] = useState({
     studentName: "",
-    type: "REGULAR_SERVICE_CHARGE" as FinancialTransaction["type"],
+    studentPhone: "",
+    type: "SERVICE_CHARGE_COE" as FinancialTransaction["type"],
     amountBdt: 120000,
     paymentMethod: "BKASH" as FinancialTransaction["paymentMethod"],
     referenceOrTrx: "",
+    branch: "DHK-HQ" as "DHK-HQ" | "KHULNA-01",
+    notes: "",
+  });
+
+  // Form states for Finance Expense (Outflow)
+  const [expenseForm, setExpenseForm] = useState({
+    title: "",
+    type: "EXPENSE_RENT" as FinancialTransaction["type"],
+    amountBdt: 35000,
+    paymentMethod: "BANK_TRANSFER" as FinancialTransaction["paymentMethod"],
+    referenceOrTrx: "",
+    branch: "DHK-HQ" as "DHK-HQ" | "KHULNA-01",
     notes: "",
   });
 
@@ -653,6 +688,16 @@ export default function DashboardPage() {
   const openStaffModal = (staff?: StaffMember) => {
     if (staff) {
       setEditingStaff(staff);
+      const inferredKpiType: NonNullable<StaffMember["kpiType"]> =
+        staff.kpiType ||
+        (staff.role === "TELE_COUNSELOR" || staff.role === "COUNSELOR"
+          ? "CALLS"
+          : staff.role === "SENIOR_SENSEI"
+            ? "CLASSES"
+            : staff.role === "VISA_OFFICER"
+              ? "VISA_FILES"
+              : "SALARIED_FIXED");
+
       setStaffForm({
         name: staff.name,
         role: staff.role,
@@ -660,12 +705,25 @@ export default function DashboardPage() {
         phone: staff.phone,
         email: staff.email,
         monthlyBaseSalaryBdt: staff.monthlyBaseSalaryBdt,
-        callsTargetMonthly: staff.callsTargetMonthly,
-        callsCompleted: staff.callsCompleted,
-        admissionsTarget: staff.admissionsTarget,
-        admissionsAchieved: staff.admissionsAchieved,
-        performanceBonusBdt: staff.performanceBonusBdt,
-        status: staff.status,
+        kpiType: inferredKpiType,
+        kpiTarget:
+          staff.kpiTarget ??
+          (inferredKpiType === "CALLS"
+            ? staff.callsTargetMonthly || 500
+            : inferredKpiType === "CLASSES"
+              ? 24
+              : inferredKpiType === "VISA_FILES"
+                ? 15
+                : 0),
+        kpiAchieved:
+          staff.kpiAchieved ??
+          (inferredKpiType === "CALLS" ? staff.callsCompleted || 0 : 0),
+        callsTargetMonthly: staff.callsTargetMonthly || 0,
+        callsCompleted: staff.callsCompleted || 0,
+        admissionsTarget: staff.admissionsTarget || 0,
+        admissionsAchieved: staff.admissionsAchieved || 0,
+        performanceBonusBdt: staff.performanceBonusBdt || 0,
+        status: staff.status || "ACTIVE",
       });
     } else {
       setEditingStaff(null);
@@ -675,8 +733,11 @@ export default function DashboardPage() {
         location: "DHAKA_OFFICE",
         phone: "017",
         email: "",
-        monthlyBaseSalaryBdt: 15000,
-        callsTargetMonthly: 600,
+        monthlyBaseSalaryBdt: 18000,
+        kpiType: "CALLS",
+        kpiTarget: 500,
+        kpiAchieved: 0,
+        callsTargetMonthly: 500,
         callsCompleted: 0,
         admissionsTarget: 10,
         admissionsAchieved: 0,
@@ -1083,7 +1144,7 @@ export default function DashboardPage() {
                         <Building2 className="h-4 w-4" />
                       </div>
                       <p className="mt-3 text-2xl font-bold text-slate-900 tabular-nums">
-                        ¥{(store.partnerSchools.reduce((sum, s) => sum + s.totalCommissionReceivedYen, 0) || 2400000).toLocaleString()}
+                        ¥{store.partnerSchools.reduce((sum, s) => sum + (s.totalCommissionReceivedYen || 0), 0).toLocaleString()}
                       </p>
                       <p className="mt-1 text-[11px] text-slate-400">{t.kpi.yenCommissionSub}</p>
                     </div>
@@ -1094,7 +1155,7 @@ export default function DashboardPage() {
                         <DollarSign className="h-4 w-4 text-emerald-600" />
                       </div>
                       <p className="mt-3 text-2xl font-bold text-emerald-700 tabular-nums">
-                        ৳{(store.transactions.reduce((sum, tx) => sum + tx.amountBdt, 0) || 480000).toLocaleString()}
+                        ৳{store.transactions.filter((tx) => tx.category !== "EXPENSE").reduce((sum, tx) => sum + tx.amountBdt, 0).toLocaleString()}
                       </p>
                       <p className="mt-1 text-[11px] text-slate-400">{t.kpi.marginSub}</p>
                     </div>
@@ -1171,15 +1232,25 @@ export default function DashboardPage() {
                       <div className="mt-4 grid grid-cols-3 gap-4 border-t border-slate-100 pt-4 text-xs">
                         <div>
                           <span className="text-slate-400">{t.module1.grossProjection}</span>
-                          <p className="text-sm font-bold text-slate-900 mt-0.5 tabular-nums">৳ 48,00,000</p>
+                          <p className="text-sm font-bold text-slate-900 mt-0.5 tabular-nums">
+                            ৳ {(store.transactions.filter((tx) => tx.category !== "EXPENSE").reduce((sum, tx) => sum + tx.amountBdt, 0) || (store.visaApplicants.length * 120000)).toLocaleString()}
+                          </p>
                         </div>
                         <div>
                           <span className="text-slate-400">{t.module1.operationalCost}</span>
-                          <p className="text-sm font-bold text-slate-900 mt-0.5 tabular-nums">৳ 12,00,000</p>
+                          <p className="text-sm font-bold text-slate-900 mt-0.5 tabular-nums">
+                            ৳ {(store.transactions.filter((tx) => tx.category === "EXPENSE").reduce((sum, tx) => sum + tx.amountBdt, 0) || (store.staffList.reduce((sum, st) => sum + st.monthlyBaseSalaryBdt, 0) * 3)).toLocaleString()}
+                          </p>
                         </div>
                         <div>
                           <span className="text-slate-400">{t.module1.netProfit}</span>
-                          <p className="text-sm font-bold text-emerald-700 mt-0.5 tabular-nums">৳ 36,00,000</p>
+                          <p className="text-sm font-bold text-emerald-700 mt-0.5 tabular-nums">
+                            ৳ {Math.max(
+                              0,
+                              (store.transactions.filter((tx) => tx.category !== "EXPENSE").reduce((sum, tx) => sum + tx.amountBdt, 0) || (store.visaApplicants.length * 120000)) -
+                              (store.transactions.filter((tx) => tx.category === "EXPENSE").reduce((sum, tx) => sum + tx.amountBdt, 0) || (store.staffList.reduce((sum, st) => sum + st.monthlyBaseSalaryBdt, 0) * 3))
+                            ).toLocaleString()}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -1211,18 +1282,43 @@ export default function DashboardPage() {
                           </span>
                           <button
                             type="button"
-                            onClick={() => setActiveTab("b2b")}
+                            onClick={() => openPartnerSchoolModal()}
                             className="text-[11px] font-semibold text-[#b91c1c] hover:underline"
                           >
-                            {language === "bn" ? "সব দেখুন →" : "Manage →"}
+                            {language === "bn" ? "+ নতুন স্কুল যোগ করুন" : "+ Add School"}
                           </button>
                         </div>
-                        <h3 className="text-sm font-bold text-slate-900 mt-1">
-                          {store.partnerSchools[0]?.name || t.module1.partnerTitle}
-                        </h3>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          {store.partnerSchools[0]?.contactPerson || t.module1.partnerDesc}
-                        </p>
+
+                        {store.partnerSchools.length > 0 ? (
+                          <div className="mt-2.5 space-y-2">
+                            {store.partnerSchools.slice(0, 2).map((sch) => (
+                              <div key={sch.id} className="pt-1.5 first:pt-0 border-t border-slate-100 first:border-0">
+                                <h3 className="text-sm font-bold text-slate-900">{sch.name}</h3>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                  {sch.location} {sch.contactPerson ? `• ${sch.contactPerson}` : ""}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="mt-3 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-4 text-center">
+                            <Building2 className="h-6 w-6 text-slate-300 mx-auto mb-1.5" />
+                            <p className="text-xs font-semibold text-slate-700">
+                              {t.module1.partnerTitle}
+                            </p>
+                            <p className="text-[11px] text-slate-400 mt-0.5">
+                              {t.module1.partnerDesc}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => openPartnerSchoolModal()}
+                              className="mt-2.5 inline-flex items-center gap-1 rounded-lg bg-slate-900 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-slate-800 transition"
+                            >
+                              <Plus className="h-3 w-3" />
+                              <span>{language === "bn" ? "প্রতিষ্ঠান যোগ করুন" : "Add Institution"}</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -2001,119 +2097,544 @@ export default function DashboardPage() {
               )}
 
               {/* =========================================================================
-                  MODULE 6: FINANCE, PACKAGE BILLING & INVESTOR PORTAL
+              {/* =========================================================================
+                  MODULE 6: INDUSTRY-GRADE FINANCE, LEDGER & INVESTOR OPEN-BOOK PORTAL
                   ========================================================================= */}
               {activeTab === "finance" && (
                 <div className="space-y-6">
-                  <div className="hover-spotlight rounded-2xl border border-slate-200/80 bg-white p-6">
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-5 border-b border-slate-100">
-                      <div>
-                        <span className="text-xs font-semibold text-emerald-700">
-                          {t.finance.auditBadge}
+                  {/* Top Action Header */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-lg bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200/60 uppercase tracking-wider">
+                          {language === "bn" ? "অডিট ভেরিফাইড" : "Audit Verified"}
                         </span>
-                        <h2 className="text-xl font-bold text-slate-900 tracking-tight mt-1">
-                          {t.finance.title}
+                        <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+                          {language === "bn"
+                            ? "ফাইন্যান্সিয়াল ম্যানেজমেন্ট ও ক্যাশফ্লো হাব"
+                            : language === "ja"
+                              ? "財務・キャッシュフロー管理ハブ"
+                              : "Financial Management & Cashflow Hub"}
                         </h2>
-                        <p className="text-xs text-slate-500 mt-0.5">{t.finance.subtitle}</p>
                       </div>
-                      <div className=" md:text-right">
-                        <span className="text-xs text-slate-400">{t.finance.capitalLabel}</span>
-                        <p className="text-2xl font-bold text-slate-900 tabular-nums">৳ 10,00,000</p>
-                      </div>
+                      <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                        {language === "bn"
+                          ? "কোর্স ফি, প্রি-ভিসা COE সার্ভিস চার্জ (৳১.২ লক্ষ), অল-ইন-ওয়ান প্যাকেজ ও প্রাতিষ্ঠানিক ব্যয়ের পূর্ণাঙ্গ খতিয়ান।"
+                          : "Tuition fees, COE service charges (৳1.2L), all-in-one packages, and operational expenditure ledger."}
+                      </p>
                     </div>
 
-                    <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                      <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
-                        <span className="text-xs text-slate-500">{t.finance.pillar1Title}</span>
-                        <p className="text-lg font-bold text-slate-900 mt-1 tabular-nums">৳ 3,00,000</p>
-                        <p className="text-[11px] text-slate-400 mt-0.5">{t.finance.pillar1Desc}</p>
-                      </div>
-                      <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
-                        <span className="text-xs text-slate-500">{t.finance.pillar2Title}</span>
-                        <p className="text-lg font-bold text-slate-900 mt-1 tabular-nums">৳ 2,00,000</p>
-                        <p className="text-[11px] text-slate-400 mt-0.5">{t.finance.pillar2Desc}</p>
-                      </div>
-                      <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
-                        <span className="text-xs text-slate-500">{t.finance.pillar3Title}</span>
-                        <p className="text-lg font-bold text-slate-900 mt-1 tabular-nums">৳ 3,00,000</p>
-                        <p className="text-[11px] text-slate-400 mt-0.5">{t.finance.pillar3Desc}</p>
-                      </div>
-                      <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-4">
-                        <span className="text-xs font-medium text-emerald-800">{t.finance.pillar4Title}</span>
-                        <p className="text-lg font-bold text-emerald-700 mt-1 tabular-nums">৳ 2,00,000</p>
-                        <p className="text-[11px] text-emerald-700 mt-0.5">{t.finance.pillar4Desc}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Transactions Table */}
-                  <div className="rounded-2xl border border-slate-200/80 bg-white overflow-hidden">
-                    <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                      <div>
-                        <h3 className="text-sm font-bold text-slate-900">{t.finance.billingTitle}</h3>
-                        <p className="text-xs text-slate-400 mt-0.5">{t.finance.billingSubtitle}</p>
-                      </div>
+                    <div className="flex flex-wrap items-center gap-2">
                       <button
                         type="button"
                         onClick={() => setActiveModal("ADD_PAYMENT")}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition"
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-semibold text-white hover:bg-emerald-800 transition shadow-2xs"
                       >
-                        <Plus className="h-3.5 w-3.5" />
-                        <span>{t.finance.recordPaymentBtn}</span>
+                        <Plus className="h-4 w-4" />
+                        <span>{language === "bn" ? "+ আয় গ্রহণ (Student Fee)" : "+ Record Income"}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveModal("ADD_EXPENSE")}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-[#b91c1c] px-4 py-2.5 text-xs font-semibold text-white hover:bg-red-800 transition shadow-2xs"
+                      >
+                        <ArrowDownRight className="h-4 w-4" />
+                        <span>{language === "bn" ? "+ ব্যয় রেকর্ড (Expense)" : "+ Record Expense"}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const csvRows = [
+                            ["Receipt No", "Date", "Name / Payee", "Category", "Type", "Amount (BDT)", "Method", "Trx ID", "Branch"],
+                            ...store.transactions.map((tx) => [
+                              tx.receiptNo,
+                              tx.date,
+                              `"${(tx.studentName || "").replace(/"/g, '""')}"`,
+                              tx.category || (tx.type.startsWith("EXPENSE") ? "EXPENSE" : "INCOME"),
+                              tx.type,
+                              tx.amountBdt,
+                              tx.paymentMethod,
+                              tx.referenceOrTrx,
+                              tx.branch,
+                            ]),
+                          ];
+                          const csvString = csvRows.map((r) => r.join(",")).join("\n");
+                          const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = `KNLTC_Finance_Ledger_${new Date().toISOString().slice(0, 10)}.csv`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                          showToast(language === "bn" ? "লেজার CSV ফাইল ডাউনলোড হয়েছে" : "Ledger exported to CSV");
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+                        title="Export CSV"
+                      >
+                        <Download className="h-4 w-4 text-slate-500" />
+                        <span className="hidden sm:inline">{language === "bn" ? "CSV এক্সপোর্ট" : "Export CSV"}</span>
                       </button>
                     </div>
-
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs">
-                        <thead className="bg-slate-50/70 border-b border-slate-100 font-semibold text-slate-500">
-                          <tr>
-                            <th className="px-4 py-3">{t.finance.colReceiptDate}</th>
-                            <th className="px-4 py-3">{t.finance.colStudentDesc}</th>
-                            <th className="px-4 py-3">{t.finance.colPackageType}</th>
-                            <th className="px-4 py-3">{t.finance.colMethodTrx}</th>
-                            <th className="px-4 py-3">{t.finance.colBranch}</th>
-                            <th className="px-4 py-3 text-right">{t.finance.colAmount}</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {store.transactions.map((tx) => (
-                            <tr key={tx.id} className="hover:bg-slate-50/70">
-                              <td className="px-4 py-3.5 font-mono text-slate-800">
-                                <span className="font-semibold">{tx.receiptNo}</span>
-                                <p className="text-[10px] text-slate-400 font-sans">{tx.date}</p>
-                              </td>
-                              <td className="px-4 py-3.5 font-semibold text-slate-900">{tx.studentName}</td>
-                              <td className="px-4 py-3.5 text-slate-600">{tx.type}</td>
-                              <td className="px-4 py-3.5">
-                                <span className="font-medium text-slate-800">{tx.paymentMethod}</span>
-                                <p className="font-mono text-[10px] text-slate-400">{tx.referenceOrTrx}</p>
-                              </td>
-                              <td className="px-4 py-3.5 text-slate-500">
-                                {tx.branch === "DHK-HQ" ? t.dhakaHq : t.khulnaBranch}
-                              </td>
-                              <td className="px-4 py-3.5 text-right font-bold text-slate-900 tabular-nums">
-                                ৳{tx.amountBdt.toLocaleString()}
-                              </td>
-                            </tr>
-                          ))}
-                          {store.transactions.length === 0 && (
-                            <tr>
-                              <td colSpan={6} className="py-10 text-center text-slate-400">
-                                {language === "bn"
-                                  ? "কোনো পেমেন্ট ট্রানজেকশন রেকর্ড করা হয়নি।"
-                                  : "No payment transactions recorded yet."}
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
                   </div>
+
+                  {/* Finance Sub-Tab Selector */}
+                  <div className="flex items-center gap-2 border-b border-slate-200/80 pb-2">
+                    <button
+                      type="button"
+                      onClick={() => setFinanceSubTab("overview")}
+                      className={`rounded-xl px-3.5 py-2 text-xs font-semibold transition ${
+                        financeSubTab === "overview"
+                          ? "bg-slate-900 text-white shadow-2xs"
+                          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                      }`}
+                    >
+                      {language === "bn" ? "সারসংক্ষেপ ও নগদ প্রবাহ (Overview)" : "Overview & P&L"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFinanceSubTab("ledger")}
+                      className={`rounded-xl px-3.5 py-2 text-xs font-semibold transition flex items-center gap-1.5 ${
+                        financeSubTab === "ledger"
+                          ? "bg-slate-900 text-white shadow-2xs"
+                          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                      }`}
+                    >
+                      <span>{language === "bn" ? "জেনারেল লেজার ও ট্রানজেকশন" : "General Ledger"}</span>
+                      <span className="rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-700">
+                        {store.transactions.length}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFinanceSubTab("investor")}
+                      className={`rounded-xl px-3.5 py-2 text-xs font-semibold transition ${
+                        financeSubTab === "investor"
+                          ? "bg-slate-900 text-white shadow-2xs"
+                          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                      }`}
+                    >
+                      {language === "bn" ? "ইনভেস্টর ওপেন-বুক পোর্টাল (১০ লক্ষ টাকা)" : "Investor Open-Book"}
+                    </button>
+                  </div>
+
+                  {/* 1. OVERVIEW & P&L SUB-TAB */}
+                  {financeSubTab === "overview" && (
+                    <div className="space-y-6">
+                      {/* 4 Financial Health KPI Cards */}
+                      {(() => {
+                        const totalInflow = store.transactions
+                          .filter((t) => t.category !== "EXPENSE" && !t.type.startsWith("EXPENSE"))
+                          .reduce((sum, t) => sum + t.amountBdt, 0);
+                        const totalOutflow = store.transactions
+                          .filter((t) => t.category === "EXPENSE" || t.type.startsWith("EXPENSE"))
+                          .reduce((sum, t) => sum + t.amountBdt, 0);
+                        const netMargin = totalInflow - totalOutflow;
+                        const pendingB2bCommission = store.b2bAgents.reduce(
+                          (sum, a) => sum + (a.pendingCommissionBdt || 0),
+                          0,
+                        );
+
+                        return (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="hover-spotlight rounded-2xl border border-emerald-100 bg-white p-5">
+                              <div className="flex items-center justify-between text-emerald-600">
+                                <span className="text-xs font-semibold text-slate-500">
+                                  {language === "bn" ? "মোট সংগৃহীত আয় (Inflow)" : "Total Gross Income"}
+                                </span>
+                                <TrendingUp className="h-4 w-4 text-emerald-600" />
+                              </div>
+                              <p className="mt-3 text-2xl font-bold text-slate-900 tabular-nums">
+                                ৳{totalInflow.toLocaleString()}
+                              </p>
+                              <p className="mt-1 text-[11px] text-emerald-700 font-medium">
+                                {language === "bn" ? "কোর্স ফি, সার্ভিস চার্জ ও অন্যান্য" : "Tuition & Service fees"}
+                              </p>
+                            </div>
+
+                            <div className="hover-spotlight rounded-2xl border border-red-100 bg-white p-5">
+                              <div className="flex items-center justify-between text-red-500">
+                                <span className="text-xs font-semibold text-slate-500">
+                                  {language === "bn" ? "মোট অপারেশনাল ব্যয় (Outflow)" : "Total Expenditures"}
+                                </span>
+                                <TrendingDown className="h-4 w-4 text-[#b91c1c]" />
+                              </div>
+                              <p className="mt-3 text-2xl font-bold text-slate-900 tabular-nums">
+                                ৳{totalOutflow.toLocaleString()}
+                              </p>
+                              <p className="mt-1 text-[11px] text-red-600 font-medium">
+                                {language === "bn" ? "অফিস ভাড়া, সেন্সি পে-রোল ও মার্কেটিং" : "Rent, payroll & marketing"}
+                              </p>
+                            </div>
+
+                            <div className="hover-spotlight rounded-2xl border border-slate-200/80 bg-white p-5">
+                              <div className="flex items-center justify-between text-slate-400">
+                                <span className="text-xs font-semibold text-slate-500">
+                                  {language === "bn" ? "নিট অপারেটিং মার্জিন" : "Net Operating Margin"}
+                                </span>
+                                <DollarSign className={`h-4 w-4 ${netMargin >= 0 ? "text-emerald-600" : "text-amber-600"}`} />
+                              </div>
+                              <p className={`mt-3 text-2xl font-bold tabular-nums ${netMargin >= 0 ? "text-emerald-700" : "text-red-700"}`}>
+                                ৳{netMargin.toLocaleString()}
+                              </p>
+                              <p className="mt-1 text-[11px] text-slate-400">
+                                {netMargin >= 0
+                                  ? (language === "bn" ? "✓ ইতিবাচক নগদ উদ্বৃত্ত" : "Positive Cash Surplus")
+                                  : (language === "bn" ? "প্রাথমিক সেটআপ ইনভেস্টমেন্ট পর্যায়" : "Initial Capital Phase")}
+                              </p>
+                            </div>
+
+                            <div className="hover-spotlight rounded-2xl border border-amber-100 bg-white p-5">
+                              <div className="flex items-center justify-between text-amber-500">
+                                <span className="text-xs font-semibold text-slate-500">
+                                  {language === "bn" ? "বিটুবি কমিশন বকেয়া" : "Pending B2B Commission"}
+                                </span>
+                                <Briefcase className="h-4 w-4 text-amber-600" />
+                              </div>
+                              <p className="mt-3 text-2xl font-bold text-slate-900 tabular-nums">
+                                ৳{pendingB2bCommission.toLocaleString()}
+                              </p>
+                              <p className="mt-1 text-[11px] text-amber-700 font-medium">
+                                {language === "bn" ? "সাব-এজেন্ট প্রদেয় দায়" : "Payable to verified sub-agents"}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Currency Converter & Japan Study Cost Calculator */}
+                      <div className="hover-spotlight rounded-2xl border border-slate-200/80 bg-white p-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-4">
+                          <div>
+                            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                              <Coins className="h-4 w-4 text-amber-600" />
+                              <span>
+                                {language === "bn"
+                                  ? "জাপান স্টাডি মাল্টি-কারেন্সি ক্যালকুলেটর (BDT ৳ ⇄ JPY ¥)"
+                                  : "Japan Study Currency Conversion Assistant"}
+                              </span>
+                            </h3>
+                            <p className="text-xs text-slate-400 mt-0.5">
+                              {language === "bn"
+                                ? "১ম বছরের টিউশন ফি, হোস্টেল ফি ও স্কুল কমিশন দ্রুত রূপান্তর করুন (১ JPY ≈ ৳ ০.৮০ BDT)"
+                                : "Quickly convert tuition, dormitory fees and school commission (1 JPY ≈ 0.80 BDT)"}
+                            </p>
+                          </div>
+                          <span className="text-xs font-semibold text-slate-500 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100 tabular-nums">
+                            1 JPY = ৳ 0.80 BDT
+                          </span>
+                        </div>
+
+                        <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
+                            <span className="font-semibold text-slate-600">
+                              {language === "bn" ? "জাপানি স্কুল কমিশন (স্টুডেন্ট পিছু)" : "School Commission (Per Student)"}
+                            </span>
+                            <p className="text-lg font-bold text-slate-900 mt-1 tabular-nums">¥80,000 JPY</p>
+                            <p className="text-xs text-emerald-700 font-semibold mt-0.5 tabular-nums">
+                              ≈ ৳ 64,000 BDT
+                            </p>
+                          </div>
+
+                          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
+                            <span className="font-semibold text-slate-600">
+                              {language === "bn" ? "১ বছরের টিউশন ফি (গড়পড়তা)" : "1st Year Tuition Fee (Average)"}
+                            </span>
+                            <p className="text-lg font-bold text-slate-900 mt-1 tabular-nums">¥750,000 – ¥850,000 JPY</p>
+                            <p className="text-xs text-slate-500 font-medium mt-0.5 tabular-nums">
+                              ≈ ৳ 6,00,000 – ৳ 6,80,000 BDT
+                            </p>
+                          </div>
+
+                          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
+                            <span className="font-semibold text-slate-600">
+                              {language === "bn" ? "KNLTC রেগুলার প্যাকেজ ফি" : "KNLTC Regular Service Charge"}
+                            </span>
+                            <p className="text-lg font-bold text-slate-900 mt-1 tabular-nums">৳ 1,20,000 BDT</p>
+                            <p className="text-xs text-emerald-700 font-semibold mt-0.5 tabular-nums">
+                              ≈ ¥150,000 JPY (COE অনুমোদনের পর প্রযোজ্য)
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 2. GENERAL LEDGER SUB-TAB */}
+                  {financeSubTab === "ledger" && (
+                    <div className="rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-2xs">
+                      {/* Filter & Search Bar */}
+                      <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                        <div className="flex items-center gap-1.5 overflow-x-auto">
+                          <button
+                            type="button"
+                            onClick={() => setFinanceFilterCategory("ALL")}
+                            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                              financeFilterCategory === "ALL"
+                                ? "bg-slate-900 text-white"
+                                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                            }`}
+                          >
+                            {language === "bn" ? "সব ট্রানজেকশন" : "All Entries"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFinanceFilterCategory("INCOME")}
+                            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition flex items-center gap-1 ${
+                              financeFilterCategory === "INCOME"
+                                ? "bg-emerald-700 text-white"
+                                : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                            }`}
+                          >
+                            <TrendingUp className="h-3 w-3" />
+                            <span>{language === "bn" ? "কেবল আয় (Inflow)" : "Income Only"}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFinanceFilterCategory("EXPENSE")}
+                            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition flex items-center gap-1 ${
+                              financeFilterCategory === "EXPENSE"
+                                ? "bg-[#b91c1c] text-white"
+                                : "bg-red-50 text-red-800 hover:bg-red-100"
+                            }`}
+                          >
+                            <TrendingDown className="h-3 w-3" />
+                            <span>{language === "bn" ? "কেবল ব্যয় (Expense)" : "Expenses Only"}</span>
+                          </button>
+                        </div>
+
+                        <div className="relative w-full md:w-64">
+                          <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                          <input
+                            type="text"
+                            value={financeSearchQuery}
+                            onChange={(e) => setFinanceSearchQuery(e.target.value)}
+                            placeholder={language === "bn" ? "রসিদ নং, শিক্ষার্থী বা খাত খুঁজুন..." : "Search ledger entries..."}
+                            className="w-full rounded-xl border border-slate-200 pl-8 pr-3 py-1.5 text-xs font-medium focus:border-slate-400 focus:outline-hidden"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Ledger Table */}
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                          <thead className="bg-slate-50/70 border-b border-slate-100 font-semibold text-slate-500">
+                            <tr>
+                              <th className="px-4 py-3">{language === "bn" ? "রসিদ নং ও তারিখ" : "Receipt / Date"}</th>
+                              <th className="px-4 py-3">{language === "bn" ? "শিক্ষার্থী / বিবরণ" : "Student / Payee"}</th>
+                              <th className="px-4 py-3">{language === "bn" ? "খাত / টাইপ" : "Account Head"}</th>
+                              <th className="px-4 py-3">{language === "bn" ? "পেমেন্ট মাধ্যম" : "Payment Method"}</th>
+                              <th className="px-4 py-3">{language === "bn" ? "ব্রাঞ্চ" : "Branch"}</th>
+                              <th className="px-4 py-3 text-right">{language === "bn" ? "পরিমাণ (BDT)" : "Amount (BDT)"}</th>
+                              <th className="px-4 py-3 text-right">{language === "bn" ? "অ্যাকশন" : "Actions"}</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {store.transactions
+                              .filter((tx) => {
+                                const isExpense = tx.category === "EXPENSE" || tx.type.startsWith("EXPENSE");
+                                if (financeFilterCategory === "INCOME" && isExpense) return false;
+                                if (financeFilterCategory === "EXPENSE" && !isExpense) return false;
+                                if (financeSearchQuery.trim()) {
+                                  const q = financeSearchQuery.toLowerCase();
+                                  const textMatch =
+                                    (tx.receiptNo || "").toLowerCase().includes(q) ||
+                                    (tx.studentName || "").toLowerCase().includes(q) ||
+                                    (tx.type || "").toLowerCase().includes(q) ||
+                                    (tx.referenceOrTrx || "").toLowerCase().includes(q) ||
+                                    (tx.notes || "").toLowerCase().includes(q);
+                                  if (!textMatch) return false;
+                                }
+                                return true;
+                              })
+                              .map((tx) => {
+                                const isExpense = tx.category === "EXPENSE" || tx.type.startsWith("EXPENSE");
+                                return (
+                                  <tr key={tx.id} className="hover:bg-slate-50/70 transition-colors">
+                                    <td className="px-4 py-3.5 font-mono text-slate-800">
+                                      <span className="font-semibold">{tx.receiptNo}</span>
+                                      <p className="text-[10px] text-slate-400 font-sans">{tx.date}</p>
+                                    </td>
+                                    <td className="px-4 py-3.5">
+                                      <p className="font-semibold text-slate-900">{tx.studentName}</p>
+                                      {tx.notes && (
+                                        <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">{tx.notes}</p>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-3.5">
+                                      <span
+                                        className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold ${
+                                          isExpense
+                                            ? "bg-red-50 text-red-800 border border-red-200/60"
+                                            : "bg-emerald-50 text-emerald-800 border border-emerald-200/60"
+                                        }`}
+                                      >
+                                        {isExpense ? <TrendingDown className="h-2.5 w-2.5" /> : <TrendingUp className="h-2.5 w-2.5" />}
+                                        <span>
+                                          {tx.type === "COURSE_FEE"
+                                            ? "ভাষা কোর্স ফি"
+                                            : tx.type === "SERVICE_CHARGE_COE"
+                                              ? "COE সার্ভিস চার্জ"
+                                              : tx.type === "REGULAR_SERVICE_CHARGE"
+                                                ? "রেগুলার সার্ভিস চার্জ"
+                                                : tx.type === "PREMIUM_PACKAGE" || tx.type === "PREMIUM_PACKAGE_ADVANCE"
+                                                  ? "প্রিমিয়াম প্যাকেজ ফি"
+                                                  : tx.type === "BOOK_STORE_SALE"
+                                                    ? "মিন্না নো নিহোঙ্গো বই সেল"
+                                                    : tx.type === "EXPENSE_RENT"
+                                                      ? "অফিস ভাড়া ও ইউটিলিটি"
+                                                      : tx.type === "EXPENSE_PAYROLL"
+                                                        ? "শিক্ষক/স্টাফ সম্মানী"
+                                                        : tx.type === "EXPENSE_MARKETING"
+                                                          ? "মেটা অ্যাডস খরচ"
+                                                          : tx.type === "EXPENSE_EMBASSY_NOTARY"
+                                                            ? "নোটারি ও পররাষ্ট্র মন্ত্রণালয়"
+                                                            : tx.type === "EXPENSE_EXAM_FEE"
+                                                              ? "JLPT / NAT-TEST ফি"
+                                                              : tx.type === "EXPENSE_B2B_COMMISSION"
+                                                                ? "এজেন্ট কমিশন প্রদান"
+                                                                : tx.type}
+                                        </span>
+                                      </span>
+                                    </td>
+                                    <td className="px-4 py-3.5">
+                                      <span className="font-medium text-slate-800">{tx.paymentMethod}</span>
+                                      <p className="font-mono text-[10px] text-slate-400">{tx.referenceOrTrx || "N/A"}</p>
+                                    </td>
+                                    <td className="px-4 py-3.5 text-slate-500">
+                                      {tx.branch === "DHK-HQ" ? t.dhakaHq : t.khulnaBranch}
+                                    </td>
+                                    <td className="px-4 py-3.5 text-right font-bold tabular-nums">
+                                      <span className={isExpense ? "text-red-700" : "text-emerald-700"}>
+                                        {isExpense ? "- ৳" : "+ ৳"}{tx.amountBdt.toLocaleString()}
+                                      </span>
+                                    </td>
+                                    <td className="px-4 py-3.5 text-right">
+                                      <div className="inline-flex items-center justify-end gap-1">
+                                        {!isExpense && (
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setSelectedTxForReceipt(tx);
+                                              setActiveModal("VIEW_RECEIPT");
+                                            }}
+                                            className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-200 transition"
+                                            title="View Official Money Receipt"
+                                          >
+                                            <Receipt className="h-3 w-3 text-slate-500" />
+                                            <span>{language === "bn" ? "রসিদ" : "Receipt"}</span>
+                                          </button>
+                                        )}
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            deleteFinancialTransaction(tx.id);
+                                            setStore({ ...getCmsStore() });
+                                            showToast(language === "bn" ? "ট্রানজেকশন মুছে ফেলা হয়েছে" : "Transaction deleted");
+                                          }}
+                                          className="rounded-lg p-1 text-slate-400 hover:bg-red-50 hover:text-[#b91c1c] transition"
+                                          title="Delete entry"
+                                        >
+                                          <Trash2 className="h-3.5 w-3.5" />
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+
+                            {store.transactions.length === 0 && (
+                              <tr>
+                                <td colSpan={7} className="py-12 text-center text-slate-400">
+                                  <Receipt className="h-7 w-7 text-slate-300 mx-auto mb-2" />
+                                  <p className="text-sm font-semibold text-slate-700">
+                                    {language === "bn" ? "এখনো কোনো ট্রানজেকশন বা পেমেন্ট রেকর্ড নেই" : "No financial transactions recorded yet"}
+                                  </p>
+                                  <p className="text-xs text-slate-400 mt-0.5">
+                                    {language === "bn"
+                                      ? "শিক্ষার্থীদের ফি গ্রহণ বা অফিস খরচ রেকর্ড করতে উপরের বাটনে ক্লিক করুন।"
+                                      : "Click Record Income or Record Expense above to start tracking."}
+                                  </p>
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 3. INVESTOR PORTAL SUB-TAB */}
+                  {financeSubTab === "investor" && (
+                    <div className="space-y-6">
+                      <div className="hover-spotlight rounded-2xl border border-slate-200/80 bg-white p-6">
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-5 border-b border-slate-100">
+                          <div>
+                            <span className="text-xs font-semibold text-emerald-700">
+                              {t.finance.auditBadge}
+                            </span>
+                            <h2 className="text-xl font-bold text-slate-900 tracking-tight mt-1">
+                              {t.finance.title}
+                            </h2>
+                            <p className="text-xs text-slate-500 mt-0.5">{t.finance.subtitle}</p>
+                          </div>
+                          <div className="md:text-right">
+                            <span className="text-xs text-slate-400">{t.finance.capitalLabel}</span>
+                            <p className="text-2xl font-bold text-slate-900 tabular-nums">৳ 10,00,000</p>
+                          </div>
+                        </div>
+
+                        <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                          <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
+                            <span className="text-xs text-slate-500">{t.finance.pillar1Title}</span>
+                            <p className="text-lg font-bold text-slate-900 mt-1 tabular-nums">৳ 3,00,000</p>
+                            <p className="text-[11px] text-slate-400 mt-0.5">{t.finance.pillar1Desc}</p>
+                          </div>
+                          <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
+                            <span className="text-xs text-slate-500">{t.finance.pillar2Title}</span>
+                            <p className="text-lg font-bold text-slate-900 mt-1 tabular-nums">৳ 2,00,000</p>
+                            <p className="text-[11px] text-slate-400 mt-0.5">{t.finance.pillar2Desc}</p>
+                          </div>
+                          <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
+                            <span className="text-xs text-slate-500">{t.finance.pillar3Title}</span>
+                            <p className="text-lg font-bold text-slate-900 mt-1 tabular-nums">৳ 3,00,000</p>
+                            <p className="text-[11px] text-slate-400 mt-0.5">{t.finance.pillar3Desc}</p>
+                          </div>
+                          <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-4">
+                            <span className="text-xs font-medium text-emerald-800">{t.finance.pillar4Title}</span>
+                            <p className="text-lg font-bold text-emerald-700 mt-1 tabular-nums">৳ 2,00,000</p>
+                            <p className="text-[11px] text-emerald-700 mt-0.5">{t.finance.pillar4Desc}</p>
+                          </div>
+                        </div>
+
+                        {/* Legal Stamp & Cheque Verification */}
+                        <div className="mt-5 rounded-xl border border-emerald-200/80 bg-emerald-50/50 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-emerald-950">
+                          <div className="flex items-center gap-2">
+                            <ShieldCheck className="h-5 w-5 text-emerald-600 shrink-0" />
+                            <div>
+                              <p className="font-bold">
+                                {language === "bn"
+                                  ? "৩০০ টাকার সরকারি নন-জুডিশিয়াল স্ট্যাম্প ও ব্যাংক গ্যারান্টি চেক সংরক্ষিত"
+                                  : "300 BDT Govt Non-Judicial Stamp & Bank Security Cheques Held"}
+                              </p>
+                              <p className="text-[11px] text-emerald-800 mt-0.5">
+                                {language === "bn"
+                                  ? "নিরাপদ বিনিয়োগ নিশ্চয়তা ও শরীয়াহ সম্মত ১০% নিট লভ্যাংশ অংশীদারিত্ব।"
+                                  : "100% principal safety protection with 10% audited dividend distribution."}
+                              </p>
+                            </div>
+                          </div>
+                          <span className="rounded-lg bg-emerald-700 px-3 py-1.5 font-bold text-white shrink-0 text-center">
+                            {language === "bn" ? "চুক্তি সক্রিয়" : "Active Syndicate"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* =========================================================================
-                  MODULE 7: HR & TEAM MEMBER PAYROLL (With Full Add / Edit / Delete)
+                  MODULE 7: HR & TEAM MEMBERS (With Diverse Roles & Role-Specific KPIs)
                   ========================================================================= */}
               {activeTab === "hr" && (
                 <div className="space-y-5">
@@ -2122,7 +2643,11 @@ export default function DashboardPage() {
                       <h2 className="text-xl font-bold text-slate-900 tracking-tight">
                         {t.hr.title}
                       </h2>
-                      <p className="text-xs sm:text-sm text-slate-500 mt-0.5">{t.hr.subtitle}</p>
+                      <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                        {language === "bn"
+                          ? "টেলি-কাউন্সেলর, জাপানি শিক্ষক (সেন্সি), ভিসা প্রসেসিং ও অফিস কর্মকর্তাদের টার্গেট ও পে-রোল।"
+                          : t.hr.subtitle}
+                      </p>
                     </div>
                     <button
                       type="button"
@@ -2140,15 +2665,19 @@ export default function DashboardPage() {
                     </button>
                   </div>
 
-                  <div className="rounded-2xl border border-slate-200/80 bg-white overflow-hidden">
+                  <div className="rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-2xs">
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs">
                         <thead className="bg-slate-50/70 border-b border-slate-100 font-semibold text-slate-500">
                           <tr>
                             <th className="px-4 py-3">{t.hr.colNameRole}</th>
                             <th className="px-4 py-3">{t.hr.colLocation}</th>
-                            <th className="px-4 py-3">{t.hr.colCallsTarget}</th>
-                            <th className="px-4 py-3">{t.hr.colAdmissions}</th>
+                            <th className="px-4 py-3">
+                              {language === "bn" ? "টার্গেট ও পারফরম্যান্স (KPI)" : "Role KPI Target"}
+                            </th>
+                            <th className="px-4 py-3">
+                              {language === "bn" ? "ফলাফল / অর্জন" : "Deliverables"}
+                            </th>
                             <th className="px-4 py-3">{t.hr.colBaseSalary}</th>
                             <th className="px-4 py-3">{t.hr.colBonus}</th>
                             <th className="px-4 py-3 text-right">{t.hr.colTotalPay}</th>
@@ -2160,68 +2689,174 @@ export default function DashboardPage() {
                         <tbody className="divide-y divide-slate-100">
                           {store.staffList.map((stf) => {
                             const totalPay = stf.monthlyBaseSalaryBdt + stf.performanceBonusBdt;
+                            const isCaller = stf.role === "TELE_COUNSELOR" || stf.role === "COUNSELOR";
+                            const isSensei = stf.role === "SENIOR_SENSEI";
+                            const isVisaOfficer = stf.role === "VISA_OFFICER";
+                            const isSalariedFixed = stf.role === "BRANCH_MANAGER" || stf.role === "ACCOUNTANT_ADMIN" || (!isCaller && !isSensei && !isVisaOfficer);
+
                             return (
                               <tr key={stf.id} className="hover:bg-slate-50/70 transition-colors">
                                 <td className="px-4 py-3.5">
                                   <p className="font-bold text-slate-900">{stf.name}</p>
-                                  <span className="text-[11px] text-slate-400">
-                                    {stf.role} {stf.phone ? `• ${stf.phone}` : ""}
-                                  </span>
-                                </td>
-                                <td className="px-4 py-3.5 text-slate-600">{stf.location}</td>
-                                <td className="px-4 py-3.5 tabular-nums">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-semibold text-slate-800">
-                                      {stf.callsCompleted} / {stf.callsTargetMonthly}
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    <span className="rounded bg-slate-100 px-1.5 py-0.2 text-[10px] font-semibold text-slate-700">
+                                      {stf.role === "TELE_COUNSELOR"
+                                        ? "টেলি-কাউন্সেলর"
+                                        : stf.role === "COUNSELOR"
+                                          ? "এডমিশন কাউন্সেলর"
+                                          : stf.role === "SENIOR_SENSEI"
+                                            ? "জাপানি শিক্ষক (Sensei)"
+                                            : stf.role === "VISA_OFFICER"
+                                              ? "ভিসা প্রসেসিং অফিসার"
+                                              : stf.role === "BRANCH_MANAGER"
+                                                ? "ব্রাঞ্চ ম্যানেজার"
+                                                : stf.role === "ACCOUNTANT_ADMIN"
+                                                  ? "একাউন্টস ও অ্যাডমিন"
+                                                  : stf.role}
                                     </span>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        updateStaffMember(stf.id, {
-                                          callsCompleted: stf.callsCompleted + 10,
-                                        });
-                                        setStore({ ...getCmsStore() });
-                                        showToast(`${stf.name}: +10 calls recorded`);
-                                      }}
-                                      className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-200"
-                                      title="Add 10 calls"
-                                    >
-                                      +10
-                                    </button>
-                                  </div>
-                                  <div className="w-24 bg-slate-100 rounded-full h-1.5 mt-1">
-                                    <div
-                                      className="bg-emerald-600 h-1.5 rounded-full"
-                                      style={{
-                                        width: `${Math.min(
-                                          100,
-                                          (stf.callsCompleted / (stf.callsTargetMonthly || 1)) * 100,
-                                        )}%`,
-                                      }}
-                                    />
+                                    {stf.phone && <span className="text-[11px] text-slate-400 font-mono">{stf.phone}</span>}
                                   </div>
                                 </td>
+                                <td className="px-4 py-3.5 text-slate-600">
+                                  {stf.location === "DHAKA_OFFICE"
+                                    ? t.dhakaHq
+                                    : stf.location === "KHULNA_OFFICE"
+                                      ? t.khulnaBranch
+                                      : "রিমোট / অনলাইন"}
+                                </td>
+
+                                {/* Role-specific KPI Column */}
                                 <td className="px-4 py-3.5 tabular-nums">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-bold text-emerald-700">
-                                      {stf.admissionsAchieved}
+                                  {isCaller && (
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-semibold text-slate-800">
+                                          {stf.callsCompleted || stf.kpiAchieved || 0} / {stf.callsTargetMonthly || stf.kpiTarget || 500} কল
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const updatedCount = (stf.callsCompleted || 0) + 10;
+                                            updateStaffMember(stf.id, {
+                                              callsCompleted: updatedCount,
+                                              kpiAchieved: updatedCount,
+                                            });
+                                            setStore({ ...getCmsStore() });
+                                            showToast(`${stf.name}: +10 calls logged`);
+                                          }}
+                                          className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-200"
+                                          title="Add 10 calls"
+                                        >
+                                          +10
+                                        </button>
+                                      </div>
+                                      <div className="w-24 bg-slate-100 rounded-full h-1.5 mt-1">
+                                        <div
+                                          className="bg-emerald-600 h-1.5 rounded-full"
+                                          style={{
+                                            width: `${Math.min(
+                                              100,
+                                              ((stf.callsCompleted || stf.kpiAchieved || 0) / (stf.callsTargetMonthly || stf.kpiTarget || 1)) * 100,
+                                            )}%`,
+                                          }}
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {isSensei && (
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-semibold text-slate-800">
+                                          {stf.kpiAchieved || 0} / {stf.kpiTarget || 24} ক্লাসেস
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const updated = (stf.kpiAchieved || 0) + 1;
+                                            updateStaffMember(stf.id, { kpiAchieved: updated });
+                                            setStore({ ...getCmsStore() });
+                                            showToast(`${stf.name}: +1 ক্লাস সম্পন্ন`);
+                                          }}
+                                          className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-100"
+                                          title="Add 1 class conducted"
+                                        >
+                                          +1 ক্লাস
+                                        </button>
+                                      </div>
+                                      <p className="text-[10px] text-slate-400 mt-0.5">মিন্না নো নিহোঙ্গো / কাইওয়া</p>
+                                    </div>
+                                  )}
+
+                                  {isVisaOfficer && (
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-semibold text-slate-800">
+                                          {stf.kpiAchieved || 0} / {stf.kpiTarget || 15} ফাইল
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const updated = (stf.kpiAchieved || 0) + 1;
+                                            updateStaffMember(stf.id, { kpiAchieved: updated });
+                                            setStore({ ...getCmsStore() });
+                                            showToast(`${stf.name}: +1 ফাইল প্রসেসড`);
+                                          }}
+                                          className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700 hover:bg-blue-100"
+                                          title="Add 1 file processed"
+                                        >
+                                          +1 ফাইল
+                                        </button>
+                                      </div>
+                                      <p className="text-[10px] text-slate-400 mt-0.5">COE আবেদন ও ডকুমেন্টেশন</p>
+                                    </div>
+                                  )}
+
+                                  {isSalariedFixed && (
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 bg-emerald-50/80 px-2 py-0.5 rounded-md border border-emerald-200/50">
+                                      <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                                      <span>অফিস অপারেশনস ডিউটি</span>
                                     </span>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        updateStaffMember(stf.id, {
-                                          admissionsAchieved: stf.admissionsAchieved + 1,
-                                          performanceBonusBdt: stf.performanceBonusBdt + 1000,
-                                        });
-                                        setStore({ ...getCmsStore() });
-                                        showToast(`${stf.name}: +1 Admission (+৳1,000 bonus)`);
-                                      }}
-                                      className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-100"
-                                    >
-                                      +1
-                                    </button>
-                                  </div>
+                                  )}
                                 </td>
+
+                                {/* Deliverables / Achievement Column */}
+                                <td className="px-4 py-3.5 tabular-nums">
+                                  {isCaller ? (
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-bold text-emerald-700">
+                                        {stf.admissionsAchieved} ভর্তি
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          updateStaffMember(stf.id, {
+                                            admissionsAchieved: stf.admissionsAchieved + 1,
+                                            performanceBonusBdt: stf.performanceBonusBdt + 1000,
+                                          });
+                                          setStore({ ...getCmsStore() });
+                                          showToast(`${stf.name}: +1 Admission (+৳1,000 bonus)`);
+                                        }}
+                                        className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-100"
+                                      >
+                                        +1
+                                      </button>
+                                    </div>
+                                  ) : isSensei ? (
+                                    <span className="text-[11px] font-medium text-slate-600">
+                                      JLPT N5/N4 মেন্টরিং ব্যাচ
+                                    </span>
+                                  ) : isVisaOfficer ? (
+                                    <span className="text-[11px] font-medium text-slate-600">
+                                      ইমিগ্রেশন COE স্পেশালিস্ট
+                                    </span>
+                                  ) : (
+                                    <span className="text-[11px] font-medium text-slate-500">
+                                      রেগুলার অ্যাডমিনিস্ট্রেশন
+                                    </span>
+                                  )}
+                                </td>
+
                                 <td className="px-4 py-3.5 font-semibold text-slate-800 tabular-nums">
                                   ৳{stf.monthlyBaseSalaryBdt.toLocaleString()}
                                 </td>
@@ -2262,6 +2897,7 @@ export default function DashboardPage() {
                               </tr>
                             );
                           })}
+
                           {store.staffList.length === 0 && (
                             <tr>
                               <td colSpan={8} className="py-12 text-center">
@@ -3329,19 +3965,42 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "পদবী / রোল" : "Role"}
+                        {language === "bn" ? "পদবী / ভূমিকা *" : "Role *"}
                       </label>
                       <select
                         value={staffForm.role}
-                        onChange={(e) =>
-                          setStaffForm({ ...staffForm, role: e.target.value as StaffMember["role"] })
-                        }
+                        onChange={(e) => {
+                          const newRole = e.target.value as StaffMember["role"];
+                          const newKpiType: NonNullable<StaffMember["kpiType"]> =
+                            newRole === "TELE_COUNSELOR" || newRole === "COUNSELOR"
+                              ? "CALLS"
+                              : newRole === "SENIOR_SENSEI"
+                                ? "CLASSES"
+                                : newRole === "VISA_OFFICER"
+                                  ? "VISA_FILES"
+                                  : "SALARIED_FIXED";
+                          setStaffForm({
+                            ...staffForm,
+                            role: newRole,
+                            kpiType: newKpiType,
+                            kpiTarget:
+                              newKpiType === "CALLS"
+                                ? 500
+                                : newKpiType === "CLASSES"
+                                  ? 24
+                                  : newKpiType === "VISA_FILES"
+                                    ? 15
+                                    : 0,
+                          });
+                        }}
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
                       >
-                        <option value="TELE_COUNSELOR">Tele-Counselor</option>
-                        <option value="COUNSELOR">Office Counselor</option>
-                        <option value="SENIOR_SENSEI">Japanese Sensei / Instructor</option>
-                        <option value="BRANCH_MANAGER">Branch Manager</option>
+                        <option value="TELE_COUNSELOR">টেলি-কাউন্সেলর (Tele-Counselor & Outreach)</option>
+                        <option value="COUNSELOR">এডমিশন কাউন্সেলর (Admission Counselor)</option>
+                        <option value="SENIOR_SENSEI">জাপানি শিক্ষক / সেন্সি (Japanese Sensei)</option>
+                        <option value="VISA_OFFICER">ভিসা প্রসেসিং অফিসার (Visa Specialist)</option>
+                        <option value="BRANCH_MANAGER">ব্রাঞ্চ ম্যানেজার (Branch Manager)</option>
+                        <option value="ACCOUNTANT_ADMIN">একাউন্টস ও অ্যাডমিন (Accounts & Admin)</option>
                       </select>
                     </div>
 
@@ -3417,33 +4076,126 @@ export default function DashboardPage() {
                       />
                     </div>
 
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "মাসিক কল টার্গেট" : "Monthly Call Target"}
-                      </label>
-                      <input
-                        type="number"
-                        value={staffForm.callsTargetMonthly}
-                        onChange={(e) =>
-                          setStaffForm({ ...staffForm, callsTargetMonthly: Number(e.target.value) })
-                        }
-                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold tabular-nums"
-                      />
-                    </div>
+                    {/* Role-Specific KPI Inputs: Only Tele-Counselors have call targets! */}
+                    {(staffForm.kpiType === "CALLS" ||
+                      staffForm.role === "TELE_COUNSELOR" ||
+                      staffForm.role === "COUNSELOR") && (
+                      <>
+                        <div>
+                          <label className="font-semibold text-slate-700">
+                            {language === "bn" ? "মাসিক কল টার্গেট" : "Monthly Call Target"}
+                          </label>
+                          <input
+                            type="number"
+                            value={staffForm.callsTargetMonthly}
+                            onChange={(e) =>
+                              setStaffForm({
+                                ...staffForm,
+                                callsTargetMonthly: Number(e.target.value),
+                                kpiTarget: Number(e.target.value),
+                              })
+                            }
+                            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold tabular-nums"
+                          />
+                        </div>
 
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "সম্পন্ন কল সংখ্যা" : "Calls Completed"}
-                      </label>
-                      <input
-                        type="number"
-                        value={staffForm.callsCompleted}
-                        onChange={(e) =>
-                          setStaffForm({ ...staffForm, callsCompleted: Number(e.target.value) })
-                        }
-                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold tabular-nums"
-                      />
-                    </div>
+                        <div>
+                          <label className="font-semibold text-slate-700">
+                            {language === "bn" ? "সম্পন্ন কল সংখ্যা" : "Calls Completed"}
+                          </label>
+                          <input
+                            type="number"
+                            value={staffForm.callsCompleted}
+                            onChange={(e) =>
+                              setStaffForm({
+                                ...staffForm,
+                                callsCompleted: Number(e.target.value),
+                                kpiAchieved: Number(e.target.value),
+                              })
+                            }
+                            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold tabular-nums"
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {staffForm.role === "SENIOR_SENSEI" && (
+                      <>
+                        <div>
+                          <label className="font-semibold text-slate-700">
+                            {language === "bn" ? "মাসিক ক্লাস / লেকচার টার্গেট" : "Monthly Class Target"}
+                          </label>
+                          <input
+                            type="number"
+                            value={staffForm.kpiTarget || 24}
+                            onChange={(e) =>
+                              setStaffForm({ ...staffForm, kpiTarget: Number(e.target.value) })
+                            }
+                            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold tabular-nums"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="font-semibold text-slate-700">
+                            {language === "bn" ? "সম্পন্ন ক্লাস সংখ্যা" : "Classes Conducted"}
+                          </label>
+                          <input
+                            type="number"
+                            value={staffForm.kpiAchieved || 0}
+                            onChange={(e) =>
+                              setStaffForm({ ...staffForm, kpiAchieved: Number(e.target.value) })
+                            }
+                            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold tabular-nums"
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {staffForm.role === "VISA_OFFICER" && (
+                      <>
+                        <div>
+                          <label className="font-semibold text-slate-700">
+                            {language === "bn" ? "টার্গেট ভিসা ও COE ফাইল প্রসেসিং" : "Target Visa / COE Files"}
+                          </label>
+                          <input
+                            type="number"
+                            value={staffForm.kpiTarget || 15}
+                            onChange={(e) =>
+                              setStaffForm({ ...staffForm, kpiTarget: Number(e.target.value) })
+                            }
+                            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold tabular-nums"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="font-semibold text-slate-700">
+                            {language === "bn" ? "সম্পন্ন ফাইল সংখ্যা" : "Files Processed"}
+                          </label>
+                          <input
+                            type="number"
+                            value={staffForm.kpiAchieved || 0}
+                            onChange={(e) =>
+                              setStaffForm({ ...staffForm, kpiAchieved: Number(e.target.value) })
+                            }
+                            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold tabular-nums"
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {(staffForm.role === "BRANCH_MANAGER" || staffForm.role === "ACCOUNTANT_ADMIN") && (
+                      <div className="sm:col-span-2 rounded-xl bg-slate-50 border border-slate-200/80 p-3 text-slate-600">
+                        <p className="font-semibold text-xs text-slate-800 flex items-center gap-1.5">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                          <span>{language === "bn" ? "ফিক্সড পে-রোল ও অফিস অপারেশনস" : "Fixed Salaried Role"}</span>
+                        </p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          {language === "bn"
+                            ? "এই পদের জন্য কোনো টেলি-কলিং বা আউটরিচ টার্গেটের প্রয়োজন নেই। বেতন ও অ্যাডমিন কার্যক্রম নিয়মিত ট্র্যাক হবে।"
+                            : "No tele-calling or outreach KPIs are required for this management role."}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
@@ -3724,33 +4476,48 @@ export default function DashboardPage() {
                 </form>
               )}
 
-              {/* 6. RECORD PAYMENT ENTRY MODAL */}
+              {/* 6. RECORD STUDENT INCOME / PAYMENT MODAL */}
               {activeModal === "ADD_PAYMENT" && (
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
                     if (!paymentForm.studentName.trim()) return;
-                    addFinancialTransaction({
-                      receiptNo: `RCP-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+                    const newTx = addFinancialTransaction({
+                      receiptNo: `KNLTC-REC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
                       date: new Date().toISOString().slice(0, 10),
                       studentName: paymentForm.studentName.trim(),
+                      studentPhone: paymentForm.studentPhone.trim(),
+                      category: "INCOME",
                       type: paymentForm.type,
                       amountBdt: Number(paymentForm.amountBdt) || 0,
                       paymentMethod: paymentForm.paymentMethod,
                       referenceOrTrx:
                         paymentForm.referenceOrTrx.trim() || `TRX-${Date.now().toString().slice(-6)}`,
-                      branch: activeBranch === "KHULNA-01" ? "KHULNA-01" : "DHK-HQ",
-                      verifiedBy: currentUser?.name || "Sheikh Baset",
+                      branch: paymentForm.branch || (activeBranch === "KHULNA-01" ? "KHULNA-01" : "DHK-HQ"),
+                      verifiedBy: currentUser?.name || "Sheikh Baset (MD)",
                       notes: paymentForm.notes,
                     });
                     setStore({ ...getCmsStore() });
                     setActiveModal(null);
-                    showToast(t.toastSuccess);
+                    showToast(
+                      language === "bn"
+                        ? `৳${Number(paymentForm.amountBdt).toLocaleString()} টাকা জমা নেওয়া হয়েছে`
+                        : `Payment recorded successfully`,
+                    );
+                    setSelectedTxForReceipt(newTx);
+                    setActiveModal("VIEW_RECEIPT");
                   }}
                   className="space-y-4"
                 >
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <h3 className="text-base font-bold text-slate-900">{t.finance.recordPaymentBtn}</h3>
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                        <TrendingUp className="h-4 w-4" />
+                      </span>
+                      <h3 className="text-base font-bold text-slate-900">
+                        {language === "bn" ? "শিক্ষার্থীর ফি জমা ও মানি রসিদ ইস্যু" : "Record Student Fee Payment"}
+                      </h3>
+                    </div>
                     <button
                       type="button"
                       onClick={() => setActiveModal(null)}
@@ -3762,7 +4529,9 @@ export default function DashboardPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
                     <div className="sm:col-span-2">
-                      <label className="font-semibold text-slate-700">Student Name / Description *</label>
+                      <label className="font-semibold text-slate-700">
+                        {language === "bn" ? "শিক্ষার্থীর পূর্ণ নাম *" : "Student Name *"}
+                      </label>
                       <input
                         type="text"
                         required
@@ -3770,11 +4539,30 @@ export default function DashboardPage() {
                         onChange={(e) =>
                           setPaymentForm({ ...paymentForm, studentName: e.target.value })
                         }
+                        placeholder={language === "bn" ? "শিক্ষার্থীর নাম লিখুন" : "Enter student name"}
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-medium"
                       />
                     </div>
+
                     <div>
-                      <label className="font-semibold text-slate-700">Payment Type</label>
+                      <label className="font-semibold text-slate-700">
+                        {language === "bn" ? "মোবাইল / হোয়াটসঅ্যাপ নম্বর" : "Student Phone"}
+                      </label>
+                      <input
+                        type="text"
+                        value={paymentForm.studentPhone}
+                        onChange={(e) =>
+                          setPaymentForm({ ...paymentForm, studentPhone: e.target.value })
+                        }
+                        placeholder="017xxxxxxxx"
+                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-semibold text-slate-700">
+                        {language === "bn" ? "আয়ের খাত / সার্ভিস ধরন *" : "Payment Type *"}
+                      </label>
                       <select
                         value={paymentForm.type}
                         onChange={(e) =>
@@ -3782,13 +4570,28 @@ export default function DashboardPage() {
                         }
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
                       >
-                        <option value="COURSE_FEE">Course Fee</option>
-                        <option value="REGULAR_SERVICE_CHARGE">Regular Visa Service Charge</option>
-                        <option value="PREMIUM_PACKAGE_ADVANCE">Premium Package Installment</option>
+                        <option value="SERVICE_CHARGE_COE">
+                          প্রি-ভিসা / COE সার্ভিস চার্জ (৳ ১,২০,০০০)
+                        </option>
+                        <option value="COURSE_FEE">
+                          ভাষা প্রশিক্ষণ কোর্স ফি (N5 / N4 - ৳ ১২,০০০)
+                        </option>
+                        <option value="PREMIUM_PACKAGE">
+                          অল-ইন-ওয়ান প্রিমিয়াম প্যাকেজ কিস্তি (৳ ১১,০০,০০০)
+                        </option>
+                        <option value="REGULAR_SERVICE_CHARGE">
+                          রেগুলার ভিসা প্রসেসিং অগ্রিম
+                        </option>
+                        <option value="BOOK_STORE_SALE">
+                          মিন্না নো নিহোঙ্গো বই ও ম্যাটেরিয়াল সেল
+                        </option>
                       </select>
                     </div>
+
                     <div>
-                      <label className="font-semibold text-slate-700">Amount (BDT) *</label>
+                      <label className="font-semibold text-slate-700">
+                        {language === "bn" ? "পরিশোধিত টাকার পরিমাণ (BDT) *" : "Amount (BDT) *"}
+                      </label>
                       <input
                         type="number"
                         required
@@ -3799,8 +4602,11 @@ export default function DashboardPage() {
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold tabular-nums"
                       />
                     </div>
+
                     <div>
-                      <label className="font-semibold text-slate-700">Method</label>
+                      <label className="font-semibold text-slate-700">
+                        {language === "bn" ? "পেমেন্ট মাধ্যম" : "Payment Method"}
+                      </label>
                       <select
                         value={paymentForm.paymentMethod}
                         onChange={(e) =>
@@ -3808,20 +4614,222 @@ export default function DashboardPage() {
                         }
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
                       >
-                        <option value="BKASH">bKash</option>
+                        <option value="BKASH">bKash Merchant / Personal</option>
                         <option value="NAGAD">Nagad</option>
-                        <option value="BANK_TRANSFER">Bank Transfer</option>
-                        <option value="CASH_OFFICE">Cash at Office</option>
+                        <option value="BANK_TRANSFER">Bank Transfer (IBBL / Pubali)</option>
+                        <option value="CASH_OFFICE">Cash at Office Desk</option>
+                        <option value="AAMARPAY">AamarPay Gateway</option>
+                        <option value="SSLCOMMERZ">SSLCOMMERZ Gateway</option>
                       </select>
                     </div>
+
                     <div>
-                      <label className="font-semibold text-slate-700">Trx ID / Reference</label>
+                      <label className="font-semibold text-slate-700">
+                        {language === "bn" ? "Trx ID / ব্যাংক রেফারেন্স" : "Trx ID / Ref"}
+                      </label>
                       <input
                         type="text"
                         value={paymentForm.referenceOrTrx}
                         onChange={(e) =>
                           setPaymentForm({ ...paymentForm, referenceOrTrx: e.target.value })
                         }
+                        placeholder="e.g. 9J28A00X or Cash Memo"
+                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-semibold text-slate-700">
+                        {language === "bn" ? "ব্রাঞ্চ / অফিস" : "Branch"}
+                      </label>
+                      <select
+                        value={paymentForm.branch}
+                        onChange={(e) =>
+                          setPaymentForm({ ...paymentForm, branch: e.target.value as any })
+                        }
+                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
+                      >
+                        <option value="DHK-HQ">Dhaka HQ (ধানমন্ডি/ফার্মগেট)</option>
+                        <option value="KHULNA-01">Khulna Branch Office</option>
+                      </select>
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="font-semibold text-slate-700">
+                        {language === "bn" ? "মন্তব্য / বিবরণ" : "Notes"}
+                      </label>
+                      <input
+                        type="text"
+                        value={paymentForm.notes}
+                        onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })}
+                        placeholder={language === "bn" ? "ইনটেক সেশন, ব্যাচ বা বিশেষ নোট..." : "Intake session or note"}
+                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => setActiveModal(null)}
+                      className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                    >
+                      {language === "bn" ? "বাতিল" : "Cancel"}
+                    </button>
+                    <button
+                      type="submit"
+                      className="rounded-xl bg-emerald-700 px-5 py-2 text-xs font-semibold text-white hover:bg-emerald-800 transition"
+                    >
+                      {language === "bn" ? "জমা গ্রহণ ও রসিদ তৈরি করুন" : "Save & Generate Receipt"}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* 7. RECORD OPERATIONAL EXPENSE MODAL */}
+              {activeModal === "ADD_EXPENSE" && (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!expenseForm.title.trim()) return;
+                    addFinancialTransaction({
+                      receiptNo: `EXP-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+                      date: new Date().toISOString().slice(0, 10),
+                      studentName: expenseForm.title.trim(),
+                      category: "EXPENSE",
+                      type: expenseForm.type,
+                      amountBdt: Number(expenseForm.amountBdt) || 0,
+                      paymentMethod: expenseForm.paymentMethod,
+                      referenceOrTrx:
+                        expenseForm.referenceOrTrx.trim() || `EXP-${Date.now().toString().slice(-6)}`,
+                      branch: expenseForm.branch,
+                      verifiedBy: currentUser?.name || "Sheikh Baset (MD)",
+                      notes: expenseForm.notes,
+                    });
+                    setStore({ ...getCmsStore() });
+                    setActiveModal(null);
+                    showToast(
+                      language === "bn"
+                        ? `৳${Number(expenseForm.amountBdt).toLocaleString()} টাকা ব্যয় রেকর্ড হয়েছে`
+                        : `Expense recorded successfully`,
+                    );
+                  }}
+                  className="space-y-4"
+                >
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-50 text-[#b91c1c]">
+                        <ArrowDownRight className="h-4 w-4" />
+                      </span>
+                      <h3 className="text-base font-bold text-slate-900">
+                        {language === "bn" ? "অফিস অপারেশনাল ব্যয় ও খরচ রেকর্ড" : "Record Operational Expense"}
+                      </h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveModal(null)}
+                      className="rounded-lg p-1 text-slate-400 hover:bg-slate-100"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+                    <div className="sm:col-span-2">
+                      <label className="font-semibold text-slate-700">
+                        {language === "bn" ? "ব্যয়ের বিবরণ / প্রাপক *" : "Expense Title / Payee *"}
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={expenseForm.title}
+                        onChange={(e) => setExpenseForm({ ...expenseForm, title: e.target.value })}
+                        placeholder={language === "bn" ? "যেমন: ঢাকা অফিস ভাড়া ও বিদ্যুৎ বিল" : "e.g. Dhaka Office Rent"}
+                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-medium"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-semibold text-slate-700">
+                        {language === "bn" ? "ব্যয়ের খাত / ক্যাটাগরি *" : "Expense Category *"}
+                      </label>
+                      <select
+                        value={expenseForm.type}
+                        onChange={(e) =>
+                          setExpenseForm({ ...expenseForm, type: e.target.value as any })
+                        }
+                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
+                      >
+                        <option value="EXPENSE_RENT">অফিস ভাড়া ও ইউটিলিটি বিল</option>
+                        <option value="EXPENSE_PAYROLL">শিক্ষক (Sensei) ও স্টাফ বেতন</option>
+                        <option value="EXPENSE_MARKETING">ফেসবুক / মেটা ডিজিটাল বিজ্ঞাপন</option>
+                        <option value="EXPENSE_EMBASSY_NOTARY">নোটারি, পরারাষ্ট্র মন্ত্রণালয় সত্যায়ন ও কোরিয়ার</option>
+                        <option value="EXPENSE_EXAM_FEE">NAT-TEST / JLPT ভেন্যু ও এক্সাম ফি</option>
+                        <option value="EXPENSE_B2B_COMMISSION">বিটুবি সাব-এজেন্ট কমিশন বিতরণ</option>
+                        <option value="EXPENSE_MISC">বিবিধ অফিস স্টেশনারি ও আপ্যায়ন</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="font-semibold text-slate-700">
+                        {language === "bn" ? "খরচের পরিমাণ (BDT) *" : "Amount (BDT) *"}
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        value={expenseForm.amountBdt}
+                        onChange={(e) =>
+                          setExpenseForm({ ...expenseForm, amountBdt: Number(e.target.value) })
+                        }
+                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold tabular-nums"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-semibold text-slate-700">
+                        {language === "bn" ? "পরিশোধের মাধ্যম" : "Payment Method"}
+                      </label>
+                      <select
+                        value={expenseForm.paymentMethod}
+                        onChange={(e) =>
+                          setExpenseForm({ ...expenseForm, paymentMethod: e.target.value as any })
+                        }
+                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
+                      >
+                        <option value="BANK_TRANSFER">Bank Cheque / Transfer</option>
+                        <option value="CASH_OFFICE">Cash from Office Petty Cash</option>
+                        <option value="BKASH">bKash Payment</option>
+                        <option value="NAGAD">Nagad</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="font-semibold text-slate-700">
+                        {language === "bn" ? "ব্রাঞ্চ" : "Branch"}
+                      </label>
+                      <select
+                        value={expenseForm.branch}
+                        onChange={(e) =>
+                          setExpenseForm({ ...expenseForm, branch: e.target.value as any })
+                        }
+                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
+                      >
+                        <option value="DHK-HQ">Dhaka HQ (ধানমন্ডি)</option>
+                        <option value="KHULNA-01">Khulna Branch Office</option>
+                      </select>
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="font-semibold text-slate-700">
+                        {language === "bn" ? "ভাউচার নং / রেফারেন্স নোট" : "Voucher / Reference"}
+                      </label>
+                      <input
+                        type="text"
+                        value={expenseForm.referenceOrTrx}
+                        onChange={(e) =>
+                          setExpenseForm({ ...expenseForm, referenceOrTrx: e.target.value })
+                        }
+                        placeholder="Voucher # or memo details"
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
                       />
                     </div>
@@ -3831,18 +4839,161 @@ export default function DashboardPage() {
                     <button
                       type="button"
                       onClick={() => setActiveModal(null)}
-                      className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600"
+                      className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
                     >
-                      Cancel
+                      {language === "bn" ? "বাতিল" : "Cancel"}
                     </button>
                     <button
                       type="submit"
-                      className="rounded-xl bg-slate-900 px-5 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition"
+                      className="rounded-xl bg-[#b91c1c] px-5 py-2 text-xs font-semibold text-white hover:bg-red-800 transition"
                     >
-                      Save Payment
+                      {language === "bn" ? "ব্যয় সেভ করুন" : "Save Expense"}
                     </button>
                   </div>
                 </form>
+              )}
+
+              {/* 8. OFFICIAL PRINTABLE MONEY RECEIPT MODAL */}
+              {activeModal === "VIEW_RECEIPT" && selectedTxForReceipt && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3 print:hidden">
+                    <div className="flex items-center gap-2">
+                      <Receipt className="h-5 w-5 text-emerald-700" />
+                      <h3 className="text-base font-bold text-slate-900">
+                        {language === "bn" ? "অফিসিয়াল পেমেন্ট ভাউচার ও মানি রসিদ" : "Official Money Receipt"}
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => window.print()}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 transition"
+                      >
+                        <Printer className="h-3.5 w-3.5" />
+                        <span>{language === "bn" ? "প্রিন্ট রসিদ" : "Print Voucher"}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveModal(null)}
+                        className="rounded-lg p-1 text-slate-400 hover:bg-slate-100"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Printable Receipt Card */}
+                  <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 text-slate-900 shadow-sm print:border-0 print:p-0">
+                    {/* Header */}
+                    <div className="flex items-start justify-between border-b-2 border-slate-900 pb-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 rounded-lg bg-[#b91c1c] text-white font-bold flex items-center justify-center text-sm">
+                            KN
+                          </div>
+                          <div>
+                            <h2 className="text-base font-black tracking-tight uppercase">
+                              Kamrul Nippon Language & Training Center (KNLTC)
+                            </h2>
+                            <p className="text-[11px] text-slate-500 font-medium">
+                              Govt Reg & Trade License No: 177926 • Japan Study & SSW Gateway
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="rounded bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-white uppercase tracking-wider">
+                          Money Receipt
+                        </span>
+                        <p className="font-mono text-xs font-bold text-slate-900 mt-1">
+                          {selectedTxForReceipt.receiptNo}
+                        </p>
+                        <p className="text-[11px] text-slate-500 font-medium">
+                          Date: {selectedTxForReceipt.date}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Student & Payment Details */}
+                    <div className="mt-5 grid grid-cols-2 gap-4 text-xs">
+                      <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3.5 space-y-1">
+                        <span className="text-[10px] uppercase font-bold text-slate-400">Received From (Student / Client)</span>
+                        <p className="text-sm font-bold text-slate-900">{selectedTxForReceipt.studentName}</p>
+                        {selectedTxForReceipt.studentPhone && (
+                          <p className="text-slate-600 font-mono">Mobile: {selectedTxForReceipt.studentPhone}</p>
+                        )}
+                        <p className="text-slate-500">
+                          Branch: {selectedTxForReceipt.branch === "DHK-HQ" ? "Dhaka HQ (Dhanmondi)" : "Khulna Branch"}
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3.5 space-y-1">
+                        <span className="text-[10px] uppercase font-bold text-slate-400">Payment Gateway / Account</span>
+                        <p className="text-sm font-bold text-slate-900">{selectedTxForReceipt.paymentMethod}</p>
+                        <p className="font-mono text-slate-600">Trx / Ref: {selectedTxForReceipt.referenceOrTrx || "Verified Cash"}</p>
+                        <p className="text-emerald-700 font-semibold">Status: 100% Verified Paid</p>
+                      </div>
+                    </div>
+
+                    {/* Line Items */}
+                    <div className="mt-5 overflow-hidden rounded-xl border border-slate-200">
+                      <table className="w-full text-xs text-left">
+                        <thead className="bg-slate-100 font-bold text-slate-700">
+                          <tr>
+                            <th className="px-4 py-2.5">Item / Service Particulars</th>
+                            <th className="px-4 py-2.5 text-right">Amount (BDT)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          <tr>
+                            <td className="px-4 py-3">
+                              <p className="font-bold text-slate-900">
+                                {selectedTxForReceipt.type === "SERVICE_CHARGE_COE"
+                                  ? "Japan Student Visa Service Charge (Payable strictly AFTER COE Approval)"
+                                  : selectedTxForReceipt.type === "COURSE_FEE"
+                                    ? "3-Month Intensive Japanese Language Course (N5/N4)"
+                                    : selectedTxForReceipt.type === "PREMIUM_PACKAGE"
+                                      ? "All-in-One Comprehensive Japan Study Package Installment"
+                                      : selectedTxForReceipt.type}
+                              </p>
+                              {selectedTxForReceipt.notes && (
+                                <p className="text-[11px] text-slate-500 mt-0.5">{selectedTxForReceipt.notes}</p>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-right font-bold text-slate-900 tabular-nums">
+                              ৳{selectedTxForReceipt.amountBdt.toLocaleString()}
+                            </td>
+                          </tr>
+                        </tbody>
+                        <tfoot className="bg-slate-50 font-bold border-t border-slate-200">
+                          <tr>
+                            <td className="px-4 py-2.5 text-slate-700">Total Received Amount</td>
+                            <td className="px-4 py-2.5 text-right text-emerald-800 text-sm tabular-nums">
+                              ৳{selectedTxForReceipt.amountBdt.toLocaleString()} BDT
+                            </td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+
+                    {/* Seal & Authorization */}
+                    <div className="mt-8 pt-4 border-t border-slate-200 flex items-center justify-between text-xs">
+                      <div>
+                        <div className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-emerald-800 font-bold">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                          <span>KNLTC ACCOUNTS VERIFIED</span>
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-1">Computer-generated official audit receipt.</p>
+                      </div>
+                      <div className="text-right">
+                        <div className="w-36 border-b border-slate-400 pb-1 font-semibold text-slate-800">
+                          {selectedTxForReceipt.verifiedBy || "Sheikh Baset (MD)"}
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-0.5">Authorized Signatory</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               )}
 
               {/* 7. PUBLISH NEW JOB CIRCULAR MODAL */}

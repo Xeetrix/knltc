@@ -207,6 +207,14 @@ export interface DashboardDictionary {
     colMethodTrx: string;
     colBranch: string;
     colAmount: string;
+    recordExpenseBtn?: string;
+    exportCsvBtn?: string;
+    viewReceiptBtn?: string;
+    incomeLabel?: string;
+    expenseLabel?: string;
+    netMarginLabel?: string;
+    b2bPayableLabel?: string;
+    currencyConverterTitle?: string;
   };
   hr: {
     title: string;
@@ -220,6 +228,7 @@ export interface DashboardDictionary {
     colBonus: string;
     colTotalPay: string;
     callsSuffix: string;
+    roleKpiTitle?: string;
   };
   cms: {
     cmsBadge: string;
@@ -349,11 +358,11 @@ export const dashboardDictionaries: Record<Language, DashboardDictionary> = {
       sswEnrolled: "Enrolled: 18 Students",
       sswButton: "Process Campaign Leads",
       partnerBadge: "Partner Japanese School",
-      partnerLocation: "Hiroshima",
-      partnerTitle: "HLA Gakuin (Hiroshima)",
-      partnerDesc: "Principal Keiko Fujii & Mr. Donaka",
-      partnerFiles: "Active Files: 18 Students",
-      partnerCommission: "Commission: ¥1,440,000",
+      partnerLocation: "Location",
+      partnerTitle: "No Partner Institution Added Yet",
+      partnerDesc: "Click below to add partner Japanese language schools or institutes",
+      partnerFiles: "Active Files",
+      partnerCommission: "Commission",
     },
     crm: {
       title: "Omni-Channel CRM & Tele-Counselor Workspace",
@@ -636,12 +645,12 @@ export const dashboardDictionaries: Record<Language, DashboardDictionary> = {
       sswSeats: "আসন সংখ্যা: ২৫ জন",
       sswEnrolled: "ভর্তি: ১৮ জন",
       sswButton: "ক্যাম্পেইন লিড প্রসেস করুন",
-      partnerBadge: "জাপানি পার্টনার স্কুল",
-      partnerLocation: "হিরোশিমা",
-      partnerTitle: "HLA Gakuin (Hiroshima)",
-      partnerDesc: "প্রিন্সিপাল ফুজিই কেইকো ও দোনাকা-সান",
-      partnerFiles: "চলমান ফাইল: ১৮ জন",
-      partnerCommission: "কমিশন: ¥১,৪৪০,০০০",
+      partnerBadge: "জাপানি পার্টনার প্রতিষ্ঠান",
+      partnerLocation: "অবস্থান",
+      partnerTitle: "এখনো কোনো প্রতিষ্ঠান যুক্ত করা হয়নি",
+      partnerDesc: "আপনার পার্টনার জাপানি ভাষা স্কুল বা কলেজ যুক্ত করতে ক্লিক করুন",
+      partnerFiles: "চলমান ফাইল",
+      partnerCommission: "কমিশন",
     },
     crm: {
       title: "ওমনি-চ্যানেল CRM ও টেলি-কাউন্সেলর ড্যাশবোর্ড",
@@ -925,11 +934,11 @@ export const dashboardDictionaries: Record<Language, DashboardDictionary> = {
       sswEnrolled: "受講中: 18名",
       sswButton: "応募リードを処理する",
       partnerBadge: "日本提携校",
-      partnerLocation: "広島",
-      partnerTitle: "HLA日本語学院（広島）",
-      partnerDesc: "藤井啓子校長 ＆ 堂中様",
-      partnerFiles: "進行中申請: 18名",
-      partnerCommission: "手数料見込み: ¥1,440,000",
+      partnerLocation: "所在地",
+      partnerTitle: "提携教育機関は未登録です",
+      partnerDesc: "提携する日本語学校や専門学校を追加してください",
+      partnerFiles: "申請中ファイル",
+      partnerCommission: "手数料",
     },
     crm: {
       title: "オムニチャネルCRM ＆ カウンセラー管理",

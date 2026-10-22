@@ -104,7 +104,7 @@ export type VisaStage =
   | 1  // ফাইল ওপেনিং (৳০ অগ্রিম)
   | 2  // ভাষা প্রশিক্ষণ (N5/N4)
   | 3  // ডকুমেন্ট সংগ্রহ ও নোটারি/অনুবাদ
-  | 4  // জাপানি স্কুল জুম ইন্টারভিউ (HLA Gakuin ইত্যাদি)
+  | 4  // জাপানি শিক্ষা প্রতিষ্ঠান জুম ইন্টারভিউ
   | 5  // জাপান ইমিগ্রেশনে COE আবেদন
   | 6  // প্রি-ভিসা (COE) অনুমোদন
   | 7  // টিউশন ফি প্রদান ও মূল COE রিলিজ
@@ -185,20 +185,42 @@ export interface B2bAgent {
 }
 
 // ------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
 // Finance & Package Billing
 // ------------------------------------------------------------------------------
+export type TransactionCategory = "INCOME" | "EXPENSE";
+
+export type TransactionType =
+  | "COURSE_FEE"
+  | "SERVICE_CHARGE_COE"
+  | "PREMIUM_PACKAGE"
+  | "REGULAR_SERVICE_CHARGE"
+  | "PREMIUM_PACKAGE_ADVANCE"
+  | "BOOK_STORE_SALE"
+  | "EXPENSE_RENT"
+  | "EXPENSE_PAYROLL"
+  | "EXPENSE_MARKETING"
+  | "EXPENSE_EMBASSY_NOTARY"
+  | "EXPENSE_EXAM_FEE"
+  | "EXPENSE_B2B_COMMISSION"
+  | "EXPENSE_OFFICE"
+  | "EXPENSE_MISC";
+
 export interface FinancialTransaction {
   id: string;
   receiptNo: string;
   date: string;
-  studentName: string;
-  type: "COURSE_FEE" | "REGULAR_SERVICE_CHARGE" | "PREMIUM_PACKAGE_ADVANCE" | "EXPENSE_OFFICE" | "MARKETING_META";
+  studentName: string; // or Payee / Vendor name if expense
+  category?: TransactionCategory; // INCOME or EXPENSE
+  type: TransactionType;
   amountBdt: number;
   paymentMethod: "BKASH" | "NAGAD" | "BANK_TRANSFER" | "CASH_OFFICE" | "AAMARPAY" | "SSLCOMMERZ";
   referenceOrTrx: string;
   branch: "DHK-HQ" | "KHULNA-01";
   verifiedBy: string;
   notes?: string;
+  studentPhone?: string;
+  dueAmountBdt?: number;
 }
 
 // ------------------------------------------------------------------------------
@@ -234,16 +256,27 @@ export interface InvestorProject {
 }
 
 // ------------------------------------------------------------------------------
-// HR & Remote Tele-Counselor Workspace
+// HR & Team Members Workspace (Diverse Roles with Role-Specific KPIs)
 // ------------------------------------------------------------------------------
+export type StaffRole =
+  | "TELE_COUNSELOR"     // Tele-Counselor / Lead Outreach (KPI: Calls & Admissions)
+  | "COUNSELOR"          // Senior Admission Counselor (KPI: Admissions & Consultations)
+  | "SENIOR_SENSEI"      // Japanese Sensei / Teacher (KPI: Classes Conducted & Batches)
+  | "VISA_OFFICER"       // Visa & Documentation Officer (KPI: COE & Visa Files Processed)
+  | "BRANCH_MANAGER"     // Branch Manager (Operations)
+  | "ACCOUNTANT_ADMIN";  // Accounts & Office Administration
+
 export interface StaffMember {
   id: string;
   name: string;
-  role: "TELE_COUNSELOR" | "SENIOR_SENSEI" | "BRANCH_MANAGER" | "COUNSELOR";
+  role: StaffRole;
   location: "REMOTE" | "DHAKA_OFFICE" | "KHULNA_OFFICE";
   phone: string;
   email: string;
   monthlyBaseSalaryBdt: number;
+  kpiType?: "CALLS" | "CLASSES" | "VISA_FILES" | "SALARIED_FIXED";
+  kpiTarget?: number;
+  kpiAchieved?: number;
   callsTargetMonthly: number;
   callsCompleted: number;
   admissionsTarget: number;
@@ -875,7 +908,7 @@ const DEFAULT_STAFF_LIST: StaffMember[] = [];
 // ------------------------------------------------------------------------------
 // GLOBAL SINGLETON & STORAGE SYNCHRONIZATION
 // ------------------------------------------------------------------------------
-const STORAGE_KEY = "knltc_master_cms_v3_clean";
+const STORAGE_KEY = "knltc_master_cms_v4_prod";
 
 const globalForStore = globalThis as unknown as {
   __knltc_master_store?: MasterKnlTcStore;
@@ -1557,6 +1590,26 @@ export function addFinancialTransaction(tx: Omit<FinancialTransaction, "id">): F
   });
 
   return newTx;
+}
+
+export function updateFinancialTransaction(
+  id: string,
+  updates: Partial<FinancialTransaction>,
+): FinancialTransaction | null {
+  const store = getCmsStore();
+  const tx = store.transactions.find((t) => t.id === id);
+  if (!tx) return null;
+  Object.assign(tx, updates);
+  saveCmsStore(store);
+  syncToServer("UPSERT", "knltc_finance_transactions", tx);
+  return tx;
+}
+
+export function deleteFinancialTransaction(id: string) {
+  const store = getCmsStore();
+  store.transactions = store.transactions.filter((t) => t.id !== id);
+  saveCmsStore(store);
+  syncToServer("DELETE", "knltc_finance_transactions", { id });
 }
 
 export function updateStoreOrderStatus(orderId: string, status: CustomerStoreOrder["orderStatus"]) {
