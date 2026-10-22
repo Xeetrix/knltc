@@ -1,5 +1,12 @@
 import { cookies } from "next/headers";
 import { createHmac, timingSafeEqual } from "node:crypto";
+import {
+  DEFAULT_SYSTEM_ACCOUNTS,
+  getSystemAccounts,
+  type DashboardTabId,
+  type SystemUserAccount,
+} from "@/lib/knltc-cms-store";
+import { selectRows } from "@/lib/supabase";
 
 const ADMIN_COOKIE = "knltc_admin_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 12;
@@ -20,6 +27,8 @@ export type SessionPayload = {
   role: UserRole;
   name: string;
   branch: BranchCode;
+  allowedTabs?: DashboardTabId[];
+  linkedLeadId?: string;
   exp: number;
 };
 
@@ -30,87 +39,10 @@ export type VerifyAdminCredentialsResult = {
     role: UserRole;
     name: string;
     branch: BranchCode;
+    allowedTabs?: DashboardTabId[];
+    linkedLeadId?: string;
   } | null;
   error: string | null;
-};
-
-// Preset Team Accounts for KNLTC Enterprise Roles
-export const KNLT_ROLE_ACCOUNTS: Record<
-  string,
-  { role: UserRole; name: string; branch: BranchCode; defaultEmail: string }
-> = {
-  "admin@knltc.com": {
-    role: "MAIN_ADMIN",
-    name: "শেখ বাসেত (ব্যবস্থাপনা পরিচালক)",
-    branch: "ALL",
-    defaultEmail: "admin@knltc.com",
-  },
-  "baset@knltc.com": {
-    role: "MAIN_ADMIN",
-    name: "শেখ বাসেত (Super Admin)",
-    branch: "ALL",
-    defaultEmail: "baset@knltc.com",
-  },
-  "dhaka@knltc.com": {
-    role: "BRANCH_ADMIN",
-    name: "তানভীর আহমেদ (ঢাকা শাখা প্রধান)",
-    branch: "DHK-HQ",
-    defaultEmail: "dhaka@knltc.com",
-  },
-  "khulna@knltc.com": {
-    role: "BRANCH_ADMIN",
-    name: "মুসা ইব্রাহিম (খুলনা শাখা ব্যবস্থাপক)",
-    branch: "KHULNA-01",
-    defaultEmail: "khulna@knltc.com",
-  },
-  "counselor@knltc.com": {
-    role: "TELE_COUNSELOR",
-    name: "নাসরিন সুলতানা (টেলি-কাউন্সেলর)",
-    branch: "DHK-HQ",
-    defaultEmail: "counselor@knltc.com",
-  },
-  "tele@knltc.com": {
-    role: "TELE_COUNSELOR",
-    name: "নাসরিন সুলতানা (টেলি-কাউন্সেলর)",
-    branch: "DHK-HQ",
-    defaultEmail: "tele@knltc.com",
-  },
-  "sensei@knltc.com": {
-    role: "TEACHER",
-    name: "আমির হোসেন (সিনিয়র সেন্সি)",
-    branch: "ALL",
-    defaultEmail: "sensei@knltc.com",
-  },
-  "amir@knltc.com": {
-    role: "TEACHER",
-    name: "আমির হোসেন (সিনিয়র সেন্সি)",
-    branch: "ALL",
-    defaultEmail: "amir@knltc.com",
-  },
-  "b2b@knltc.com": {
-    role: "B2B_AGENT",
-    name: "নেক্সাস গ্লোবাল (ক্যাম্পাস অ্যাম্বাসেডর)",
-    branch: "ALL",
-    defaultEmail: "b2b@knltc.com",
-  },
-  "nexus@knltc.com": {
-    role: "B2B_AGENT",
-    name: "Nexus Group BD",
-    branch: "ALL",
-    defaultEmail: "nexus@knltc.com",
-  },
-  "investor@knltc.com": {
-    role: "INVESTOR",
-    name: "ইমরান হাসেম (১০ লক্ষ টাকার বিনিয়োগকারী)",
-    branch: "ALL",
-    defaultEmail: "investor@knltc.com",
-  },
-  "student@knltc.com": {
-    role: "STUDENT",
-    name: "রাকিবুল ইসলাম (ভিসা প্রার্থী)",
-    branch: "DHK-HQ",
-    defaultEmail: "student@knltc.com",
-  },
 };
 
 function getSecret() {
@@ -161,12 +93,16 @@ export async function createAdminSession(
   role: UserRole = "MAIN_ADMIN",
   name: string = "শেখ বাসেত (ব্যবস্থাপনা পরিচালক)",
   branch: BranchCode = "ALL",
+  allowedTabs?: DashboardTabId[],
+  linkedLeadId?: string,
 ) {
   const payload: SessionPayload = {
     email,
     role,
     name,
     branch,
+    allowedTabs,
+    linkedLeadId,
     exp: Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS,
   };
   const token = encode(payload);
@@ -198,9 +134,51 @@ export async function isAdminAuthenticated() {
   return Boolean(session);
 }
 
+async function loadAllManagedAccounts(clientAccounts?: SystemUserAccount[]): Promise<SystemUserAccount[]> {
+  const mergedMap = new Map<string, SystemUserAccount>();
+
+  for (const acc of DEFAULT_SYSTEM_ACCOUNTS) {
+    mergedMap.set(acc.email.toLowerCase(), acc);
+  }
+
+  try {
+    const memoryAccounts = getSystemAccounts();
+    for (const acc of memoryAccounts) {
+      if (acc?.email) mergedMap.set(acc.email.toLowerCase(), acc);
+    }
+  } catch {
+    // ignore
+  }
+
+  try {
+    const rows = (await selectRows(
+      "knltc_website_cms",
+      { id: "eq.master-cms-root" },
+      true,
+    )) as { content?: { systemAccounts?: SystemUserAccount[] } }[] | null;
+    const dbAccounts = rows?.[0]?.content?.systemAccounts;
+    if (Array.isArray(dbAccounts)) {
+      for (const acc of dbAccounts) {
+        if (acc?.email) mergedMap.set(acc.email.toLowerCase(), acc);
+      }
+    }
+  } catch {
+    // ignore db error
+  }
+
+  if (Array.isArray(clientAccounts)) {
+    for (const acc of clientAccounts) {
+      if (acc?.email) mergedMap.set(acc.email.toLowerCase(), acc);
+    }
+  }
+
+  return Array.from(mergedMap.values());
+}
+
 export async function verifyAdminCredentials(
   email: string,
   password: string,
+  clientAccounts?: SystemUserAccount[],
 ): Promise<VerifyAdminCredentialsResult> {
   const configuredEmail = process.env.ADMIN_EMAIL || "admin@knltc.com";
   const configuredPassword = process.env.ADMIN_PASSWORD || "admin123";
@@ -216,43 +194,57 @@ export async function verifyAdminCredentials(
     };
   }
 
-  // Check if matches configured master admin
-  const isMasterAdminEmail = equalsSafe(normalizedInputEmail, normalizedConfiguredEmail);
-  const isConfiguredPassword = equalsSafe(normalizedInputPassword, configuredPassword);
+  // 1. Check against Admin-Managed System Accounts (from Dashboard / Supabase / Store)
+  const managedAccounts = await loadAllManagedAccounts(clientAccounts);
+  const matchedAccount = managedAccounts.find(
+    (acc) => acc.email.trim().toLowerCase() === normalizedInputEmail,
+  );
 
-  if (isMasterAdminEmail && isConfiguredPassword) {
-    return {
-      user: {
-        id: `admin:${normalizedConfiguredEmail}`,
-        email: normalizedConfiguredEmail,
-        role: "MAIN_ADMIN",
-        name: "শেখ বাসেত (ব্যবস্থাপনা পরিচালক)",
-        branch: "ALL",
-      },
-      error: null,
-    };
-  }
+  if (matchedAccount) {
+    if (matchedAccount.status === "SUSPENDED") {
+      return {
+        user: null,
+        error: "এই অ্যাকাউন্টটি সাময়িকভাবে স্থগিত করা হয়েছে। মেইন অ্যাডমিনের সাথে যোগাযোগ করুন।",
+      };
+    }
 
-  // Check if matches any of the registered team role accounts
-  const roleAccount = KNLT_ROLE_ACCOUNTS[normalizedInputEmail];
-  if (roleAccount) {
-    // Allows password either configuredPassword or "admin123"
-    const isPasswordValid =
-      equalsSafe(normalizedInputPassword, configuredPassword) ||
-      equalsSafe(normalizedInputPassword, "admin123");
-
-    if (isPasswordValid) {
+    if (equalsSafe(normalizedInputPassword, matchedAccount.password)) {
       return {
         user: {
-          id: `user:${roleAccount.defaultEmail}`,
-          email: roleAccount.defaultEmail,
-          role: roleAccount.role,
-          name: roleAccount.name,
-          branch: roleAccount.branch,
+          id: matchedAccount.id,
+          email: matchedAccount.email,
+          role: matchedAccount.role,
+          name: matchedAccount.name,
+          branch: matchedAccount.branch,
+          allowedTabs: matchedAccount.allowedTabs,
+          linkedLeadId: matchedAccount.linkedLeadId,
         },
         error: null,
       };
     }
+  }
+
+  // 2. Fallback check if matches configured master admin env credentials
+  const isMasterAdminEmail =
+    equalsSafe(normalizedInputEmail, normalizedConfiguredEmail) ||
+    equalsSafe(normalizedInputEmail, "baset@knltc.com") ||
+    equalsSafe(normalizedInputEmail, "admin@knltc.com");
+  const isConfiguredPassword =
+    equalsSafe(normalizedInputPassword, configuredPassword) ||
+    equalsSafe(normalizedInputPassword, "admin123");
+
+  if (isMasterAdminEmail && isConfiguredPassword) {
+    return {
+      user: {
+        id: `admin:${normalizedInputEmail}`,
+        email: normalizedInputEmail,
+        role: "MAIN_ADMIN",
+        name: "শেখ বাসেত (ব্যবস্থাপনা পরিচালক)",
+        branch: "ALL",
+        allowedTabs: ["overview", "crm", "visa", "lms", "b2b", "finance", "hr", "cms", "store_blog", "users"],
+      },
+      error: null,
+    };
   }
 
   return {
@@ -262,3 +254,4 @@ export async function verifyAdminCredentials(
 }
 
 export const adminCookieName = ADMIN_COOKIE;
+

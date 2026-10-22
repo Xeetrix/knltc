@@ -14,6 +14,9 @@ export async function GET() {
       role: session.role,
       name: session.name,
       branch: session.branch,
+      allowedTabs: session.allowedTabs,
+      linkedLeadId: session.linkedLeadId,
     },
   });
 }
+

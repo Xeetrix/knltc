@@ -47,6 +47,7 @@ import {
   LogOut,
   Database,
   Lock,
+  KeyRound,
 } from "lucide-react";
 import {
   getCmsStore,
@@ -59,9 +60,11 @@ import {
   addFinancialTransaction,
   updateStoreOrderStatus,
   updateWebsiteCms,
+  getSystemAccounts,
   type MasterKnlTcStore,
   type UserRole,
   type BranchCode,
+  type DashboardTabId,
   type CrmLead,
   type VisaApplicant,
   type VisaStage,
@@ -82,6 +85,9 @@ import OrderManager from "@/components/admin/OrderManager";
 import ReviewManager from "@/components/admin/ReviewManager";
 import CategoryManager from "@/components/admin/CategoryManager";
 import CrmManager from "@/components/admin/CrmManager";
+import LeadProfileModal from "@/components/admin/LeadProfileModal";
+import UserAccessControlPanel from "@/components/admin/UserAccessControlPanel";
+import StudentProfileView from "@/components/admin/StudentProfileView";
 import type {
   AdminSummary,
   BlogPost,
@@ -100,21 +106,14 @@ export default function DashboardPage() {
     role: UserRole;
     name: string;
     branch: BranchCode;
+    allowedTabs?: DashboardTabId[];
+    linkedLeadId?: string;
   } | null>(null);
   const [activeRole, setActiveRole] = useState<UserRole>("MAIN_ADMIN");
   const [activeBranch, setActiveBranch] = useState<BranchCode>("ALL");
   const [isSyncingWithDb, setIsSyncingWithDb] = useState(false);
-  const [activeTab, setActiveTab] = useState<
-    | "overview"
-    | "crm"
-    | "visa"
-    | "lms"
-    | "b2b"
-    | "finance"
-    | "hr"
-    | "cms"
-    | "store_blog"
-  >("overview");
+  const [selectedLeadForProfile, setSelectedLeadForProfile] = useState<CrmLead | null>(null);
+  const [activeTab, setActiveTab] = useState<DashboardTabId>("overview");
   const [storeSubTab, setStoreSubTab] = useState<
     "summary" | "products" | "orders" | "blog" | "categories" | "reviews" | "uploads"
   >("summary");
@@ -183,9 +182,21 @@ export default function DashboardPage() {
       const subParam = params.get("sub");
       if (
         tabParam &&
-        ["overview", "crm", "visa", "lms", "b2b", "finance", "hr", "cms", "store_blog"].includes(tabParam)
+        [
+          "my_profile",
+          "overview",
+          "crm",
+          "visa",
+          "lms",
+          "b2b",
+          "finance",
+          "hr",
+          "cms",
+          "store_blog",
+          "users",
+        ].includes(tabParam)
       ) {
-        setActiveTab(tabParam as any);
+        setActiveTab(tabParam as DashboardTabId);
       }
       if (
         subParam &&
@@ -206,19 +217,36 @@ export default function DashboardPage() {
       })
       .then((data) => {
         if (data?.authenticated && data?.user) {
-          setCurrentUser(data.user);
-          setActiveRole(data.user.role);
+          const allLocalAccounts = getSystemAccounts();
+          const matchedLocal = allLocalAccounts.find(
+            (a) => a.email.toLowerCase() === String(data.user.email || "").toLowerCase(),
+          );
+          const resolvedAllowedTabs: DashboardTabId[] | undefined =
+            matchedLocal?.allowedTabs || data.user.allowedTabs;
+          const resolvedLinkedLeadId: string | undefined =
+            matchedLocal?.linkedLeadId || data.user.linkedLeadId;
+          const resolvedRole: UserRole = matchedLocal?.role || data.user.role;
+
+          setCurrentUser({
+            ...data.user,
+            role: resolvedRole,
+            allowedTabs: resolvedAllowedTabs,
+            linkedLeadId: resolvedLinkedLeadId,
+          });
+          setActiveRole(resolvedRole);
           if (data.user.branch && data.user.branch !== "ALL") {
             setActiveBranch(data.user.branch);
           }
           const hasExplicitTab =
             typeof window !== "undefined" && new URLSearchParams(window.location.search).has("tab");
           if (!hasExplicitTab) {
-            if (data.user.role === "STUDENT") {
-              setActiveTab("visa");
-            } else if (data.user.role === "TELE_COUNSELOR") {
+            if (resolvedRole === "STUDENT" || resolvedAllowedTabs?.includes("my_profile")) {
+              setActiveTab("my_profile");
+            } else if (resolvedAllowedTabs && resolvedAllowedTabs.length > 0) {
+              setActiveTab(resolvedAllowedTabs[0]);
+            } else if (resolvedRole === "TELE_COUNSELOR") {
               setActiveTab("crm");
-            } else if (data.user.role === "TEACHER") {
+            } else if (resolvedRole === "TEACHER") {
               setActiveTab("lms");
             }
           }
@@ -407,36 +435,28 @@ export default function DashboardPage() {
                 )}
               </div>
 
-              {/* 7-Role View Switcher or Locked Role Badge */}
-              {(!currentUser || currentUser.role === "MAIN_ADMIN") ? (
-                <div className="flex items-center gap-1.5 rounded-xl border border-stone-300 bg-white px-3 py-1.5 shadow-xs">
-                  <ShieldCheck className="h-4 w-4 text-[#b91c1c]" />
-                  <span className="text-xs font-bold text-slate-500">{t.viewRoleLabel}</span>
-                  <select
-                    value={activeRole}
-                    onChange={(e) => {
-                      const nextRole = e.target.value as UserRole;
-                      setActiveRole(nextRole);
-                      if (nextRole === "STUDENT") setActiveTab("visa");
-                      else if (nextRole === "TELE_COUNSELOR") setActiveTab("crm");
-                      else if (nextRole === "TEACHER") setActiveTab("lms");
-                    }}
-                    className="rounded bg-transparent text-xs font-bold text-slate-900 focus:outline-hidden cursor-pointer"
-                  >
-                    <option value="MAIN_ADMIN">{t.roles.mainAdmin}</option>
-                    <option value="BRANCH_ADMIN">{t.roles.branchAdmin}</option>
-                    <option value="TELE_COUNSELOR">{t.roles.teleCounselor}</option>
-                    <option value="TEACHER">{t.roles.teacher}</option>
-                    <option value="B2B_AGENT">{t.roles.b2bAgent}</option>
-                    <option value="INVESTOR">{t.roles.investor}</option>
-                    <option value="STUDENT">{t.roles.student}</option>
-                  </select>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 rounded-xl border border-stone-200 bg-stone-100 px-3 py-1.5 text-xs font-bold text-slate-800">
-                  <Lock className="h-3.5 w-3.5 text-amber-600" />
-                  <span>{currentUser.name}</span>
-                </div>
+              {/* Logged-in User Identity & Admin Access Manager Quick Button */}
+              <div className="flex items-center gap-2 rounded-xl border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-bold text-slate-800">
+                <ShieldCheck className="h-4 w-4 text-[#b91c1c]" />
+                <span>{currentUser?.name || "শেখ বাসেত (Main Admin)"}</span>
+                <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-extrabold text-emerald-900">
+                  {activeRole}
+                </span>
+              </div>
+
+              {(!currentUser || currentUser.role === "MAIN_ADMIN") && (
+                <button
+                  onClick={() => setActiveTab("users")}
+                  className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition shadow-2xs ${
+                    activeTab === "users"
+                      ? "border-[#b91c1c] bg-[#b91c1c] text-white"
+                      : "border-red-200 bg-red-50/70 text-[#b91c1c] hover:bg-red-100"
+                  }`}
+                  title="কে কোন রোলে আছে এবং কাকে কী অ্যাক্সেস দেওয়া হয়েছে দেখুন ও নিয়ন্ত্রণ করুন"
+                >
+                  <KeyRound className="h-3.5 w-3.5" />
+                  <span>ইউজার ও অ্যাক্সেস কন্ট্রোল</span>
+                </button>
               )}
 
               {/* Database Sync Button */}
@@ -488,9 +508,10 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Module Navigation Tabs (Clean Wrapped Grid - No Serial Numbers, No Horizontal Scrollbar) */}
+          {/* Module Navigation Tabs (Driven by Admin-Assigned Permissions) */}
           <nav className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-stone-200/80 pt-3">
             {[
+              { id: "my_profile", label: "আমার প্রোফাইল ও ফাইল", icon: UserCheck, badge: 0 },
               { id: "overview", label: t.tabs.overview, icon: TrendingUp, badge: 0 },
               {
                 id: "crm",
@@ -513,14 +534,29 @@ export default function DashboardPage() {
                   (adminBundle.summary?.pendingReviews || 0) +
                   (adminBundle.summary?.lowStockProducts || 0),
               },
+              {
+                id: "users",
+                label: "ইউজার ও অ্যাক্সেস কন্ট্রোল",
+                icon: KeyRound,
+                badge: 0,
+              },
             ]
               .filter((tab) => {
-                if (activeRole === "STUDENT") return tab.id === "visa" || tab.id === "lms";
+                // Main Admin sees all operational tabs + User Access Control
+                if (!currentUser || activeRole === "MAIN_ADMIN") {
+                  return tab.id !== "my_profile";
+                }
+                // If user has explicit allowedTabs assigned by Main Admin, strictly enforce them
+                if (currentUser.allowedTabs && currentUser.allowedTabs.length > 0) {
+                  return currentUser.allowedTabs.includes(tab.id as DashboardTabId);
+                }
+                // Fallback role defaults
+                if (activeRole === "STUDENT") return ["my_profile", "visa", "lms"].includes(tab.id);
                 if (activeRole === "TELE_COUNSELOR") return ["overview", "crm", "visa", "lms"].includes(tab.id);
                 if (activeRole === "TEACHER") return ["overview", "lms", "visa"].includes(tab.id);
                 if (activeRole === "B2B_AGENT") return ["overview", "b2b", "visa"].includes(tab.id);
                 if (activeRole === "INVESTOR") return ["overview", "finance", "b2b"].includes(tab.id);
-                return true;
+                return tab.id !== "users" && tab.id !== "my_profile";
               })
               .map((tab) => {
                 const Icon = tab.icon;
@@ -528,7 +564,7 @@ export default function DashboardPage() {
                 return (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
+                    onClick={() => setActiveTab(tab.id as DashboardTabId)}
                     className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
                       isActive
                         ? "bg-[#133e29] text-white shadow-sm ring-1 ring-[#133e29]"
@@ -875,9 +911,36 @@ export default function DashboardPage() {
                       return (
                         <tr key={lead.id} className="hover:bg-stone-50/80 transition">
                           <td className="p-3">
-                            <p className="font-extrabold text-slate-900 text-sm">{lead.name}</p>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedLeadForProfile(lead)}
+                              className="text-left group"
+                            >
+                              <p className="font-extrabold text-slate-900 text-sm group-hover:text-[#b91c1c] underline-offset-2 group-hover:underline">
+                                {lead.name}
+                              </p>
+                            </button>
                             <p className="text-slate-500 font-mono mt-0.5">{lead.phone}</p>
-                            <span className="inline-block mt-1 text-[10px] text-slate-400">{t.crm.cityLabel}: {lead.city}</span>
+                            <div className="mt-1 flex flex-wrap items-center gap-1">
+                              <span className="text-[10px] text-slate-400">
+                                {t.crm.cityLabel}: {lead.city}
+                              </span>
+                              {lead.isFileOpened && (
+                                <span className="rounded bg-red-100 px-1.5 py-0.2 text-[9px] font-bold text-[#b91c1c]">
+                                  ফাইল ওপেনকৃত
+                                </span>
+                              )}
+                              {lead.isCourseEnrolled && (
+                                <span className="rounded bg-emerald-100 px-1.5 py-0.2 text-[9px] font-bold text-emerald-800">
+                                  কোর্সে ভর্তিকৃত
+                                </span>
+                              )}
+                              {lead.hasLoginAccess && (
+                                <span className="rounded bg-amber-100 px-1.5 py-0.2 text-[9px] font-bold text-amber-900">
+                                  লগইন: {lead.loginEmail}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="p-3">
                             <span className="inline-block rounded bg-stone-100 px-2 py-0.5 text-[10px] font-bold text-slate-700">
@@ -919,15 +982,25 @@ export default function DashboardPage() {
                             </p>
                           </td>
                           <td className="p-3 text-right">
-                            <a
-                              href={waLink}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 transition shadow-xs"
-                            >
-                              <Send className="h-3.5 w-3.5" />
-                              <span>WhatsApp</span>
-                            </a>
+                            <div className="flex flex-wrap items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedLeadForProfile(lead)}
+                                className="inline-flex items-center gap-1 rounded-xl bg-[#b91c1c] px-3 py-1.5 text-xs font-bold text-white hover:bg-red-800 transition shadow-xs"
+                              >
+                                <UserCheck className="h-3.5 w-3.5" />
+                                <span>প্রোফাইল ও ভর্তি লগইন</span>
+                              </button>
+                              <a
+                                href={waLink}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 rounded-xl bg-emerald-600 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 transition shadow-xs"
+                              >
+                                <Send className="h-3.5 w-3.5" />
+                                <span>WA</span>
+                              </a>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -949,14 +1022,45 @@ export default function DashboardPage() {
                     ওয়েবসাইট কনসালটেশন, কন্টাক্ট ও স্টোর চেকআউট লিডস
                   </h3>
                   <p className="text-xs text-slate-500">
-                    পাবলিক ওয়েবসাইটের ফর্ম ও চেকআউট থেকে সরাসরি ডাটাবেজে আসা লিডসমূহ পরিচালনা করুন
+                    পাবলিক ওয়েবসাইটের ফর্ম ও চেকআউট থেকে সরাসরি ডাটাবেজে আসা লিডসমূহ পরিচালনা ও প্রোফাইল/লগইন তৈরি করুন
                   </p>
                 </div>
                 <span className="rounded-xl bg-stone-100 px-3 py-1.5 text-xs font-bold text-slate-700">
                   মোট ডাটাবেজ লিড: {adminBundle.crmLeads.length}টি
                 </span>
               </div>
-              <CrmManager initialLeads={adminBundle.crmLeads} />
+              <CrmManager
+                initialLeads={adminBundle.crmLeads}
+                onOpenLeadProfile={(dbLead) => {
+                  const existingInStore = store.crmLeads.find(
+                    (l) => l.id === dbLead.id || l.phone === dbLead.phone,
+                  );
+                  if (existingInStore) {
+                    setSelectedLeadForProfile(existingInStore);
+                  } else {
+                    setSelectedLeadForProfile({
+                      id: dbLead.id,
+                      name: dbLead.name,
+                      phone: dbLead.phone,
+                      whatsapp: dbLead.phone.startsWith("+88") ? dbLead.phone : `+88${dbLead.phone}`,
+                      email: dbLead.email || "",
+                      city: "ঢাকা",
+                      source: "WEBSITE_FORM",
+                      interest: "STUDENT_VISA_REGULAR",
+                      status: dbLead.status === "converted" ? "ADMITTED" : "NEW",
+                      education: "HSC / Equivalent",
+                      japaneseProficiency: "NONE",
+                      studyGapYears: 1,
+                      assignedTo: "সুমাইয়া সুলতানা (টেলি-কাউন্সেলর)",
+                      branch: "DHK-HQ",
+                      notes: dbLead.notes || dbLead.message || "",
+                      followUpDate: new Date().toISOString().slice(0, 10),
+                      lastContactedAt: dbLead.created_at,
+                      createdAt: dbLead.created_at,
+                    });
+                  }
+                }}
+              />
             </div>
           </div>
         )}
@@ -2486,6 +2590,73 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
+        )}
+
+        {/* =========================================================================
+            MODULE 10: ENROLLED LEAD / STUDENT PERSONAL PROFILE & FILE VIEW
+            ========================================================================= */}
+        {activeTab === "my_profile" && (
+          <StudentProfileView
+            lead={
+              store.crmLeads.find(
+                (l) =>
+                  (currentUser?.linkedLeadId && l.id === currentUser.linkedLeadId) ||
+                  (currentUser?.email &&
+                    (l.loginEmail?.toLowerCase() === currentUser.email.toLowerCase() ||
+                      l.email?.toLowerCase() === currentUser.email.toLowerCase())),
+              ) || store.crmLeads.find((l) => l.status === "ADMITTED")
+            }
+            visaApplicant={
+              store.visaApplicants.find((v) => {
+                const matchedLead = store.crmLeads.find(
+                  (l) =>
+                    (currentUser?.linkedLeadId && l.id === currentUser.linkedLeadId) ||
+                    (currentUser?.email &&
+                      l.loginEmail?.toLowerCase() === currentUser.email.toLowerCase()),
+                );
+                return matchedLead
+                  ? v.phone === matchedLead.phone || v.trackingNo === matchedLead.fileTrackingNo
+                  : false;
+              }) || store.visaApplicants[0]
+            }
+            lmsBridge={
+              store.lmsBridges.find((lms) => {
+                const matchedLead = store.crmLeads.find(
+                  (l) =>
+                    (currentUser?.linkedLeadId && l.id === currentUser.linkedLeadId) ||
+                    (currentUser?.email &&
+                      l.loginEmail?.toLowerCase() === currentUser.email.toLowerCase()),
+                );
+                return matchedLead ? lms.phone === matchedLead.phone : false;
+              }) || store.lmsBridges[0]
+            }
+            userEmail={currentUser?.email || "student@knltc.com"}
+            userName={currentUser?.name || "রাকিবুল ইসলাম"}
+          />
+        )}
+
+        {/* =========================================================================
+            MODULE 11: MAIN ADMIN USER ROLES, CREDENTIALS & ACCESS CONTROL PANEL
+            ========================================================================= */}
+        {activeTab === "users" && (
+          <UserAccessControlPanel
+            onNotify={(msg) => {
+              setStore({ ...getCmsStore() });
+              showToast(msg);
+            }}
+          />
+        )}
+
+        {/* Individual Lead Profile & Login Access Provisioning Modal */}
+        {selectedLeadForProfile && (
+          <LeadProfileModal
+            lead={selectedLeadForProfile}
+            onClose={() => setSelectedLeadForProfile(null)}
+            onSaved={(msg) => {
+              setStore({ ...getCmsStore() });
+              showToast(msg);
+            }}
+          />
         )}
       </main>
     </div>

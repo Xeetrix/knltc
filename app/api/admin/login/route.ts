@@ -1,14 +1,23 @@
 import { NextResponse } from "next/server";
 import { createAdminSession, verifyAdminCredentials } from "@/lib/admin-auth";
+import type { SystemUserAccount } from "@/lib/knltc-cms-store";
 
 export async function POST(request: Request) {
   let email = "";
   let password = "";
+  let clientAccounts: SystemUserAccount[] | undefined = undefined;
 
   try {
-    const body = (await request.json()) as { email?: unknown; password?: unknown };
+    const body = (await request.json()) as {
+      email?: unknown;
+      password?: unknown;
+      clientAccounts?: unknown;
+    };
     email = typeof body.email === "string" ? body.email : "";
     password = typeof body.password === "string" ? body.password : "";
+    if (Array.isArray(body.clientAccounts)) {
+      clientAccounts = body.clientAccounts as SystemUserAccount[];
+    }
   } catch {
     return NextResponse.json(
       {
@@ -20,13 +29,18 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { user, error } = await verifyAdminCredentials(email, password);
+    const { user, error } = await verifyAdminCredentials(email, password, clientAccounts);
     if (!user) {
       const isConfigError = error === "admin_credentials_not_configured";
 
       return NextResponse.json(
         {
-          error: isConfigError ? "Admin login is not configured" : "Invalid credentials",
+          error:
+            isConfigError
+              ? "Admin login is not configured"
+              : error && error !== "invalid_credentials"
+                ? error
+                : "লগইন তথ্য সঠিক নয়। মেইন অ্যাডমিন থেকে প্রদত্ত ইমেইল/আইডি ও পাসওয়ার্ড ব্যবহার করুন।",
           code: error ?? "invalid_credentials",
         },
         { status: isConfigError ? 503 : 401 },
@@ -34,7 +48,14 @@ export async function POST(request: Request) {
     }
 
     try {
-      await createAdminSession(user.email, user.role, user.name, user.branch);
+      await createAdminSession(
+        user.email,
+        user.role,
+        user.name,
+        user.branch,
+        user.allowedTabs,
+        user.linkedLeadId,
+      );
     } catch {
       return NextResponse.json(
         {
@@ -45,7 +66,17 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({
+      ok: true,
+      user: {
+        email: user.email,
+        role: user.role,
+        name: user.name,
+        branch: user.branch,
+        allowedTabs: user.allowedTabs,
+        linkedLeadId: user.linkedLeadId,
+      },
+    });
   } catch {
     return NextResponse.json(
       {
@@ -56,3 +87,4 @@ export async function POST(request: Request) {
     );
   }
 }
+

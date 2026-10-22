@@ -16,6 +16,34 @@ export type UserRole =
 
 export type BranchCode = "ALL" | "DHK-HQ" | "KHULNA-01";
 
+export type DashboardTabId =
+  | "my_profile"
+  | "overview"
+  | "crm"
+  | "visa"
+  | "lms"
+  | "b2b"
+  | "finance"
+  | "hr"
+  | "cms"
+  | "store_blog"
+  | "users";
+
+export interface SystemUserAccount {
+  id: string;
+  name: string;
+  email: string; // Login Email or User ID
+  password: string;
+  phone: string;
+  role: UserRole;
+  branch: BranchCode;
+  allowedTabs: DashboardTabId[];
+  status: "ACTIVE" | "SUSPENDED";
+  linkedLeadId?: string;
+  enrollmentType?: "NONE" | "COURSE_ONLY" | "VISA_FILE" | "COURSE_AND_VISA";
+  createdAt: string;
+}
+
 // ------------------------------------------------------------------------------
 // CRM & Lead Management
 // ------------------------------------------------------------------------------
@@ -39,6 +67,11 @@ export interface CrmLead {
   whatsapp: string;
   email?: string;
   city: string;
+  address?: string;
+  passportNo?: string;
+  guardianName?: string;
+  guardianPhone?: string;
+  gpaDetails?: string;
   source: LeadSource;
   interest: ServiceInterest;
   status: LeadStatus;
@@ -51,6 +84,17 @@ export interface CrmLead {
   followUpDate: string;
   lastContactedAt: string;
   createdAt: string;
+  // Individual Profile, File Open / Admission & Login Provisioning
+  isFileOpened?: boolean;
+  isCourseEnrolled?: boolean;
+  enrolledBatchOrSession?: string;
+  fileTrackingNo?: string;
+  packageType?: "REGULAR" | "PREMIUM";
+  targetSchool?: string;
+  hasLoginAccess?: boolean;
+  loginEmail?: string;
+  loginPassword?: string;
+  allowedTabs?: DashboardTabId[];
 }
 
 // ------------------------------------------------------------------------------
@@ -331,6 +375,8 @@ export interface WebsiteCmsContent {
   khulnaOfficeAddress: MultilingualText;
   faqList: { question: MultilingualText; answer: MultilingualText }[];
   testimonials: { studentName: string; courseOrVisa: string; quote: MultilingualText; city: string; avatarUrl: string }[];
+  systemAccounts?: SystemUserAccount[];
+  leadExtendedProfiles?: Record<string, Partial<CrmLead>>;
 }
 
 export interface MasterKnlTcStore {
@@ -866,7 +912,13 @@ const DEFAULT_CRM_LEADS: CrmLead[] = [
     name: "রাকিবুল ইসলাম",
     phone: "01688776655",
     whatsapp: "+8801688776655",
+    email: "student@knltc.com",
     city: "ঢাকা",
+    address: "মিরপুর-১০, ঢাকা",
+    passportNo: "A04928172",
+    guardianName: "মোহাম্মদ রফিকুল ইসলাম (পিতা)",
+    guardianPhone: "01711998877",
+    gpaDetails: "SSC 4.80, HSC 4.50, Honours CGPA 3.45",
     source: "OFFICE_WALKIN",
     interest: "STUDENT_VISA_PREMIUM",
     status: "ADMITTED",
@@ -879,6 +931,117 @@ const DEFAULT_CRM_LEADS: CrmLead[] = [
     followUpDate: "2026-10-30",
     lastContactedAt: "2026-10-20T17:00:00.000Z",
     createdAt: "2026-10-15T12:00:00.000Z",
+    isFileOpened: true,
+    isCourseEnrolled: true,
+    enrolledBatchOrSession: "APRIL_2027 • N4 Live Batch",
+    fileTrackingNo: "KNLTC-VISA-2027-01",
+    packageType: "PREMIUM",
+    targetSchool: "HLA Gakuin (Hiroshima)",
+    hasLoginAccess: true,
+    loginEmail: "student@knltc.com",
+    loginPassword: "student123",
+    allowedTabs: ["my_profile", "visa", "lms"],
+  },
+];
+
+export const DEFAULT_SYSTEM_ACCOUNTS: SystemUserAccount[] = [
+  {
+    id: "acc-admin-01",
+    name: "শেখ বাসেত (ম্যানেজিং ডিরেক্টর / Main Admin)",
+    email: "baset@knltc.com",
+    password: "admin123",
+    phone: "+880 1770 439971",
+    role: "MAIN_ADMIN",
+    branch: "ALL",
+    allowedTabs: ["overview", "crm", "visa", "lms", "b2b", "finance", "hr", "cms", "store_blog", "users"],
+    status: "ACTIVE",
+    createdAt: "2026-01-01T00:00:00.000Z",
+  },
+  {
+    id: "acc-dhk-02",
+    name: "তানভীর আহমেদ (ঢাকা শাখা প্রধান)",
+    email: "dhaka@knltc.com",
+    password: "admin123",
+    phone: "+880 1711 223344",
+    role: "BRANCH_ADMIN",
+    branch: "DHK-HQ",
+    allowedTabs: ["overview", "crm", "visa", "lms", "finance", "hr", "store_blog"],
+    status: "ACTIVE",
+    createdAt: "2026-02-10T00:00:00.000Z",
+  },
+  {
+    id: "acc-khl-03",
+    name: "মুসা ইব্রাহিম (খুলনা শাখা ব্যবস্থাপক)",
+    email: "khulna@knltc.com",
+    password: "admin123",
+    phone: "+880 1712 998877",
+    role: "BRANCH_ADMIN",
+    branch: "KHULNA-01",
+    allowedTabs: ["overview", "crm", "visa", "lms", "finance", "hr"],
+    status: "ACTIVE",
+    createdAt: "2026-02-15T00:00:00.000Z",
+  },
+  {
+    id: "acc-cns-04",
+    name: "সুমাইয়া সুলতানা (টেলি-কাউন্সেলর)",
+    email: "counselor@knltc.com",
+    password: "admin123",
+    phone: "+880 1711 234567",
+    role: "TELE_COUNSELOR",
+    branch: "DHK-HQ",
+    allowedTabs: ["overview", "crm", "visa", "lms"],
+    status: "ACTIVE",
+    createdAt: "2026-03-01T00:00:00.000Z",
+  },
+  {
+    id: "acc-tch-05",
+    name: "আমির হোসেন (সিনিয়র সেন্সি / শিক্ষক)",
+    email: "sensei@knltc.com",
+    password: "admin123",
+    phone: "+880 1819 556677",
+    role: "TEACHER",
+    branch: "ALL",
+    allowedTabs: ["overview", "lms", "visa"],
+    status: "ACTIVE",
+    createdAt: "2026-03-05T00:00:00.000Z",
+  },
+  {
+    id: "acc-b2b-06",
+    name: "নেক্সাস গ্লোবাল (B2B এজেন্ট)",
+    email: "b2b@knltc.com",
+    password: "admin123",
+    phone: "+880 1711 002233",
+    role: "B2B_AGENT",
+    branch: "ALL",
+    allowedTabs: ["overview", "b2b", "visa"],
+    status: "ACTIVE",
+    createdAt: "2026-04-01T00:00:00.000Z",
+  },
+  {
+    id: "acc-inv-07",
+    name: "ইমরান হাসেম (বিনিয়োগকারী)",
+    email: "investor@knltc.com",
+    password: "admin123",
+    phone: "+880 1713 000111",
+    role: "INVESTOR",
+    branch: "ALL",
+    allowedTabs: ["overview", "finance", "b2b"],
+    status: "ACTIVE",
+    createdAt: "2026-04-10T00:00:00.000Z",
+  },
+  {
+    id: "acc-stu-08",
+    name: "রাকিবুল ইসলাম (ভর্তি ও ভিসা ফাইল ওপেনকৃত শিক্ষার্থী)",
+    email: "student@knltc.com",
+    password: "student123",
+    phone: "01688776655",
+    role: "STUDENT",
+    branch: "DHK-HQ",
+    allowedTabs: ["my_profile", "visa", "lms"],
+    status: "ACTIVE",
+    linkedLeadId: "lead-004",
+    enrollmentType: "COURSE_AND_VISA",
+    createdAt: "2026-10-15T12:30:00.000Z",
   },
 ];
 
@@ -1377,7 +1540,19 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
     }
 
     if (Array.isArray(data.websiteCms) && data.websiteCms.length > 0) {
-      store.websiteCms = data.websiteCms;
+      const serverCms = data.websiteCms[0] as WebsiteCmsContent;
+      if (!serverCms.systemAccounts || serverCms.systemAccounts.length === 0) {
+        serverCms.systemAccounts = JSON.parse(JSON.stringify(DEFAULT_SYSTEM_ACCOUNTS));
+      }
+      store.websiteCms = [serverCms];
+
+      // Merge extended lead profile fields stored in websiteCms.leadExtendedProfiles
+      if (serverCms.leadExtendedProfiles) {
+        store.crmLeads = store.crmLeads.map((lead) => {
+          const ext = serverCms.leadExtendedProfiles?.[lead.id];
+          return ext ? { ...lead, ...ext } : lead;
+        });
+      }
       hasChanges = true;
     }
 
@@ -1393,7 +1568,286 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
 
 export function getWebsiteCms(): WebsiteCmsContent {
   const store = getCmsStore();
-  return store.websiteCms?.[0] || DEFAULT_WEBSITE_CMS;
+  const cms = store.websiteCms?.[0] || DEFAULT_WEBSITE_CMS;
+  if (!cms.systemAccounts || cms.systemAccounts.length === 0) {
+    cms.systemAccounts = JSON.parse(JSON.stringify(DEFAULT_SYSTEM_ACCOUNTS));
+  }
+  return cms;
+}
+
+export function getSystemAccounts(): SystemUserAccount[] {
+  const cms = getWebsiteCms();
+  if (!cms.systemAccounts || cms.systemAccounts.length === 0) {
+    cms.systemAccounts = JSON.parse(JSON.stringify(DEFAULT_SYSTEM_ACCOUNTS));
+  }
+  return cms.systemAccounts;
+}
+
+export function upsertSystemAccount(
+  accountInput: Omit<SystemUserAccount, "id" | "createdAt"> & { id?: string; createdAt?: string },
+): SystemUserAccount {
+  const store = getCmsStore();
+  const cms = store.websiteCms?.[0] || DEFAULT_WEBSITE_CMS;
+  if (!cms.systemAccounts || cms.systemAccounts.length === 0) {
+    cms.systemAccounts = JSON.parse(JSON.stringify(DEFAULT_SYSTEM_ACCOUNTS));
+  }
+
+  const normalizedEmail = accountInput.email.trim().toLowerCase();
+  const existingIdx = cms.systemAccounts.findIndex(
+    (a) => (accountInput.id && a.id === accountInput.id) || a.email.toLowerCase() === normalizedEmail,
+  );
+
+  let savedAccount: SystemUserAccount;
+  if (existingIdx >= 0) {
+    savedAccount = {
+      ...cms.systemAccounts[existingIdx],
+      ...accountInput,
+      email: normalizedEmail,
+    };
+    cms.systemAccounts[existingIdx] = savedAccount;
+  } else {
+    savedAccount = {
+      ...accountInput,
+      id: accountInput.id || `acc-${Date.now()}`,
+      email: normalizedEmail,
+      createdAt: accountInput.createdAt || new Date().toISOString(),
+    };
+    cms.systemAccounts.unshift(savedAccount);
+  }
+
+  store.websiteCms = [cms];
+  saveCmsStore(store);
+  syncToServer("CMS_UPDATE", undefined, cms);
+  return savedAccount;
+}
+
+export function deleteSystemAccount(accountId: string) {
+  const store = getCmsStore();
+  const cms = store.websiteCms?.[0] || DEFAULT_WEBSITE_CMS;
+  if (!cms.systemAccounts) return;
+  cms.systemAccounts = cms.systemAccounts.filter((a) => a.id !== accountId);
+  store.websiteCms = [cms];
+  saveCmsStore(store);
+  syncToServer("CMS_UPDATE", undefined, cms);
+}
+
+export function updateCrmLeadProfile(id: string, updates: Partial<CrmLead>): CrmLead | null {
+  const store = getCmsStore();
+  const cms = store.websiteCms?.[0] || DEFAULT_WEBSITE_CMS;
+  if (!cms.leadExtendedProfiles) {
+    cms.leadExtendedProfiles = {};
+  }
+
+  const index = store.crmLeads.findIndex((l) => l.id === id);
+  if (index === -1) return null;
+
+  const updatedLead: CrmLead = {
+    ...store.crmLeads[index],
+    ...updates,
+    lastContactedAt: new Date().toISOString(),
+  };
+  store.crmLeads[index] = updatedLead;
+  cms.leadExtendedProfiles[id] = {
+    ...(cms.leadExtendedProfiles[id] || {}),
+    ...updates,
+  };
+  store.websiteCms = [cms];
+  saveCmsStore(store);
+
+  syncToServer("UPSERT", "knltc_crm_leads", {
+    id: updatedLead.id,
+    name: updatedLead.name,
+    phone: updatedLead.phone,
+    whatsapp: updatedLead.whatsapp,
+    email: updatedLead.email,
+    city: updatedLead.city,
+    source: updatedLead.source,
+    interest: updatedLead.interest,
+    status: updatedLead.status,
+    education: updatedLead.education,
+    japanese_proficiency: updatedLead.japaneseProficiency,
+    study_gap_years: updatedLead.studyGapYears,
+    assigned_to: updatedLead.assignedTo,
+    branch: updatedLead.branch,
+    notes: updatedLead.notes,
+    follow_up_date: updatedLead.followUpDate,
+    last_contacted_at: updatedLead.lastContactedAt,
+  });
+  syncToServer("CMS_UPDATE", undefined, cms);
+
+  return updatedLead;
+}
+
+export function provisionLeadLoginAndEnrollment(
+  leadBase: {
+    id: string;
+    name: string;
+    phone: string;
+    whatsapp?: string;
+    email?: string;
+    city?: string;
+    education?: string;
+    interest?: ServiceInterest;
+    branch?: "DHK-HQ" | "KHULNA-01";
+    notes?: string;
+  },
+  config: {
+    loginEmail: string;
+    loginPassword: string;
+    role: UserRole;
+    allowedTabs: DashboardTabId[];
+    isFileOpened: boolean;
+    isCourseEnrolled: boolean;
+    enrolledBatchOrSession: string;
+    packageType?: "REGULAR" | "PREMIUM";
+    targetSchool?: string;
+    courseLevel?: "N5" | "N4" | "IRODORI";
+    accountStatus?: "ACTIVE" | "SUSPENDED";
+    address?: string;
+    passportNo?: string;
+    guardianName?: string;
+    guardianPhone?: string;
+    gpaDetails?: string;
+  },
+): { lead: CrmLead; account: SystemUserAccount } {
+  const store = getCmsStore();
+  const cms = store.websiteCms?.[0] || DEFAULT_WEBSITE_CMS;
+  if (!cms.leadExtendedProfiles) cms.leadExtendedProfiles = {};
+
+  let existingLead = store.crmLeads.find((l) => l.id === leadBase.id);
+  const trackingNo =
+    existingLead?.fileTrackingNo || `KNLTC-VISA-2027-${Math.floor(10 + Math.random() * 89)}`;
+
+  const profileUpdates: Partial<CrmLead> = {
+    name: leadBase.name,
+    phone: leadBase.phone,
+    email: config.loginEmail,
+    address: config.address ?? existingLead?.address,
+    passportNo: config.passportNo ?? existingLead?.passportNo,
+    guardianName: config.guardianName ?? existingLead?.guardianName,
+    guardianPhone: config.guardianPhone ?? existingLead?.guardianPhone,
+    gpaDetails: config.gpaDetails ?? existingLead?.gpaDetails,
+    status: config.isFileOpened || config.isCourseEnrolled ? "ADMITTED" : existingLead?.status || "COUNSELED",
+    isFileOpened: config.isFileOpened,
+    isCourseEnrolled: config.isCourseEnrolled,
+    enrolledBatchOrSession: config.enrolledBatchOrSession,
+    fileTrackingNo: config.isFileOpened ? trackingNo : existingLead?.fileTrackingNo,
+    packageType: config.packageType || existingLead?.packageType || "REGULAR",
+    targetSchool: config.targetSchool || existingLead?.targetSchool || "HLA Gakuin (Hiroshima)",
+    hasLoginAccess: true,
+    loginEmail: config.loginEmail.trim().toLowerCase(),
+    loginPassword: config.loginPassword.trim(),
+    allowedTabs: config.allowedTabs,
+  };
+
+  if (!existingLead) {
+    existingLead = {
+      id: leadBase.id,
+      name: leadBase.name,
+      phone: leadBase.phone,
+      whatsapp: leadBase.whatsapp || leadBase.phone,
+      email: config.loginEmail.trim().toLowerCase(),
+      city: leadBase.city || "ঢাকা",
+      source: "WEBSITE_FORM",
+      interest: leadBase.interest || "STUDENT_VISA_REGULAR",
+      status: "ADMITTED",
+      education: leadBase.education || "HSC / Equivalent",
+      japaneseProficiency: "LEARNING_N5",
+      studyGapYears: 1,
+      assignedTo: "শেখ বাসেত (ম্যানেজিং ডিরেক্টর)",
+      branch: leadBase.branch || "DHK-HQ",
+      notes: leadBase.notes || "ভর্তি ও লগইন অ্যাক্সেস প্রদান করা হয়েছে।",
+      followUpDate: new Date().toISOString().slice(0, 10),
+      lastContactedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      ...profileUpdates,
+    };
+    store.crmLeads.unshift(existingLead);
+  } else {
+    Object.assign(existingLead, profileUpdates);
+  }
+
+  cms.leadExtendedProfiles[existingLead.id] = {
+    ...(cms.leadExtendedProfiles[existingLead.id] || {}),
+    ...profileUpdates,
+  };
+
+  // If Visa File is opened, ensure a VisaApplicant card exists in pipeline
+  if (config.isFileOpened) {
+    const hasVisaCard = store.visaApplicants.some(
+      (v) => v.phone === existingLead!.phone || v.trackingNo === trackingNo,
+    );
+    if (!hasVisaCard) {
+      const newVisa: VisaApplicant = {
+        id: `visa-${Date.now()}`,
+        trackingNo,
+        name: existingLead.name,
+        phone: existingLead.phone,
+        branch: existingLead.branch,
+        packageType: config.packageType || "REGULAR",
+        intakeSession: "APRIL_2027",
+        stage: 1,
+        targetSchool: config.targetSchool || "HLA Gakuin (Hiroshima)",
+        sponsorName: config.guardianName || "অভিভাবক (যাচাইকৃত)",
+        sponsorRelation: "FATHER",
+        sponsorBank: "অগ্রণী ব্যাংক লি.",
+        sponsorBalanceBdt: 1850000,
+        bankLoanAssistance: false,
+        coEStatus: "PENDING",
+        visaStatus: "IN_PROCESS",
+        counselorName: existingLead.assignedTo,
+        updatedAt: new Date().toISOString(),
+      };
+      store.visaApplicants.unshift(newVisa);
+    }
+  }
+
+  // If Language Course is enrolled, ensure LMS bridge record exists
+  if (config.isCourseEnrolled) {
+    const hasLms = store.lmsBridges.some((l) => l.phone === existingLead!.phone);
+    if (!hasLms) {
+      store.lmsBridges.unshift({
+        id: `lms-${Date.now()}`,
+        studentName: existingLead.name,
+        phone: existingLead.phone,
+        courseLevel: config.courseLevel || "N5",
+        enrollmentNo: `KNLTC-2026-${config.courseLevel || "N5"}-${Math.floor(100 + Math.random() * 899)}`,
+        portalUsername: config.loginEmail.trim().toLowerCase(),
+        portalPasswordMasked: config.loginPassword.trim(),
+        portalFeeDeductedBdt: 2000,
+        netKnlTcMarginBdt: 10000,
+        credentialsSentViaWa: true,
+        credentialsSentAt: new Date().toISOString(),
+        progressPercentage: 10,
+        activeBatch: config.enrolledBatchOrSession || "N5 Special Batch",
+      });
+    }
+  }
+
+  store.websiteCms = [cms];
+  saveCmsStore(store);
+
+  const account = upsertSystemAccount({
+    name: existingLead.name,
+    email: config.loginEmail.trim().toLowerCase(),
+    password: config.loginPassword.trim(),
+    phone: existingLead.phone,
+    role: config.role,
+    branch: existingLead.branch,
+    allowedTabs: config.allowedTabs,
+    status: config.accountStatus || "ACTIVE",
+    linkedLeadId: existingLead.id,
+    enrollmentType:
+      config.isFileOpened && config.isCourseEnrolled
+        ? "COURSE_AND_VISA"
+        : config.isFileOpened
+          ? "VISA_FILE"
+          : config.isCourseEnrolled
+            ? "COURSE_ONLY"
+            : "NONE",
+  });
+
+  return { lead: existingLead, account };
 }
 
 export function updateWebsiteCms(partial: Partial<WebsiteCmsContent>) {
