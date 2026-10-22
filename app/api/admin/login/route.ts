@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     }
 
     try {
-      await createAdminSession(user.email);
+      await createAdminSession(user.email, user.role, user.name, user.branch);
     } catch {
       return NextResponse.json(
         {

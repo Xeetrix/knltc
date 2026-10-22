@@ -4,14 +4,113 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 const ADMIN_COOKIE = "knltc_admin_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 12;
 
-type SessionPayload = {
+export type UserRole =
+  | "MAIN_ADMIN"
+  | "BRANCH_ADMIN"
+  | "TELE_COUNSELOR"
+  | "TEACHER"
+  | "B2B_AGENT"
+  | "INVESTOR"
+  | "STUDENT";
+
+export type BranchCode = "ALL" | "DHK-HQ" | "KHULNA-01";
+
+export type SessionPayload = {
   email: string;
+  role: UserRole;
+  name: string;
+  branch: BranchCode;
   exp: number;
 };
 
-type VerifyAdminCredentialsResult = {
-  user: { id: string; email: string } | null;
+export type VerifyAdminCredentialsResult = {
+  user: {
+    id: string;
+    email: string;
+    role: UserRole;
+    name: string;
+    branch: BranchCode;
+  } | null;
   error: string | null;
+};
+
+// Preset Team Accounts for KNLTC Enterprise Roles
+export const KNLT_ROLE_ACCOUNTS: Record<
+  string,
+  { role: UserRole; name: string; branch: BranchCode; defaultEmail: string }
+> = {
+  "admin@knltc.com": {
+    role: "MAIN_ADMIN",
+    name: "শেখ বাসেত (ব্যবস্থাপনা পরিচালক)",
+    branch: "ALL",
+    defaultEmail: "admin@knltc.com",
+  },
+  "baset@knltc.com": {
+    role: "MAIN_ADMIN",
+    name: "শেখ বাসেত (Super Admin)",
+    branch: "ALL",
+    defaultEmail: "baset@knltc.com",
+  },
+  "dhaka@knltc.com": {
+    role: "BRANCH_ADMIN",
+    name: "তানভীর আহমেদ (ঢাকা শাখা প্রধান)",
+    branch: "DHK-HQ",
+    defaultEmail: "dhaka@knltc.com",
+  },
+  "khulna@knltc.com": {
+    role: "BRANCH_ADMIN",
+    name: "মুসা ইব্রাহিম (খুলনা শাখা ব্যবস্থাপক)",
+    branch: "KHULNA-01",
+    defaultEmail: "khulna@knltc.com",
+  },
+  "counselor@knltc.com": {
+    role: "TELE_COUNSELOR",
+    name: "নাসরিন সুলতানা (টেলি-কাউন্সেলর)",
+    branch: "DHK-HQ",
+    defaultEmail: "counselor@knltc.com",
+  },
+  "tele@knltc.com": {
+    role: "TELE_COUNSELOR",
+    name: "নাসরিন সুলতানা (টেলি-কাউন্সেলর)",
+    branch: "DHK-HQ",
+    defaultEmail: "tele@knltc.com",
+  },
+  "sensei@knltc.com": {
+    role: "TEACHER",
+    name: "আমির হোসেন (সিনিয়র সেন্সি)",
+    branch: "ALL",
+    defaultEmail: "sensei@knltc.com",
+  },
+  "amir@knltc.com": {
+    role: "TEACHER",
+    name: "আমির হোসেন (সিনিয়র সেন্সি)",
+    branch: "ALL",
+    defaultEmail: "amir@knltc.com",
+  },
+  "b2b@knltc.com": {
+    role: "B2B_AGENT",
+    name: "নেক্সাস গ্লোবাল (ক্যাম্পাস অ্যাম্বাসেডর)",
+    branch: "ALL",
+    defaultEmail: "b2b@knltc.com",
+  },
+  "nexus@knltc.com": {
+    role: "B2B_AGENT",
+    name: "Nexus Group BD",
+    branch: "ALL",
+    defaultEmail: "nexus@knltc.com",
+  },
+  "investor@knltc.com": {
+    role: "INVESTOR",
+    name: "ইমরান হাসেম (১০ লক্ষ টাকার বিনিয়োগকারী)",
+    branch: "ALL",
+    defaultEmail: "investor@knltc.com",
+  },
+  "student@knltc.com": {
+    role: "STUDENT",
+    name: "রাকিবুল ইসলাম (ভিসা প্রার্থী)",
+    branch: "DHK-HQ",
+    defaultEmail: "student@knltc.com",
+  },
 };
 
 function getSecret() {
@@ -57,9 +156,17 @@ function equalsSafe(left: string, right: string) {
   return timingSafeEqual(leftBuffer, rightBuffer);
 }
 
-export async function createAdminSession(email: string) {
+export async function createAdminSession(
+  email: string,
+  role: UserRole = "MAIN_ADMIN",
+  name: string = "শেখ বাসেত (ব্যবস্থাপনা পরিচালক)",
+  branch: BranchCode = "ALL",
+) {
   const payload: SessionPayload = {
     email,
+    role,
+    name,
+    branch,
     exp: Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS,
   };
   const token = encode(payload);
@@ -79,23 +186,24 @@ export async function clearAdminSession() {
   cookieStore.delete(ADMIN_COOKIE);
 }
 
-export async function isAdminAuthenticated() {
+export async function getAdminSession(): Promise<SessionPayload | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(ADMIN_COOKIE)?.value;
-  if (!token) return false;
-  return Boolean(decode(token));
+  if (!token) return null;
+  return decode(token);
 }
 
-export async function verifyAdminCredentials(email: string, password: string): Promise<VerifyAdminCredentialsResult> {
+export async function isAdminAuthenticated() {
+  const session = await getAdminSession();
+  return Boolean(session);
+}
+
+export async function verifyAdminCredentials(
+  email: string,
+  password: string,
+): Promise<VerifyAdminCredentialsResult> {
   const configuredEmail = process.env.ADMIN_EMAIL || "admin@knltc.com";
   const configuredPassword = process.env.ADMIN_PASSWORD || "admin123";
-
-  if (!configuredEmail || !configuredPassword) {
-    return {
-      user: null,
-      error: "admin_credentials_not_configured",
-    };
-  }
 
   const normalizedInputEmail = normalizeCredential(email).toLowerCase();
   const normalizedConfiguredEmail = normalizeCredential(configuredEmail).toLowerCase();
@@ -108,22 +216,48 @@ export async function verifyAdminCredentials(email: string, password: string): P
     };
   }
 
-  const emailMatched = equalsSafe(normalizedInputEmail, normalizedConfiguredEmail);
-  const passwordMatched = equalsSafe(normalizedInputPassword, configuredPassword);
+  // Check if matches configured master admin
+  const isMasterAdminEmail = equalsSafe(normalizedInputEmail, normalizedConfiguredEmail);
+  const isConfiguredPassword = equalsSafe(normalizedInputPassword, configuredPassword);
 
-  if (!emailMatched || !passwordMatched) {
+  if (isMasterAdminEmail && isConfiguredPassword) {
     return {
-      user: null,
-      error: "invalid_credentials",
+      user: {
+        id: `admin:${normalizedConfiguredEmail}`,
+        email: normalizedConfiguredEmail,
+        role: "MAIN_ADMIN",
+        name: "শেখ বাসেত (ব্যবস্থাপনা পরিচালক)",
+        branch: "ALL",
+      },
+      error: null,
     };
   }
 
+  // Check if matches any of the registered team role accounts
+  const roleAccount = KNLT_ROLE_ACCOUNTS[normalizedInputEmail];
+  if (roleAccount) {
+    // Allows password either configuredPassword or "admin123"
+    const isPasswordValid =
+      equalsSafe(normalizedInputPassword, configuredPassword) ||
+      equalsSafe(normalizedInputPassword, "admin123");
+
+    if (isPasswordValid) {
+      return {
+        user: {
+          id: `user:${roleAccount.defaultEmail}`,
+          email: roleAccount.defaultEmail,
+          role: roleAccount.role,
+          name: roleAccount.name,
+          branch: roleAccount.branch,
+        },
+        error: null,
+      };
+    }
+  }
+
   return {
-    user: {
-      id: `admin:${normalizedConfiguredEmail}`,
-      email: normalizedConfiguredEmail,
-    },
-    error: null,
+    user: null,
+    error: "invalid_credentials",
   };
 }
 

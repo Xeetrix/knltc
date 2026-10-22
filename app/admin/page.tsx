@@ -9,11 +9,23 @@ export default async function AdminDashboardPage() {
 
   return (
     <AdminShell title="Dashboard">
-      {summary.setupWarning ? (
-        <div className="mb-4 rounded-lg border border-amber-400/40 bg-amber-50 p-4 text-sm text-amber-900">
-          {summary.setupWarning}
+      <div className="mb-6 rounded-xl border border-red-200 bg-red-50/70 p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-red-600 animate-pulse" />
+            <h2 className="text-sm font-black text-slate-900">KNLTC Enterprise OS Master Command Center</h2>
+          </div>
+          <p className="text-xs text-slate-600 mt-0.5">
+            ওমনি-চ্যানেল CRM, ১০ ধাপের ভিসা ট্র্যাকার, LMS ব্রিজ, হিসাবরক্ষণ, ইনভেস্টর পোর্টাল ও ১০০% সিএমএস
+          </p>
         </div>
-      ) : null}
+        <Link
+          href="/dashboard"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-[#b91c1c] px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-red-800 transition whitespace-nowrap"
+        >
+          মাস্টার ড্যাশবোর্ডে যান (Open Master Command Center) &rarr;
+        </Link>
+      </div>
       <div className="mb-4 rounded-lg border bg-card p-4">
         <p className="text-sm font-semibold">Notification summary</p>
         <div className="mt-2 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">

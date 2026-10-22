@@ -94,7 +94,11 @@ export async function middleware(request: NextRequest) {
   if (pathname === ADMIN_LOGIN_PATH) {
     const loggedIn = await hasValidAdminSession(request);
     if (loggedIn) {
-      return NextResponse.redirect(new URL("/admin", request.url));
+      const nextParam = request.nextUrl.searchParams.get("next");
+      const target = nextParam && (nextParam.startsWith("/admin") || nextParam.startsWith("/dashboard") || nextParam.startsWith("/portal"))
+        ? nextParam
+        : "/dashboard";
+      return NextResponse.redirect(new URL(target, request.url));
     }
 
     return NextResponse.next();
@@ -111,5 +115,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/dashboard/:path*", "/portal/:path*"],
 };

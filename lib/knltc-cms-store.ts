@@ -1285,6 +1285,112 @@ export function saveCmsStore(updated: MasterKnlTcStore) {
   }
 }
 
+async function syncToServer(type: "UPSERT" | "INSERT" | "CMS_UPDATE", entity?: string, payload?: any) {
+  if (typeof window === "undefined") return;
+  try {
+    await fetch("/api/cms/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type, entity, payload }),
+    });
+  } catch (err) {
+    console.warn("[KNLTC-CMS] Sync to server failed:", err);
+  }
+}
+
+export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | null> {
+  if (typeof window === "undefined") return null;
+  try {
+    const res = await fetch("/api/cms/sync", { cache: "no-store" });
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (!json.ok || !json.data) return null;
+
+    const data = json.data;
+    const store = getCmsStore();
+    let hasChanges = false;
+
+    if (Array.isArray(data.crmLeads) && data.crmLeads.length > 0) {
+      store.crmLeads = data.crmLeads.map((l: any) => ({
+        id: l.id,
+        name: l.name,
+        phone: l.phone,
+        whatsapp: l.whatsapp || l.phone,
+        email: l.email,
+        city: l.city || "Dhaka",
+        source: l.source || "FACEBOOK_META",
+        interest: l.interest || "STUDENT_VISA_REGULAR",
+        status: l.status || "NEW",
+        education: l.education || "HSC",
+        japaneseProficiency: l.japanese_proficiency || "NONE",
+        studyGapYears: Number(l.study_gap_years) || 0,
+        assignedTo: l.assigned_to || "নাসরিন সুলতানা",
+        branch: l.branch || "DHK-HQ",
+        notes: l.notes || "",
+        followUpDate: l.follow_up_date || new Date().toISOString().split("T")[0],
+        lastContactedAt: l.last_contacted_at || l.created_at || new Date().toISOString(),
+        createdAt: l.created_at || new Date().toISOString(),
+      }));
+      hasChanges = true;
+    }
+
+    if (Array.isArray(data.visaApplicants) && data.visaApplicants.length > 0) {
+      store.visaApplicants = data.visaApplicants.map((v: any) => ({
+        id: v.id,
+        trackingNo: v.tracking_no,
+        name: v.name,
+        phone: v.phone,
+        branch: v.branch || "DHK-HQ",
+        packageType: v.package_type || "REGULAR",
+        intakeSession: v.intake_session || "OCTOBER_2027",
+        stage: Number(v.stage) || 1,
+        targetSchool: v.target_school,
+        sponsorName: v.sponsor_name,
+        sponsorRelation: v.sponsor_relation || "FATHER",
+        sponsorBank: v.sponsor_bank,
+        sponsorBalanceBdt: Number(v.sponsor_balance_bdt) || 0,
+        bankLoanAssistance: Boolean(v.bank_loan_assistance),
+        bankLoanBank: v.bank_loan_bank,
+        coEStatus: v.coe_status || "PENDING",
+        visaStatus: v.visa_status || "IN_PROCESS",
+        counselorName: v.counselor_name || "শেখ বাসেত",
+        updatedAt: v.updated_at || new Date().toISOString(),
+      }));
+      hasChanges = true;
+    }
+
+    if (Array.isArray(data.transactions) && data.transactions.length > 0) {
+      store.transactions = data.transactions.map((tx: any) => ({
+        id: tx.id,
+        receiptNo: tx.receipt_no,
+        date: tx.date || new Date().toISOString().split("T")[0],
+        studentName: tx.student_name,
+        type: tx.type,
+        amountBdt: Number(tx.amount_bdt) || 0,
+        paymentMethod: tx.payment_method || "BKASH",
+        referenceOrTrx: tx.reference_or_trx || "N/A",
+        branch: tx.branch || "DHK-HQ",
+        verifiedBy: tx.verified_by || "শেখ বাসেত",
+        notes: tx.notes,
+      }));
+      hasChanges = true;
+    }
+
+    if (Array.isArray(data.websiteCms) && data.websiteCms.length > 0) {
+      store.websiteCms = data.websiteCms;
+      hasChanges = true;
+    }
+
+    if (hasChanges) {
+      saveCmsStore(store);
+    }
+    return store;
+  } catch (err) {
+    console.warn("[KNLTC-CMS] Failed to fetch live server store:", err);
+    return null;
+  }
+}
+
 export function getWebsiteCms(): WebsiteCmsContent {
   const store = getCmsStore();
   return store.websiteCms?.[0] || DEFAULT_WEBSITE_CMS;
@@ -1299,6 +1405,7 @@ export function updateWebsiteCms(partial: Partial<WebsiteCmsContent>) {
   };
   store.websiteCms = [merged];
   saveCmsStore(store);
+  syncToServer("CMS_UPDATE", undefined, merged);
   return merged;
 }
 
@@ -1312,6 +1419,26 @@ export function addCrmLead(lead: Omit<CrmLead, "id" | "createdAt" | "lastContact
   };
   store.crmLeads.unshift(newLead);
   saveCmsStore(store);
+
+  syncToServer("INSERT", "knltc_crm_leads", {
+    id: newLead.id,
+    name: newLead.name,
+    phone: newLead.phone,
+    whatsapp: newLead.whatsapp,
+    email: newLead.email,
+    city: newLead.city,
+    source: newLead.source,
+    interest: newLead.interest,
+    status: newLead.status,
+    education: newLead.education,
+    japanese_proficiency: newLead.japaneseProficiency,
+    study_gap_years: newLead.studyGapYears,
+    assigned_to: newLead.assignedTo,
+    branch: newLead.branch,
+    notes: newLead.notes,
+    follow_up_date: newLead.followUpDate,
+  });
+
   return newLead;
 }
 
@@ -1323,6 +1450,14 @@ export function updateCrmLeadStatus(id: string, status: LeadStatus, notes?: stri
   store.crmLeads[index].lastContactedAt = new Date().toISOString();
   if (notes) store.crmLeads[index].notes = notes;
   saveCmsStore(store);
+
+  syncToServer("UPSERT", "knltc_crm_leads", {
+    id: store.crmLeads[index].id,
+    status: status,
+    notes: store.crmLeads[index].notes,
+    last_contacted_at: store.crmLeads[index].lastContactedAt,
+  });
+
   return store.crmLeads[index];
 }
 
@@ -1342,6 +1477,15 @@ export function updateVisaStage(id: string, nextStage: VisaStage): VisaApplicant
     store.visaApplicants[index].visaStatus = "DEPARTED";
   }
   saveCmsStore(store);
+
+  syncToServer("UPSERT", "knltc_visa_applicants", {
+    id: store.visaApplicants[index].id,
+    stage: nextStage,
+    coe_status: store.visaApplicants[index].coEStatus,
+    visa_status: store.visaApplicants[index].visaStatus,
+    updated_at: store.visaApplicants[index].updatedAt,
+  });
+
   return store.visaApplicants[index];
 }
 
@@ -1366,6 +1510,23 @@ export function addLmsCredentials(data: {
   };
   store.lmsBridges.unshift(newBridge);
   saveCmsStore(store);
+
+  syncToServer("INSERT", "knltc_lms_bridges", {
+    id: newBridge.id,
+    student_name: newBridge.studentName,
+    phone: newBridge.phone,
+    course_level: newBridge.courseLevel,
+    enrollment_no: newBridge.enrollmentNo,
+    portal_username: newBridge.portalUsername,
+    portal_password_masked: newBridge.portalPasswordMasked,
+    portal_fee_deducted_bdt: newBridge.portalFeeDeductedBdt,
+    net_knltc_margin_bdt: newBridge.netKnlTcMarginBdt,
+    credentials_sent_via_wa: newBridge.credentialsSentViaWa,
+    credentials_sent_at: newBridge.credentialsSentAt,
+    progress_percentage: newBridge.progressPercentage,
+    active_batch: newBridge.activeBatch,
+  });
+
   return newBridge;
 }
 
@@ -1377,6 +1538,21 @@ export function addFinancialTransaction(tx: Omit<FinancialTransaction, "id">): F
   };
   store.transactions.unshift(newTx);
   saveCmsStore(store);
+
+  syncToServer("INSERT", "knltc_finance_transactions", {
+    id: newTx.id,
+    receipt_no: newTx.receiptNo,
+    date: newTx.date,
+    student_name: newTx.studentName,
+    type: newTx.type,
+    amount_bdt: newTx.amountBdt,
+    payment_method: newTx.paymentMethod,
+    reference_or_trx: newTx.referenceOrTrx,
+    branch: newTx.branch,
+    verified_by: newTx.verifiedBy,
+    notes: newTx.notes,
+  });
+
   return newTx;
 }
 
@@ -1387,5 +1563,7 @@ export function updateStoreOrderStatus(orderId: string, status: CustomerStoreOrd
   if (order) {
     order.orderStatus = status;
     saveCmsStore(store);
+    syncToServer("CMS_UPDATE", undefined, cms);
   }
 }
+

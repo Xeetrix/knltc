@@ -434,6 +434,54 @@ export async function insertRow(table: string, payload: unknown, admin = true) {
   return record;
 }
 
+export async function upsertRow(table: string, payload: unknown, admin = true) {
+  if (isSupabaseConfigured()) {
+    try {
+      const data = await restRequest(
+        table,
+        {
+          method: "POST",
+          headers: {
+            Prefer: "resolution=merge-duplicates,return=representation",
+          },
+          body: JSON.stringify(payload),
+        },
+        admin,
+        {
+          operation: "insert",
+          table,
+          payload,
+        },
+      );
+      if (data !== null) return Array.isArray(data) ? data[0] : data;
+    } catch (err) {
+      console.warn(`[Supabase] Live upsert to ${table} failed, falling back to in-memory:`, err);
+    }
+  }
+
+  const tableRows = getTable(table);
+  const now = new Date().toISOString();
+  const id = (payload as any)?.id || `gen-${Math.random().toString(36).slice(2, 10)}`;
+  const index = tableRows.findIndex((r) => r.id === id);
+  if (index !== -1) {
+    const updated = {
+      ...tableRows[index],
+      ...(payload as Record<string, any>),
+      updated_at: now,
+    };
+    tableRows[index] = updated;
+    return updated;
+  }
+  const record: InMemoryRecord = {
+    ...(payload as Record<string, any>),
+    id,
+    created_at: (payload as any)?.created_at || now,
+    updated_at: now,
+  };
+  tableRows.unshift(record);
+  return record;
+}
+
 export async function updateRow(table: string, id: string, payload: unknown, admin = true) {
   if (isSupabaseConfigured()) {
     try {
