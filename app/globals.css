@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,300..800&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,9 +6,10 @@
 
 @layer base {
   :root {
-    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    --font-bangla: 'Hind Siliguri', 'Noto Sans Bengali', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    --font-jp: 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+    --font-sans: 'Plus Jakarta Sans', 'Noto Sans Bengali', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-bangla: 'Noto Sans Bengali', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-jp: 'Noto Sans JP', 'Plus Jakarta Sans', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
     --background: 0 0% 100%;
     --foreground: 222 47% 11%; /* Slate 900 */
@@ -63,30 +64,59 @@
     @apply overflow-x-hidden bg-background text-foreground antialiased;
     font-family: var(--font-sans);
     font-size: 0.9375rem; /* 15px baseline */
-    line-height: 1.62;
-    letter-spacing: -0.011em;
+    line-height: 1.64;
+    letter-spacing: -0.008em;
   }
 
-  /* Bengali Typography: Clean, Modern Hind Siliguri sans-serif */
+  /* Bengali Typography: Crisp Noto Sans Bengali paired with Plus Jakarta Sans */
   [lang="bn"],
   .font-bangla,
   html[lang="bn"] body {
     font-family: var(--font-bangla);
-    line-height: 1.68;
-    letter-spacing: 0.005em;
+    line-height: 1.72;
+    letter-spacing: 0em !important;
+    word-spacing: 0.02em;
+  }
+
+  html[lang="bn"] h1,
+  html[lang="bn"] h2,
+  html[lang="bn"] h3,
+  html[lang="bn"] h4,
+  html[lang="bn"] h5,
+  html[lang="bn"] h6 {
+    font-family: var(--font-bangla);
+    line-height: 1.38;
+    letter-spacing: 0em !important;
+    font-weight: 700;
+  }
+
+  /* Prevent uppercase tracking classes from breaking Bengali matra and ligatures */
+  html[lang="bn"] .tracking-widest,
+  html[lang="bn"] .tracking-wider,
+  html[lang="bn"] .tracking-wide,
+  html[lang="bn"] .tracking-tight,
+  html[lang="bn"] .tracking-tighter {
+    letter-spacing: 0em !important;
+  }
+
+  /* Normalize overly heavy 900 weights in Bengali so conjunct characters remain sharp */
+  html[lang="bn"] .font-black,
+  html[lang="bn"] .font-extrabold {
+    font-weight: 700;
   }
 
   /* Japanese Typography: Clean Noto Sans JP */
   [lang="ja"],
   html[lang="ja"] body {
     font-family: var(--font-jp);
-    line-height: 1.7;
+    line-height: 1.72;
+    letter-spacing: 0em;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: inherit;
     font-weight: 700;
-    letter-spacing: -0.025em;
+    letter-spacing: -0.02em;
     color: #0f172a; /* Slate 900 */
     text-wrap: balance;
   }
@@ -100,8 +130,12 @@
   }
 
   button,
+  input,
+  select,
+  textarea,
   [role="button"] {
-    letter-spacing: -0.01em;
+    font-family: inherit;
+    letter-spacing: 0em;
   }
 }
 

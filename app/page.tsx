@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { motion } from "motion/react";
 import {
@@ -559,12 +560,8 @@ export default function HomePage() {
 
   return (
     <div className="bg-white overflow-hidden">
-      {/* Hero Section with Interactive Staggered Entrance */}
-      <section className="relative overflow-hidden bg-[#fcfaf7] border-b border-stone-200 py-14 sm:py-20 lg:py-24">
-        {/* Subtle decorative background blur orbs */}
-        <div className="absolute -top-24 -left-24 h-96 w-96 rounded-full bg-red-100/40 blur-3xl pointer-events-none -z-0" />
-        <div className="absolute top-1/2 -right-24 h-96 w-96 rounded-full bg-emerald-100/30 blur-3xl pointer-events-none -z-0" />
-
+      {/* Hero Section with Clean Institutional Architecture */}
+      <section className="relative overflow-hidden bg-slate-50/70 border-b border-slate-200 py-14 sm:py-20 lg:py-24">
         <div className="container-narrow relative z-10">
           <div className="grid gap-12 lg:grid-cols-12 lg:items-center">
             {/* Left Hero Column */}
@@ -574,34 +571,34 @@ export default function HomePage() {
               animate="visible"
               className="lg:col-span-7"
             >
-              <motion.div variants={itemVariants} className="inline-flex items-center gap-2 mb-3">
-                <span className="h-2 w-2 rounded-full bg-[#b91c1c] animate-pulse" />
-                <p className="text-xs font-bold uppercase tracking-widest text-[#b91c1c]">
+              <motion.div variants={itemVariants} className="inline-flex items-center gap-2 mb-3.5">
+                <span className="h-2 w-2 rounded-full bg-[#b91c1c]" />
+                <p className="text-xs font-bold uppercase tracking-wider text-[#b91c1c]">
                   {t.kicker}
                 </p>
               </motion.div>
 
               <motion.h1
                 variants={itemVariants}
-                className="text-3xl font-extrabold tracking-tight text-slate-900 leading-[1.2] sm:text-4xl md:text-5xl lg:text-[3.1rem]"
+                className="text-3xl font-bold tracking-tight text-slate-900 leading-[1.22] sm:text-4xl md:text-5xl lg:text-[3rem]"
               >
                 {t.headline}
               </motion.h1>
 
               <motion.p
                 variants={itemVariants}
-                className="mt-5 text-base sm:text-lg text-slate-700 leading-relaxed font-normal"
+                className="mt-5 text-base sm:text-lg text-slate-600 leading-relaxed font-normal"
               >
                 {t.subtitle}
               </motion.p>
 
-              {/* Main Action Group with Spring Hovers */}
+              {/* Main Action Group */}
               <motion.div variants={itemVariants} className="mt-8 flex flex-col sm:flex-row gap-3.5">
-                <motion.div whileHover={{ y: -3, scale: 1.015 }} whileTap={{ scale: 0.97 }}>
+                <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
                   <Button
                     asChild
                     size="lg"
-                    className="w-full sm:w-auto bg-[#15803d] hover:bg-emerald-800 text-white font-semibold text-sm sm:text-base py-6 px-7 rounded-xl shadow-xs transition-colors"
+                    className="w-full sm:w-auto bg-[#15803d] hover:bg-emerald-800 text-white font-semibold text-sm sm:text-base py-6 px-7 rounded-xl shadow-2xs transition-colors"
                   >
                     <Link href="/contact" className="flex items-center justify-center gap-2">
                       <span>{t.c1}</span>
@@ -610,12 +607,12 @@ export default function HomePage() {
                   </Button>
                 </motion.div>
 
-                <motion.div whileHover={{ y: -3, scale: 1.015 }} whileTap={{ scale: 0.97 }}>
+                <motion.div whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
                   <Button
                     asChild
                     size="lg"
                     variant="outline"
-                    className="w-full sm:w-auto border-stone-300 hover:bg-white text-slate-900 font-semibold text-sm sm:text-base py-6 px-6 rounded-xl transition-colors"
+                    className="w-full sm:w-auto border-slate-300 bg-white hover:bg-slate-50 text-slate-900 font-semibold text-sm sm:text-base py-6 px-6 rounded-xl transition-colors"
                   >
                     <Link href="/japanese-language" className="flex items-center justify-center gap-2">
                       <Languages className="h-4 w-4 text-[#b91c1c]" />
@@ -628,7 +625,7 @@ export default function HomePage() {
               {/* Quick Hotline Strip */}
               <motion.div
                 variants={itemVariants}
-                className="mt-8 pt-6 border-t border-stone-200/80 flex flex-wrap items-center gap-5 text-xs sm:text-sm text-slate-600 font-medium"
+                className="mt-8 pt-6 border-t border-slate-200/80 flex flex-wrap items-center gap-5 text-xs sm:text-sm text-slate-600 font-medium"
               >
                 <div className="flex items-center gap-2">
                   <PhoneCall className="h-4 w-4 text-[#b91c1c]" />
@@ -652,29 +649,43 @@ export default function HomePage() {
               </motion.div>
             </motion.div>
 
-            {/* Right Hero Column - Interactive Ambient Japan Gateway Card */}
+            {/* Right Hero Column - Official KNLTC Institutional Gateway Card */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.96, y: 20 }}
+              initial={{ opacity: 0, scale: 0.98, y: 16 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.15, ease: [0.16, 1, 0.3, 1] as const }}
+              transition={{ duration: 0.45, delay: 0.1, ease: [0.16, 1, 0.3, 1] as const }}
               className="lg:col-span-5"
             >
-              <div className="relative rounded-3xl border border-stone-200/90 bg-white p-7 sm:p-8 shadow-md">
-                {/* Floating Top Badge */}
-                <div className="flex items-center justify-between pb-4 border-b border-stone-100">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
-                      {t.portalCardKicker}
-                    </span>
+              <div className="relative rounded-2xl border border-slate-200 bg-white p-7 sm:p-8 shadow-sm">
+                {/* Top Header with Official Brand Emblem */}
+                <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-white border border-slate-200 p-0.5 flex items-center justify-center">
+                      <Image
+                        src="/brand/knltc-logo.svg"
+                        alt="KNLTC Logo"
+                        width={36}
+                        height={36}
+                        referrerPolicy="no-referrer"
+                        className="object-contain"
+                      />
+                    </div>
+                    <div>
+                      <span className="block text-xs font-bold text-slate-900 leading-none">
+                        KNLTC
+                      </span>
+                      <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-500 mt-1 leading-none">
+                        {t.portalCardKicker}
+                      </span>
+                    </div>
                   </div>
                   <span className="text-[11px] font-semibold text-[#b91c1c] bg-red-50 border border-red-200/70 px-2.5 py-0.5 rounded-md">
-                    ISO & Gov. Aligned
+                    Gov. Aligned
                   </span>
                 </div>
 
                 <div className="mt-5">
-                  <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-snug">
+                  <h3 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight leading-snug">
                     {t.portalCardTitle}
                   </h3>
                   <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed">
@@ -682,40 +693,42 @@ export default function HomePage() {
                   </p>
                 </div>
 
-                {/* 3 Interactive Highlight Tags */}
-                <div className="mt-6 grid grid-cols-3 gap-2">
-                  <div className="rounded-xl border border-stone-200 bg-[#fcfaf7] p-2.5 text-center">
+                {/* 3 Institutional Metrics */}
+                <div className="mt-6 grid grid-cols-3 gap-2.5">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-center">
                     <Award className="h-4 w-4 text-[#b91c1c] mx-auto mb-1" />
                     <div className="text-xs font-bold text-slate-900">{t.portalTag1}</div>
                   </div>
-                  <div className="rounded-xl border border-stone-200 bg-[#fcfaf7] p-2.5 text-center">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-center">
                     <BookCheck className="h-4 w-4 text-[#15803d] mx-auto mb-1" />
                     <div className="text-xs font-bold text-slate-900">{t.portalTag2}</div>
                   </div>
-                  <div className="rounded-xl border border-stone-200 bg-[#fcfaf7] p-2.5 text-center">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-center">
                     <GraduationCap className="h-4 w-4 text-slate-800 mx-auto mb-1" />
                     <div className="text-xs font-bold text-slate-900">{t.portalTag3}</div>
                   </div>
                 </div>
 
                 {/* Official LMS Entrance Card CTA */}
-                <div className="mt-6 pt-5 border-t border-stone-100">
+                <div className="mt-6 pt-5 border-t border-slate-100">
                   <a
                     href="https://npw.bd/knltc"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group flex items-center justify-between rounded-xl bg-red-50/90 border border-red-200/90 p-3.5 text-xs font-bold text-[#b91c1c] hover:bg-red-100 transition-all active:scale-[0.98]"
+                    className="group flex items-center justify-between rounded-xl bg-slate-900 hover:bg-slate-800 p-3.5 text-xs font-semibold text-white transition-all"
                   >
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100 text-[#b91c1c]">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-red-300">
                         <GraduationCap className="h-4 w-4" />
                       </div>
                       <div>
-                        <span className="block text-xs font-extrabold">{t.portalLmsBtn}</span>
-                        <span className="block text-[10px] text-red-700/80 font-medium">Official Student Portal</span>
+                        <span className="block text-xs font-bold text-white">{t.portalLmsBtn}</span>
+                        <span className="block text-[10px] text-slate-300 font-medium">
+                          Official Student Portal
+                        </span>
                       </div>
                     </div>
-                    <ExternalLink className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                    <ExternalLink className="h-4 w-4 text-slate-300 transition-transform group-hover:translate-x-0.5" />
                   </a>
                 </div>
               </div>

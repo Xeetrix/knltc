@@ -1,4 +1,5 @@
 import Link from "next/link";
+import BrandLogo from "@/components/layout/BrandLogo";
 import { type AdminNotificationCounts, getAdminNotificationCounts } from "@/lib/cms";
 
 const links: Array<{ href: string; label: string; badgeKey?: keyof AdminNotificationCounts }> = [
@@ -22,10 +23,12 @@ export default async function AdminShell({ title, children }: { title: string; c
 
   return (
     <section className="section-padding">
-      <div className="container-narrow grid gap-6 lg:grid-cols-[220px_1fr]">
-        <aside className="rounded-xl border bg-card p-4 h-fit">
-          <h2 className="text-lg font-semibold">Admin Panel</h2>
-          <nav className="mt-4 space-y-2">
+      <div className="container-narrow grid gap-6 lg:grid-cols-[240px_1fr]">
+        <aside className="rounded-xl border border-slate-200 bg-white p-4 h-fit shadow-2xs">
+          <div className="pb-3.5 mb-3.5 border-b border-slate-100">
+            <BrandLogo compact badge="ADMIN" subtitle="Store & CMS" />
+          </div>
+          <nav className="space-y-1">
             {links.map((link) => {
               const count = link.badgeKey ? counts[link.badgeKey] : 0;
               return (

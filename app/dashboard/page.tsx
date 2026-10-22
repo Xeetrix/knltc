@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   Users,
@@ -48,7 +49,11 @@ import {
   Database,
   Lock,
   KeyRound,
+  Menu,
+  X,
+  LayoutDashboard,
 } from "lucide-react";
+import BrandLogo from "@/components/layout/BrandLogo";
 import {
   getCmsStore,
   saveCmsStore,
@@ -114,6 +119,7 @@ export default function DashboardPage() {
   const [isSyncingWithDb, setIsSyncingWithDb] = useState(false);
   const [selectedLeadForProfile, setSelectedLeadForProfile] = useState<CrmLead | null>(null);
   const [activeTab, setActiveTab] = useState<DashboardTabId>("overview");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [storeSubTab, setStoreSubTab] = useState<
     "summary" | "products" | "orders" | "blog" | "categories" | "reviews" | "uploads"
   >("summary");
@@ -353,564 +359,726 @@ export default function DashboardPage() {
 
   const cms = store.websiteCms[0];
 
+  const allNavItems = [
+    {
+      id: "my_profile",
+      group: language === "bn" ? "ব্যক্তিগত ফাইল" : language === "ja" ? "個人ファイル" : "Personal File",
+      label:
+        language === "ja"
+          ? "マイプロフィール・ファイル"
+          : language === "en"
+            ? "My Profile & File"
+            : "আমার প্রোফাইল ও ফাইল",
+      icon: UserCheck,
+      badge: 0,
+    },
+    {
+      id: "overview",
+      group: language === "bn" ? "কোর ওভারভিউ" : language === "ja" ? "基本概要" : "Core Overview",
+      label: t.tabs.overview,
+      icon: LayoutDashboard,
+      badge: 0,
+    },
+    {
+      id: "crm",
+      group: language === "bn" ? "অপারেশনস ও ভিসা" : language === "ja" ? "業務・ビザ管理" : "Operations & Visa",
+      label: t.tabs.crm,
+      icon: PhoneCall,
+      badge: adminBundle.summary?.newLeads || 0,
+    },
+    {
+      id: "visa",
+      group: language === "bn" ? "অপারেশনস ও ভিসা" : language === "ja" ? "業務・ビザ管理" : "Operations & Visa",
+      label: t.tabs.visa,
+      icon: FileCheck2,
+      badge: 0,
+    },
+    {
+      id: "b2b",
+      group: language === "bn" ? "অপারেশনস ও ভিসা" : language === "ja" ? "業務・ビザ管理" : "Operations & Visa",
+      label: t.tabs.b2b,
+      icon: Building2,
+      badge: 0,
+    },
+    {
+      id: "lms",
+      group: language === "bn" ? "একাডেমি ও এলএমএস" : language === "ja" ? "アカデミー・LMS" : "Academy & LMS",
+      label: t.tabs.lms,
+      icon: GraduationCap,
+      badge: 0,
+    },
+    {
+      id: "finance",
+      group: language === "bn" ? "ফাইন্যান্স ও কমার্স" : language === "ja" ? "財務・ストア" : "Finance & Commerce",
+      label: t.tabs.finance,
+      icon: DollarSign,
+      badge: 0,
+    },
+    {
+      id: "hr",
+      group: language === "bn" ? "ফাইন্যান্স ও কমার্স" : language === "ja" ? "財務・ストア" : "Finance & Commerce",
+      label: t.tabs.hr,
+      icon: Users,
+      badge: 0,
+    },
+    {
+      id: "store_blog",
+      group: language === "bn" ? "ফাইন্যান্স ও কমার্স" : language === "ja" ? "財務・ストア" : "Finance & Commerce",
+      label: t.tabs.storeBlog,
+      icon: ShoppingBag,
+      badge:
+        (adminBundle.summary?.pendingOrders || 0) +
+        (adminBundle.summary?.pendingReviews || 0) +
+        (adminBundle.summary?.lowStockProducts || 0),
+    },
+    {
+      id: "cms",
+      group: language === "bn" ? "সিস্টেম ও গভর্ন্যান্স" : language === "ja" ? "システム・権限" : "System & Governance",
+      label: t.tabs.cms,
+      icon: Globe2,
+      badge: 0,
+    },
+    {
+      id: "users",
+      group: language === "bn" ? "সিস্টেম ও গভর্ন্যান্স" : language === "ja" ? "システム・権限" : "System & Governance",
+      label:
+        language === "ja"
+          ? "ユーザー・権限管理"
+          : language === "en"
+            ? "Users & Access Control"
+            : "ইউজার ও অ্যাক্সেস কন্ট্রোল",
+      icon: KeyRound,
+      badge: 0,
+    },
+  ].filter((tab) => {
+    if (!currentUser || activeRole === "MAIN_ADMIN") {
+      return tab.id !== "my_profile";
+    }
+    if (currentUser.allowedTabs && currentUser.allowedTabs.length > 0) {
+      return currentUser.allowedTabs.includes(tab.id as DashboardTabId);
+    }
+    if (activeRole === "STUDENT") return ["my_profile", "visa", "lms"].includes(tab.id);
+    if (activeRole === "TELE_COUNSELOR") return ["overview", "crm", "visa", "lms"].includes(tab.id);
+    if (activeRole === "TEACHER") return ["overview", "lms", "visa"].includes(tab.id);
+    if (activeRole === "B2B_AGENT") return ["overview", "b2b", "visa"].includes(tab.id);
+    if (activeRole === "INVESTOR") return ["overview", "finance", "b2b"].includes(tab.id);
+    return tab.id !== "users" && tab.id !== "my_profile";
+  });
+
+  const groupedNavItems = allNavItems.reduce<Record<string, typeof allNavItems>>((acc, item) => {
+    if (!acc[item.group]) acc[item.group] = [];
+    acc[item.group].push(item);
+    return acc;
+  }, {});
+
+  const currentTabInfo = allNavItems.find((item) => item.id === activeTab) || allNavItems[0];
+
   return (
-    <div className="min-h-screen bg-[#fcfaf7] text-slate-900 font-sans leading-relaxed">
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col lg:flex-row">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-white shadow-xl animate-fade-in border border-slate-700">
-          <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-          <span className="text-sm font-semibold leading-relaxed">{toastMessage}</span>
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-xl bg-slate-900 px-5 py-3 text-white shadow-lg border border-slate-700">
+          <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+          <span className="text-xs sm:text-sm font-semibold">{toastMessage}</span>
         </div>
       )}
 
-      {/* Top Banner: Managing Director & Executive Briefing */}
-      <div className="bg-[#133e29] px-4 py-2.5 text-xs text-white sm:px-6">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 font-medium">
-            <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>{t.topBanner}</span>
-            <span className="hidden md:inline text-emerald-200">|</span>
-            <span className="hidden md:inline text-emerald-200">{t.leadership}</span>
+      {/* Mobile Sidebar Backdrop */}
+      {mobileNavOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-xs lg:hidden"
+          onClick={() => setMobileNavOpen(false)}
+        />
+      )}
+
+      {/* =========================================================================
+          LEFT SIDEBAR NAVIGATION (Enterprise Workspace)
+          ========================================================================= */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-68 shrink-0 border-r border-slate-200 bg-white flex flex-col justify-between transition-transform duration-200 lg:static lg:translate-x-0 ${
+          mobileNavOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
+        }`}
+      >
+        {/* Top Brand Header with Official KNLTC Logo */}
+        <div>
+          <div className="h-16 px-5 border-b border-slate-200 flex items-center justify-between gap-2">
+            <Link href="/" className="flex items-center gap-3 min-w-0 group">
+              <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-white border border-slate-200 shadow-2xs p-0.5 flex items-center justify-center">
+                <Image
+                  src="/brand/knltc-logo.svg"
+                  alt="KNLTC Official Logo"
+                  width={36}
+                  height={36}
+                  priority
+                  referrerPolicy="no-referrer"
+                  className="object-contain transition-transform group-hover:scale-105"
+                />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold text-base tracking-tight text-slate-900 leading-none">
+                    KNLTC
+                  </span>
+                  <span className="rounded bg-red-50 border border-red-200/80 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#b91c1c] leading-none">
+                    ENTERPRISE OS
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 mt-1 truncate leading-none">
+                  Japan Gateway Master Control
+                </p>
+              </div>
+            </Link>
+
+            <button
+              type="button"
+              onClick={() => setMobileNavOpen(false)}
+              className="lg:hidden rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+              aria-label="Close sidebar"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
-          <div className="flex items-center gap-4 text-emerald-100">
-            <span>{t.hotline}</span>
+
+          {/* Categorized Sidebar Menu */}
+          <nav className="p-3.5 space-y-5 overflow-y-auto max-h-[calc(100vh-13rem)]">
+            {Object.entries(groupedNavItems).map(([groupTitle, items]) => (
+              <div key={groupTitle}>
+                <div className="px-2.5 mb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  {groupTitle}
+                </div>
+                <div className="space-y-0.5">
+                  {items.map((tab) => {
+                    const Icon = tab.icon;
+                    const isActive = activeTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => {
+                          setActiveTab(tab.id as DashboardTabId);
+                          setMobileNavOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between gap-2.5 rounded-xl px-3 py-2.5 text-xs font-semibold transition-all text-left ${
+                          isActive
+                            ? "bg-slate-900 text-white shadow-2xs"
+                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <Icon
+                            className={`h-4 w-4 shrink-0 ${
+                              isActive ? "text-red-400" : "text-slate-400"
+                            }`}
+                          />
+                          <span className="truncate">{tab.label}</span>
+                        </div>
+                        {tab.badge > 0 ? (
+                          <span
+                            className={`inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                              isActive
+                                ? "bg-[#b91c1c] text-white"
+                                : "bg-red-50 text-[#b91c1c] border border-red-200"
+                            }`}
+                          >
+                            {tab.badge}
+                          </span>
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </nav>
+        </div>
+
+        {/* Bottom User Profile & Quick Actions */}
+        <div className="p-3.5 border-t border-slate-200 bg-slate-50/60 space-y-2.5">
+          <div className="flex items-center gap-2.5 rounded-xl border border-slate-200/90 bg-white p-2.5">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-50 text-[#b91c1c] border border-red-200/60">
+              <ShieldCheck className="h-4 w-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold text-slate-900 truncate">
+                {currentUser?.name ||
+                  (language === "ja"
+                    ? "シェイク・バセット"
+                    : language === "en"
+                      ? "Sheikh Baset"
+                      : "শেখ বাসেত")}
+              </p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider truncate">
+                  {activeRole}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-1.5">
             <a
               href="https://npw.bd/knltc"
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 rounded bg-emerald-700 px-2.5 py-0.5 font-bold text-white hover:bg-emerald-600 transition"
+              className="inline-flex items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 transition"
             >
-              {t.lmsBtn} <ExternalLink className="h-3 w-3" />
+              <span>LMS Portal</span>
+              <ExternalLink className="h-3 w-3 text-slate-400" />
             </a>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="inline-flex items-center justify-center gap-1 rounded-lg border border-red-200 bg-red-50/70 px-2.5 py-1.5 text-[11px] font-semibold text-[#b91c1c] hover:bg-red-100 transition"
+            >
+              <LogOut className="h-3 w-3" />
+              <span>{language === "ja" ? "ログアウト" : language === "en" ? "Sign Out" : "লগআউট"}</span>
+            </button>
           </div>
         </div>
-      </div>
+      </aside>
 
-      {/* Main Header with Role & Branch Controls */}
-      <header className="sticky top-0 z-40 border-b border-stone-200 bg-white/95 backdrop-blur-md shadow-xs">
-        <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            {/* Brand Logo & Info */}
-            <div className="flex items-center gap-3">
-              <Link href="/" className="flex items-center gap-2.5">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#b91c1c] text-white font-black shadow-md">
-                  KN
-                </div>
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-extrabold text-lg tracking-tight text-slate-900">KNLTC</span>
-                    <span className="rounded-md bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-800">
-                      ENTERPRISE OS
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 leading-tight">Japan Gateway Master Control</p>
-                </div>
-              </Link>
-            </div>
+      {/* =========================================================================
+          RIGHT WORKSPACE AREA (Clean Top Bar + Main Module Viewport)
+          ========================================================================= */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Clean Enterprise Top Utility Bar */}
+        <header className="sticky top-0 z-30 h-16 border-b border-slate-200 bg-white/95 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between gap-3">
+          {/* Left: Mobile Menu Button + Active Module Breadcrumb */}
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              type="button"
+              onClick={() => setMobileNavOpen(true)}
+              className="lg:hidden inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white p-2 text-slate-700 hover:bg-slate-100"
+              aria-label="Open navigation menu"
+            >
+              <Menu className="h-4 w-4" />
+            </button>
 
-            {/* Controls: Branch Switcher, 7-Role Switcher, DB Sync, Language & Logout */}
-            <div className="flex flex-wrap items-center gap-2.5">
-              {/* Branch Switcher */}
-              <div className="flex items-center rounded-xl bg-stone-100 p-1 border border-stone-200">
-                <span className="px-2 text-xs font-semibold text-slate-500">{t.branchLabel}</span>
-                {(!currentUser || currentUser.role === "MAIN_ADMIN" || currentUser.branch === "ALL") ? (
-                  <>
-                    <button
-                      onClick={() => setActiveBranch("ALL")}
-                      className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${
-                        activeBranch === "ALL"
-                          ? "bg-white text-slate-900 shadow-xs"
-                          : "text-slate-600 hover:text-slate-900"
-                      }`}
-                    >
-                      {t.allBranches}
-                    </button>
-                    <button
-                      onClick={() => setActiveBranch("DHK-HQ")}
-                      className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${
-                        activeBranch === "DHK-HQ"
-                          ? "bg-white text-[#b91c1c] shadow-xs"
-                          : "text-slate-600 hover:text-slate-900"
-                      }`}
-                    >
-                      {t.dhakaHq}
-                    </button>
-                    <button
-                      onClick={() => setActiveBranch("KHULNA-01")}
-                      className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${
-                        activeBranch === "KHULNA-01"
-                          ? "bg-white text-emerald-700 shadow-xs"
-                          : "text-slate-600 hover:text-slate-900"
-                      }`}
-                    >
-                      {t.khulnaBranch}
-                    </button>
-                  </>
-                ) : (
-                  <span className="rounded-lg bg-white px-2.5 py-1 text-xs font-bold text-slate-900 shadow-xs">
-                    {activeBranch === "DHK-HQ" ? t.dhakaHq : t.khulnaBranch}
-                  </span>
-                )}
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-slate-400 hidden sm:inline">
+                  {currentTabInfo?.group}
+                </span>
+                <ChevronRight className="h-3.5 w-3.5 text-slate-300 hidden sm:inline" />
+                <h2 className="text-sm sm:text-base font-bold text-slate-900 truncate">
+                  {currentTabInfo?.label}
+                </h2>
               </div>
-
-              {/* Logged-in User Identity & Admin Access Manager Quick Button */}
-              <div className="flex items-center gap-2 rounded-xl border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-bold text-slate-800">
-                <ShieldCheck className="h-4 w-4 text-[#b91c1c]" />
-                <span>
-                  {currentUser?.name ||
-                    (language === "ja"
-                      ? "シェイク・バセット (メイン管理者)"
-                      : language === "en"
-                        ? "Sheikh Baset (Main Admin)"
-                        : "শেখ বাসেত (Main Admin)")}
-                </span>
-                <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-extrabold text-emerald-900">
-                  {activeRole}
-                </span>
-              </div>
-
-              {(!currentUser || currentUser.role === "MAIN_ADMIN") && (
-                <button
-                  onClick={() => setActiveTab("users")}
-                  className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition shadow-2xs ${
-                    activeTab === "users"
-                      ? "border-[#b91c1c] bg-[#b91c1c] text-white"
-                      : "border-red-200 bg-red-50/70 text-[#b91c1c] hover:bg-red-100"
-                  }`}
-                  title={
-                    language === "ja"
-                      ? "ユーザーロールと権限を管理"
-                      : language === "en"
-                        ? "Manage user roles and access permissions"
-                        : "কে কোন রোলে আছে এবং কাকে কী অ্যাক্সেস দেওয়া হয়েছে দেখুন ও নিয়ন্ত্রণ করুন"
-                  }
-                >
-                  <KeyRound className="h-3.5 w-3.5" />
-                  <span>
-                    {language === "ja"
-                      ? "ユーザー・権限管理"
-                      : language === "en"
-                        ? "Users & Access Control"
-                        : "ইউজার ও অ্যাক্সেস কন্ট্রোল"}
-                  </span>
-                </button>
-              )}
-
-              {/* Database Sync Button */}
-              <button
-                onClick={handleManualSync}
-                disabled={isSyncingWithDb}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 transition shadow-2xs"
-                title={
-                  language === "ja"
-                    ? "Supabaseと同期"
-                    : language === "en"
-                      ? "Sync with Supabase Database"
-                      : "Supabase ডাটাবেজের সাথে সিঙ্ক করুন"
-                }
-              >
-                <Database className={`h-3.5 w-3.5 text-emerald-600 ${isSyncingWithDb ? "animate-spin" : ""}`} />
-                <span className="hidden lg:inline">
-                  {isSyncingWithDb
-                    ? language === "ja"
-                      ? "同期中..."
-                      : language === "en"
-                        ? "Syncing..."
-                        : "সিঙ্ক হচ্ছে..."
-                    : language === "ja"
-                      ? "Supabase同期"
-                      : language === "en"
-                        ? "Supabase Sync"
-                        : "Supabase সিঙ্ক"}
-                </span>
-              </button>
-
-              {/* Language Switcher */}
-              <div className="flex items-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 px-2.5 py-1.5 shadow-2xs hover:bg-white transition">
-                <Globe className="h-4 w-4 text-emerald-700 shrink-0" />
-                <select
-                  aria-label={t.languageLabel}
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value as Language)}
-                  className="bg-transparent text-xs font-bold text-slate-800 focus:outline-hidden cursor-pointer"
-                >
-                  {languageOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value} className="text-slate-900 bg-white">
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Public Website Link */}
-              <Link
-                href="/"
-                className="hidden sm:inline-flex items-center gap-1 rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-stone-50 transition"
-              >
-                <span>{t.publicWebsite}</span>
-                <ArrowUpRight className="h-3.5 w-3.5" />
-              </Link>
-
-              {/* Logout Button */}
-              <button
-                onClick={handleLogout}
-                className="inline-flex items-center gap-1 rounded-xl border border-red-200 bg-red-50/70 px-2.5 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 transition"
-                title={language === "ja" ? "ログアウト" : language === "en" ? "Logout" : "লগআউট"}
-              >
-                <LogOut className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">
-                  {language === "ja" ? "ログアウト" : language === "en" ? "Logout" : "লগআউট"}
-                </span>
-              </button>
             </div>
           </div>
 
-          {/* Module Navigation Tabs (Driven by Admin-Assigned Permissions) */}
-          <nav className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-stone-200/80 pt-3">
-            {[
-              {
-                id: "my_profile",
-                label:
-                  language === "ja"
-                    ? "マイプロフィール・ファイル"
-                    : language === "en"
-                      ? "My Profile & File"
-                      : "আমার প্রোফাইল ও ফাইল",
-                icon: UserCheck,
-                badge: 0,
-              },
-              { id: "overview", label: t.tabs.overview, icon: TrendingUp, badge: 0 },
-              {
-                id: "crm",
-                label: t.tabs.crm,
-                icon: PhoneCall,
-                badge: adminBundle.summary?.newLeads || 0,
-              },
-              { id: "visa", label: t.tabs.visa, icon: FileCheck2, badge: 0 },
-              { id: "lms", label: t.tabs.lms, icon: GraduationCap, badge: 0 },
-              { id: "b2b", label: t.tabs.b2b, icon: Building2, badge: 0 },
-              { id: "finance", label: t.tabs.finance, icon: DollarSign, badge: 0 },
-              { id: "hr", label: t.tabs.hr, icon: UserCheck, badge: 0 },
-              { id: "cms", label: t.tabs.cms, icon: Globe2, badge: 0 },
-              {
-                id: "store_blog",
-                label: t.tabs.storeBlog,
-                icon: ShoppingBag,
-                badge:
-                  (adminBundle.summary?.pendingOrders || 0) +
-                  (adminBundle.summary?.pendingReviews || 0) +
-                  (adminBundle.summary?.lowStockProducts || 0),
-              },
-              {
-                id: "users",
-                label:
-                  language === "ja"
-                    ? "ユーザー・権限管理"
-                    : language === "en"
-                      ? "Users & Access Control"
-                      : "ইউজার ও অ্যাক্সেস কন্ট্রোল",
-                icon: KeyRound,
-                badge: 0,
-              },
-            ]
-              .filter((tab) => {
-                // Main Admin sees all operational tabs + User Access Control
-                if (!currentUser || activeRole === "MAIN_ADMIN") {
-                  return tab.id !== "my_profile";
-                }
-                // If user has explicit allowedTabs assigned by Main Admin, strictly enforce them
-                if (currentUser.allowedTabs && currentUser.allowedTabs.length > 0) {
-                  return currentUser.allowedTabs.includes(tab.id as DashboardTabId);
-                }
-                // Fallback role defaults
-                if (activeRole === "STUDENT") return ["my_profile", "visa", "lms"].includes(tab.id);
-                if (activeRole === "TELE_COUNSELOR") return ["overview", "crm", "visa", "lms"].includes(tab.id);
-                if (activeRole === "TEACHER") return ["overview", "lms", "visa"].includes(tab.id);
-                if (activeRole === "B2B_AGENT") return ["overview", "b2b", "visa"].includes(tab.id);
-                if (activeRole === "INVESTOR") return ["overview", "finance", "b2b"].includes(tab.id);
-                return tab.id !== "users" && tab.id !== "my_profile";
-              })
-              .map((tab) => {
-                const Icon = tab.icon;
-                const isActive = activeTab === tab.id;
-                return (
+          {/* Right: Branch Switcher, Access Control Quick Link, Cloud Sync, Language & Website Link */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Branch Switcher */}
+            <div className="hidden md:flex items-center rounded-lg bg-slate-100 p-0.5 border border-slate-200">
+              <span className="px-2 text-[11px] font-medium text-slate-500">{t.branchLabel}</span>
+              {!currentUser || currentUser.role === "MAIN_ADMIN" || currentUser.branch === "ALL" ? (
+                <>
                   <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as DashboardTabId)}
-                    className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
-                      isActive
-                        ? "bg-[#133e29] text-white shadow-sm ring-1 ring-[#133e29]"
-                        : "border border-stone-200/80 bg-[#fcfaf7] text-slate-700 hover:border-emerald-300 hover:bg-white hover:text-slate-900"
+                    type="button"
+                    onClick={() => setActiveBranch("ALL")}
+                    className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition ${
+                      activeBranch === "ALL"
+                        ? "bg-white text-slate-900 shadow-2xs"
+                        : "text-slate-600 hover:text-slate-900"
                     }`}
                   >
-                    <Icon className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-emerald-300" : "text-emerald-700"}`} />
-                    <span>{tab.label}</span>
-                    {tab.badge > 0 ? (
-                      <span
-                        className={`ml-0.5 inline-flex min-w-4 items-center justify-center rounded-full px-1.5 py-0.2 text-[10px] font-extrabold ${
-                          isActive ? "bg-amber-400 text-slate-950" : "bg-[#b91c1c] text-white"
-                        }`}
-                      >
-                        {tab.badge}
-                      </span>
-                    ) : null}
-                  </button>
-                );
-              })}
-          </nav>
-        </div>
-      </header>
-
-      {/* Main Container */}
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-        {/* =========================================================================
-            MODULE 1: EXECUTIVE OVERVIEW & REAL-TIME KPI COMMAND CENTER
-            ========================================================================= */}
-        {activeTab === "overview" && (
-          <div className="space-y-6 animate-fade-in">
-            {/* MD / Super Admin Greeting & KPI Card Row */}
-            <div className="rounded-3xl border border-stone-200/80 bg-white p-6 shadow-xs">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                  <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 mb-2">
-                    <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
-                    <span>{t.kpi.liveHub} • {activeBranch === "ALL" ? t.kpi.integrated : activeBranch}</span>
-                  </div>
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-relaxed">
-                    {t.kpi.overviewTitle}
-                  </h1>
-                  <p className="text-sm text-slate-600 mt-1 max-w-3xl leading-relaxed">
-                    {t.kpi.overviewSub}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setActiveTab("crm")}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#b91c1c] px-4 py-2.5 text-xs font-bold text-white hover:bg-red-800 transition shadow-xs"
-                  >
-                    <PlusCircle className="h-4 w-4" />
-                    <span>{t.kpi.addLeadBtn}</span>
+                    {t.allBranches}
                   </button>
                   <button
-                    onClick={() => setActiveTab("visa")}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#15803d] px-4 py-2.5 text-xs font-bold text-white hover:bg-emerald-800 transition shadow-xs"
+                    type="button"
+                    onClick={() => setActiveBranch("DHK-HQ")}
+                    className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition ${
+                      activeBranch === "DHK-HQ"
+                        ? "bg-white text-[#b91c1c] shadow-2xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
                   >
-                    <FileCheck2 className="h-4 w-4" />
-                    <span>{t.kpi.viewPipelineBtn}</span>
+                    {t.dhakaHq}
                   </button>
-                </div>
-              </div>
-
-              {/* 5 Core Financial & Operational KPI Cards */}
-              <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-                {/* 1. Total Active Leads */}
-                <div className="rounded-2xl border border-stone-200 bg-[#fcfaf7] p-4">
-                  <div className="flex items-center justify-between text-slate-500">
-                    <span className="text-xs font-bold">{t.kpi.totalLeads}</span>
-                    <Users className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <div className="mt-2 flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-slate-900">{filteredLeads.length}</span>
-                    <span className="text-xs font-semibold text-emerald-600">+12%</span>
-                  </div>
-                  <p className="mt-1 text-[11px] text-slate-500 leading-relaxed">{t.kpi.metaSubtitle}</p>
-                </div>
-
-                {/* 2. Active Language Students */}
-                <div className="rounded-2xl border border-stone-200 bg-[#fcfaf7] p-4">
-                  <div className="flex items-center justify-between text-slate-500">
-                    <span className="text-xs font-bold">{t.kpi.activeStudents}</span>
-                    <GraduationCap className="h-4 w-4 text-emerald-600" />
-                  </div>
-                  <div className="mt-2 flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-slate-900">
-                      {store.lmsBridges.length + 84}
-                    </span>
-                    <span className="text-xs font-semibold text-emerald-600">N5, N4 &amp; Irodori</span>
-                  </div>
-                  <p className="mt-1 text-[11px] text-slate-500 leading-relaxed">{t.kpi.lmsSubtitle}</p>
-                </div>
-
-                {/* 3. In-Process Visa Files */}
-                <div className="rounded-2xl border border-stone-200 bg-[#fcfaf7] p-4">
-                  <div className="flex items-center justify-between text-slate-500">
-                    <span className="text-xs font-bold">{t.kpi.inProcessVisas}</span>
-                    <FileCheck2 className="h-4 w-4 text-[#b91c1c]" />
-                  </div>
-                  <div className="mt-2 flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-slate-900">{filteredVisaApplicants.length}</span>
-                    <span className="text-xs font-semibold text-amber-600">{t.kpi.aprilIntake}</span>
-                  </div>
-                  <p className="mt-1 text-[11px] text-slate-500 leading-relaxed">HLA Gakuin &amp; Top Academies</p>
-                </div>
-
-                {/* 4. Japanese School Commission Projection */}
-                <div className="rounded-2xl border border-stone-200 bg-[#fcfaf7] p-4">
-                  <div className="flex items-center justify-between text-slate-500">
-                    <span className="text-xs font-bold">{t.kpi.expectedCommission}</span>
-                    <Building2 className="h-4 w-4 text-indigo-600" />
-                  </div>
-                  <div className="mt-2 flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-slate-900">¥2.4M</span>
-                    <span className="text-xs font-semibold text-indigo-700">~৳19.2L</span>
-                  </div>
-                  <p className="mt-1 text-[11px] text-slate-500 leading-relaxed">{t.kpi.yenCommissionSub}</p>
-                </div>
-
-                {/* 5. Monthly Cash Flow */}
-                <div className="rounded-2xl border border-stone-200 bg-[#fcfaf7] p-4">
-                  <div className="flex items-center justify-between text-slate-500">
-                    <span className="text-xs font-bold">{t.kpi.monthlyCashFlow}</span>
-                    <DollarSign className="h-4 w-4 text-emerald-700" />
-                  </div>
-                  <div className="mt-2 flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-emerald-800">৳ 4.8L</span>
-                    <span className="text-xs font-semibold text-emerald-600">Net Positive</span>
-                  </div>
-                  <p className="mt-1 text-[11px] text-slate-500 leading-relaxed">{t.kpi.marginSub}</p>
-                </div>
-              </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveBranch("KHULNA-01")}
+                    className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition ${
+                      activeBranch === "KHULNA-01"
+                        ? "bg-white text-emerald-700 shadow-2xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    {t.khulnaBranch}
+                  </button>
+                </>
+              ) : (
+                <span className="rounded-md bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-900 shadow-2xs">
+                  {activeBranch === "DHK-HQ" ? t.dhakaHq : t.khulnaBranch}
+                </span>
+              )}
             </div>
 
-            {/* Middle Section: Visual Revenue Chart & Live Visa Breakdown */}
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-              {/* Left 2 Cols: Custom SVG Cash Flow & Revenue Visualizer */}
-              <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-xs lg:col-span-2">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-lg font-bold text-slate-900">{t.module1.chartTitle}</h2>
-                    <p className="text-xs text-slate-500 mt-0.5">{t.module1.chartSubtitle}</p>
-                  </div>
-                  <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-slate-700">
-                    {t.module1.fiscalYear}
-                  </span>
-                </div>
+            {/* Quick Access Control Button for Main Admin */}
+            {(!currentUser || currentUser.role === "MAIN_ADMIN") && (
+              <button
+                type="button"
+                onClick={() => setActiveTab("users")}
+                className={`hidden xl:inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition ${
+                  activeTab === "users"
+                    ? "border-slate-900 bg-slate-900 text-white"
+                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                <KeyRound className="h-3.5 w-3.5 text-[#b91c1c]" />
+                <span>
+                  {language === "ja"
+                    ? "権限管理"
+                    : language === "en"
+                      ? "Access Control"
+                      : "অ্যাক্সেস কন্ট্রোল"}
+                </span>
+              </button>
+            )}
 
-                {/* Custom SVG Performance Chart */}
-                <div className="mt-6 rounded-2xl bg-stone-50 p-4 border border-stone-200/60">
-                  <div className="h-48 w-full">
-                    <svg viewBox="0 0 600 180" className="h-full w-full overflow-visible">
-                      <defs>
-                        <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#15803d" stopOpacity="0.25" />
-                          <stop offset="100%" stopColor="#15803d" stopOpacity="0.0" />
-                        </linearGradient>
-                      </defs>
-                      {/* Grid lines */}
-                      <line x1="0" y1="30" x2="600" y2="30" stroke="#e2e8f0" strokeDasharray="4 4" />
-                      <line x1="0" y1="80" x2="600" y2="80" stroke="#e2e8f0" strokeDasharray="4 4" />
-                      <line x1="0" y1="130" x2="600" y2="130" stroke="#e2e8f0" strokeDasharray="4 4" />
+            {/* Database Sync Button */}
+            <button
+              type="button"
+              onClick={handleManualSync}
+              disabled={isSyncingWithDb}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+              title="Sync with Supabase Database"
+            >
+              <Database
+                className={`h-3.5 w-3.5 text-emerald-600 ${isSyncingWithDb ? "animate-spin" : ""}`}
+              />
+              <span className="hidden sm:inline">
+                {isSyncingWithDb
+                  ? language === "ja"
+                    ? "同期中..."
+                    : language === "en"
+                      ? "Syncing..."
+                      : "সিঙ্ক হচ্ছে..."
+                  : language === "ja"
+                    ? "DB同期"
+                    : language === "en"
+                      ? "Cloud Sync"
+                      : "ক্লাউড সিঙ্ক"}
+              </span>
+            </button>
 
-                      {/* Area Fill */}
-                      <path
-                        d="M 20 140 Q 120 120, 200 85 T 380 50 T 580 25 L 580 160 L 20 160 Z"
-                        fill="url(#chartGrad)"
-                      />
-                      {/* Trend Line */}
-                      <path
-                        d="M 20 140 Q 120 120, 200 85 T 380 50 T 580 25"
-                        fill="none"
-                        stroke="#15803d"
-                        strokeWidth="3.5"
-                        strokeLinecap="round"
-                      />
-
-                      {/* Data Points */}
-                      {[
-                        { cx: 20, cy: 140, val: "¥350k (৳3.5L)" },
-                        { cx: 140, cy: 110, val: "¥500k (৳5L)" },
-                        { cx: 260, cy: 80, val: "¥750k (৳7.5L)" },
-                        { cx: 380, cy: 50, val: "¥1.0M (৳10.2L)" },
-                        { cx: 500, cy: 35, val: "¥1.2M (৳12.4L)" },
-                        { cx: 580, cy: 25, val: "¥1.5M (৳15L)" },
-                      ].map((pt, i) => (
-                        <g key={i}>
-                          <circle cx={pt.cx} cy={pt.cy} r="5" fill="#ffffff" stroke="#b91c1c" strokeWidth="2.5" />
-                          <text x={pt.cx} y={pt.cy - 10} fontSize="10" fontWeight="bold" textAnchor="middle" fill="#0f172a">
-                            {pt.val}
-                          </text>
-                        </g>
-                      ))}
-                    </svg>
-                  </div>
-                  <div className="mt-3 flex items-center justify-between text-xs font-semibold text-slate-500">
-                    <span>{t.module1.chartMilestones[0]}</span>
-                    <span>{t.module1.chartMilestones[1]}</span>
-                    <span>{t.module1.chartMilestones[2]}</span>
-                    <span>{t.module1.chartMilestones[3]}</span>
-                  </div>
-                </div>
-
-                {/* 3 Key Financial Highlights */}
-                <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                  <div className="rounded-xl border border-stone-200 bg-white p-3">
-                    <span className="text-slate-500">{t.module1.grossProjection}</span>
-                    <p className="text-base font-extrabold text-slate-900 mt-1">৳ 48,00,000</p>
-                    <span className="text-[11px] text-emerald-700">{t.module1.grossDesc}</span>
-                  </div>
-                  <div className="rounded-xl border border-stone-200 bg-white p-3">
-                    <span className="text-slate-500">{t.module1.operationalCost}</span>
-                    <p className="text-base font-extrabold text-slate-900 mt-1">৳ 12,00,000</p>
-                    <span className="text-[11px] text-slate-500">{t.module1.operationalDesc}</span>
-                  </div>
-                  <div className="rounded-xl border border-stone-200 bg-emerald-50/50 p-3">
-                    <span className="text-emerald-800 font-semibold">{t.module1.netProfit}</span>
-                    <p className="text-base font-black text-emerald-700 mt-1">৳ 36,00,000</p>
-                    <span className="text-[11px] text-emerald-800">{t.module1.netProfitDesc}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Col: Quick Intake & SSW Special Campaign Status */}
-              <div className="space-y-4">
-                {/* Active Campaign Box */}
-                <div className="rounded-3xl border-2 border-emerald-500/40 bg-gradient-to-br from-emerald-50 to-white p-5 shadow-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-3 w-3 rounded-full bg-emerald-600 animate-ping" />
-                    <span className="text-xs font-black uppercase text-emerald-800">{t.module1.sswBadge}</span>
-                  </div>
-                  <h3 className="text-base font-black text-slate-900 mt-2 leading-tight">
-                    {t.module1.sswTitle}
-                  </h3>
-                  <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
-                    {t.module1.sswDesc}
-                  </p>
-                  <div className="mt-3 rounded-xl bg-white p-3 border border-emerald-200 text-xs">
-                    <div className="flex justify-between font-bold">
-                      <span>{t.module1.sswSeats}</span>
-                      <span className="text-emerald-700">{t.module1.sswEnrolled}</span>
-                    </div>
-                    <div className="w-full bg-stone-200 rounded-full h-2 mt-2">
-                      <div className="bg-emerald-600 h-2 rounded-full" style={{ width: "72%" }}></div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setActiveTab("crm")}
-                    className="mt-3.5 w-full rounded-xl bg-[#15803d] py-2 text-xs font-bold text-white hover:bg-emerald-800 transition"
-                  >
-                    {t.module1.sswButton}
-                  </button>
-                </div>
-
-                {/* HLA Gakuin Partner Quick Status */}
-                <div className="rounded-3xl border border-stone-200 bg-white p-5 shadow-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-500">{t.module1.partnerBadge}</span>
-                    <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-800">
-                      {t.module1.partnerLocation}
-                    </span>
-                  </div>
-                  <h3 className="text-sm font-bold text-slate-900 mt-1">{t.module1.partnerTitle}</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">{t.module1.partnerDesc}</p>
-                  <div className="mt-3 flex items-center justify-between text-xs border-t border-stone-100 pt-2 font-semibold">
-                    <span>{t.module1.partnerFiles}</span>
-                    <span className="text-emerald-700">{t.module1.partnerCommission}</span>
-                  </div>
-                </div>
-              </div>
+            {/* Language Switcher */}
+            <div className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 hover:bg-white transition">
+              <Globe className="h-3.5 w-3.5 text-[#b91c1c] shrink-0" />
+              <select
+                aria-label={t.languageLabel}
+                value={language}
+                onChange={(e) => setLanguage(e.target.value as Language)}
+                className="bg-transparent text-xs font-semibold text-slate-800 focus:outline-hidden cursor-pointer"
+              >
+                {languageOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value} className="text-slate-900 bg-white">
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             </div>
+
+            {/* Public Website Link */}
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+            >
+              <span className="hidden sm:inline">{t.publicWebsite}</span>
+              <ArrowUpRight className="h-3.5 w-3.5 text-slate-500" />
+            </Link>
           </div>
-        )}
+        </header>
+
+        {/* Main Workspace Viewport */}
+        <main className="flex-1 mx-auto w-full max-w-7xl px-4 py-6 sm:px-6">
+          {/* =========================================================================
+              MODULE 1: EXECUTIVE OVERVIEW & REAL-TIME KPI COMMAND CENTER
+              ========================================================================= */}
+          {activeTab === "overview" && (
+            <div className="space-y-6 animate-fade-in">
+              {/* Executive Command Header & Primary KPI Row */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-6 border-b border-slate-100">
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 border border-slate-200/80 px-2.5 py-1 text-[11px] font-semibold text-slate-700 mb-2">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      <span>
+                        {t.kpi.liveHub} • {activeBranch === "ALL" ? t.kpi.integrated : activeBranch}
+                      </span>
+                    </div>
+                    <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                      {t.kpi.overviewTitle}
+                    </h1>
+                    <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-3xl leading-relaxed">
+                      {t.kpi.overviewSub}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("crm")}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-[#b91c1c] px-4 py-2.5 text-xs font-semibold text-white hover:bg-red-800 transition shadow-2xs"
+                    >
+                      <PlusCircle className="h-4 w-4" />
+                      <span>{t.kpi.addLeadBtn}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("visa")}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-semibold text-white hover:bg-slate-800 transition shadow-2xs"
+                    >
+                      <FileCheck2 className="h-4 w-4" />
+                      <span>{t.kpi.viewPipelineBtn}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 5 Core Financial & Operational KPI Cards */}
+                <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                  {/* 1. Total Active Leads */}
+                  <div className="rounded-xl border border-slate-200/90 bg-slate-50/50 p-4">
+                    <div className="flex items-center justify-between text-slate-500">
+                      <span className="text-xs font-semibold">{t.kpi.totalLeads}</span>
+                      <Users className="h-4 w-4 text-slate-600" />
+                    </div>
+                    <div className="mt-2.5 flex items-baseline gap-2">
+                      <span className="text-2xl font-bold text-slate-900 tabular-nums">
+                        {filteredLeads.length}
+                      </span>
+                      <span className="text-xs font-semibold text-emerald-700">+12%</span>
+                    </div>
+                    <p className="mt-1 text-[11px] text-slate-500 leading-relaxed">
+                      {t.kpi.metaSubtitle}
+                    </p>
+                  </div>
+
+                  {/* 2. Active Language Students */}
+                  <div className="rounded-xl border border-slate-200/90 bg-slate-50/50 p-4">
+                    <div className="flex items-center justify-between text-slate-500">
+                      <span className="text-xs font-semibold">{t.kpi.activeStudents}</span>
+                      <GraduationCap className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    <div className="mt-2.5 flex items-baseline gap-2">
+                      <span className="text-2xl font-bold text-slate-900 tabular-nums">
+                        {store.lmsBridges.length + 84}
+                      </span>
+                      <span className="text-xs font-semibold text-emerald-700">N5 &amp; N4</span>
+                    </div>
+                    <p className="mt-1 text-[11px] text-slate-500 leading-relaxed">
+                      {t.kpi.lmsSubtitle}
+                    </p>
+                  </div>
+
+                  {/* 3. In-Process Visa Files */}
+                  <div className="rounded-xl border border-slate-200/90 bg-slate-50/50 p-4">
+                    <div className="flex items-center justify-between text-slate-500">
+                      <span className="text-xs font-semibold">{t.kpi.inProcessVisas}</span>
+                      <FileCheck2 className="h-4 w-4 text-[#b91c1c]" />
+                    </div>
+                    <div className="mt-2.5 flex items-baseline gap-2">
+                      <span className="text-2xl font-bold text-slate-900 tabular-nums">
+                        {filteredVisaApplicants.length}
+                      </span>
+                      <span className="text-xs font-semibold text-amber-700">{t.kpi.aprilIntake}</span>
+                    </div>
+                    <p className="mt-1 text-[11px] text-slate-500 leading-relaxed">
+                      HLA Gakuin &amp; Partner Schools
+                    </p>
+                  </div>
+
+                  {/* 4. Japanese School Commission Projection */}
+                  <div className="rounded-xl border border-slate-200/90 bg-slate-50/50 p-4">
+                    <div className="flex items-center justify-between text-slate-500">
+                      <span className="text-xs font-semibold">{t.kpi.expectedCommission}</span>
+                      <Building2 className="h-4 w-4 text-slate-600" />
+                    </div>
+                    <div className="mt-2.5 flex items-baseline gap-2">
+                      <span className="text-2xl font-bold text-slate-900 tabular-nums">¥2.4M</span>
+                      <span className="text-xs font-semibold text-slate-600">~৳19.2L</span>
+                    </div>
+                    <p className="mt-1 text-[11px] text-slate-500 leading-relaxed">
+                      {t.kpi.yenCommissionSub}
+                    </p>
+                  </div>
+
+                  {/* 5. Monthly Cash Flow */}
+                  <div className="rounded-xl border border-slate-200/90 bg-slate-50/50 p-4">
+                    <div className="flex items-center justify-between text-slate-500">
+                      <span className="text-xs font-semibold">{t.kpi.monthlyCashFlow}</span>
+                      <DollarSign className="h-4 w-4 text-emerald-700" />
+                    </div>
+                    <div className="mt-2.5 flex items-baseline gap-2">
+                      <span className="text-2xl font-bold text-emerald-800 tabular-nums">৳ 4.8L</span>
+                      <span className="text-xs font-semibold text-emerald-700">Net Positive</span>
+                    </div>
+                    <p className="mt-1 text-[11px] text-slate-500 leading-relaxed">
+                      {t.kpi.marginSub}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Middle Section: Visual Revenue Chart & Live Visa Breakdown */}
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                {/* Left 2 Cols: Custom SVG Cash Flow & Revenue Visualizer */}
+                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs lg:col-span-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-base sm:text-lg font-bold text-slate-900">
+                        {t.module1.chartTitle}
+                      </h2>
+                      <p className="text-xs text-slate-500 mt-0.5">{t.module1.chartSubtitle}</p>
+                    </div>
+                    <span className="rounded-md bg-slate-100 border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                      {t.module1.fiscalYear}
+                    </span>
+                  </div>
+
+                  {/* Custom SVG Performance Chart */}
+                  <div className="mt-6 rounded-xl bg-slate-50 p-4 border border-slate-200/70">
+                    <div className="h-48 w-full">
+                      <svg viewBox="0 0 600 180" className="h-full w-full overflow-visible">
+                        <defs>
+                          <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#15803d" stopOpacity="0.2" />
+                            <stop offset="100%" stopColor="#15803d" stopOpacity="0.0" />
+                          </linearGradient>
+                        </defs>
+                        <line x1="0" y1="30" x2="600" y2="30" stroke="#e2e8f0" strokeDasharray="4 4" />
+                        <line x1="0" y1="80" x2="600" y2="80" stroke="#e2e8f0" strokeDasharray="4 4" />
+                        <line x1="0" y1="130" x2="600" y2="130" stroke="#e2e8f0" strokeDasharray="4 4" />
+
+                        <path
+                          d="M 20 140 Q 120 120, 200 85 T 380 50 T 580 25 L 580 160 L 20 160 Z"
+                          fill="url(#chartGrad)"
+                        />
+                        <path
+                          d="M 20 140 Q 120 120, 200 85 T 380 50 T 580 25"
+                          fill="none"
+                          stroke="#15803d"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                        />
+
+                        {[
+                          { cx: 20, cy: 140, val: "¥350k (৳3.5L)" },
+                          { cx: 140, cy: 110, val: "¥500k (৳5L)" },
+                          { cx: 260, cy: 80, val: "¥750k (৳7.5L)" },
+                          { cx: 380, cy: 50, val: "¥1.0M (৳10.2L)" },
+                          { cx: 500, cy: 35, val: "¥1.2M (৳12.4L)" },
+                          { cx: 580, cy: 25, val: "¥1.5M (৳15L)" },
+                        ].map((pt, i) => (
+                          <g key={i}>
+                            <circle
+                              cx={pt.cx}
+                              cy={pt.cy}
+                              r="4.5"
+                              fill="#ffffff"
+                              stroke="#b91c1c"
+                              strokeWidth="2.5"
+                            />
+                            <text
+                              x={pt.cx}
+                              y={pt.cy - 10}
+                              fontSize="10"
+                              fontWeight="600"
+                              textAnchor="middle"
+                              fill="#0f172a"
+                            >
+                              {pt.val}
+                            </text>
+                          </g>
+                        ))}
+                      </svg>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between text-xs font-medium text-slate-500">
+                      <span>{t.module1.chartMilestones[0]}</span>
+                      <span>{t.module1.chartMilestones[1]}</span>
+                      <span>{t.module1.chartMilestones[2]}</span>
+                      <span>{t.module1.chartMilestones[3]}</span>
+                    </div>
+                  </div>
+
+                  {/* 3 Key Financial Highlights */}
+                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div className="rounded-xl border border-slate-200 bg-white p-3.5">
+                      <span className="text-slate-500 font-medium">{t.module1.grossProjection}</span>
+                      <p className="text-base font-bold text-slate-900 mt-1 tabular-nums">৳ 48,00,000</p>
+                      <span className="text-[11px] text-emerald-700">{t.module1.grossDesc}</span>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-white p-3.5">
+                      <span className="text-slate-500 font-medium">{t.module1.operationalCost}</span>
+                      <p className="text-base font-bold text-slate-900 mt-1 tabular-nums">৳ 12,00,000</p>
+                      <span className="text-[11px] text-slate-500">{t.module1.operationalDesc}</span>
+                    </div>
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-3.5">
+                      <span className="text-emerald-800 font-semibold">{t.module1.netProfit}</span>
+                      <p className="text-base font-bold text-emerald-700 mt-1 tabular-nums">৳ 36,00,000</p>
+                      <span className="text-[11px] text-emerald-800">{t.module1.netProfitDesc}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Col: Quick Intake & SSW Special Campaign Status */}
+                <div className="space-y-4">
+                  {/* Active Campaign Box */}
+                  <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-2 w-2 rounded-full bg-emerald-600" />
+                      <span className="text-xs font-bold uppercase text-emerald-800">
+                        {t.module1.sswBadge}
+                      </span>
+                    </div>
+                    <h3 className="text-base font-bold text-slate-900 mt-2 leading-snug">
+                      {t.module1.sswTitle}
+                    </h3>
+                    <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                      {t.module1.sswDesc}
+                    </p>
+                    <div className="mt-3.5 rounded-xl bg-slate-50 p-3 border border-slate-200 text-xs">
+                      <div className="flex justify-between font-semibold">
+                        <span>{t.module1.sswSeats}</span>
+                        <span className="text-emerald-700">{t.module1.sswEnrolled}</span>
+                      </div>
+                      <div className="w-full bg-slate-200 rounded-full h-1.5 mt-2">
+                        <div className="bg-emerald-600 h-1.5 rounded-full" style={{ width: "72%" }} />
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("crm")}
+                      className="mt-3.5 w-full rounded-xl bg-[#15803d] py-2.5 text-xs font-semibold text-white hover:bg-emerald-800 transition"
+                    >
+                      {t.module1.sswButton}
+                    </button>
+                  </div>
+
+                  {/* HLA Gakuin Partner Quick Status */}
+                  <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-slate-500">
+                        {t.module1.partnerBadge}
+                      </span>
+                      <span className="rounded-md bg-red-50 border border-red-200/70 px-2 py-0.5 text-[10px] font-semibold text-[#b91c1c]">
+                        {t.module1.partnerLocation}
+                      </span>
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-900 mt-1.5">
+                      {t.module1.partnerTitle}
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">{t.module1.partnerDesc}</p>
+                    <div className="mt-3 flex items-center justify-between text-xs border-t border-slate-100 pt-2.5 font-semibold">
+                      <span>{t.module1.partnerFiles}</span>
+                      <span className="text-emerald-700">{t.module1.partnerCommission}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
         {/* =========================================================================
             MODULE 2: OMNI-CHANNEL CRM & TELE-COUNSELOR WORKSPACE
@@ -3040,7 +3208,8 @@ export default function DashboardPage() {
             }}
           />
         )}
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

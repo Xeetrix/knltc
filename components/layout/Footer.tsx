@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   ExternalLink,
   Facebook,
@@ -17,7 +18,12 @@ import { translate } from "@/lib/i18n";
 import { siteConfig } from "@/lib/site";
 
 export default function Footer() {
+  const pathname = usePathname();
   const { language } = useLanguage();
+
+  if (pathname.startsWith("/dashboard") || pathname.startsWith("/admin/login")) {
+    return null;
+  }
 
   const t = translate(
     {

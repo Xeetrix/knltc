@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import BrandLogo from "@/components/layout/BrandLogo";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
 import {
@@ -559,20 +560,17 @@ export default function RbacPortal({ initialRole = "MAIN_ADMIN" }: Props) {
     <div className="min-h-screen bg-stone-50 text-slate-900 pb-20">
       {/* Top Brand Bar */}
       <header className="border-b border-stone-200 bg-white sticky top-0 z-30 shadow-xs">
-        <div className="container-narrow py-3 flex items-center justify-between">
+        <div className="container-narrow py-2.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <BrandLogo compact badge="RBAC" subtitle="Campus Portal" />
+            <span className="text-stone-300 hidden sm:inline">|</span>
             <Link
               href="/japanese-language"
-              className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-[#b91c1c] transition"
+              className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-[#b91c1c] transition"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-3.5 w-3.5" />
               <span>{t.backToCourse}</span>
             </Link>
-            <span className="text-stone-300">|</span>
-            <span className="font-extrabold text-[#b91c1c] text-sm tracking-tight">KNLTC Japan Gateway</span>
-            <Badge className="border-red-200 bg-red-50 text-[#b91c1c] text-[10px] hidden sm:inline-flex">
-              RBAC
-            </Badge>
           </div>
 
           <div className="flex items-center gap-3">

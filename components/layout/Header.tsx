@@ -397,6 +397,11 @@ function MainHeader({ pathname }: { pathname: string }) {
 
 export default function Header() {
   const pathname = usePathname();
+
+  if (pathname.startsWith("/dashboard") || pathname.startsWith("/admin/login")) {
+    return null;
+  }
+
   const isStoreRoute = [
     "/store",
     "/cart",
