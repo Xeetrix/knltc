@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
-import { UserCheck, KeyRound } from "lucide-react";
+import { useEffect, useState, useMemo, type FormEvent } from "react";
+import { UserCheck } from "lucide-react";
 import type { CrmLead, LeadStatus } from "@/lib/cms";
+import { useLanguage } from "@/components/layout/LanguageProvider";
+import { translate } from "@/lib/i18n";
 
 const statuses: LeadStatus[] = ["new", "contacted", "interested", "converted", "lost"];
 
@@ -13,11 +15,49 @@ export default function CrmManager({
   initialLeads: CrmLead[];
   onOpenLeadProfile?: (lead: CrmLead) => void;
 }) {
+  const { language } = useLanguage();
   const [leads, setLeads] = useState(initialLeads);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+
+  const t = useMemo(
+    () =>
+      translate(
+        {
+          en: {
+            namePlaceholder: "Candidate Name",
+            phonePlaceholder: "Phone Number",
+            emailPlaceholder: "Email (Optional)",
+            addBtn: "Add New Database Lead",
+            emptyMsg: "No website or checkout leads currently in Supabase `crm_leads` table.",
+            profileBtn: "Profile & Enrollment Login",
+            notePlaceholder: "Write counselor follow-up note...",
+          },
+          bn: {
+            namePlaceholder: "প্রার্থীর নাম (Name)",
+            phonePlaceholder: "ফোন নম্বর (Phone)",
+            emailPlaceholder: "ইমেইল (Email - ঐচ্ছিক)",
+            addBtn: "নতুন ডাটাবেজ লিড যুক্ত করুন",
+            emptyMsg: "বর্তমানে Supabase `crm_leads` টেবিলে কোনো ওয়েবসাইট বা চেকআউট লিড নেই।",
+            profileBtn: "প্রোফাইল ও ভর্তি লগইন",
+            notePlaceholder: "কাউন্সেলর ফলো-আপ নোট লিখুন...",
+          },
+          ja: {
+            namePlaceholder: "候補者氏名 (Name)",
+            phonePlaceholder: "電話番号 (Phone)",
+            emailPlaceholder: "メール (任意)",
+            addBtn: "データベースリードを追加",
+            emptyMsg: "現在、Supabase `crm_leads` テーブルにリードはありません。",
+            profileBtn: "プロフィール・ログイン管理",
+            notePlaceholder: "カウンセラーのフォローメモを入力...",
+          },
+        },
+        language,
+      ),
+    [language],
+  );
 
   useEffect(() => {
     setLeads(initialLeads);
@@ -58,31 +98,31 @@ export default function CrmManager({
         <input
           required
           className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-medium"
-          placeholder="প্রার্থীর নাম (Name)"
+          placeholder={t.namePlaceholder}
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
         <input
           required
           className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-medium"
-          placeholder="ফোন নম্বর (Phone)"
+          placeholder={t.phonePlaceholder}
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
         />
         <input
           className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-medium"
-          placeholder="ইমেইল (Email - ঐচ্ছিক)"
+          placeholder={t.emailPlaceholder}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
         <button className="rounded-xl bg-[#133e29] px-4 py-2 text-xs font-bold text-white hover:bg-emerald-800 transition">
-          নতুন ডাটাবেজ লিড যুক্ত করুন
+          {t.addBtn}
         </button>
       </form>
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
       {leads.length === 0 ? (
         <div className="rounded-2xl border border-stone-200 bg-stone-50 p-6 text-center text-xs text-slate-500">
-          বর্তমানে Supabase `crm_leads` টেবিলে কোনো ওয়েবসাইট বা চেকআউট লিড নেই।
+          {t.emptyMsg}
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
@@ -108,7 +148,7 @@ export default function CrmManager({
                       className="inline-flex items-center gap-1 rounded-lg bg-[#b91c1c] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-red-800 transition shadow-2xs"
                     >
                       <UserCheck className="h-3 w-3" />
-                      <span>প্রোফাইল ও ভর্তি লগইন</span>
+                      <span>{t.profileBtn}</span>
                     </button>
                   )}
                 </div>
@@ -134,7 +174,7 @@ export default function CrmManager({
                 <input
                   className="rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-xs"
                   defaultValue={lead.notes ?? ""}
-                  placeholder="কাউন্সেলর ফলো-আপ নোট লিখুন..."
+                  placeholder={t.notePlaceholder}
                   onBlur={(e) => updateLead(lead.id, { notes: e.target.value })}
                 />
               </div>
@@ -145,4 +185,3 @@ export default function CrmManager({
     </div>
   );
 }
-

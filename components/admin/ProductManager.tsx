@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type DragEvent, type FormEvent } 
 import ConfirmDialog from "@/components/ui/confirm-dialog";
 import { notify } from "@/lib/notify";
 import type { Category, Product } from "@/lib/cms";
+import { useLanguage } from "@/components/layout/LanguageProvider";
 
 type ProductInput = {
   id?: string;
@@ -42,6 +43,7 @@ const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 export default function ProductManager({ initialProducts, categories }: { initialProducts: Product[]; categories: Category[] }) {
+  const { language } = useLanguage();
   const [products, setProducts] = useState(initialProducts);
   const [form, setForm] = useState<ProductInput>(initialForm);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
@@ -259,7 +261,23 @@ const msg = data.error || "Failed to delete product";
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.is_featured} onChange={(e) => setForm({ ...form, is_featured: e.target.checked })} /> Featured</label>
         <div className="flex gap-2">
           <button className="rounded-xl bg-[#133e29] px-4 py-2 text-xs font-bold text-white hover:bg-emerald-800 transition shadow-xs" disabled={isUploadingImage}>
-            {isUploadingImage ? "আপলোড হচ্ছে..." : `${mode === "Update" ? "পণ্য আপডেট করুন" : "নতুন পণ্য যুক্ত করুন"}`}
+            {isUploadingImage
+              ? language === "ja"
+                ? "アップロード中..."
+                : language === "en"
+                  ? "Uploading..."
+                  : "আপলোড হচ্ছে..."
+              : mode === "Update"
+                ? language === "ja"
+                  ? "商品を更新する"
+                  : language === "en"
+                    ? "Update Product"
+                    : "পণ্য আপডেট করুন"
+                : language === "ja"
+                  ? "新商品を追加する"
+                  : language === "en"
+                    ? "Add New Product"
+                    : "নতুন পণ্য যুক্ত করুন"}
           </button>
           {form.id ? (
             <button
@@ -270,7 +288,7 @@ const msg = data.error || "Failed to delete product";
               }}
               className="rounded-xl border border-stone-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-stone-50"
             >
-              বাতিল করুন
+              {language === "ja" ? "キャンセル" : language === "en" ? "Cancel" : "বাতিল করুন"}
             </button>
           ) : null}
         </div>
@@ -293,7 +311,7 @@ const msg = data.error || "Failed to delete product";
                   <span className="font-extrabold text-emerald-700">৳{item.sale_price ?? item.price}</span>
                   {item.sale_price ? <span className="line-through text-slate-400 text-[11px]">৳{item.price}</span> : null}
                   <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${item.stock <= 2 ? "bg-red-100 text-red-700" : "bg-stone-100 text-slate-700"}`}>
-                    স্টক: {item.stock}
+                    {language === "ja" ? `在庫: ${item.stock}` : language === "en" ? `Stock: ${item.stock}` : `স্টক: ${item.stock}`}
                   </span>
                   <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${item.status === "published" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>
                     {item.status}
@@ -324,13 +342,13 @@ const msg = data.error || "Failed to delete product";
                 }}
                 className="rounded-lg border border-stone-200 bg-stone-50 px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-stone-100"
               >
-                এডিট
+                {language === "ja" ? "編集" : language === "en" ? "Edit" : "এডিট"}
               </button>
               <button
                 onClick={() => setDeleteTarget(item.id)}
                 className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-bold text-red-600 hover:bg-red-100"
               >
-                ডিলিট
+                {language === "ja" ? "削除" : language === "en" ? "Delete" : "ডিলিট"}
               </button>
             </div>
           </div>

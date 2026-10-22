@@ -276,13 +276,31 @@ export default function DashboardPage() {
 
   const handleManualSync = async () => {
     setIsSyncingWithDb(true);
-    showToast("Supabase ডাটাবেজের সাথে সিঙ্ক হচ্ছে...");
+    showToast(
+      language === "ja"
+        ? "Supabaseデータベースと同期中..."
+        : language === "en"
+          ? "Syncing with Supabase database..."
+          : "Supabase ডাটাবেজের সাথে সিঙ্ক হচ্ছে...",
+    );
     try {
       const [live] = await Promise.all([fetchLiveStoreFromServer(), loadAdminBundle()]);
       if (live) setStore({ ...live });
-      showToast("ডাটাবেজ সিঙ্ক সফল হয়েছে! (Database Synced)");
+      showToast(
+        language === "ja"
+          ? "データベース同期が完了しました！"
+          : language === "en"
+            ? "Database synced successfully!"
+            : "ডাটাবেজ সিঙ্ক সফল হয়েছে!",
+      );
     } catch {
-      showToast("সিঙ্কে সমস্যা হয়েছে, লোকাল ক্যাশ ব্যবহার করা হচ্ছে।");
+      showToast(
+        language === "ja"
+          ? "同期エラー。ローカルキャッシュを使用しています。"
+          : language === "en"
+            ? "Sync error, using local cache."
+            : "সিঙ্কে সমস্যা হয়েছে, লোকাল ক্যাশ ব্যবহার করা হচ্ছে।",
+      );
     } finally {
       setIsSyncingWithDb(false);
     }
@@ -438,7 +456,14 @@ export default function DashboardPage() {
               {/* Logged-in User Identity & Admin Access Manager Quick Button */}
               <div className="flex items-center gap-2 rounded-xl border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-bold text-slate-800">
                 <ShieldCheck className="h-4 w-4 text-[#b91c1c]" />
-                <span>{currentUser?.name || "শেখ বাসেত (Main Admin)"}</span>
+                <span>
+                  {currentUser?.name ||
+                    (language === "ja"
+                      ? "シェイク・バセット (メイン管理者)"
+                      : language === "en"
+                        ? "Sheikh Baset (Main Admin)"
+                        : "শেখ বাসেত (Main Admin)")}
+                </span>
                 <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-extrabold text-emerald-900">
                   {activeRole}
                 </span>
@@ -452,10 +477,22 @@ export default function DashboardPage() {
                       ? "border-[#b91c1c] bg-[#b91c1c] text-white"
                       : "border-red-200 bg-red-50/70 text-[#b91c1c] hover:bg-red-100"
                   }`}
-                  title="কে কোন রোলে আছে এবং কাকে কী অ্যাক্সেস দেওয়া হয়েছে দেখুন ও নিয়ন্ত্রণ করুন"
+                  title={
+                    language === "ja"
+                      ? "ユーザーロールと権限を管理"
+                      : language === "en"
+                        ? "Manage user roles and access permissions"
+                        : "কে কোন রোলে আছে এবং কাকে কী অ্যাক্সেস দেওয়া হয়েছে দেখুন ও নিয়ন্ত্রণ করুন"
+                  }
                 >
                   <KeyRound className="h-3.5 w-3.5" />
-                  <span>ইউজার ও অ্যাক্সেস কন্ট্রোল</span>
+                  <span>
+                    {language === "ja"
+                      ? "ユーザー・権限管理"
+                      : language === "en"
+                        ? "Users & Access Control"
+                        : "ইউজার ও অ্যাক্সেস কন্ট্রোল"}
+                  </span>
                 </button>
               )}
 
@@ -464,10 +501,28 @@ export default function DashboardPage() {
                 onClick={handleManualSync}
                 disabled={isSyncingWithDb}
                 className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 transition shadow-2xs"
-                title="Supabase ডাটাবেজের সাথে সিঙ্ক করুন"
+                title={
+                  language === "ja"
+                    ? "Supabaseと同期"
+                    : language === "en"
+                      ? "Sync with Supabase Database"
+                      : "Supabase ডাটাবেজের সাথে সিঙ্ক করুন"
+                }
               >
                 <Database className={`h-3.5 w-3.5 text-emerald-600 ${isSyncingWithDb ? "animate-spin" : ""}`} />
-                <span className="hidden lg:inline">{isSyncingWithDb ? "সিঙ্ক হচ্ছে..." : "Supabase সিঙ্ক"}</span>
+                <span className="hidden lg:inline">
+                  {isSyncingWithDb
+                    ? language === "ja"
+                      ? "同期中..."
+                      : language === "en"
+                        ? "Syncing..."
+                        : "সিঙ্ক হচ্ছে..."
+                    : language === "ja"
+                      ? "Supabase同期"
+                      : language === "en"
+                        ? "Supabase Sync"
+                        : "Supabase সিঙ্ক"}
+                </span>
               </button>
 
               {/* Language Switcher */}
@@ -500,10 +555,12 @@ export default function DashboardPage() {
               <button
                 onClick={handleLogout}
                 className="inline-flex items-center gap-1 rounded-xl border border-red-200 bg-red-50/70 px-2.5 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 transition"
-                title="লগআউট (Logout)"
+                title={language === "ja" ? "ログアウト" : language === "en" ? "Logout" : "লগআউট"}
               >
                 <LogOut className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">লগআউট</span>
+                <span className="hidden sm:inline">
+                  {language === "ja" ? "ログアウト" : language === "en" ? "Logout" : "লগআউট"}
+                </span>
               </button>
             </div>
           </div>
@@ -511,7 +568,17 @@ export default function DashboardPage() {
           {/* Module Navigation Tabs (Driven by Admin-Assigned Permissions) */}
           <nav className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-stone-200/80 pt-3">
             {[
-              { id: "my_profile", label: "আমার প্রোফাইল ও ফাইল", icon: UserCheck, badge: 0 },
+              {
+                id: "my_profile",
+                label:
+                  language === "ja"
+                    ? "マイプロフィール・ファイル"
+                    : language === "en"
+                      ? "My Profile & File"
+                      : "আমার প্রোফাইল ও ফাইল",
+                icon: UserCheck,
+                badge: 0,
+              },
               { id: "overview", label: t.tabs.overview, icon: TrendingUp, badge: 0 },
               {
                 id: "crm",
@@ -536,7 +603,12 @@ export default function DashboardPage() {
               },
               {
                 id: "users",
-                label: "ইউজার ও অ্যাক্সেস কন্ট্রোল",
+                label:
+                  language === "ja"
+                    ? "ユーザー・権限管理"
+                    : language === "en"
+                      ? "Users & Access Control"
+                      : "ইউজার ও অ্যাক্সেস কন্ট্রোল",
                 icon: KeyRound,
                 badge: 0,
               },
@@ -927,17 +999,29 @@ export default function DashboardPage() {
                               </span>
                               {lead.isFileOpened && (
                                 <span className="rounded bg-red-100 px-1.5 py-0.2 text-[9px] font-bold text-[#b91c1c]">
-                                  ফাইল ওপেনকৃত
+                                  {language === "ja"
+                                    ? "ファイル開設済"
+                                    : language === "en"
+                                      ? "File Opened"
+                                      : "ফাইল ওপেনকৃত"}
                                 </span>
                               )}
                               {lead.isCourseEnrolled && (
                                 <span className="rounded bg-emerald-100 px-1.5 py-0.2 text-[9px] font-bold text-emerald-800">
-                                  কোর্সে ভর্তিকৃত
+                                  {language === "ja"
+                                    ? "コース入学済"
+                                    : language === "en"
+                                      ? "Course Enrolled"
+                                      : "কোর্সে ভর্তিকৃত"}
                                 </span>
                               )}
                               {lead.hasLoginAccess && (
                                 <span className="rounded bg-amber-100 px-1.5 py-0.2 text-[9px] font-bold text-amber-900">
-                                  লগইন: {lead.loginEmail}
+                                  {language === "ja"
+                                    ? `ログイン: ${lead.loginEmail}`
+                                    : language === "en"
+                                      ? `Login: ${lead.loginEmail}`
+                                      : `লগইন: ${lead.loginEmail}`}
                                 </span>
                               )}
                             </div>
@@ -989,7 +1073,13 @@ export default function DashboardPage() {
                                 className="inline-flex items-center gap-1 rounded-xl bg-[#b91c1c] px-3 py-1.5 text-xs font-bold text-white hover:bg-red-800 transition shadow-xs"
                               >
                                 <UserCheck className="h-3.5 w-3.5" />
-                                <span>প্রোফাইল ও ভর্তি লগইন</span>
+                                <span>
+                                  {language === "ja"
+                                    ? "プロフィール・ログイン管理"
+                                    : language === "en"
+                                      ? "Profile & Login Access"
+                                      : "প্রোফাইল ও ভর্তি লগইন"}
+                                </span>
                               </button>
                               <a
                                 href={waLink}
@@ -1019,14 +1109,26 @@ export default function DashboardPage() {
                     <span>Supabase `crm_leads` Table</span>
                   </div>
                   <h3 className="text-lg font-black text-slate-900">
-                    ওয়েবসাইট কনসালটেশন, কন্টাক্ট ও স্টোর চেকআউট লিডস
+                    {language === "ja"
+                      ? "ウェブサイト相談・お問い合わせ・ストア注文リード"
+                      : language === "en"
+                        ? "Website Consultation, Contact & Store Checkout Leads"
+                        : "ওয়েবসাইট কনসালটেশন, কন্টাক্ট ও স্টোর চেকআউট লিডস"}
                   </h3>
                   <p className="text-xs text-slate-500">
-                    পাবলিক ওয়েবসাইটের ফর্ম ও চেকআউট থেকে সরাসরি ডাটাবেজে আসা লিডসমূহ পরিচালনা ও প্রোফাইল/লগইন তৈরি করুন
+                    {language === "ja"
+                      ? "公開ウェブサイトのフォームやチェックアウトから直接データベースに登録されたリードを管理し、プロフィールとログインを作成します"
+                      : language === "en"
+                        ? "Manage leads submitted directly from website forms and store checkout, and provision their profile & portal login"
+                        : "পাবলিক ওয়েবসাইটের ফর্ম ও চেকআউট থেকে সরাসরি ডাটাবেজে আসা লিডসমূহ পরিচালনা ও প্রোফাইল/লগইন তৈরি করুন"}
                   </p>
                 </div>
                 <span className="rounded-xl bg-stone-100 px-3 py-1.5 text-xs font-bold text-slate-700">
-                  মোট ডাটাবেজ লিড: {adminBundle.crmLeads.length}টি
+                  {language === "ja"
+                    ? `総データベースリード: ${adminBundle.crmLeads.length}件`
+                    : language === "en"
+                      ? `Total Database Leads: ${adminBundle.crmLeads.length}`
+                      : `মোট ডাটাবেজ লিড: ${adminBundle.crmLeads.length}টি`}
                 </span>
               </div>
               <CrmManager
@@ -2178,11 +2280,19 @@ export default function DashboardPage() {
                       UNIFIED STORE & BLOG ADMIN
                     </span>
                     <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                      বুক স্টোর, অর্ডার, ব্লগ, ক্যাটেগরি ও ক্লাউড স্টোরেজ প্যানেল
+                      {language === "ja"
+                        ? "ブックストア・注文・ブログ・カテゴリー・クラウドストレージ管理"
+                        : language === "en"
+                          ? "Bookstore, Orders, Blog, Categories & Cloud Storage Panel"
+                          : "বুক স্টোর, অর্ডার, ব্লগ, ক্যাটেগরি ও ক্লাউড স্টোরেজ প্যানেল"}
                     </h2>
                   </div>
                   <p className="text-xs sm:text-sm text-slate-600 mt-1">
-                    আগের `/admin` প্যানেলের সব ফিচার (বই যোগ/এডিট, কভার আপলোড, অর্ডার ট্র্যাকিং, ব্লগ পোস্ট, রিভিউ মডারেশন ও বাকেট স্টোরেজ) এখন সরাসরি এখানেই সমন্বিত।
+                    {language === "ja"
+                      ? "書籍の追加・編集、表紙アップロード、注文追跡、ブログ記事、レビュー承認、バケットストレージをすべて一括管理できます。"
+                      : language === "en"
+                        ? "All bookstore products, cover image uploads, order tracking, blog articles, review moderation, and storage buckets unified in one workspace."
+                        : "আগের `/admin` প্যানেলের সব ফিচার (বই যোগ/এডিট, কভার আপলোড, অর্ডার ট্র্যাকিং, ব্লগ পোস্ট, রিভিউ মডারেশন ও বাকেট স্টোরেজ) এখন সরাসরি এখানেই সমন্বিত।"}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -2191,7 +2301,13 @@ export default function DashboardPage() {
                     target="_blank"
                     className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-stone-100 transition"
                   >
-                    <span>লাইভ বুক স্টোর</span>
+                    <span>
+                      {language === "ja"
+                        ? "ライブストア"
+                        : language === "en"
+                          ? "Live Bookstore"
+                          : "লাইভ বুক স্টোর"}
+                    </span>
                     <ExternalLink className="h-3.5 w-3.5" />
                   </Link>
                   <Link
@@ -2199,7 +2315,13 @@ export default function DashboardPage() {
                     target="_blank"
                     className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-stone-100 transition"
                   >
-                    <span>লাইভ ব্লগ পেইজ</span>
+                    <span>
+                      {language === "ja"
+                        ? "ライブブログ"
+                        : language === "en"
+                          ? "Live Blog Page"
+                          : "লাইভ ব্লগ পেইজ"}
+                    </span>
                     <ExternalLink className="h-3.5 w-3.5" />
                   </Link>
                   <button
@@ -2207,7 +2329,13 @@ export default function DashboardPage() {
                     className="inline-flex items-center gap-1.5 rounded-xl bg-[#b91c1c] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-red-800 transition"
                   >
                     <PlusCircle className="h-3.5 w-3.5" />
-                    <span>নতুন বই যোগ করুন</span>
+                    <span>
+                      {language === "ja"
+                        ? "新しい書籍を追加"
+                        : language === "en"
+                          ? "Add New Book"
+                          : "নতুন বই যোগ করুন"}
+                    </span>
                   </button>
                 </div>
               </div>
@@ -2215,45 +2343,85 @@ export default function DashboardPage() {
               {/* Sub-Navigation Pills for Merged Admin Modules */}
               <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-stone-100 pt-4">
                 {[
-                  { id: "summary", label: "সামগ্রিক চিত্র ও অ্যালার্ট", icon: Sparkles, count: 0 },
+                  {
+                    id: "summary",
+                    label:
+                      language === "ja"
+                        ? "概要・アラート"
+                        : language === "en"
+                          ? "Summary & Alerts"
+                          : "সামগ্রিক চিত্র ও অ্যালার্ট",
+                    icon: Sparkles,
+                    count: 0,
+                  },
                   {
                     id: "products",
-                    label: "বই ও পণ্য সম্ভার (Products)",
+                    label:
+                      language === "ja"
+                        ? "書籍・商品管理"
+                        : language === "en"
+                          ? "Books & Products"
+                          : "বই ও পণ্য সম্ভার (Products)",
                     icon: BookOpen,
                     count: adminBundle.products.length,
                     alert: adminBundle.summary?.lowStockProducts || 0,
                   },
                   {
                     id: "orders",
-                    label: "অনলাইন বুক অর্ডার (Orders)",
+                    label:
+                      language === "ja"
+                        ? "オンライン注文"
+                        : language === "en"
+                          ? "Book Orders"
+                          : "অনলাইন বুক অর্ডার (Orders)",
                     icon: ShoppingBag,
                     count: adminBundle.orders.length,
                     alert: adminBundle.summary?.pendingOrders || 0,
                   },
                   {
                     id: "blog",
-                    label: "ব্লগ ও আর্টিকেল (Blog CMS)",
+                    label:
+                      language === "ja"
+                        ? "ブログ・記事管理"
+                        : language === "en"
+                          ? "Blog & Articles"
+                          : "ব্লগ ও আর্টিকেল (Blog CMS)",
                     icon: FileText,
                     count: adminBundle.posts.length,
                     alert: 0,
                   },
                   {
                     id: "categories",
-                    label: "ক্যাটেগরি (Categories)",
+                    label:
+                      language === "ja"
+                        ? "カテゴリー管理"
+                        : language === "en"
+                          ? "Categories"
+                          : "ক্যাটেগরি (Categories)",
                     icon: Layers,
                     count: adminBundle.categories.length,
                     alert: 0,
                   },
                   {
                     id: "reviews",
-                    label: "কাস্টমার রিভিউ (Reviews)",
+                    label:
+                      language === "ja"
+                        ? "カスタマーレビュー"
+                        : language === "en"
+                          ? "Customer Reviews"
+                          : "কাস্টমার রিভিউ (Reviews)",
                     icon: Award,
                     count: adminBundle.reviews.length,
                     alert: adminBundle.summary?.pendingReviews || 0,
                   },
                   {
                     id: "uploads",
-                    label: "ক্লাউড মিডিয়া ও ডকুমেন্টস",
+                    label:
+                      language === "ja"
+                        ? "クラウドメディア・書類"
+                        : language === "en"
+                          ? "Cloud Media & Docs"
+                          : "ক্লাউড মিডিয়া ও ডকুমেন্টস",
                     icon: Database,
                     count: 0,
                     alert: 0,
@@ -2309,14 +2477,24 @@ export default function DashboardPage() {
                     className="text-left rounded-2xl border border-amber-200 bg-amber-50/70 p-5 hover:bg-amber-50 transition shadow-2xs group"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-amber-900 uppercase">পেন্ডিং বুক অর্ডার</span>
+                      <span className="text-xs font-bold text-amber-900 uppercase">
+                        {language === "ja"
+                          ? "保留中の注文"
+                          : language === "en"
+                            ? "Pending Book Orders"
+                            : "পেন্ডিং বুক অর্ডার"}
+                      </span>
                       <ShoppingBag className="h-4 w-4 text-amber-700 group-hover:scale-110 transition" />
                     </div>
                     <p className="mt-2 text-3xl font-black text-amber-950">
                       {adminBundle.summary?.pendingOrders ?? 0}
                     </p>
                     <p className="mt-1 text-[11px] font-semibold text-amber-800">
-                      অর্ডার কনফার্ম ও ডেলিভারি স্ট্যাটাস আপডেট করুন &rarr;
+                      {language === "ja"
+                        ? "注文確認と配送ステータスを更新 →"
+                        : language === "en"
+                          ? "Confirm orders & update delivery status →"
+                          : "অর্ডার কনফার্ম ও ডেলিভারি স্ট্যাটাস আপডেট করুন →"}
                     </p>
                   </button>
 
@@ -2325,14 +2503,24 @@ export default function DashboardPage() {
                     className="text-left rounded-2xl border border-purple-200 bg-purple-50/70 p-5 hover:bg-purple-50 transition shadow-2xs group"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-purple-900 uppercase">পেন্ডিং কাস্টমার রিভিউ</span>
+                      <span className="text-xs font-bold text-purple-900 uppercase">
+                        {language === "ja"
+                          ? "承認待ちレビュー"
+                          : language === "en"
+                            ? "Pending Customer Reviews"
+                            : "পেন্ডিং কাস্টমার রিভিউ"}
+                      </span>
                       <Award className="h-4 w-4 text-purple-700 group-hover:scale-110 transition" />
                     </div>
                     <p className="mt-2 text-3xl font-black text-purple-950">
                       {adminBundle.summary?.pendingReviews ?? 0}
                     </p>
                     <p className="mt-1 text-[11px] font-semibold text-purple-800">
-                      বইয়ের কাস্টমার রিভিউ অ্যাপ্রুভ বা রিজেক্ট করুন &rarr;
+                      {language === "ja"
+                        ? "カスタマーレビューを承認または却下 →"
+                        : language === "en"
+                          ? "Approve or reject customer book reviews →"
+                          : "বইয়ের কাস্টমার রিভিউ অ্যাপ্রুভ বা রিজেক্ট করুন →"}
                     </p>
                   </button>
 
@@ -2341,14 +2529,24 @@ export default function DashboardPage() {
                     className="text-left rounded-2xl border border-rose-200 bg-rose-50/70 p-5 hover:bg-rose-50 transition shadow-2xs group"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-rose-900 uppercase">লো-স্টক বই অ্যালার্ট (≤২)</span>
+                      <span className="text-xs font-bold text-rose-900 uppercase">
+                        {language === "ja"
+                          ? "在庫僅少アラート (≤2)"
+                          : language === "en"
+                            ? "Low-Stock Book Alert (≤2)"
+                            : "লো-স্টক বই অ্যালার্ট (≤২)"}
+                      </span>
                       <AlertCircle className="h-4 w-4 text-rose-700 group-hover:scale-110 transition" />
                     </div>
                     <p className="mt-2 text-3xl font-black text-rose-950">
                       {adminBundle.summary?.lowStockProducts ?? 0}
                     </p>
                     <p className="mt-1 text-[11px] font-semibold text-rose-800">
-                      ইনভেন্টরি স্টক ও বইয়ের মূল্য আপডেট করুন &rarr;
+                      {language === "ja"
+                        ? "在庫数と書籍価格を更新 →"
+                        : language === "en"
+                          ? "Update inventory stock and book pricing →"
+                          : "ইনভেন্টরি স্টক ও বইয়ের মূল্য আপডেট করুন →"}
                     </p>
                   </button>
 
@@ -2357,14 +2555,24 @@ export default function DashboardPage() {
                     className="text-left rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 hover:bg-emerald-50 transition shadow-2xs group"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-emerald-900 uppercase">নতুন ওয়েবসাইট লিডস</span>
+                      <span className="text-xs font-bold text-emerald-900 uppercase">
+                        {language === "ja"
+                          ? "新規ウェブサイトリード"
+                          : language === "en"
+                            ? "New Website Leads"
+                            : "নতুন ওয়েবসাইট লিডস"}
+                      </span>
                       <Users className="h-4 w-4 text-emerald-700 group-hover:scale-110 transition" />
                     </div>
                     <p className="mt-2 text-3xl font-black text-emerald-950">
                       {adminBundle.summary?.newLeads ?? 0}
                     </p>
                     <p className="mt-1 text-[11px] font-semibold text-emerald-800">
-                      ওয়েবসাইট ও চেকআউট লিড ফলো-আপ করুন &rarr;
+                      {language === "ja"
+                        ? "ウェブサイト・チェックアウトのリードをフォロー →"
+                        : language === "en"
+                          ? "Follow up on website & checkout leads →"
+                          : "ওয়েবসাইট ও চেকআউট লিড ফলো-আপ করুন →"}
                     </p>
                   </button>
                 </div>
@@ -2375,38 +2583,86 @@ export default function DashboardPage() {
                     onClick={() => setStoreSubTab("products")}
                     className="cursor-pointer rounded-2xl border border-stone-200 bg-white p-5 hover:border-emerald-400 transition shadow-2xs"
                   >
-                    <p className="text-xs font-bold text-slate-500">মোট বই ও স্টোর পণ্য (Total Products)</p>
+                    <p className="text-xs font-bold text-slate-500">
+                      {language === "ja"
+                        ? "総書籍・ストア商品数"
+                        : language === "en"
+                          ? "Total Books & Store Products"
+                          : "মোট বই ও স্টোর পণ্য (Total Products)"}
+                    </p>
                     <p className="mt-2 text-3xl font-black text-slate-900">
                       {adminBundle.summary?.totalProducts ?? adminBundle.products.length}
                     </p>
-                    <p className="mt-1 text-[11px] font-bold text-emerald-700">পণ্য তালিকা ও এডিটর খুলুন &rarr;</p>
+                    <p className="mt-1 text-[11px] font-bold text-emerald-700">
+                      {language === "ja"
+                        ? "商品一覧・エディターを開く →"
+                        : language === "en"
+                          ? "Open product list & editor →"
+                          : "পণ্য তালিকা ও এডিটর খুলুন →"}
+                    </p>
                   </div>
 
                   <div
                     onClick={() => setStoreSubTab("blog")}
                     className="cursor-pointer rounded-2xl border border-stone-200 bg-white p-5 hover:border-emerald-400 transition shadow-2xs"
                   >
-                    <p className="text-xs font-bold text-slate-500">মোট ব্লগ আর্টিকেল (Total Blog Posts)</p>
+                    <p className="text-xs font-bold text-slate-500">
+                      {language === "ja"
+                        ? "総ブログ記事数"
+                        : language === "en"
+                          ? "Total Blog Articles"
+                          : "মোট ব্লগ আর্টিকেল (Total Blog Posts)"}
+                    </p>
                     <p className="mt-2 text-3xl font-black text-slate-900">
                       {adminBundle.summary?.totalBlogPosts ?? adminBundle.posts.length}
                     </p>
-                    <p className="mt-1 text-[11px] font-bold text-emerald-700">ব্লগ এডিটর খুলুন &rarr;</p>
+                    <p className="mt-1 text-[11px] font-bold text-emerald-700">
+                      {language === "ja"
+                        ? "ブログエディターを開く →"
+                        : language === "en"
+                          ? "Open blog editor →"
+                          : "ব্লগ এডিটর খুলুন →"}
+                    </p>
                   </div>
 
                   <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-2xs">
-                    <p className="text-xs font-bold text-slate-500">পাবলিশড কনটেন্ট (Published Items)</p>
+                    <p className="text-xs font-bold text-slate-500">
+                      {language === "ja"
+                        ? "公開済みコンテンツ"
+                        : language === "en"
+                          ? "Published Content"
+                          : "পাবলিশড কনটেন্ট (Published Items)"}
+                    </p>
                     <p className="mt-2 text-3xl font-black text-emerald-700">
                       {adminBundle.summary?.totalPublished ?? 0}
                     </p>
-                    <p className="mt-1 text-[11px] text-slate-500">ওয়েবসাইটে লাইভ প্রদর্শিত বই ও ব্লগ</p>
+                    <p className="mt-1 text-[11px] text-slate-500">
+                      {language === "ja"
+                        ? "サイト上で公開中の書籍とブログ"
+                        : language === "en"
+                          ? "Live books and blog posts on website"
+                          : "ওয়েবসাইটে লাইভ প্রদর্শিত বই ও ব্লগ"}
+                    </p>
                   </div>
 
                   <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-2xs">
-                    <p className="text-xs font-bold text-slate-500">ড্রাফট কনটেন্ট (Draft Items)</p>
+                    <p className="text-xs font-bold text-slate-500">
+                      {language === "ja"
+                        ? "下書きコンテンツ"
+                        : language === "en"
+                          ? "Draft Content"
+                          : "ড্রাফট কনটেন্ট (Draft Items)"}
+                    </p>
                     <p className="mt-2 text-3xl font-black text-amber-600">
                       {adminBundle.summary?.totalDrafts ?? 0}
                     </p>
-                    <p className="mt-1 text-[11px] text-slate-500">অপ্রকাশিত খসড়া পণ্য ও আর্টিকেল</p>
+                    <p className="mt-1 text-[11px] text-slate-500">
+                      {language === "ja"
+                        ? "未公開の下書き商品・記事"
+                        : language === "en"
+                          ? "Unpublished draft products and articles"
+                          : "অপ্রকাশিত খসড়া পণ্য ও আর্টিকেল"}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -2417,16 +2673,30 @@ export default function DashboardPage() {
               <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-xs">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="text-lg font-black text-slate-900">বই ও স্টোর পণ্য ব্যবস্থাপনা (Product Manager)</h3>
+                    <h3 className="text-lg font-black text-slate-900">
+                      {language === "ja"
+                        ? "書籍・ストア商品管理 (Product Manager)"
+                        : language === "en"
+                          ? "Books & Store Product Management"
+                          : "বই ও স্টোর পণ্য ব্যবস্থাপনা (Product Manager)"}
+                    </h3>
                     <p className="text-xs text-slate-500">
-                      নতুন বই যুক্ত করুন, কভার ছবি `knltc-media` বাকেটে আপলোড করুন এবং স্টক ও মূল্য হালনাগাদ করুন
+                      {language === "ja"
+                        ? "新しい書籍の追加、`knltc-media`バケットへの表紙画像アップロード、在庫・価格の更新"
+                        : language === "en"
+                          ? "Add new books, upload cover images to `knltc-media` bucket, and update stock & pricing"
+                          : "নতুন বই যুক্ত করুন, কভার ছবি `knltc-media` বাকেটে আপলোড করুন এবং স্টক ও মূল্য হালনাগাদ করুন"}
                     </p>
                   </div>
                   <button
                     onClick={() => setStoreSubTab("categories")}
                     className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-stone-100"
                   >
-                    ক্যাটেগরি ম্যানেজ করুন &rarr;
+                    {language === "ja"
+                      ? "カテゴリー管理 →"
+                      : language === "en"
+                        ? "Manage Categories →"
+                        : "ক্যাটেগরি ম্যানেজ করুন →"}
                   </button>
                 </div>
                 <ProductManager
@@ -2440,9 +2710,19 @@ export default function DashboardPage() {
             {storeSubTab === "orders" && (
               <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-xs">
                 <div className="mb-4">
-                  <h3 className="text-lg font-black text-slate-900">অনলাইন বুক অর্ডার ও ডেলিভারি ট্র্যাকার (Order Manager)</h3>
+                  <h3 className="text-lg font-black text-slate-900">
+                    {language === "ja"
+                      ? "オンライン書籍注文・配送トラッカー (Order Manager)"
+                      : language === "en"
+                        ? "Online Book Orders & Delivery Tracker"
+                        : "অনলাইন বুক অর্ডার ও ডেলিভারি ট্র্যাকার (Order Manager)"}
+                  </h3>
                   <p className="text-xs text-slate-500">
-                    কাস্টমারদের অর্ডার তালিকা, ডেলিভারি ঠিকানা এবং স্ট্যাটাস (`pending`, `confirmed`, `processing`, `delivered`, `cancelled`) পরিবর্তন করুন
+                    {language === "ja"
+                      ? "顧客の注文一覧、配送先住所、注文ステータスを更新します"
+                      : language === "en"
+                        ? "View customer orders, delivery addresses, and update order status (`pending`, `confirmed`, `processing`, `delivered`, `cancelled`)"
+                        : "কাস্টমারদের অর্ডার তালিকা, ডেলিভারি ঠিকানা এবং স্ট্যাটাস (`pending`, `confirmed`, `processing`, `delivered`, `cancelled`) পরিবর্তন করুন"}
                   </p>
                 </div>
                 {adminBundle.ordersWarning ? (
@@ -2459,16 +2739,30 @@ export default function DashboardPage() {
               <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-xs">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="text-lg font-black text-slate-900">ব্লগ পোস্ট ও ভিসা গাইডলাইন এডিটর (Blog Manager)</h3>
+                    <h3 className="text-lg font-black text-slate-900">
+                      {language === "ja"
+                        ? "ブログ記事・ビザガイドライン編集 (Blog Manager)"
+                        : language === "en"
+                          ? "Blog Posts & Visa Guidelines Editor"
+                          : "ব্লগ পোস্ট ও ভিসা গাইডলাইন এডিটর (Blog Manager)"}
+                    </h3>
                     <p className="text-xs text-slate-500">
-                      রিচ টেক্সট এডিটরের মাধ্যমে নতুন আর্টিকেল, ছবি ও জাপান স্টাডি গাইডলাইন লিখুন ও প্রকাশ করুন
+                      {language === "ja"
+                        ? "リッチテキストエディターを使用して新しい記事や日本留学ガイドを作成・公開します"
+                        : language === "en"
+                          ? "Write and publish new articles, images, and Japan study guidelines using the rich text editor"
+                          : "রিচ টেক্সট এডিটরের মাধ্যমে নতুন আর্টিকেল, ছবি ও জাপান স্টাডি গাইডলাইন লিখুন ও প্রকাশ করুন"}
                     </p>
                   </div>
                   <button
                     onClick={() => setStoreSubTab("categories")}
                     className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-stone-100"
                   >
-                    ব্লগ ক্যাটেগরি &rarr;
+                    {language === "ja"
+                      ? "ブログカテゴリー →"
+                      : language === "en"
+                        ? "Blog Categories →"
+                        : "ব্লগ ক্যাটেগরি →"}
                   </button>
                 </div>
                 <BlogManager
@@ -2482,9 +2776,19 @@ export default function DashboardPage() {
             {storeSubTab === "categories" && (
               <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-xs">
                 <div className="mb-4">
-                  <h3 className="text-lg font-black text-slate-900">বই ও ব্লগ ক্যাটেগরি ব্যবস্থাপনা (Category Manager)</h3>
+                  <h3 className="text-lg font-black text-slate-900">
+                    {language === "ja"
+                      ? "書籍・ブログカテゴリー管理 (Category Manager)"
+                      : language === "en"
+                        ? "Book & Blog Category Management"
+                        : "বই ও ব্লগ ক্যাটেগরি ব্যবস্থাপনা (Category Manager)"}
+                  </h3>
                   <p className="text-xs text-slate-500">
-                    বুক স্টোরের পণ্য এবং ব্লগের জন্য নতুন ক্যাটেগরি তৈরি বা মুছে ফেলুন
+                    {language === "ja"
+                      ? "ブックストア商品およびブログ記事のカテゴリーを作成・削除します"
+                      : language === "en"
+                        ? "Create or remove categories for bookstore products and blog posts"
+                        : "বুক স্টোরের পণ্য এবং ব্লগের জন্য নতুন ক্যাটেগরি তৈরি বা মুছে ফেলুন"}
                   </p>
                 </div>
                 <CategoryManager initialCategories={adminBundle.categories} />
@@ -2495,9 +2799,19 @@ export default function DashboardPage() {
             {storeSubTab === "reviews" && (
               <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-xs">
                 <div className="mb-4">
-                  <h3 className="text-lg font-black text-slate-900">কাস্টমার প্রোডাক্ট রিভিউ মডারেশন (Review Manager)</h3>
+                  <h3 className="text-lg font-black text-slate-900">
+                    {language === "ja"
+                      ? "カスタマー商品レビュー承認管理 (Review Manager)"
+                      : language === "en"
+                        ? "Customer Product Review Moderation"
+                        : "কাস্টমার প্রোডাক্ট রিভিউ মডারেশন (Review Manager)"}
+                  </h3>
                   <p className="text-xs text-slate-500">
-                    পাঠক ও শিক্ষার্থীদের পাঠানো বুক রিভিউ এবং স্টার রেটিং যাচাই করে ওয়েবসাইটে প্রকাশের অনুমোদন দিন
+                    {language === "ja"
+                      ? "読者や受講生から送信されたブックレビューと星評価を確認し、公開を承認します"
+                      : language === "en"
+                        ? "Review and approve reader & student book reviews and star ratings for public display"
+                        : "পাঠক ও শিক্ষার্থীদের পাঠানো বুক রিভিউ এবং স্টার রেটিং যাচাই করে ওয়েবসাইটে প্রকাশের অনুমোদন দিন"}
                   </p>
                 </div>
                 <ReviewManager initialReviews={adminBundle.reviews} />
@@ -2511,22 +2825,48 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-2">
                     <Database className="h-5 w-5 text-emerald-600" />
                     <h3 className="font-extrabold text-base text-slate-900">
-                      Supabase Storage ডক ও মিডিয়া ম্যানেজার (Storage Buckets)
+                      {language === "ja"
+                        ? "Supabase ストレージ 書類・メディア管理 (Storage Buckets)"
+                        : language === "en"
+                          ? "Supabase Storage Documents & Media Manager"
+                          : "Supabase Storage ডক ও মিডিয়া ম্যানেজার (Storage Buckets)"}
                     </h3>
                   </div>
                   <span className="text-xs font-mono text-slate-400">knltc-documents & knltc-media</span>
                 </div>
                 <p className="text-xs text-slate-600 mb-4">
-                  ভিসা প্রার্থীদের পাসপোর্ট কপি, অ্যাকাডেমিক সনদপত্র এবং বই বা ওয়েবসাইটের ব্যানার ছবি সরাসরি Supabase ক্লাউড স্টোরেজে আপলোড করুন:
+                  {language === "ja"
+                    ? "ビザ申請者のパスポートコピー、学歴証明書、書籍カバーやバナー画像をSupabaseクラウドストレージに直接アップロードします:"
+                    : language === "en"
+                      ? "Upload visa applicant passport copies, academic certificates, and book covers or banner images directly to Supabase Cloud Storage:"
+                      : "ভিসা প্রার্থীদের পাসপোর্ট কপি, অ্যাকাডেমিক সনদপত্র এবং বই বা ওয়েবসাইটের ব্যানার ছবি সরাসরি Supabase ক্লাউড স্টোরেজে আপলোড করুন:"}
                 </p>
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="rounded-xl border border-dashed border-stone-300 p-5 bg-stone-50/60 flex flex-col items-center justify-center text-center">
                     <FileCheck2 className="h-8 w-8 text-emerald-600 mb-2" />
-                    <h4 className="text-xs font-bold text-slate-900">ভিসা ফাইল ডকুমেন্ট (knltc-documents)</h4>
-                    <p className="text-[11px] text-slate-500 mt-1 mb-3">PDF, DOC, স্ক্যান কপি (সর্বোচ্চ ১৫ মেগাবাইট)</p>
+                    <h4 className="text-xs font-bold text-slate-900">
+                      {language === "ja"
+                        ? "ビザ申請書類 (knltc-documents)"
+                        : language === "en"
+                          ? "Visa File Documents (knltc-documents)"
+                          : "ভিসা ফাইল ডকুমেন্ট (knltc-documents)"}
+                    </h4>
+                    <p className="text-[11px] text-slate-500 mt-1 mb-3">
+                      {language === "ja"
+                        ? "PDF, DOC, スキャンコピー (最大15MB)"
+                        : language === "en"
+                          ? "PDF, DOC, Scanned Copies (Max 15MB)"
+                          : "PDF, DOC, স্ক্যান কপি (সর্বোচ্চ ১৫ মেগাবাইট)"}
+                    </p>
                     <label className="cursor-pointer inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white px-3.5 py-1.5 text-xs font-bold transition shadow-xs">
-                      <span>ডকুমেন্ট ফাইল নির্বাচন করুন</span>
+                      <span>
+                        {language === "ja"
+                          ? "書類ファイルを選択"
+                          : language === "en"
+                            ? "Select Document File"
+                            : "ডকুমেন্ট ফাইল নির্বাচন করুন"}
+                      </span>
                       <input
                         type="file"
                         className="hidden"
@@ -2537,17 +2877,29 @@ export default function DashboardPage() {
                           fd.append("file", file);
                           fd.append("trackingNo", "DOC-" + Date.now().toString().slice(-4));
                           fd.append("docType", "verified_doc");
-                          showToast("ডকুমেন্ট আপলোড হচ্ছে...");
+                          showToast(
+                            language === "ja"
+                              ? "書類をアップロード中..."
+                              : language === "en"
+                                ? "Uploading document..."
+                                : "ডকুমেন্ট আপলোড হচ্ছে...",
+                          );
                           try {
                             const res = await fetch("/api/cms/documents", { method: "POST", body: fd });
                             const json = await res.json();
                             if (json.ok) {
-                              showToast(`আপলোড সফল! ফাইলের লিঙ্ক: ${json.url}`);
+                              showToast(
+                                language === "ja"
+                                  ? `アップロード完了: ${json.url}`
+                                  : language === "en"
+                                    ? `Upload complete! URL: ${json.url}`
+                                    : `আপলোড সফল! ফাইলের লিঙ্ক: ${json.url}`,
+                              );
                             } else {
-                              showToast(json.error || "আপলোড ব্যর্থ হয়েছে");
+                              showToast(json.error || "Upload failed");
                             }
                           } catch {
-                            showToast("আপলোড সংযোগে ত্রুটি");
+                            showToast("Upload connection error");
                           }
                         }}
                       />
@@ -2556,10 +2908,28 @@ export default function DashboardPage() {
 
                   <div className="rounded-xl border border-dashed border-stone-300 p-5 bg-stone-50/60 flex flex-col items-center justify-center text-center">
                     <ShoppingBag className="h-8 w-8 text-indigo-600 mb-2" />
-                    <h4 className="text-xs font-bold text-slate-900">বইয়ের কভার ও ব্যানার ছবি (knltc-media)</h4>
-                    <p className="text-[11px] text-slate-500 mt-1 mb-3">JPG, PNG, WEBP (সর্বোচ্চ ৫ মেগাবাইট)</p>
+                    <h4 className="text-xs font-bold text-slate-900">
+                      {language === "ja"
+                        ? "書籍カバー・バナー画像 (knltc-media)"
+                        : language === "en"
+                          ? "Book Covers & Banner Images (knltc-media)"
+                          : "বইয়ের কভার ও ব্যানার ছবি (knltc-media)"}
+                    </h4>
+                    <p className="text-[11px] text-slate-500 mt-1 mb-3">
+                      {language === "ja"
+                        ? "JPG, PNG, WEBP (最大5MB)"
+                        : language === "en"
+                          ? "JPG, PNG, WEBP (Max 5MB)"
+                          : "JPG, PNG, WEBP (সর্বোচ্চ ৫ মেগাবাইট)"}
+                    </p>
                     <label className="cursor-pointer inline-flex items-center gap-1.5 rounded-lg bg-indigo-700 hover:bg-indigo-800 text-white px-3.5 py-1.5 text-xs font-bold transition shadow-xs">
-                      <span>ছবি ফাইল নির্বাচন করুন</span>
+                      <span>
+                        {language === "ja"
+                          ? "画像ファイルを選択"
+                          : language === "en"
+                            ? "Select Image File"
+                            : "ছবি ফাইল নির্বাচন করুন"}
+                      </span>
                       <input
                         type="file"
                         accept="image/*"
@@ -2570,17 +2940,29 @@ export default function DashboardPage() {
                           const fd = new FormData();
                           fd.append("file", file);
                           fd.append("bucket", "knltc-media");
-                          showToast("ছবি আপলোড হচ্ছে...");
+                          showToast(
+                            language === "ja"
+                              ? "画像をアップロード中..."
+                              : language === "en"
+                                ? "Uploading image..."
+                                : "ছবি আপলোড হচ্ছে...",
+                          );
                           try {
                             const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
                             const json = await res.json();
                             if (json.url) {
-                              showToast(`ছবি আপলোড সফল! লিঙ্ক: ${json.url}`);
+                              showToast(
+                                language === "ja"
+                                  ? `画像アップロード完了: ${json.url}`
+                                  : language === "en"
+                                    ? `Image uploaded! URL: ${json.url}`
+                                    : `ছবি আপলোড সফল! লিঙ্ক: ${json.url}`,
+                              );
                             } else {
-                              showToast(json.error || "আপলোড ব্যর্থ হয়েছে");
+                              showToast(json.error || "Upload failed");
                             }
                           } catch {
-                            showToast("আপলোড সংযোগে ত্রুটি");
+                            showToast("Upload connection error");
                           }
                         }}
                       />

@@ -7,19 +7,16 @@ import { AnimatePresence, motion } from "motion/react";
 import {
   BookOpen,
   BriefcaseBusiness,
-  ExternalLink,
   Globe,
   GraduationCap,
   Home,
   Languages,
-  LayoutDashboard,
-  Mail,
-  MapPin,
   Menu,
   MessageCircle,
   Phone,
   PhoneCall,
   ShoppingBag,
+  UserCheck,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -66,11 +63,9 @@ function MainHeader({ pathname }: { pathname: string }) {
             whatsapp: "WhatsApp",
             toggleMenu: "Toggle menu",
             language: "Language",
-            lmsLogin: "Student LMS Login",
-            address: "Naya Paltan, Dhaka",
-            directLmsTitle: "Official Student LMS Portal",
-            dashboard: "Dashboard",
-            dashboardTitle: "KNLTC Central Dashboard & CMS",
+            authBtn: "Registration / Login",
+            authBtnShort: "Login / Register",
+            authSub: "Student & Applicant Portal",
           },
           bn: {
             nav: [
@@ -86,11 +81,9 @@ function MainHeader({ pathname }: { pathname: string }) {
             whatsapp: "হোয়াটসঅ্যাপ",
             toggleMenu: "মেনু খুলুন",
             language: "ভাষা",
-            lmsLogin: "শিক্ষার্থী LMS লগইন",
-            address: "নয়া পল্টন, ঢাকা",
-            directLmsTitle: "অফিশিয়াল শিক্ষার্থী LMS পোর্টাল",
-            dashboard: "ড্যাশবোর্ড",
-            dashboardTitle: "KNLTC সেন্ট্রাল ড্যাশবোর্ড ও সিএমএস",
+            authBtn: "রেজিস্ট্রেশন / লগইন",
+            authBtnShort: "রেজিস্ট্রেশন / লগইন",
+            authSub: "শিক্ষার্থী ও প্রার্থী পোর্টাল",
           },
           ja: {
             nav: [
@@ -106,11 +99,9 @@ function MainHeader({ pathname }: { pathname: string }) {
             whatsapp: "WhatsApp",
             toggleMenu: "メニュー切替",
             language: "言語",
-            lmsLogin: "受講生 LMSログイン",
-            address: "ダッカ・パルタン本部",
-            directLmsTitle: "公式受講生LMSポータル",
-            dashboard: "ダッシュボード",
-            dashboardTitle: "KNLTC ダッシュボード＆CMS",
+            authBtn: "登録 / ログイン",
+            authBtnShort: "登録 / ログイン",
+            authSub: "受講生・応募者ポータル",
           },
         },
         language,
@@ -167,7 +158,7 @@ function MainHeader({ pathname }: { pathname: string }) {
       <div className="bg-[#b91c1c] text-white text-[11px] sm:text-xs font-medium py-1.5 border-b border-red-800/40 relative z-40">
         <div className="container-narrow flex items-center justify-between gap-3">
           {/* Left contact info */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3.5">
             <a
               href={siteConfig.phoneHref}
               className="flex items-center gap-1.5 opacity-90 hover:opacity-100 transition-opacity"
@@ -176,39 +167,21 @@ function MainHeader({ pathname }: { pathname: string }) {
               <span>{siteConfig.phoneDisplay}</span>
             </a>
 
-            <span className="text-white/40 hidden sm:inline">|</span>
+            <span className="text-white/40">|</span>
 
             <a
               href={siteConfig.whatsappHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden sm:flex items-center gap-1.5 opacity-90 hover:opacity-100 transition-opacity"
+              className="flex items-center gap-1.5 opacity-90 hover:opacity-100 transition-opacity font-semibold"
             >
-              <MessageCircle className="h-3 w-3 text-emerald-300" />
-              <span>WhatsApp: {siteConfig.whatsappDisplay}</span>
+              <MessageCircle className="h-3.5 w-3.5 text-emerald-300" />
+              <span>{t.whatsapp}</span>
             </a>
           </div>
 
-          {/* Right location & quick info */}
+          {/* Right Language Switcher */}
           <div className="flex items-center gap-3">
-            <span className="hidden md:flex items-center gap-1 opacity-80">
-              <MapPin className="h-3 w-3 text-red-200" />
-              <span>{t.address}</span>
-            </span>
-
-            <span className="text-white/40 hidden md:inline">|</span>
-
-            {/* Dashboard Link */}
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-1.5 rounded-md bg-black/25 hover:bg-black/45 px-2.5 py-0.5 text-[11px] font-bold text-white transition-colors duration-150 border border-white/15 shadow-2xs"
-              title={t.dashboardTitle}
-            >
-              <LayoutDashboard className="h-3 w-3 text-red-200 shrink-0" />
-              <span className="tracking-wide">{t.dashboard}</span>
-            </Link>
-
-            {/* Top Language Switcher */}
             <div className="flex items-center gap-1.5 bg-black/20 rounded-lg px-2 py-0.5 hover:bg-black/30 transition-colors">
               <Globe className="h-3 w-3 text-red-200" />
               <select
@@ -277,25 +250,20 @@ function MainHeader({ pathname }: { pathname: string }) {
 
           {/* Right Action Cluster */}
           <div className="hidden lg:flex shrink-0 items-center gap-2">
-            {/* High-Visibility Student LMS Login with Live Pulse */}
-            <motion.a
-              href="https://npw.bd/knltc"
-              target="_blank"
-              rel="noopener noreferrer"
+            {/* Registration or Login Option */}
+            <motion.div
               whileHover={{ y: -1 }}
               whileTap={{ scale: 0.97 }}
               transition={{ duration: 0.15 }}
-              className="inline-flex h-8 xl:h-8.5 items-center gap-1.5 rounded-lg border border-red-300 bg-red-50/80 hover:bg-red-100 px-2.5 xl:px-3 text-[11px] xl:text-[11.5px] font-semibold text-[#b91c1c] shadow-2xs transition-colors"
-              title="Enter Official KNLTC Student LMS Classroom"
             >
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#b91c1c]"></span>
-              </span>
-              <GraduationCap className="h-3.5 w-3.5 text-[#b91c1c]" />
-              <span>{t.lmsLogin}</span>
-              <ExternalLink className="h-2.5 w-2.5 opacity-75" />
-            </motion.a>
+              <Link
+                href="/admin/login"
+                className="inline-flex h-8 xl:h-8.5 items-center gap-1.5 rounded-lg border border-red-300 bg-red-50/80 hover:bg-red-100 px-2.5 xl:px-3 text-[11px] xl:text-[11.5px] font-semibold text-[#b91c1c] shadow-2xs transition-colors"
+              >
+                <UserCheck className="h-3.5 w-3.5 text-[#b91c1c]" />
+                <span>{t.authBtn}</span>
+              </Link>
+            </motion.div>
 
             {/* Free Consultation CTA */}
             <motion.div whileHover={{ y: -1 }} whileTap={{ scale: 0.97 }} transition={{ duration: 0.15 }}>
@@ -311,18 +279,14 @@ function MainHeader({ pathname }: { pathname: string }) {
 
           {/* Tablet & Mobile Right Bar (< 1024px) */}
           <div className="flex shrink-0 items-center gap-2 lg:hidden">
-            {/* Direct LMS Access Badge on Mobile */}
-            <a
-              href="https://npw.bd/knltc"
-              target="_blank"
-              rel="noopener noreferrer"
+            {/* Direct Registration / Login Button on Mobile */}
+            <Link
+              href="/admin/login"
               className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-[11px] font-bold text-[#b91c1c] shadow-2xs active:scale-95 transition-transform"
             >
-              <span className="h-1.5 w-1.5 rounded-full bg-[#b91c1c] animate-pulse" />
-              <GraduationCap className="h-3.5 w-3.5" />
-              <span>LMS</span>
-              <ExternalLink className="h-3 w-3" />
-            </a>
+              <UserCheck className="h-3.5 w-3.5" />
+              <span>{t.authBtnShort}</span>
+            </Link>
 
             {/* Mobile Menu Hamburger */}
             <button
@@ -376,26 +340,23 @@ function MainHeader({ pathname }: { pathname: string }) {
                   })}
                 </div>
 
-                {/* High-Visibility LMS Banner in Drawer */}
+                {/* Registration / Login Banner in Drawer */}
                 <div className="pt-2 border-t border-stone-100 space-y-2">
-                  <a
-                    href="https://npw.bd/knltc"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <Link
+                    href="/admin/login"
                     className="flex items-center justify-between rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-xs font-bold text-[#b91c1c] shadow-2xs hover:bg-red-100 active:scale-[0.99] transition"
                     onClick={() => setMobileOpen(false)}
                   >
                     <div className="flex items-center gap-2.5">
                       <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100 text-[#b91c1c]">
-                        <GraduationCap className="h-4 w-4" />
+                        <UserCheck className="h-4 w-4" />
                       </div>
                       <div>
-                        <span className="block text-xs font-extrabold">{t.lmsLogin}</span>
-                        <span className="block text-[10px] text-red-700/80 font-medium">Official Student Portal</span>
+                        <span className="block text-xs font-extrabold">{t.authBtn}</span>
+                        <span className="block text-[10px] text-red-700/80 font-medium">{t.authSub}</span>
                       </div>
                     </div>
-                    <ExternalLink className="h-4 w-4 shrink-0 text-[#b91c1c]" />
-                  </a>
+                  </Link>
 
                   {/* Free Consultation CTA */}
                   <Button
@@ -407,15 +368,6 @@ function MainHeader({ pathname }: { pathname: string }) {
                       {t.cta}
                     </Link>
                   </Button>
-
-                  {/* Dashboard Link */}
-                  <Link
-                    href="/dashboard"
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center justify-center gap-1.5 w-full rounded-xl border border-stone-200 bg-stone-100 hover:bg-stone-200 text-slate-800 font-bold text-xs py-2.5 transition"
-                  >
-                    <span>{t.dashboard}</span>
-                  </Link>
                 </div>
 
                 {/* Quick Contacts */}
@@ -431,7 +383,7 @@ function MainHeader({ pathname }: { pathname: string }) {
                     className="flex items-center gap-1 text-[#15803d] font-bold hover:underline"
                   >
                     <MessageCircle className="h-3.5 w-3.5" />
-                    <span>WhatsApp</span>
+                    <span>{t.whatsapp}</span>
                   </a>
                 </div>
               </nav>

@@ -1,19 +1,16 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import {
   UserCheck,
   FileCheck2,
   GraduationCap,
-  ShieldCheck,
   ExternalLink,
-  Phone,
-  MapPin,
-  Award,
   CheckCircle2,
-  Clock,
 } from "lucide-react";
 import type { CrmLead, VisaApplicant, LmsUserBridge } from "@/lib/knltc-cms-store";
+import { useLanguage } from "@/components/layout/LanguageProvider";
+import { translate } from "@/lib/i18n";
 
 export default function StudentProfileView({
   lead,
@@ -28,7 +25,156 @@ export default function StudentProfileView({
   userEmail: string;
   userName: string;
 }) {
+  const { language } = useLanguage();
   const currentStage = visaApplicant?.stage || 1;
+
+  const t = useMemo(
+    () =>
+      translate(
+        {
+          en: {
+            portalBadge: "Enrolled Student & File Portal",
+            loginIdPrefix: "Login ID:",
+            phonePrefix: "Phone:",
+            lmsBtn: "LMS Online Classroom",
+            card1Title: "Enrollment & File Status",
+            card1Admitted: "Admitted & File Opened",
+            card1Active: "Active Profile",
+            card2Title: "Target Japanese Institution",
+            card2Package: "Package:",
+            card3Title: "Language Course & LMS Progress",
+            card3DefaultBatch: "Regular Live Batch",
+            card4Title: "Assigned Counselor & Branch",
+            branchPrefix: "Branch:",
+            branchDhaka: "Dhaka HQ",
+            branchKhulna: "Khulna Branch",
+            bioHeading: "Personal & Academic Information",
+            fullName: "Full Name:",
+            phoneWa: "Phone & WhatsApp:",
+            cityAddress: "City & Address:",
+            passport: "Passport No:",
+            passportProcessing: "In Process",
+            education: "Education:",
+            gpaResult: "GPA / Result:",
+            guardianSponsor: "Guardian / Sponsor:",
+            guardianDefault: "Designated Guardian",
+            counselorNotes: "Counselor Remarks / Notes:",
+            defaultNote: "Your visa file and language course progress are under regular supervision.",
+            visaHeading: "Your Visa File Processing Progress (10 Stages)",
+            currentStageLabel: "Current Stage:",
+            statusCurrent: "In Progress",
+            statusCompleted: "Completed",
+            statusPending: "Upcoming",
+            steps: [
+              { step: 1, title: "File Opening & Profile Registration (৳0 Advance)" },
+              { step: 2, title: "Japanese Language Training (JLPT N5 / N4)" },
+              { step: 3, title: "Academic & Sponsor Document Translation & Notary" },
+              { step: 4, title: "Zoom Interview with Japanese School / Company" },
+              { step: 5, title: "COE Application Submission to Japan Immigration Bureau" },
+              { step: 6, title: "Pre-Visa (COE - Certificate of Eligibility) Approval" },
+              { step: 7, title: "College Tuition Fee Transfer & Original COE Collection" },
+              { step: 8, title: "Japan Embassy Interview Prep & VFS Submission" },
+              { step: 9, title: "Visa Stamping in Passport & Service Charge Settlement" },
+              { step: 10, title: "Air Ticket, Airport Pickup & Part-Time Job Support in Japan" },
+            ],
+          },
+          bn: {
+            portalBadge: "ভর্তিকৃত প্রোফাইল ও ফাইল পোর্টাল",
+            loginIdPrefix: "লগইন আইডি:",
+            phonePrefix: "ফোন:",
+            lmsBtn: "LMS অনলাইন ক্লাসরুম",
+            card1Title: "ভর্তি ও ফাইল স্ট্যাটাস",
+            card1Admitted: "ভর্তি ও ফাইল ওপেনকৃত",
+            card1Active: "সক্রিয় প্রোফাইল",
+            card2Title: "টার্গেট জাপানি প্রতিষ্ঠান",
+            card2Package: "প্যাকেজ:",
+            card3Title: "ভাষা কোর্স ও LMS অগ্রগতি",
+            card3DefaultBatch: "নিয়মিত লাইভ ব্যাচ",
+            card4Title: "দায়িত্বপ্রাপ্ত কাউন্সিলর ও শাখা",
+            branchPrefix: "শাখা:",
+            branchDhaka: "ঢাকা প্রধান কার্যালয়",
+            branchKhulna: "খুলনা শাখা",
+            bioHeading: "ব্যক্তিগত ও একাডেমিক বিবরণী",
+            fullName: "পূর্ণ নাম:",
+            phoneWa: "ফোন ও WhatsApp:",
+            cityAddress: "শহর ও ঠিকানা:",
+            passport: "পাসপোর্ট নম্বর:",
+            passportProcessing: "প্রক্রিয়াধীন",
+            education: "শিক্ষাগত যোগ্যতা:",
+            gpaResult: "GPA / রেজাল্ট:",
+            guardianSponsor: "অভিভাবক / স্পন্সর:",
+            guardianDefault: "নির্ধারিত অভিভাবক",
+            counselorNotes: "কাউন্সিলর মন্তব্য / নোটস:",
+            defaultNote: "আপনার ফাইল ও কোর্স কার্যক্রম নিয়মিত তদারকি করা হচ্ছে।",
+            visaHeading: "আপনার ভিসা ফাইল প্রসেসিং অগ্রগতি (১০ ধাপ)",
+            currentStageLabel: "বর্তমান ধাপ:",
+            statusCurrent: "চলমান ধাপ",
+            statusCompleted: "সম্পন্ন",
+            statusPending: "অপেক্ষমাণ",
+            steps: [
+              { step: 1, title: "ফাইল ওপেনিং ও প্রোফাইল নিবন্ধন (৳০ অগ্রিম)" },
+              { step: 2, title: "জাপানি ভাষা প্রশিক্ষণ (JLPT N5 / N4)" },
+              { step: 3, title: "একাডেমিক ও স্পন্সর ডকুমেন্ট অনুবাদ এবং নোটারি" },
+              { step: 4, title: "জাপানি স্কুল / কোম্পানির সাথে জুম ইন্টারভিউ" },
+              { step: 5, title: "জাপান ইমিগ্রেশন ব্যুরোতে COE আবেদন জমাদান" },
+              { step: 6, title: "প্রি-ভিসা (COE - Certificate of Eligibility) অনুমোদন" },
+              { step: 7, title: "কলেজ টিউশন ফি প্রেরণ ও মূল COE সংগ্রহ" },
+              { step: 8, title: "জাপান এম্বাসি ইন্টারভিউ প্রিপারেশন ও VFS আবেদন" },
+              { step: 9, title: "পাসপোর্টে ভিসা সিলমোহর ও সার্ভিস চার্জ নিষ্পত্তি" },
+              { step: 10, title: "এয়ার টিকিট, এয়ারপোর্ট পিকআপ ও জাপানে পার্ট-টাইম জব সাপোর্ট" },
+            ],
+          },
+          ja: {
+            portalBadge: "受講生プロフィール＆ビザ進捗ポータル",
+            loginIdPrefix: "ログインID:",
+            phonePrefix: "電話:",
+            lmsBtn: "LMSオンライン教室",
+            card1Title: "入学・ファイルステータス",
+            card1Admitted: "入学・ファイル開設済",
+            card1Active: "有効なプロフィール",
+            card2Title: "志望日本の教育機関・企業",
+            card2Package: "パッケージ:",
+            card3Title: "日本語コース＆LMS進捗",
+            card3DefaultBatch: "レギュラーライブバッチ",
+            card4Title: "担当カウンセラー・支部",
+            branchPrefix: "支部:",
+            branchDhaka: "ダッカ本部",
+            branchKhulna: "クルナ支部",
+            bioHeading: "個人情報・学歴詳細",
+            fullName: "氏名:",
+            phoneWa: "電話番号 & WhatsApp:",
+            cityAddress: "都市・住所:",
+            passport: "パスポート番号:",
+            passportProcessing: "手続き中",
+            education: "最終学歴:",
+            gpaResult: "GPA / 成績:",
+            guardianSponsor: "保護者 / スポンサー:",
+            guardianDefault: "指定保護者",
+            counselorNotes: "カウンセラーメモ:",
+            defaultNote: "あなたのビザファイルとコース進捗は定期的に管理されています。",
+            visaHeading: "ビザ申請ファイル進捗状況 (全10段階)",
+            currentStageLabel: "現在の段階:",
+            statusCurrent: "進行中",
+            statusCompleted: "完了",
+            statusPending: "待機中",
+            steps: [
+              { step: 1, title: "ファイル開設・プロフィール登録 (前金 ৳0)" },
+              { step: 2, title: "日本語トレーニング (JLPT N5 / N4)" },
+              { step: 3, title: "学歴・スポンサー書類翻訳および公証" },
+              { step: 4, title: "日本の学校・受入企業とのZoom面接" },
+              { step: 5, title: "出入国在留管理局へのCOE申請提出" },
+              { step: 6, title: "在留資格認定証明書 (COE) 交付" },
+              { step: 7, title: "学費送金およびCOE原本受取" },
+              { step: 8, title: "日本大使館面接対策およびVFS申請" },
+              { step: 9, title: "パスポートのビザ発給および成約手数料精算" },
+              { step: 10, title: "航空券手配、空港出迎え＆日本でのアルバイト支援" },
+            ],
+          },
+        },
+        language,
+      ),
+    [language],
+  );
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -42,7 +188,7 @@ export default function StudentProfileView({
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-full bg-emerald-100 px-3 py-0.5 text-xs font-extrabold text-emerald-900">
-                  ভর্তিকৃত প্রোফাইল ও ফাইল পোর্টাল
+                  {t.portalBadge}
                 </span>
                 {lead?.fileTrackingNo || visaApplicant?.trackingNo ? (
                   <span className="rounded-full bg-red-100 px-3 py-0.5 text-xs font-mono font-bold text-[#b91c1c]">
@@ -52,7 +198,7 @@ export default function StudentProfileView({
               </div>
               <h1 className="text-2xl font-black text-slate-900 mt-1">{lead?.name || userName}</h1>
               <p className="text-xs text-slate-500 font-mono">
-                লগইন আইডি: {userEmail} {lead?.phone ? `• ফোন: ${lead.phone}` : ""}
+                {t.loginIdPrefix} {userEmail} {lead?.phone ? `• ${t.phonePrefix} ${lead.phone}` : ""}
               </p>
             </div>
           </div>
@@ -65,7 +211,7 @@ export default function StudentProfileView({
               className="inline-flex items-center gap-1.5 rounded-xl bg-[#133e29] px-4 py-2.5 text-xs font-bold text-white hover:bg-emerald-900 transition"
             >
               <GraduationCap className="h-4 w-4" />
-              <span>LMS অনলাইন ক্লাসরুম</span>
+              <span>{t.lmsBtn}</span>
               <ExternalLink className="h-3.5 w-3.5" />
             </a>
           </div>
@@ -74,10 +220,10 @@ export default function StudentProfileView({
         {/* 4 Status Cards */}
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
           <div className="rounded-2xl border border-stone-200 bg-[#fcfaf7] p-4">
-            <span className="font-bold text-slate-500">ভর্তি ও ফাইল স্ট্যাটাস</span>
+            <span className="font-bold text-slate-500">{t.card1Title}</span>
             <p className="text-base font-black text-emerald-800 mt-1 flex items-center gap-1.5">
               <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-              <span>{lead?.status === "ADMITTED" ? "ভর্তি ও ফাইল ওপেনকৃত" : "সক্রিয় প্রোফাইল"}</span>
+              <span>{lead?.status === "ADMITTED" ? t.card1Admitted : t.card1Active}</span>
             </p>
             <p className="text-[11px] text-slate-500 mt-1">
               {lead?.enrolledBatchOrSession || visaApplicant?.intakeSession || "APRIL_2027 Session"}
@@ -85,32 +231,32 @@ export default function StudentProfileView({
           </div>
 
           <div className="rounded-2xl border border-stone-200 bg-[#fcfaf7] p-4">
-            <span className="font-bold text-slate-500">টার্গেট জাপানি প্রতিষ্ঠান</span>
+            <span className="font-bold text-slate-500">{t.card2Title}</span>
             <p className="text-base font-black text-slate-900 mt-1">
               {lead?.targetSchool || visaApplicant?.targetSchool || "HLA Gakuin (Hiroshima)"}
             </p>
             <p className="text-[11px] text-slate-500 mt-1">
-              প্যাকেজ: {lead?.packageType || visaApplicant?.packageType || "REGULAR"}
+              {t.card2Package} {lead?.packageType || visaApplicant?.packageType || "REGULAR"}
             </p>
           </div>
 
           <div className="rounded-2xl border border-stone-200 bg-[#fcfaf7] p-4">
-            <span className="font-bold text-slate-500">ভাষা কোর্স ও LMS অগ্রগতি</span>
+            <span className="font-bold text-slate-500">{t.card3Title}</span>
             <p className="text-base font-black text-indigo-800 mt-1">
               {lmsBridge ? `${lmsBridge.courseLevel} (${lmsBridge.progressPercentage}%)` : lead?.japaneseProficiency || "LEARNING_N5"}
             </p>
             <p className="text-[11px] text-slate-500 mt-1">
-              {lmsBridge?.activeBatch || "নিয়মিত লাইভ ব্যাচ"}
+              {lmsBridge?.activeBatch || t.card3DefaultBatch}
             </p>
           </div>
 
           <div className="rounded-2xl border border-stone-200 bg-[#fcfaf7] p-4">
-            <span className="font-bold text-slate-500">দায়িত্বপ্রাপ্ত কাউন্সিলর ও শাখা</span>
+            <span className="font-bold text-slate-500">{t.card4Title}</span>
             <p className="text-base font-black text-slate-900 mt-1">
-              {lead?.assignedTo || visaApplicant?.counselorName || "শেখ বাসেত"}
+              {lead?.assignedTo || visaApplicant?.counselorName || "Sheikh Baset"}
             </p>
             <p className="text-[11px] text-emerald-700 font-bold mt-1">
-              শাখা: {lead?.branch === "KHULNA-01" ? "খুলনা শাখা" : "ঢাকা প্রধান কার্যালয়"}
+              {t.branchPrefix} {lead?.branch === "KHULNA-01" ? t.branchKhulna : t.branchDhaka}
             </p>
           </div>
         </div>
@@ -122,45 +268,45 @@ export default function StudentProfileView({
         <div className="lg:col-span-5 rounded-3xl border border-stone-200 bg-white p-6 shadow-xs">
           <h2 className="text-base font-black text-slate-900 flex items-center gap-2 border-b border-stone-100 pb-3">
             <UserCheck className="h-4 w-4 text-emerald-700" />
-            <span>ব্যক্তিগত ও একাডেমিক বিবরণী</span>
+            <span>{t.bioHeading}</span>
           </h2>
           <dl className="mt-4 space-y-3 text-xs">
             <div className="flex justify-between py-1.5 border-b border-stone-100">
-              <dt className="text-slate-500 font-semibold">পূর্ণ নাম:</dt>
+              <dt className="text-slate-500 font-semibold">{t.fullName}</dt>
               <dd className="font-bold text-slate-900">{lead?.name || userName}</dd>
             </div>
             <div className="flex justify-between py-1.5 border-b border-stone-100">
-              <dt className="text-slate-500 font-semibold">ফোন ও WhatsApp:</dt>
+              <dt className="text-slate-500 font-semibold">{t.phoneWa}</dt>
               <dd className="font-mono font-bold text-slate-900">{lead?.phone || "N/A"}</dd>
             </div>
             <div className="flex justify-between py-1.5 border-b border-stone-100">
-              <dt className="text-slate-500 font-semibold">শহর ও ঠিকানা:</dt>
-              <dd className="font-bold text-slate-900">{lead?.address || lead?.city || "ঢাকা"}</dd>
+              <dt className="text-slate-500 font-semibold">{t.cityAddress}</dt>
+              <dd className="font-bold text-slate-900">{lead?.address || lead?.city || "Dhaka"}</dd>
             </div>
             <div className="flex justify-between py-1.5 border-b border-stone-100">
-              <dt className="text-slate-500 font-semibold">পাসপোর্ট নম্বর:</dt>
-              <dd className="font-mono font-bold text-slate-900">{lead?.passportNo || "প্রক্রিয়াধীন"}</dd>
+              <dt className="text-slate-500 font-semibold">{t.passport}</dt>
+              <dd className="font-mono font-bold text-slate-900">{lead?.passportNo || t.passportProcessing}</dd>
             </div>
             <div className="flex justify-between py-1.5 border-b border-stone-100">
-              <dt className="text-slate-500 font-semibold">শিক্ষাগত যোগ্যতা:</dt>
+              <dt className="text-slate-500 font-semibold">{t.education}</dt>
               <dd className="font-bold text-slate-900">{lead?.education || "HSC / Equivalent"}</dd>
             </div>
             {lead?.gpaDetails && (
               <div className="flex justify-between py-1.5 border-b border-stone-100">
-                <dt className="text-slate-500 font-semibold">GPA / রেজাল্ট:</dt>
+                <dt className="text-slate-500 font-semibold">{t.gpaResult}</dt>
                 <dd className="font-bold text-slate-900">{lead.gpaDetails}</dd>
               </div>
             )}
             <div className="flex justify-between py-1.5 border-b border-stone-100">
-              <dt className="text-slate-500 font-semibold">অভিভাবক / স্পন্সর:</dt>
+              <dt className="text-slate-500 font-semibold">{t.guardianSponsor}</dt>
               <dd className="font-bold text-slate-900">
-                {lead?.guardianName || visaApplicant?.sponsorName || "নির্ধারিত অভিভাবক"}
+                {lead?.guardianName || visaApplicant?.sponsorName || t.guardianDefault}
               </dd>
             </div>
             <div className="pt-2">
-              <dt className="text-slate-500 font-semibold mb-1">কাউন্সিলর মন্তব্য / নোটস:</dt>
+              <dt className="text-slate-500 font-semibold mb-1">{t.counselorNotes}</dt>
               <dd className="rounded-xl bg-[#fcfaf7] border border-stone-200 p-3 text-slate-700 leading-relaxed">
-                {lead?.notes || "আপনার ফাইল ও কোর্স কার্যক্রম নিয়মিত তদারকি করা হচ্ছে।"}
+                {lead?.notes || t.defaultNote}
               </dd>
             </div>
           </dl>
@@ -171,26 +317,15 @@ export default function StudentProfileView({
           <div className="flex items-center justify-between border-b border-stone-100 pb-3">
             <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
               <FileCheck2 className="h-4 w-4 text-[#b91c1c]" />
-              <span>আপনার ভিসা ফাইল প্রসেসিং অগ্রগতি (১০ ধাপ)</span>
+              <span>{t.visaHeading}</span>
             </h2>
             <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-extrabold text-emerald-800">
-              বর্তমান ধাপ: {currentStage} / ১০
+              {t.currentStageLabel} {currentStage} / 10
             </span>
           </div>
 
           <div className="mt-4 space-y-2.5">
-            {[
-              { step: 1, title: "ফাইল ওপেনিং ও প্রোফাইল নিবন্ধন (৳০ অগ্রিম)" },
-              { step: 2, title: "জাপানি ভাষা প্রশিক্ষণ (JLPT N5 / N4)" },
-              { step: 3, title: "একাডেমিক ও স্পন্সর ডকুমেন্ট অনুবাদ এবং নোটারি" },
-              { step: 4, title: "জাপানি স্কুল / কোম্পানির সাথে জুম ইন্টারভিউ" },
-              { step: 5, title: "জাপান ইমিগ্রেশন ব্যুরোতে COE আবেদন জমাদান" },
-              { step: 6, title: "প্রি-ভিসা (COE - Certificate of Eligibility) অনুমোদন" },
-              { step: 7, title: "কলেজ টিউশন ফি প্রেরণ ও মূল COE সংগ্রহ" },
-              { step: 8, title: "জাপান এম্বাসি ইন্টারভিউ প্রিপারেশন ও VFS আবেদন" },
-              { step: 9, title: "পাসপোর্টে ভিসা সিলমোহর ও সার্ভিস চার্জ নিষ্পত্তি" },
-              { step: 10, title: "এয়ার টিকিট, এয়ারপোর্ট পিকআপ ও জাপানে পার্ট-টাইম জব সাপোর্ট" },
-            ].map((item) => {
+            {t.steps.map((item) => {
               const isCompleted = item.step < currentStage;
               const isCurrent = item.step === currentStage;
               return (
@@ -219,7 +354,7 @@ export default function StudentProfileView({
                     <span>{item.title}</span>
                   </div>
                   <span className="text-[10px] font-bold">
-                    {isCurrent ? "চলমান ধাপ" : isCompleted ? "সম্পন্ন" : "অপেক্ষমাণ"}
+                    {isCurrent ? t.statusCurrent : isCompleted ? t.statusCompleted : t.statusPending}
                   </span>
                 </div>
               );
