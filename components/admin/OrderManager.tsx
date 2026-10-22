@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Order, OrderStatus } from "@/lib/cms";
 
 const statuses: OrderStatus[] = ["pending", "confirmed", "processing", "delivered", "cancelled"];
@@ -24,6 +24,13 @@ export default function OrderManager({ initialOrders }: { initialOrders: Order[]
   const [selectedOrderId, setSelectedOrderId] = useState(initialOrders[0]?.id ?? null);
   const [error, setError] = useState<string | null>(null);
   const [savingOrderId, setSavingOrderId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setOrders(initialOrders);
+    if (initialOrders.length > 0 && !selectedOrderId) {
+      setSelectedOrderId(initialOrders[0].id);
+    }
+  }, [initialOrders, selectedOrderId]);
 
   const selectedOrder = useMemo(() => orders.find((order) => order.id === selectedOrderId) ?? null, [orders, selectedOrderId]);
 

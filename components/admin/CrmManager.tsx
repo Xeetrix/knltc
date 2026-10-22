@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import type { CrmLead, LeadStatus } from "@/lib/cms";
 
 const statuses: LeadStatus[] = ["new", "contacted", "interested", "converted", "lost"];
@@ -11,6 +11,10 @@ export default function CrmManager({ initialLeads }: { initialLeads: CrmLead[] }
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+
+  useEffect(() => {
+    setLeads(initialLeads);
+  }, [initialLeads]);
 
   const updateLead = async (id: string, payload: { status?: LeadStatus; notes?: string }) => {
     const res = await fetch("/api/admin/crm", {
@@ -39,31 +43,44 @@ export default function CrmManager({ initialLeads }: { initialLeads: CrmLead[] }
   };
 
   return (
-    <div className="space-y-5">
-      <form onSubmit={createManualLead} className="grid gap-2 rounded-xl border bg-card p-4 md:grid-cols-4">
-        <input required className="rounded-md border px-3 py-2" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
-        <input required className="rounded-md border px-3 py-2" placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-        <input className="rounded-md border px-3 py-2" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <button className="rounded-md bg-primary px-3 py-2 text-primary-foreground">Add lead</button>
+    <div className="space-y-4">
+      <form onSubmit={createManualLead} className="grid gap-2.5 rounded-2xl border border-stone-200 bg-[#fcfaf7] p-4 md:grid-cols-4">
+        <input required className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-medium" placeholder="প্রার্থীর নাম (Name)" value={name} onChange={(e) => setName(e.target.value)} />
+        <input required className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-medium" placeholder="ফোন নম্বর (Phone)" value={phone} onChange={(e) => setPhone(e.target.value)} />
+        <input className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-medium" placeholder="ইমেইল (Email - ঐচ্ছিক)" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <button className="rounded-xl bg-[#133e29] px-4 py-2 text-xs font-bold text-white hover:bg-emerald-800 transition">নতুন ডাটাবেজ লিড যুক্ত করুন</button>
       </form>
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
-      {leads.map((lead) => (
-        <div key={lead.id} className="rounded-xl border bg-card p-4">
-          <p className="font-semibold">{lead.name} • {lead.phone}</p>
-          <p className="text-sm text-muted-foreground">{lead.source} {lead.interest ? `• ${lead.interest}` : ""}</p>
-          <div className="mt-3 grid gap-2 md:grid-cols-[160px_1fr_auto]">
-            <select className="rounded-md border px-2 py-1 text-sm" value={lead.status} onChange={(e) => updateLead(lead.id, { status: e.target.value as LeadStatus })}>
-              {statuses.map((status) => <option key={status} value={status}>{status}</option>)}
-            </select>
-            <input
-              className="rounded-md border px-2 py-1 text-sm"
-              defaultValue={lead.notes ?? ""}
-              placeholder="Lead notes"
-              onBlur={(e) => updateLead(lead.id, { notes: e.target.value })}
-            />
-          </div>
+      {leads.length === 0 ? (
+        <div className="rounded-2xl border border-stone-200 bg-stone-50 p-6 text-center text-xs text-slate-500">
+          বর্তমানে Supabase `crm_leads` টেবিলে কোনো ওয়েবসাইট বা চেকআউট লিড নেই।
         </div>
-      ))}
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {leads.map((lead) => (
+            <div key={lead.id} className="rounded-2xl border border-stone-200 bg-white p-4 shadow-2xs">
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-extrabold text-sm text-slate-900">{lead.name} • <span className="font-mono text-emerald-700">{lead.phone}</span></p>
+                <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-[10px] font-bold uppercase text-slate-600">{lead.source}</span>
+              </div>
+              {lead.interest || lead.message ? (
+                <p className="text-xs text-slate-600 mt-1">{lead.interest ? `${lead.interest} — ` : ""}{lead.message}</p>
+              ) : null}
+              <div className="mt-3 grid gap-2 sm:grid-cols-[140px_1fr]">
+                <select className="rounded-lg border border-stone-300 bg-stone-50 px-2.5 py-1.5 text-xs font-bold text-slate-800" value={lead.status} onChange={(e) => updateLead(lead.id, { status: e.target.value as LeadStatus })}>
+                  {statuses.map((status) => <option key={status} value={status}>{status.toUpperCase()}</option>)}
+                </select>
+                <input
+                  className="rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-xs"
+                  defaultValue={lead.notes ?? ""}
+                  placeholder="কাউন্সেলর ফলো-আপ নোট লিখুন..."
+                  onBlur={(e) => updateLead(lead.id, { notes: e.target.value })}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

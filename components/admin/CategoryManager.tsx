@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
 import { notify } from "@/lib/notify";
 import type { Category } from "@/lib/cms";
@@ -12,6 +12,10 @@ export default function CategoryManager({ initialCategories }: { initialCategori
   const [type, setType] = useState<"product" | "blog">("product");
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    setCategories(initialCategories);
+  }, [initialCategories]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -39,19 +43,25 @@ export default function CategoryManager({ initialCategories }: { initialCategori
 
   return (
     <div className="space-y-6">
-      <form onSubmit={submit} className="grid gap-3 rounded-xl border bg-card p-4 md:grid-cols-4">
-        <input className="rounded-md border px-3 py-2" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
-        <input className="rounded-md border px-3 py-2" placeholder="Slug" value={slug} onChange={(e) => setSlug(e.target.value)} />
-        <select className="rounded-md border px-3 py-2" value={type} onChange={(e) => setType(e.target.value as "product" | "blog")}>
-          <option value="product">Product</option><option value="blog">Blog</option>
+      <form onSubmit={submit} className="grid gap-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-2xs md:grid-cols-4">
+        <input required className="rounded-lg border border-stone-300 px-3 py-2 text-xs font-medium" placeholder="ক্যাটেগরির নাম (যেমন: JLPT N5 Books)" value={name} onChange={(e) => setName(e.target.value)} />
+        <input className="rounded-lg border border-stone-300 px-3 py-2 text-xs font-medium" placeholder="Slug (যেমন: jlpt-n5-books)" value={slug} onChange={(e) => setSlug(e.target.value)} />
+        <select className="rounded-lg border border-stone-300 px-3 py-2 text-xs font-bold bg-white" value={type} onChange={(e) => setType(e.target.value as "product" | "blog")}>
+          <option value="product">Product (বই ও স্টোর পণ্য)</option>
+          <option value="blog">Blog (ব্লগ ও গাইডলাইন)</option>
         </select>
-        <button className="rounded-md bg-primary px-3 py-2 text-primary-foreground">Add category</button>
+        <button className="rounded-xl bg-[#133e29] px-4 py-2 text-xs font-bold text-white hover:bg-emerald-800 transition">নতুন ক্যাটেগরি যোগ করুন</button>
       </form>
-      <div className="space-y-2">
+      <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
         {categories.map((cat) => (
-          <div key={cat.id} className="flex items-center justify-between rounded-lg border bg-card p-3">
-            <p>{cat.name} <span className="text-xs text-muted-foreground">({cat.type})</span></p>
-            <button onClick={() => setDeleteTarget(cat.id)} className="rounded-md border px-3 py-1 text-sm text-red-600">Delete</button>
+          <div key={cat.id} className="flex items-center justify-between rounded-xl border border-stone-200 bg-white p-3.5 shadow-2xs">
+            <div>
+              <p className="font-bold text-sm text-slate-900">{cat.name}</p>
+              <span className={`inline-block mt-1 rounded px-2 py-0.5 text-[10px] font-bold uppercase ${cat.type === "product" ? "bg-indigo-100 text-indigo-800" : "bg-amber-100 text-amber-800"}`}>
+                {cat.type} • {cat.slug}
+              </span>
+            </div>
+            <button onClick={() => setDeleteTarget(cat.id)} className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-bold text-red-600 hover:bg-red-100">ডিলিট</button>
           </div>
         ))}
       </div>

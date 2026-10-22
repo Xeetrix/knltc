@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ProductReview, ReviewStatus } from "@/lib/cms";
 
 function formatDate(value: string) {
@@ -17,6 +17,10 @@ export default function ReviewManager({ initialReviews }: { initialReviews: Prod
   const [reviews, setReviews] = useState(initialReviews);
   const [error, setError] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setReviews(initialReviews);
+  }, [initialReviews]);
 
   const updateStatus = async (id: string, status: ReviewStatus) => {
     setError(null);

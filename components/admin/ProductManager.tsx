@@ -56,6 +56,10 @@ export default function ProductManager({ initialProducts, categories }: { initia
   const mode = useMemo(() => (form.id ? "Update" : "Create"), [form.id]);
 
   useEffect(() => {
+    setProducts(initialProducts);
+  }, [initialProducts]);
+
+  useEffect(() => {
     return () => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
     };
@@ -100,7 +104,7 @@ export default function ProductManager({ initialProducts, categories }: { initia
     try {
       const formData = new FormData();
       formData.append("file", selectedImage);
-      formData.append("bucket", "product-images");
+      formData.append("bucket", "knltc-media");
 
       const uploadRes = await fetch("/api/admin/upload", { method: "POST", body: formData });
       const uploadData = await uploadRes.json();
@@ -254,19 +258,50 @@ const msg = data.error || "Failed to delete product";
         <input className="rounded-md border px-3 py-2 md:col-span-2" placeholder="Gallery URLs (comma separated)" value={form.gallery} onChange={(e) => setForm({ ...form, gallery: e.target.value })} />
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.is_featured} onChange={(e) => setForm({ ...form, is_featured: e.target.checked })} /> Featured</label>
         <div className="flex gap-2">
-          <button className="rounded-md bg-primary px-3 py-2 text-primary-foreground" disabled={isUploadingImage}>{isUploadingImage ? "Uploading..." : `${mode} product`}</button>
-          {form.id ? <button type="button" onClick={() => { setForm(initialForm); clearImageState(); }} className="rounded-md border px-3 py-2">Cancel</button> : null}
+          <button className="rounded-xl bg-[#133e29] px-4 py-2 text-xs font-bold text-white hover:bg-emerald-800 transition shadow-xs" disabled={isUploadingImage}>
+            {isUploadingImage ? "আপলোড হচ্ছে..." : `${mode === "Update" ? "পণ্য আপডেট করুন" : "নতুন পণ্য যুক্ত করুন"}`}
+          </button>
+          {form.id ? (
+            <button
+              type="button"
+              onClick={() => {
+                setForm(initialForm);
+                clearImageState();
+              }}
+              className="rounded-xl border border-stone-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-stone-50"
+            >
+              বাতিল করুন
+            </button>
+          ) : null}
         </div>
       </form>
 
-      <div className="space-y-2">
+      <div className="grid gap-3 sm:grid-cols-2">
         {products.map((item) => (
-          <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-card p-3">
-            <div>
-              <p className="font-semibold">{item.name}</p>
-              <p className="text-xs text-muted-foreground">{item.slug} • {item.status}</p>
+          <div key={item.id} className="flex items-center justify-between gap-3 rounded-2xl border border-stone-200 bg-white p-3.5 shadow-2xs hover:border-emerald-300 transition">
+            <div className="flex items-center gap-3 min-w-0">
+              {item.featured_image ? (
+                <img src={item.featured_image} alt={item.name} className="h-14 w-12 rounded-lg border border-stone-200 object-cover shrink-0" />
+              ) : (
+                <div className="h-14 w-12 rounded-lg border border-stone-200 bg-stone-100 flex items-center justify-center text-[10px] font-bold text-slate-400 shrink-0">
+                  BOOK
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="font-bold text-sm text-slate-900 truncate">{item.name}</p>
+                <div className="flex flex-wrap items-center gap-2 mt-1 text-xs">
+                  <span className="font-extrabold text-emerald-700">৳{item.sale_price ?? item.price}</span>
+                  {item.sale_price ? <span className="line-through text-slate-400 text-[11px]">৳{item.price}</span> : null}
+                  <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${item.stock <= 2 ? "bg-red-100 text-red-700" : "bg-stone-100 text-slate-700"}`}>
+                    স্টক: {item.stock}
+                  </span>
+                  <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${item.status === "published" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>
+                    {item.status}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-1.5 shrink-0">
               <button
                 onClick={() => {
                   setForm({
@@ -287,11 +322,16 @@ const msg = data.error || "Failed to delete product";
                   });
                   clearImageState();
                 }}
-                className="rounded-md border px-3 py-1 text-sm"
+                className="rounded-lg border border-stone-200 bg-stone-50 px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-stone-100"
               >
-                Edit
+                এডিট
               </button>
-              <button onClick={() => setDeleteTarget(item.id)} className="rounded-md border px-3 py-1 text-sm text-red-600">Delete</button>
+              <button
+                onClick={() => setDeleteTarget(item.id)}
+                className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-bold text-red-600 hover:bg-red-100"
+              >
+                ডিলিট
+              </button>
             </div>
           </div>
         ))}

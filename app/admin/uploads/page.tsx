@@ -1,12 +1,6 @@
-export const dynamic = "force-dynamic";
-
-import AdminShell from "@/components/admin/AdminShell";
-import UploadManager from "@/components/admin/UploadManager";
+import { redirect } from "next/navigation";
 
 export default function AdminUploadsPage() {
-  return (
-    <AdminShell title="Image Uploads">
-      <UploadManager />
-    </AdminShell>
-  );
+  redirect("/dashboard?tab=store_blog&sub=uploads");
 }
+

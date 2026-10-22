@@ -76,6 +76,21 @@ import {
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { languageOptions, type Language } from "@/lib/i18n";
 import { getDashboardDictionary, DashboardDictionary } from "@/lib/dashboard-translations";
+import ProductManager from "@/components/admin/ProductManager";
+import BlogManager from "@/components/admin/BlogManager";
+import OrderManager from "@/components/admin/OrderManager";
+import ReviewManager from "@/components/admin/ReviewManager";
+import CategoryManager from "@/components/admin/CategoryManager";
+import CrmManager from "@/components/admin/CrmManager";
+import type {
+  AdminSummary,
+  BlogPost,
+  Category,
+  CrmLead as DbCrmLead,
+  Order as DbOrder,
+  Product as DbProduct,
+  ProductReview as DbReview,
+} from "@/lib/cms";
 
 export default function DashboardPage() {
   const { language, setLanguage } = useLanguage();
@@ -100,6 +115,31 @@ export default function DashboardPage() {
     | "cms"
     | "store_blog"
   >("overview");
+  const [storeSubTab, setStoreSubTab] = useState<
+    "summary" | "products" | "orders" | "blog" | "categories" | "reviews" | "uploads"
+  >("summary");
+  const [adminBundle, setAdminBundle] = useState<{
+    loaded: boolean;
+    summary: AdminSummary | null;
+    products: DbProduct[];
+    posts: DbPost[];
+    categories: Category[];
+    orders: DbOrder[];
+    ordersWarning: string | null;
+    reviews: DbReview[];
+    crmLeads: DbCrmLead[];
+  }>({
+    loaded: false,
+    summary: null,
+    products: [],
+    posts: [],
+    categories: [],
+    orders: [],
+    ordersWarning: null,
+    reviews: [],
+    crmLeads: [],
+  });
+  type DbPost = BlogPost;
 
   // Multi-language translation dictionary for the dashboard
   const t: DashboardDictionary = useMemo(() => getDashboardDictionary(language), [language]);
@@ -112,8 +152,49 @@ export default function DashboardPage() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
+  const loadAdminBundle = async () => {
+    try {
+      const res = await fetch("/api/admin/bundle", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data?.ok) {
+        setAdminBundle({
+          loaded: true,
+          summary: data.summary ?? null,
+          products: data.products ?? [],
+          posts: data.posts ?? [],
+          categories: data.categories ?? [],
+          orders: data.orders ?? [],
+          ordersWarning: data.ordersWarning ?? null,
+          reviews: data.reviews ?? [],
+          crmLeads: data.crmLeads ?? [],
+        });
+      }
+    } catch {
+      // ignore bundle error
+    }
+  };
+
   // Synchronize state with store, load user session & handle storage events
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab");
+      const subParam = params.get("sub");
+      if (
+        tabParam &&
+        ["overview", "crm", "visa", "lms", "b2b", "finance", "hr", "cms", "store_blog"].includes(tabParam)
+      ) {
+        setActiveTab(tabParam as any);
+      }
+      if (
+        subParam &&
+        ["summary", "products", "orders", "blog", "categories", "reviews", "uploads"].includes(subParam)
+      ) {
+        setStoreSubTab(subParam as any);
+      }
+    }
+
     // 1. Verify and fetch active session
     fetch("/api/admin/me")
       .then((res) => {
@@ -130,21 +211,25 @@ export default function DashboardPage() {
           if (data.user.branch && data.user.branch !== "ALL") {
             setActiveBranch(data.user.branch);
           }
-          if (data.user.role === "STUDENT") {
-            setActiveTab("visa");
-          } else if (data.user.role === "TELE_COUNSELOR") {
-            setActiveTab("crm");
-          } else if (data.user.role === "TEACHER") {
-            setActiveTab("lms");
+          const hasExplicitTab =
+            typeof window !== "undefined" && new URLSearchParams(window.location.search).has("tab");
+          if (!hasExplicitTab) {
+            if (data.user.role === "STUDENT") {
+              setActiveTab("visa");
+            } else if (data.user.role === "TELE_COUNSELOR") {
+              setActiveTab("crm");
+            } else if (data.user.role === "TEACHER") {
+              setActiveTab("lms");
+            }
           }
         }
       })
       .catch(() => {});
 
-    // 2. Fetch live store from Supabase server
+    // 2. Fetch live store & unified admin bundle from Supabase server
     setIsSyncingWithDb(true);
-    fetchLiveStoreFromServer()
-      .then((live) => {
+    Promise.all([fetchLiveStoreFromServer(), loadAdminBundle()])
+      .then(([live]) => {
         if (live) {
           setStore({ ...live });
         } else {
@@ -165,7 +250,7 @@ export default function DashboardPage() {
     setIsSyncingWithDb(true);
     showToast("Supabase ডাটাবেজের সাথে সিঙ্ক হচ্ছে...");
     try {
-      const live = await fetchLiveStoreFromServer();
+      const [live] = await Promise.all([fetchLiveStoreFromServer(), loadAdminBundle()]);
       if (live) setStore({ ...live });
       showToast("ডাটাবেজ সিঙ্ক সফল হয়েছে! (Database Synced)");
     } catch {
@@ -403,18 +488,31 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Module Navigation Tabs (Filtered by Active Role) */}
-          <nav className="mt-4 flex space-x-1 overflow-x-auto border-t border-stone-100 pt-2 no-scrollbar">
+          {/* Module Navigation Tabs (Clean Wrapped Grid - No Serial Numbers, No Horizontal Scrollbar) */}
+          <nav className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-stone-200/80 pt-3">
             {[
-              { id: "overview", label: t.tabs.overview, icon: TrendingUp },
-              { id: "crm", label: t.tabs.crm, icon: PhoneCall },
-              { id: "visa", label: t.tabs.visa, icon: FileCheck2 },
-              { id: "lms", label: t.tabs.lms, icon: GraduationCap },
-              { id: "b2b", label: t.tabs.b2b, icon: Building2 },
-              { id: "finance", label: t.tabs.finance, icon: DollarSign },
-              { id: "hr", label: t.tabs.hr, icon: UserCheck },
-              { id: "cms", label: t.tabs.cms, icon: Globe2 },
-              { id: "store_blog", label: "বই স্টোর ও ব্লগ সিএমএস", icon: ShoppingBag },
+              { id: "overview", label: t.tabs.overview, icon: TrendingUp, badge: 0 },
+              {
+                id: "crm",
+                label: t.tabs.crm,
+                icon: PhoneCall,
+                badge: adminBundle.summary?.newLeads || 0,
+              },
+              { id: "visa", label: t.tabs.visa, icon: FileCheck2, badge: 0 },
+              { id: "lms", label: t.tabs.lms, icon: GraduationCap, badge: 0 },
+              { id: "b2b", label: t.tabs.b2b, icon: Building2, badge: 0 },
+              { id: "finance", label: t.tabs.finance, icon: DollarSign, badge: 0 },
+              { id: "hr", label: t.tabs.hr, icon: UserCheck, badge: 0 },
+              { id: "cms", label: t.tabs.cms, icon: Globe2, badge: 0 },
+              {
+                id: "store_blog",
+                label: t.tabs.storeBlog,
+                icon: ShoppingBag,
+                badge:
+                  (adminBundle.summary?.pendingOrders || 0) +
+                  (adminBundle.summary?.pendingReviews || 0) +
+                  (adminBundle.summary?.lowStockProducts || 0),
+              },
             ]
               .filter((tab) => {
                 if (activeRole === "STUDENT") return tab.id === "visa" || tab.id === "lms";
@@ -431,14 +529,23 @@ export default function DashboardPage() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-3.5 py-2 text-xs font-bold transition ${
+                    className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
                       isActive
-                        ? "bg-[#133e29] text-white shadow-xs"
-                        : "text-slate-600 hover:bg-stone-100 hover:text-slate-900"
+                        ? "bg-[#133e29] text-white shadow-sm ring-1 ring-[#133e29]"
+                        : "border border-stone-200/80 bg-[#fcfaf7] text-slate-700 hover:border-emerald-300 hover:bg-white hover:text-slate-900"
                     }`}
                   >
-                    <Icon className={`h-3.5 w-3.5 ${isActive ? "text-emerald-400" : "text-slate-400"}`} />
+                    <Icon className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-emerald-300" : "text-emerald-700"}`} />
                     <span>{tab.label}</span>
+                    {tab.badge > 0 ? (
+                      <span
+                        className={`ml-0.5 inline-flex min-w-4 items-center justify-center rounded-full px-1.5 py-0.2 text-[10px] font-extrabold ${
+                          isActive ? "bg-amber-400 text-slate-950" : "bg-[#b91c1c] text-white"
+                        }`}
+                      >
+                        {tab.badge}
+                      </span>
+                    ) : null}
                   </button>
                 );
               })}
@@ -828,6 +935,28 @@ export default function DashboardPage() {
                   </tbody>
                 </table>
               </div>
+            </div>
+
+            {/* Unified Supabase Website & Checkout CRM Leads (Merged from /admin/crm) */}
+            <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 mb-1">
+                    <Database className="h-3 w-3 text-emerald-600" />
+                    <span>Supabase `crm_leads` Table</span>
+                  </div>
+                  <h3 className="text-lg font-black text-slate-900">
+                    ওয়েবসাইট কনসালটেশন, কন্টাক্ট ও স্টোর চেকআউট লিডস
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    পাবলিক ওয়েবসাইটের ফর্ম ও চেকআউট থেকে সরাসরি ডাটাবেজে আসা লিডসমূহ পরিচালনা করুন
+                  </p>
+                </div>
+                <span className="rounded-xl bg-stone-100 px-3 py-1.5 text-xs font-bold text-slate-700">
+                  মোট ডাটাবেজ লিড: {adminBundle.crmLeads.length}টি
+                </span>
+              </div>
+              <CrmManager initialLeads={adminBundle.crmLeads} />
             </div>
           </div>
         )}
@@ -1931,188 +2060,431 @@ export default function DashboardPage() {
         )}
 
         {/* =========================================================================
-            MODULE 9: UNIFIED BOOK STORE & BLOG CMS COMMAND CENTER
+            MODULE 9: UNIFIED BOOK STORE, ORDERS, BLOG, REVIEWS & STORAGE COMMAND CENTER
+            (Deeply Merged with Previous /admin Panel)
             ========================================================================= */}
         {activeTab === "store_blog" && (
           <div className="space-y-6 animate-fade-in">
-            {/* Header info */}
-            <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-xs">
+            {/* Top Command Header & Unified Sub-Navigation */}
+            <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-xs">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="rounded-md bg-indigo-100 px-2 py-0.5 text-xs font-bold text-indigo-800">
-                      E-COMMERCE & BLOG
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-emerald-50 border border-emerald-200 px-3 py-0.5 text-xs font-bold text-emerald-800">
+                      UNIFIED STORE & BLOG ADMIN
                     </span>
-                    <h2 className="text-xl font-black text-slate-900 tracking-tight">
-                      বই স্টোর, ইনভেন্টরি, অর্ডার ও ব্লগ সিএমএস
+                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                      বুক স্টোর, অর্ডার, ব্লগ, ক্যাটেগরি ও ক্লাউড স্টোরেজ প্যানেল
                     </h2>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">
-                    জাপানি ভাষার পাঠ্যবই, কানজি ফ্ল্যাশকার্ড, ভিজিটর্স রিভিউ এবং জাপান স্টাডি/ভিসা গাইডলাইন ব্লগ পরিচালনা
+                  <p className="text-xs sm:text-sm text-slate-600 mt-1">
+                    আগের `/admin` প্যানেলের সব ফিচার (বই যোগ/এডিট, কভার আপলোড, অর্ডার ট্র্যাকিং, ব্লগ পোস্ট, রিভিউ মডারেশন ও বাকেট স্টোরেজ) এখন সরাসরি এখানেই সমন্বিত।
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Link
                     href="/store"
                     target="_blank"
                     className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-stone-100 transition"
                   >
-                    <span>লাইভ স্টোর দেখুন</span>
+                    <span>লাইভ বুক স্টোর</span>
                     <ExternalLink className="h-3.5 w-3.5" />
                   </Link>
                   <Link
-                    href="/admin/products"
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#b91c1c] px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-red-800 transition"
+                    href="/blog"
+                    target="_blank"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-stone-100 transition"
+                  >
+                    <span>লাইভ ব্লগ পেইজ</span>
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </Link>
+                  <button
+                    onClick={() => setStoreSubTab("products")}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#b91c1c] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-red-800 transition"
                   >
                     <PlusCircle className="h-3.5 w-3.5" />
                     <span>নতুন বই যোগ করুন</span>
-                  </Link>
+                  </button>
                 </div>
               </div>
 
-              {/* 4 Quick Control Navigation Cards */}
-              <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <Link
-                  href="/admin/products"
-                  className="rounded-xl border border-stone-200 bg-stone-50/60 p-4 hover:border-indigo-400 hover:bg-white transition group"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-500 uppercase">বই ও পণ্য সম্ভার</span>
-                    <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-700 group-hover:scale-105 transition">
-                      <BookOpen className="h-4 w-4" />
-                    </div>
-                  </div>
-                  <p className="mt-2 text-2xl font-black text-slate-900">৪টি বই</p>
-                  <p className="text-[11px] text-slate-500 mt-1">মূল্য ও স্টক এডিট করুন &rarr;</p>
-                </Link>
-
-                <Link
-                  href="/admin/orders"
-                  className="rounded-xl border border-stone-200 bg-stone-50/60 p-4 hover:border-emerald-400 hover:bg-white transition group"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-500 uppercase">অনলাইন বুক অর্ডার</span>
-                    <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 group-hover:scale-105 transition">
-                      <ShoppingBag className="h-4 w-4" />
-                    </div>
-                  </div>
-                  <p className="mt-2 text-2xl font-black text-emerald-700">{cms.customerOrders.length}টি অর্ডার</p>
-                  <p className="text-[11px] text-slate-500 mt-1">ডেলিভারি ট্র্যাকিং ও ক্যাশ অন ডেলিভারি &rarr;</p>
-                </Link>
-
-                <Link
-                  href="/admin/blog"
-                  className="rounded-xl border border-stone-200 bg-stone-50/60 p-4 hover:border-amber-400 hover:bg-white transition group"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-500 uppercase">ব্লগ ও গাইডলাইন</span>
-                    <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 group-hover:scale-105 transition">
-                      <FileText className="h-4 w-4" />
-                    </div>
-                  </div>
-                  <p className="mt-2 text-2xl font-black text-slate-900">৩টি পোস্ট</p>
-                  <p className="text-[11px] text-slate-500 mt-1">নতুন আর্টিকেল লিখুন ও প্রকাশ করুন &rarr;</p>
-                </Link>
-
-                <Link
-                  href="/admin/reviews"
-                  className="rounded-xl border border-stone-200 bg-stone-50/60 p-4 hover:border-purple-400 hover:bg-white transition group"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-500 uppercase">কাস্টমার রিভিউ</span>
-                    <div className="w-8 h-8 rounded-lg bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-700 group-hover:scale-105 transition">
-                      <Award className="h-4 w-4" />
-                    </div>
-                  </div>
-                  <p className="mt-2 text-2xl font-black text-purple-700">২টি রিভিউ</p>
-                  <p className="text-[11px] text-slate-500 mt-1">স্টার রেটিং ও মতামত মডারেশন &rarr;</p>
-                </Link>
-              </div>
-            </div>
-
-            {/* Supabase Storage Media & Document Uploader Tool */}
-            <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-xs">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Database className="h-5 w-5 text-emerald-600" />
-                  <h3 className="font-extrabold text-base text-slate-900">
-                    Supabase Storage ডক ও মিডিয়া ম্যানেজার (Storage Buckets)
-                  </h3>
-                </div>
-                <span className="text-xs font-mono text-slate-400">knltc-documents & knltc-media</span>
-              </div>
-              <p className="text-xs text-slate-600 mb-4">
-                ভিসা প্রার্থীদের পাসপোর্ট কপি, অ্যাকাডেমিক সনদপত্র এবং বই বা ওয়েবসাইটের ব্যানার ছবি সরাসরি Supabase ক্লাউড স্টোরেজে আপলোড করুন:
-              </p>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="rounded-xl border border-dashed border-stone-300 p-5 bg-stone-50/60 flex flex-col items-center justify-center text-center">
-                  <FileCheck2 className="h-8 w-8 text-emerald-600 mb-2" />
-                  <h4 className="text-xs font-bold text-slate-900">ভিসা ফাইল ডকুমেন্ট (knltc-documents)</h4>
-                  <p className="text-[11px] text-slate-500 mt-1 mb-3">PDF, DOC, স্ক্যান কপি (সর্বোচ্চ ১৫ মেগাবাইট)</p>
-                  <label className="cursor-pointer inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white px-3.5 py-1.5 text-xs font-bold transition shadow-xs">
-                    <span>ডকুমেন্ট ফাইল নির্বাচন করুন</span>
-                    <input
-                      type="file"
-                      className="hidden"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        const fd = new FormData();
-                        fd.append("file", file);
-                        fd.append("trackingNo", "DOC-" + Date.now().toString().slice(-4));
-                        fd.append("docType", "verified_doc");
-                        showToast("ডকুমেন্ট আপলোড হচ্ছে...");
-                        try {
-                          const res = await fetch("/api/cms/documents", { method: "POST", body: fd });
-                          const json = await res.json();
-                          if (json.ok) {
-                            showToast(`আপলোড সফল! ফাইলের লিঙ্ক: ${json.url}`);
-                          } else {
-                            showToast(json.error || "আপলোড ব্যর্থ হয়েছে");
-                          }
-                        } catch {
-                          showToast("আপলোড সংযোগে ত্রুটি");
-                        }
-                      }}
-                    />
-                  </label>
-                </div>
-
-                <div className="rounded-xl border border-dashed border-stone-300 p-5 bg-stone-50/60 flex flex-col items-center justify-center text-center">
-                  <ShoppingBag className="h-8 w-8 text-indigo-600 mb-2" />
-                  <h4 className="text-xs font-bold text-slate-900">বইয়ের কভার ও ব্যানার ছবি (knltc-media)</h4>
-                  <p className="text-[11px] text-slate-500 mt-1 mb-3">JPG, PNG, WEBP (সর্বোচ্চ ৫ মেগাবাইট)</p>
-                  <label className="cursor-pointer inline-flex items-center gap-1.5 rounded-lg bg-indigo-700 hover:bg-indigo-800 text-white px-3.5 py-1.5 text-xs font-bold transition shadow-xs">
-                    <span>ছবি ফাইল নির্বাচন করুন</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        const fd = new FormData();
-                        fd.append("file", file);
-                        fd.append("bucket", "knltc-media");
-                        showToast("ছবি আপলোড হচ্ছে...");
-                        try {
-                          const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
-                          const json = await res.json();
-                          if (json.url) {
-                            showToast(`ছবি আপলোড সফল! লিঙ্ক: ${json.url}`);
-                          } else {
-                            showToast(json.error || "আপলোড ব্যর্থ হয়েছে");
-                          }
-                        } catch {
-                          showToast("আপলোড সংযোগে ত্রুটি");
-                        }
-                      }}
-                    />
-                  </label>
-                </div>
+              {/* Sub-Navigation Pills for Merged Admin Modules */}
+              <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-stone-100 pt-4">
+                {[
+                  { id: "summary", label: "সামগ্রিক চিত্র ও অ্যালার্ট", icon: Sparkles, count: 0 },
+                  {
+                    id: "products",
+                    label: "বই ও পণ্য সম্ভার (Products)",
+                    icon: BookOpen,
+                    count: adminBundle.products.length,
+                    alert: adminBundle.summary?.lowStockProducts || 0,
+                  },
+                  {
+                    id: "orders",
+                    label: "অনলাইন বুক অর্ডার (Orders)",
+                    icon: ShoppingBag,
+                    count: adminBundle.orders.length,
+                    alert: adminBundle.summary?.pendingOrders || 0,
+                  },
+                  {
+                    id: "blog",
+                    label: "ব্লগ ও আর্টিকেল (Blog CMS)",
+                    icon: FileText,
+                    count: adminBundle.posts.length,
+                    alert: 0,
+                  },
+                  {
+                    id: "categories",
+                    label: "ক্যাটেগরি (Categories)",
+                    icon: Layers,
+                    count: adminBundle.categories.length,
+                    alert: 0,
+                  },
+                  {
+                    id: "reviews",
+                    label: "কাস্টমার রিভিউ (Reviews)",
+                    icon: Award,
+                    count: adminBundle.reviews.length,
+                    alert: adminBundle.summary?.pendingReviews || 0,
+                  },
+                  {
+                    id: "uploads",
+                    label: "ক্লাউড মিডিয়া ও ডকুমেন্টস",
+                    icon: Database,
+                    count: 0,
+                    alert: 0,
+                  },
+                ].map((sub) => {
+                  const SubIcon = sub.icon;
+                  const active = storeSubTab === sub.id;
+                  return (
+                    <button
+                      key={sub.id}
+                      onClick={() => setStoreSubTab(sub.id as any)}
+                      className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition ${
+                        active
+                          ? "bg-[#133e29] text-white shadow-xs"
+                          : "border border-stone-200 bg-[#fcfaf7] text-slate-700 hover:bg-white hover:border-emerald-300"
+                      }`}
+                    >
+                      <SubIcon className={`h-3.5 w-3.5 ${active ? "text-emerald-300" : "text-emerald-700"}`} />
+                      <span>{sub.label}</span>
+                      {sub.count > 0 ? (
+                        <span
+                          className={`rounded-full px-1.5 py-0.2 text-[10px] font-extrabold ${
+                            active ? "bg-emerald-800 text-emerald-100" : "bg-stone-200 text-slate-700"
+                          }`}
+                        >
+                          {sub.count}
+                        </span>
+                      ) : null}
+                      {sub.alert ? (
+                        <span className="rounded-full bg-[#b91c1c] px-1.5 py-0.2 text-[10px] font-extrabold text-white">
+                          {sub.alert}!
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })}
               </div>
             </div>
+
+            {/* SUB-TAB 1: SUMMARY & NOTIFICATION OVERVIEW (Merged from /admin/page.tsx) */}
+            {storeSubTab === "summary" && (
+              <div className="space-y-6">
+                {adminBundle.summary?.setupWarning ? (
+                  <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-xs font-semibold text-amber-900">
+                    {adminBundle.summary.setupWarning}
+                  </div>
+                ) : null}
+
+                {/* 4 Actionable Notification Cards from Legacy /admin */}
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <button
+                    onClick={() => setStoreSubTab("orders")}
+                    className="text-left rounded-2xl border border-amber-200 bg-amber-50/70 p-5 hover:bg-amber-50 transition shadow-2xs group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-amber-900 uppercase">পেন্ডিং বুক অর্ডার</span>
+                      <ShoppingBag className="h-4 w-4 text-amber-700 group-hover:scale-110 transition" />
+                    </div>
+                    <p className="mt-2 text-3xl font-black text-amber-950">
+                      {adminBundle.summary?.pendingOrders ?? 0}
+                    </p>
+                    <p className="mt-1 text-[11px] font-semibold text-amber-800">
+                      অর্ডার কনফার্ম ও ডেলিভারি স্ট্যাটাস আপডেট করুন &rarr;
+                    </p>
+                  </button>
+
+                  <button
+                    onClick={() => setStoreSubTab("reviews")}
+                    className="text-left rounded-2xl border border-purple-200 bg-purple-50/70 p-5 hover:bg-purple-50 transition shadow-2xs group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-purple-900 uppercase">পেন্ডিং কাস্টমার রিভিউ</span>
+                      <Award className="h-4 w-4 text-purple-700 group-hover:scale-110 transition" />
+                    </div>
+                    <p className="mt-2 text-3xl font-black text-purple-950">
+                      {adminBundle.summary?.pendingReviews ?? 0}
+                    </p>
+                    <p className="mt-1 text-[11px] font-semibold text-purple-800">
+                      বইয়ের কাস্টমার রিভিউ অ্যাপ্রুভ বা রিজেক্ট করুন &rarr;
+                    </p>
+                  </button>
+
+                  <button
+                    onClick={() => setStoreSubTab("products")}
+                    className="text-left rounded-2xl border border-rose-200 bg-rose-50/70 p-5 hover:bg-rose-50 transition shadow-2xs group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-rose-900 uppercase">লো-স্টক বই অ্যালার্ট (≤২)</span>
+                      <AlertCircle className="h-4 w-4 text-rose-700 group-hover:scale-110 transition" />
+                    </div>
+                    <p className="mt-2 text-3xl font-black text-rose-950">
+                      {adminBundle.summary?.lowStockProducts ?? 0}
+                    </p>
+                    <p className="mt-1 text-[11px] font-semibold text-rose-800">
+                      ইনভেন্টরি স্টক ও বইয়ের মূল্য আপডেট করুন &rarr;
+                    </p>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab("crm")}
+                    className="text-left rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 hover:bg-emerald-50 transition shadow-2xs group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-emerald-900 uppercase">নতুন ওয়েবসাইট লিডস</span>
+                      <Users className="h-4 w-4 text-emerald-700 group-hover:scale-110 transition" />
+                    </div>
+                    <p className="mt-2 text-3xl font-black text-emerald-950">
+                      {adminBundle.summary?.newLeads ?? 0}
+                    </p>
+                    <p className="mt-1 text-[11px] font-semibold text-emerald-800">
+                      ওয়েবসাইট ও চেকআউট লিড ফলো-আপ করুন &rarr;
+                    </p>
+                  </button>
+                </div>
+
+                {/* Content & Store Totals Row (from legacy /admin) */}
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div
+                    onClick={() => setStoreSubTab("products")}
+                    className="cursor-pointer rounded-2xl border border-stone-200 bg-white p-5 hover:border-emerald-400 transition shadow-2xs"
+                  >
+                    <p className="text-xs font-bold text-slate-500">মোট বই ও স্টোর পণ্য (Total Products)</p>
+                    <p className="mt-2 text-3xl font-black text-slate-900">
+                      {adminBundle.summary?.totalProducts ?? adminBundle.products.length}
+                    </p>
+                    <p className="mt-1 text-[11px] font-bold text-emerald-700">পণ্য তালিকা ও এডিটর খুলুন &rarr;</p>
+                  </div>
+
+                  <div
+                    onClick={() => setStoreSubTab("blog")}
+                    className="cursor-pointer rounded-2xl border border-stone-200 bg-white p-5 hover:border-emerald-400 transition shadow-2xs"
+                  >
+                    <p className="text-xs font-bold text-slate-500">মোট ব্লগ আর্টিকেল (Total Blog Posts)</p>
+                    <p className="mt-2 text-3xl font-black text-slate-900">
+                      {adminBundle.summary?.totalBlogPosts ?? adminBundle.posts.length}
+                    </p>
+                    <p className="mt-1 text-[11px] font-bold text-emerald-700">ব্লগ এডিটর খুলুন &rarr;</p>
+                  </div>
+
+                  <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-2xs">
+                    <p className="text-xs font-bold text-slate-500">পাবলিশড কনটেন্ট (Published Items)</p>
+                    <p className="mt-2 text-3xl font-black text-emerald-700">
+                      {adminBundle.summary?.totalPublished ?? 0}
+                    </p>
+                    <p className="mt-1 text-[11px] text-slate-500">ওয়েবসাইটে লাইভ প্রদর্শিত বই ও ব্লগ</p>
+                  </div>
+
+                  <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-2xs">
+                    <p className="text-xs font-bold text-slate-500">ড্রাফট কনটেন্ট (Draft Items)</p>
+                    <p className="mt-2 text-3xl font-black text-amber-600">
+                      {adminBundle.summary?.totalDrafts ?? 0}
+                    </p>
+                    <p className="mt-1 text-[11px] text-slate-500">অপ্রকাশিত খসড়া পণ্য ও আর্টিকেল</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* SUB-TAB 2: PRODUCTS MANAGER */}
+            {storeSubTab === "products" && (
+              <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-xs">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-black text-slate-900">বই ও স্টোর পণ্য ব্যবস্থাপনা (Product Manager)</h3>
+                    <p className="text-xs text-slate-500">
+                      নতুন বই যুক্ত করুন, কভার ছবি `knltc-media` বাকেটে আপলোড করুন এবং স্টক ও মূল্য হালনাগাদ করুন
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setStoreSubTab("categories")}
+                    className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-stone-100"
+                  >
+                    ক্যাটেগরি ম্যানেজ করুন &rarr;
+                  </button>
+                </div>
+                <ProductManager
+                  initialProducts={adminBundle.products}
+                  categories={adminBundle.categories.filter((c) => c.type === "product")}
+                />
+              </div>
+            )}
+
+            {/* SUB-TAB 3: ORDERS MANAGER */}
+            {storeSubTab === "orders" && (
+              <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-xs">
+                <div className="mb-4">
+                  <h3 className="text-lg font-black text-slate-900">অনলাইন বুক অর্ডার ও ডেলিভারি ট্র্যাকার (Order Manager)</h3>
+                  <p className="text-xs text-slate-500">
+                    কাস্টমারদের অর্ডার তালিকা, ডেলিভারি ঠিকানা এবং স্ট্যাটাস (`pending`, `confirmed`, `processing`, `delivered`, `cancelled`) পরিবর্তন করুন
+                  </p>
+                </div>
+                {adminBundle.ordersWarning ? (
+                  <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+                    {adminBundle.ordersWarning}
+                  </div>
+                ) : null}
+                <OrderManager initialOrders={adminBundle.orders} />
+              </div>
+            )}
+
+            {/* SUB-TAB 4: BLOG MANAGER */}
+            {storeSubTab === "blog" && (
+              <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-xs">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-black text-slate-900">ব্লগ পোস্ট ও ভিসা গাইডলাইন এডিটর (Blog Manager)</h3>
+                    <p className="text-xs text-slate-500">
+                      রিচ টেক্সট এডিটরের মাধ্যমে নতুন আর্টিকেল, ছবি ও জাপান স্টাডি গাইডলাইন লিখুন ও প্রকাশ করুন
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setStoreSubTab("categories")}
+                    className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-stone-100"
+                  >
+                    ব্লগ ক্যাটেগরি &rarr;
+                  </button>
+                </div>
+                <BlogManager
+                  initialPosts={adminBundle.posts}
+                  categories={adminBundle.categories.filter((c) => c.type === "blog")}
+                />
+              </div>
+            )}
+
+            {/* SUB-TAB 5: CATEGORIES MANAGER */}
+            {storeSubTab === "categories" && (
+              <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-xs">
+                <div className="mb-4">
+                  <h3 className="text-lg font-black text-slate-900">বই ও ব্লগ ক্যাটেগরি ব্যবস্থাপনা (Category Manager)</h3>
+                  <p className="text-xs text-slate-500">
+                    বুক স্টোরের পণ্য এবং ব্লগের জন্য নতুন ক্যাটেগরি তৈরি বা মুছে ফেলুন
+                  </p>
+                </div>
+                <CategoryManager initialCategories={adminBundle.categories} />
+              </div>
+            )}
+
+            {/* SUB-TAB 6: REVIEWS MODERATION */}
+            {storeSubTab === "reviews" && (
+              <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-xs">
+                <div className="mb-4">
+                  <h3 className="text-lg font-black text-slate-900">কাস্টমার প্রোডাক্ট রিভিউ মডারেশন (Review Manager)</h3>
+                  <p className="text-xs text-slate-500">
+                    পাঠক ও শিক্ষার্থীদের পাঠানো বুক রিভিউ এবং স্টার রেটিং যাচাই করে ওয়েবসাইটে প্রকাশের অনুমোদন দিন
+                  </p>
+                </div>
+                <ReviewManager initialReviews={adminBundle.reviews} />
+              </div>
+            )}
+
+            {/* SUB-TAB 7: SUPABASE STORAGE BUCKETS & UPLOADS */}
+            {storeSubTab === "uploads" && (
+              <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-xs">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Database className="h-5 w-5 text-emerald-600" />
+                    <h3 className="font-extrabold text-base text-slate-900">
+                      Supabase Storage ডক ও মিডিয়া ম্যানেজার (Storage Buckets)
+                    </h3>
+                  </div>
+                  <span className="text-xs font-mono text-slate-400">knltc-documents & knltc-media</span>
+                </div>
+                <p className="text-xs text-slate-600 mb-4">
+                  ভিসা প্রার্থীদের পাসপোর্ট কপি, অ্যাকাডেমিক সনদপত্র এবং বই বা ওয়েবসাইটের ব্যানার ছবি সরাসরি Supabase ক্লাউড স্টোরেজে আপলোড করুন:
+                </p>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="rounded-xl border border-dashed border-stone-300 p-5 bg-stone-50/60 flex flex-col items-center justify-center text-center">
+                    <FileCheck2 className="h-8 w-8 text-emerald-600 mb-2" />
+                    <h4 className="text-xs font-bold text-slate-900">ভিসা ফাইল ডকুমেন্ট (knltc-documents)</h4>
+                    <p className="text-[11px] text-slate-500 mt-1 mb-3">PDF, DOC, স্ক্যান কপি (সর্বোচ্চ ১৫ মেগাবাইট)</p>
+                    <label className="cursor-pointer inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white px-3.5 py-1.5 text-xs font-bold transition shadow-xs">
+                      <span>ডকুমেন্ট ফাইল নির্বাচন করুন</span>
+                      <input
+                        type="file"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const fd = new FormData();
+                          fd.append("file", file);
+                          fd.append("trackingNo", "DOC-" + Date.now().toString().slice(-4));
+                          fd.append("docType", "verified_doc");
+                          showToast("ডকুমেন্ট আপলোড হচ্ছে...");
+                          try {
+                            const res = await fetch("/api/cms/documents", { method: "POST", body: fd });
+                            const json = await res.json();
+                            if (json.ok) {
+                              showToast(`আপলোড সফল! ফাইলের লিঙ্ক: ${json.url}`);
+                            } else {
+                              showToast(json.error || "আপলোড ব্যর্থ হয়েছে");
+                            }
+                          } catch {
+                            showToast("আপলোড সংযোগে ত্রুটি");
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="rounded-xl border border-dashed border-stone-300 p-5 bg-stone-50/60 flex flex-col items-center justify-center text-center">
+                    <ShoppingBag className="h-8 w-8 text-indigo-600 mb-2" />
+                    <h4 className="text-xs font-bold text-slate-900">বইয়ের কভার ও ব্যানার ছবি (knltc-media)</h4>
+                    <p className="text-[11px] text-slate-500 mt-1 mb-3">JPG, PNG, WEBP (সর্বোচ্চ ৫ মেগাবাইট)</p>
+                    <label className="cursor-pointer inline-flex items-center gap-1.5 rounded-lg bg-indigo-700 hover:bg-indigo-800 text-white px-3.5 py-1.5 text-xs font-bold transition shadow-xs">
+                      <span>ছবি ফাইল নির্বাচন করুন</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const fd = new FormData();
+                          fd.append("file", file);
+                          fd.append("bucket", "knltc-media");
+                          showToast("ছবি আপলোড হচ্ছে...");
+                          try {
+                            const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+                            const json = await res.json();
+                            if (json.url) {
+                              showToast(`ছবি আপলোড সফল! লিঙ্ক: ${json.url}`);
+                            } else {
+                              showToast(json.error || "আপলোড ব্যর্থ হয়েছে");
+                            }
+                          } catch {
+                            showToast("আপলোড সংযোগে ত্রুটি");
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>
