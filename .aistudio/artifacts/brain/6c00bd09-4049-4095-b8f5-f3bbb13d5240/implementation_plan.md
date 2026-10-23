@@ -1,132 +1,113 @@
-# KNLTC Enterprise ERP — Unified Cross-Module Interconnection & Industry-Grade Upgrade
+# 360° Lead & Student Profile Command Center Upgrade
 
-An end-to-end relational upgrade of the KNLTC Operations Dashboard that interconnects **CRM**, **Visa Pipeline**, **Partner Institutions & B2B Agents**, **LMS**, **HR & Payroll**, **Finance**, and **Executive Overview** into a single, reactive operational engine where actions in any module automatically propagate across all linked business records.
+This plan transforms the existing two-column Lead Profile modal into a multi-tab **360° Student & Visa Command Center**. Counselors and administrators will be able to evaluate Japan visa eligibility, track 12 required immigration documents, calculate sponsor bank solvency and education loan needs, log timestamped counseling and call activities with priority tags, send 1-click contextual WhatsApp templates, collect fee installments with instant money receipts, advance 10-step visa stages, and print an official Student Assessment & Admission Sheet—all from a single unified profile interface.
 
 ---
 
-### User Review & Critical Decisions
+## User Review & Critical Decisions
 
 > [!IMPORTANT]
-> The following architectural and workflow decisions were confirmed during interactive discovery and govern how all six core modules synchronize in real time:
+> All four core product decisions have been confirmed through your selections and are incorporated into this architecture:
 
-- **Confirmed Decision 1 — Automated Lead-to-Pipeline & Partner Sync**: Enrolling a CRM lead or opening a Visa File automatically provisions a linked **Visa Pipeline** applicant record, binds the selected **Japanese Partner School** (updating active student seat counts), and links the referring **B2B Agent** (incrementing referral counters).
-- **Confirmed Decision 2 — Financial Ledger, Student Dues, B2B Commission & 1-Click Payroll Sync**:
-  - Student fee payments in **Finance** bind directly to CRM/Visa student profiles to automatically calculate total contract value, paid installments, and live remaining dues.
-  - Advancing a student to **Stage 6 (COE Approved)** or **Stage 9 (Visa Stamped)** in the Pipeline automatically calculates Japanese Partner School commission receivables (JPY/BDT) and triggers pending commission accruals for the linked B2B Agent.
-  - **HR** includes a **1-Click Monthly Payroll Disbursement** action (individual or bulk) that computes base salary + earned performance bonuses and logs verified `EXPENSE_PAYROLL` entries into the Finance General Ledger.
-- **Confirmed Decision 3 — Role-Based HR Assignment & Automated KPI Attribution**:
-  - **Counselors / Tele-Counselors** are dynamically selectable when assigning CRM leads; converting a lead to `ADMITTED` automatically increments the assigned counselor's admission KPI.
-  - **Senior Sensei** are linked to LMS language batches; logging a class session updates their monthly class KPI.
-  - **Visa Officers** are assigned to Visa Pipeline files; advancing a file across COE/Embassy milestones automatically increments their processed file KPI.
-- **Confirmed Decision 4 — Executive Overview Command Center**: The Overview tab features four live cross-module intelligence blocks:
-  1. **End-to-End Conversion Funnel** (CRM Leads → Counseled → Enrolled/LMS → Visa File Opened → COE Approved → Visa Stamped & Departed).
-  2. **Actionable Financial Alerts** (Students with pending fee dues & B2B Agents with payable commission balances).
-  3. **Partner School Quota & Placement Matrix** (Seat allocation vs. assigned students and expected JPY commission per school).
-  4. **Top Performer Leaderboard** (Ranking Counselors by conversion rate and B2B Agents by successful placements).
+- **Confirmed Decision 1 (Interface Architecture)**: **Multi-Tab 360° Command Center** with five dedicated workspace tabs:
+  1. **Bio & Eligibility (`bio`)**: Personal/academic bio, Japan Exam (JLPT/NAT/JFT) score tracker, and live **Auto Japan Visa Eligibility Score** (0–100%).
+  2. **Documents & Sponsor (`docs`)**: **12-Item Immigration Document Checklist Vault** (Pending / Submitted / Verified) + **Sponsor Bank Solvency & Loan Eligibility Calculator**.
+  3. **Finance & Visa (`finance_visa`)**: **Live Student Ledger** (Contract, Paid, Due, 1-Click Fee Collection & Receipt) + **Direct 10-Step Visa Stage Controller** & School Interview status + **LMS Batch Progress & Attendance Summary**.
+  4. **Counseling Timeline (`timeline`)**: **Timestamped Call & Meeting Activity Log**, **Priority Tags (`HOT`, `WARM`, `COLD`)**, scheduled follow-up reminders, and **1-Click Contextual WhatsApp Templates**.
+  5. **Portal Login & Print (`access_print`)**: Student Portal Login provisioning, module permission toggles, and a **Printable Official Student Assessment & Admission Sheet**.
+- **Confirmed Decision 2 (Eligibility & Document Vault)**: Automatic calculation of Japan Immigration eligibility based on SSC/HSC GPA, Study Gap years, Japanese proficiency/exam scores, and Sponsor Bank Solvency, paired with a persistent 12-document verification vault.
+- **Confirmed Decision 3 (Counseling & Communication Engine)**: Structured activity log entries (Call, Office Visit, Voice/Meeting Summary, Document Follow-up, WhatsApp Sent) with counselor attribution, priority status, and pre-filled WhatsApp message templates in Bengali and English.
+- **Confirmed Decision 4 (Live Cross-Module ERP Actions)**: Direct synchronization with the central ERP store so fee collection, visa stage updates, LMS batch progress updates, and partner school/agent assignments immediately reflect across Overview, CRM, Visa Pipeline, Partners, HR, and Finance.
 
 ---
 
-### 1. Overview & Core Concept
+## 1. Overview & Core Concept
 
-- **What It Does**: Transforms isolated dashboard tabs into a relational Enterprise Resource Planning (ERP) suite tailored for a Japanese Language & Visa Processing consultancy. Every student, partner school, B2B sub-agent, staff member, and financial voucher shares relational IDs so state transitions cascade cleanly without manual double-entry.
-- **Target Audience / Persona**: Managing Director (Super Admin), Branch Managers (Dhaka HQ & Khulna), Tele-Counselors, Japanese Language Sensei, Visa Documentation Officers, and Open-Book Investors.
-- **Key Value**: Eliminates data silos, prevents revenue leakage (untracked student dues or unbilled school commissions), automates B2B agent commission accounting, and gives leadership real-time visibility into operational bottlenecks.
+- **What It Does**: Replaces the static lead edit dialog with a comprehensive 360° candidate dossier that guides a student from initial inquiry all the way to Japanese language batch progress, COE document verification, fee settlement, and visa stamping.
+- **Target Audience / Persona**: Admission Counselors, Tele-Counselors, Visa Processing Officers, and Branch Managers at Dhaka HQ and Khulna Branch.
+- **Key Value**: Eliminates switching between 5 different dashboard tabs to check a student's payment history, visa stage, LMS attendance, or missing documents. Everything linked to a candidate is viewable and actionable in one place.
 
 ---
 
-### 2. User Experience & Visual Design
+## 2. User Experience & Visual Design
 
 - **Key User Flows**:
-  1. **Lead Intake to Admission (CRM → HR → LMS → Pipeline → Partners → Finance)**:
-     - Admin/Counselor creates or edits a Lead in CRM, assigning an active **Counselor** (from HR), an optional **B2B Referring Agent** (from Partners), and a **Target Partner School**.
-     - When the Lead is admitted/enrolled (via quick admission or the 360° Student Provisioning modal), the system automatically:
-       - Creates/updates the **Visa Pipeline** card linked to the chosen Partner School and Visa Officer.
-       - Increments the **Partner School's** active student count and the **B2B Agent's** referred student count.
-       - Increments the assigned **Counselor's** achieved admissions KPI in HR.
-       -Optionally logs the initial **Course Fee / Package Advance** directly into the **Finance** ledger and generates an instant Money Receipt.
-  2. **Visa Stage Progression to Commission & Billing (Pipeline → Partners → Finance → HR)**:
-     - Moving a candidate in the **10-Stage Visa Pipeline** to **Stage 6 (COE Approved)** or **Stage 9 (Visa Stamped)** automatically:
-       - Marks COE/Visa status and increments the assigned **Visa Officer's** file processing KPI.
-       - Accrues the **B2B Agent's** pending commission (`agreedCommissionBdt`) and increments their `successfulVisasCount`.
-       - Updates the **Partner School's** expected/received JPY commission and flags the student's **COE Service Charge (৳1,20,000)** or **Premium Package** balance as due in Finance.
-  3. **B2B Payout & HR Payroll Settlement (Partners / HR → Finance)**:
-     - Clicking **"Settle Commission"** on a B2B Agent card moves their balance from `pendingCommissionBdt` to `paidCommissionBdt` and records an `EXPENSE_B2B_COMMISSION` voucher in Finance.
-     - Clicking **"Disburse Salary"** on an HR staff member (or **"Run Monthly Payroll"**) records an `EXPENSE_PAYROLL` transaction (Base Salary + Performance Bonus) in Finance.
+  1. **Header & Quick-Status Bar**: Displays candidate avatar initials, full name, file tracking ID, priority badge (`HOT` / `WARM` / `COLD`), live **Japan Visa Eligibility Score** meter, quick-call/WhatsApp triggers, and a **"Print Assessment Sheet"** action button.
+  2. **Tab 1 — Bio, Academic & Exam Score Tracker**: Edit personal/guardian details, SSC/HSC/Diploma/BSc GPA breakdown, study gap years, and JLPT/NAT/JFT exam registration/score details. A live **Eligibility Breakdown Panel** explains the candidate's score across 4 criteria (GPA, Study Gap, Language Level, Sponsor Solvency).
+  3. **Tab 2 — Document Checklist Vault & Sponsor Solvency Calculator**:
+     - Interactive 12-item Japan Immigration COE checklist (Passport, Birth Certificate, NID, SSC & HSC Transcripts/Certificates, Language Certificate, Bank Solvency Certificate, 6-Month Bank Statement, Sponsor Tax/TIN Certificate, Income Source Proof, Family Relationship Certificate) with 1-click status cycling (`MISSING` ➔ `SUBMITTED` ➔ `VERIFIED`) and completion progress bar.
+     - Sponsor Solvency Calculator comparing required balance (e.g., ৳18,00,000 – ৳22,00,000 BDT) against current sponsor balance and flagging whether Bank Loan Assistance (Agrani / Social Islami / Pubali Bank) is required.
+  4. **Tab 3 — Live Finance, 10-Step Visa Controller & LMS Summary**:
+     - **Student Ledger**: Shows Contract Amount, Paid Amount, Due Balance, and a chronological table of all receipts linked to this student, plus an inline **"Collect Fee Installment"** form that issues an official receipt and updates Finance immediately.
+     - **10-Step Visa Stage Controller**: Interactive stage selector (Stage 1 to Stage 10), COE status, School Interview status (`NOT_SCHEDULED`, `SCHEDULED`, `PASSED`, `RE_INTERVIEW`), Target Partner School, and Assigned Visa Officer.
+     - **LMS Batch & Attendance Summary**: Shows enrolled batch, assigned Japanese Sensei, course progress percentage slider, and attendance percentage.
+  5. **Tab 4 — Counseling Timeline, Priority & WhatsApp Templates**:
+     - Set lead priority (`HOT` / `WARM` / `COLD`) and next follow-up date.
+     - Add timestamped counseling/call/meeting summary notes (tagged as Phone Call, Office Visit, Document Review, or Guardian Meeting).
+     - 1-Click WhatsApp Templates (Initial Counseling Summary, Missing Document Reminder, Zoom School Interview Prep, Due Fee Installment Reminder, Login Credentials) that open WhatsApp with personalized Bengali/English messages and auto-log the outreach in the timeline.
+  6. **Tab 5 — Portal Login Access & Printable Official Dossier**:
+     - Manage Student Portal credentials and module access permissions.
+     - Preview and print a clean A4 **Official Student Assessment & Admission Sheet** containing bio, eligibility score, document checklist status, financial summary, and signature blocks for Student and Counselor.
+
 - **Visual Identity & Theme**:
-  - *Aesthetic Direction*: High-density, executive SaaS workspace following strict single-elevation depth (`1px solid` hairline borders, zero nested card sandwiches, zero decorative pulsing dots, zero thick left accent borders).
-  - *Color Palette & Mood*: 60% Crisp Neutral Slate Canvas (`#F8FAFC` / `#FFFFFF`), 30% Structural Surfaces & Hairline Dividers (`#E2E8F0`, `#475569`), 10% High-Intent Accent Budget (`#0F172A` Primary Executive Slate, `#E11D48` Crimson Japan Accent, `#059669` Nominal/Paid Emerald, `#D97706` Pending/Due Amber).
-  - *Typography & Hierarchy*: Clean geometric display headers paired with high-legibility body prose and strict `font-mono tabular-nums` on every financial figure, conversion percentage, phone number, receipt ID, and KPI counter.
-  - *Zero-Pill Metadata Discipline*: Informational metadata (dates, branch codes, tracking numbers, secondary tags) rendered as clean inline text with middle-dot (`·`) separators; segmented controls and interactive status filters styled as crisp functional buttons.
+  - *Aesthetic Direction*: High-density enterprise SaaS dossier with clean single-elevation surfaces, crisp 1px structural borders (`border-slate-200/80`), and zero nested card clutter.
+  - *Color Palette & Mood*: Crisp white (`#FFFFFF`) and cool slate (`#F8FAFC`) canvas, deep slate (`#0F172A`) primary typography and active tab indicators, semantic emerald (`#16A34A`) for verified/eligible states, amber (`#D97706`) for pending documents/warm priority, and crimson (`#B91C1C`) for hot priority/missing critical items.
+  - *Typography & Hierarchy*: Clean sans-serif headings with `tabular-nums` (`font-mono`) strictly enforced on all financial figures, eligibility percentages, GPA numbers, and dates.
 
 ---
 
-### 3. Key Product Decisions & Trade-Offs
+## 3. Key Product Decisions & Trade-Offs
 
-- **Decision 1 — Relational Foreign Keys with Graceful Fallback Matching**:
-  - *Chosen Approach*: Add explicit relational fields (`leadId`, `visaApplicantId`, `partnerSchoolId`, `b2bAgentId`, `assignedCounselorId`, `assignedVisaOfficerId`, `assignedSenseiId`, `contractAmountBdt`, `paidAmountBdt`) while maintaining backward-compatible fallback matching by name/phone for existing records.
-  - *Why*: Ensures 100% compatibility with existing records and Supabase tables while enabling deterministic cross-module updates.
-  - *Alternatives Considered*: Strict database-only foreign keys that would break if a user types a custom school or staff name before creating the entity.
-- **Decision 2 — Atomic Cross-Module Orchestrator Functions in Store**:
-  - *Chosen Approach*: Centralize multi-entity state mutations inside dedicated store actions (e.g., `promoteLeadToPipeline`, `advanceVisaStageWithSync`, `recordStudentPaymentWithSync`, `settleB2bCommission`, `disburseStaffPayroll`) that update local state and fire non-blocking Supabase syncs.
-  - *Why*: Guarantees UI consistency across all tabs immediately upon any user interaction without page reloads or stale counters.
+- **Decision 1: Deterministic Auto-Calculated Japan Visa Eligibility Score**
+  - *Chosen Approach*: Compute a transparent 0–100% score in real time from 4 weighted factors: Academic GPA (30 pts), Study Gap (25 pts — 0–2 yrs full points, 3–5 yrs moderate, 6+ yrs requires SSW/strong justification), Japanese Language Level/Exam (25 pts), and Sponsor Solvency/Document Readiness (20 pts).
+  - *Why*: Gives counselors an instant, objective assessment of whether a candidate is best suited for Regular Student Visa, Premium Package, or SSW Skill Visa.
+- **Decision 2: Relational Sync Between Profile Tabs and Global ERP Store**
+  - *Chosen Approach*: Recording a fee payment, advancing a visa stage, or updating LMS progress inside the Lead Profile invokes the same central store orchestrators (`addFinancialTransaction`, `updateVisaStage`, `promoteLeadToVisaPipeline`) used by the main dashboard tabs.
+  - *Why*: Guarantees 100% data consistency across CRM, Finance, Visa Pipeline, Partners, and HR KPIs without duplicate state logic.
 
 ---
 
-### 4. Technical Architecture & Data Strategy *(Technical Reference)*
+## 4. Technical Architecture & Data Strategy
 
-- **Architecture & Cross-Module Synchronization Diagram**:
+### Architecture & Component Diagram
 
 ```
-┌───────────────────────────────────────────────────────────────────────────────────┐
-│                   EXECUTIVE OVERVIEW COMMAND CENTER (Live KPIs)                   │
-│  ┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐ ┌──────────────┐  │
-│  │ Lead→Visa Funnel │ │ Dues & B2B Alert │ │ School Quota Map │ │ Leaderboards │  │
-│  └────────▲─────────┘ └────────▲─────────┘ └────────▲─────────┘ └──────▲───────┘  │
-└───────────┼────────────────────┼────────────────────┼──────────────────┼──────────┘
-            │                    │                    │                  │
-┌───────────┴────────────────────┴────────────────────┴──────────────────┴──────────┐
-│                 RELATIONAL ERP STATE ENGINE & SUPABASE SYNC                       │
-└─────┬─────────────────┬──────────────────┬──────────────────┬───────────────┬─────┘
-      │                 │                  │                  │               │
-      ▼                 ▼                  ▼                  ▼               ▼
-┌───────────┐     ┌───────────┐      ┌───────────┐      ┌───────────┐   ┌───────────┐
-│  1. CRM   │────▶│2. PIPELINE│─────▶│3. PARTNERS│      │   4. HR   │   │ 5. FINANCE│
-│  & LEADS  │     │ (10-STAGE)│      │ & B2B NET │      │ & PAYROLL │   │  & LEDGER │
-├───────────┤     ├───────────┤      ├───────────┤      ├───────────┤   ├───────────┤
-│• Counselor│     │• Visa Off.│      │• JP School│      │• Role KPIs│   │• Fee Dues │
-│• B2B Ref  │     │• School ID│      │  Seat/Comm│      │• Auto-Sync│   │• B2B Pay  │
-│• School   │     │• Stage 6/9│      │• B2B Agent│      │• 1-Click  │   │• Payroll  │
-│• Auto-Sync│     │  Triggers │      │  Accruals │      │  Disburse │   │• P&L/Vouch│
-└───────────┘     └───────────┘      └───────────┘      └───────────┘   └───────────┘
+┌────────────────────────────────────────────────────────────────────────────┐
+│                   LeadProfileModal (360° Command Center)                   │
+│  ┌──────────────────────────────────────────────────────────────────────┐  │
+│  │ Top Summary Header: Avatar · Tracking ID · Priority · Eligibility %  │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
+│  ┌──────────────┬───────────────┬───────────────┬──────────────┬────────┐  │
+│  │ 1. Bio &     │ 2. Docs &     │ 3. Finance,   │ 4. Timeline  │ 5.     │  │
+│  │ Eligibility  │ Sponsor Vault │ Visa & LMS    │ & WhatsApp   │ Login  │  │
+│  │              │               │               │              │ & Print│  │
+│  └──────┬───────┴───────┬───────┴───────┬───────┴──────┬───────┴────┬───┘  │
+└─────────┼───────────────┼───────────────┼──────────────┼────────────┼──────┘
+          │               │               │              │            │
+          ▼               ▼               ▼              ▼            ▼
+┌────────────────────────────────────────────────────────────────────────────┐
+│                    Central ERP Store (knltc-cms-store)                     │
+│  • CrmLead (priority, examScores, documentChecklist, activityLog, sponsor) │
+│  • VisaApplicant (10-Step Stage, interviewStatus, COE & B2B Commission)    │
+│  • FinancialTransaction (Live Student Receipts, Contract/Paid/Due Sync)    │
+│  • LmsUserBridge (Batch, Sensei, Progress %, Attendance %)                 │
+└────────────────────────────────────────────────────────────────────────────┘
 ```
 
-- **Data Model & Relational Enhancements**:
-  - **CRM Lead (`CrmLead`)**: Adds `b2bAgentId`, `partnerSchoolId`, `assignedCounselorId`, `assignedSenseiId`, `contractTotalBdt`, `totalPaidBdt`, and `dueAmountBdt`.
-  - **Visa Applicant (`VisaApplicant`)**: Adds `leadId`, `partnerSchoolId`, `b2bAgentId`, `visaOfficerId`, `contractTotalBdt`, `totalPaidBdt`, `schoolCommissionClaimed`, and `b2bCommissionTriggered`.
-  - **Partner School (`JapanesePartnerSchool`)**: Adds `intakeQuota` (default 20 seats per intake) to track filled vs. available seats and live student roster filtering.
-  - **HR Staff (`StaffMember`)**: Adds `lastPayrollPaidMonth` and automatic KPI linkage to assigned Leads (`COUNSELOR` / `TELE_COUNSELOR`), LMS Batches (`SENIOR_SENSEI`), and Visa Files (`VISA_OFFICER`).
-  - **Financial Transaction (`FinancialTransaction`)**: Adds `linkedLeadId`, `linkedVisaId`, `linkedAgentId`, `linkedStaffId`, and `linkedSchoolId` for full audit traceability.
+### Data Model Enhancements (`CrmLead`)
 
-- **Interactive Component & State Mapping**:
-  - **Overview Module**:
-    - *End-to-End Funnel Bar*: Interactive stage bars showing exact count and conversion % from `Total Leads` → `Counseled` → `Admitted / LMS` → `Visa File Open` → `COE Approved` → `Visa Stamped`. Clicking any stage jumps directly to that filtered view.
-    - *Dues & Commission Alert Panel*: Lists students with `dueAmountBdt > 0` (with 1-click **"Collect Fee"** button opening the pre-filled payment modal) and B2B Agents with `pendingCommissionBdt > 0` (with 1-click **"Pay Commission"** button).
-    - *Partner School Quota Tracker*: Visual capacity bars (`activeStudentsCount / intakeQuota`) and expected JPY commission per school.
-    - *Top Performer Leaderboard*: Live ranking of Counselors (by admissions & conversion %) and B2B Agents (by referrals & COE success).
-  - **CRM Module**:
-    - Lead creation and 360° Student Profile modals include live dropdown selectors populated from **HR Counselors**, **Partner Schools**, and **B2B Agents** (with graceful empty-state prompts if none exist yet).
-    - Status change to `ADMITTED` or clicking **"Promote to Visa Pipeline"** automatically creates the linked Visa Pipeline record, updates Partner School & B2B Agent counters, and increments the Counselor's admission KPI.
-    - Displays live **Payment Status (Paid / Due ৳)** directly on each student row with a 1-click **"Collect Payment"** action.
-  - **Visa Pipeline Module**:
-    - Filterable by **Partner School**, **Assigned Visa Officer**, **Package Type**, and **Stage**.
-    - Advancing a student to **Stage 6 (COE Approved)** automatically triggers B2B Agent pending commission accrual and flags the student's COE service charge receivable.
-    - Advancing to **Stage 7/9** provides a 1-click **"Claim School JPY Commission"** action that converts the school's JPY commission into a verified `INCOME` ledger transaction and updates `totalCommissionReceivedYen`.
-  - **Partners & B2B Module**:
-    - Each **Japanese Partner School** card displays its live assigned students from CRM/Pipeline, seat quota utilization (`Filled / Quota`), and a **"Record School Commission (JPY → BDT)"** button that logs the inflow in Finance.
-    - Each **B2B Agent** card displays live referred students, successful COE/Visas, pending vs. paid commission, and a **"Pay Commission"** button that settles the pending balance and creates an `EXPENSE_B2B_COMMISSION` entry in Finance.
-  - **HR & Payroll Module**:
-    - Displays each staff member's live linked workload (e.g., Assigned Leads count for Counselors, Active Batches for Sensei, Active Visa Files for Visa Officers).
-    - Includes a **"Pay Monthly Salary"** button on each staff card (plus a bulk **"Disburse All Active Payroll"** action) that calculates `monthlyBaseSalaryBdt + performanceBonusBdt`, marks the current month as paid, and posts an `EXPENSE_PAYROLL` voucher in Finance.
-  - **Finance Module**:
-    - **Student Fee Collection Modal** includes a searchable **Student Selector** (from CRM/Visa Pipeline) that auto-fills the student's name, phone, branch, package type, and current due balance, deducting the payment from their remaining due upon save.
-    - **Student Dues Sub-View / Filter** inside Finance shows all enrolled students, their total package contract (`৳1,20,000` Regular / `৳11,00,000` Premium / `৳12,000` Course), total paid to date, remaining balance, and 1-click receipt generation.
+We will extend `CrmLead` with structured optional fields (fully backward-compatible with existing leads):
+- `priority?: "HOT" | "WARM" | "COLD"`
+- `sscGpa?: string`, `hscGpa?: string`, `graduationYear?: string`
+- `japaneseExamType?: "NONE" | "JLPT_N5" | "JLPT_N4" | "NAT_5Q" | "NAT_4Q" | "JFT_BASIC"`
+- `japaneseExamScore?: string`, `japaneseExamStatus?: "NOT_REGISTERED" | "REGISTERED" | "PASSED"`
+- `sponsorRelation?: "FATHER" | "MOTHER" | "BROTHER" | "SISTER" | "SELF"`, `sponsorOccupation?: string`, `sponsorMonthlyIncomeBdt?: number`, `sponsorBankName?: string`, `sponsorBankBalanceBdt?: number`, `bankLoanRequired?: boolean`, `preferredLoanBank?: string`
+- `schoolInterviewStatus?: "NOT_SCHEDULED" | "SCHEDULED" | "PASSED" | "RE_INTERVIEW"`, `schoolInterviewDate?: string`
+- `attendancePercentage?: number`
+- `documentChecklist?: Array<{ id: string; titleBn: string; titleEn: string; status: "MISSING" | "SUBMITTED" | "VERIFIED"; updatedAt?: string }>`
+- `activityLog?: Array<{ id: string; type: "CALL" | "VISIT" | "MEETING_NOTE" | "WHATSAPP" | "DOC_UPDATE" | "PAYMENT" | "STAGE_CHANGE"; summary: string; counselorName: string; createdAt: string }>`
+
+### Interactive Component & State Mapping
+
+- **CRM Table Integration**: The main CRM table will display the candidate's **Priority tag (`HOT`/`WARM`/`COLD`)**, **Document Readiness (`X/12 Verified`)**, and **Eligibility Score (`%`)** alongside their school, agent, and financial due status so counselors can filter and prioritize leads at a glance.
+- **Printable Official Dossier**: Clicking **"Print Official Assessment Sheet"** renders a clean print-ready layout (`window.print()`) formatted specifically for physical student files and guardian sign-off.

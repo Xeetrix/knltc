@@ -79,6 +79,7 @@ import {
   settleB2bAgentCommission,
   disburseStaffPayroll,
   disburseAllActivePayroll,
+  calculateLeadEligibility,
   type MasterKnlTcStore,
   type UserRole,
   type BranchCode,
@@ -1773,51 +1774,76 @@ export default function DashboardPage() {
                                   : 120000);
                             const paidBdt = lead.paidAmountBdt || 0;
                             const dueBdt = lead.dueAmountBdt ?? Math.max(0, contractBdt - paidBdt);
+                            const elig = calculateLeadEligibility(lead);
+                            const leadPriority =
+                              lead.priority || (lead.status === "ADMITTED" ? "HOT" : "WARM");
 
                             return (
                               <tr key={lead.id} className="hover:bg-slate-50/70 transition-colors">
                                 <td className="px-4 py-3.5">
-                                  <button
-                                    type="button"
-                                    onClick={() => setSelectedLeadForProfile(lead)}
-                                    className="text-left group"
-                                  >
-                                    <p className="font-bold text-slate-900 text-xs sm:text-sm group-hover:text-[#b91c1c] transition-colors">
-                                      {lead.name}
-                                    </p>
-                                  </button>
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedLeadForProfile(lead)}
+                                      className="text-left group"
+                                    >
+                                      <p className="font-bold text-slate-900 text-xs sm:text-sm group-hover:text-[#b91c1c] transition-colors">
+                                        {lead.name}
+                                      </p>
+                                    </button>
+                                    <span
+                                      className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded ${
+                                        leadPriority === "HOT"
+                                          ? "bg-red-50 text-red-700"
+                                          : leadPriority === "WARM"
+                                            ? "bg-amber-50 text-amber-800"
+                                            : "bg-slate-100 text-slate-600"
+                                      }`}
+                                    >
+                                      {leadPriority}
+                                    </span>
+                                  </div>
                                   <p className="text-slate-400 font-mono text-[11px] tabular-nums mt-0.5">
-                                    {lead.phone} • {lead.city}
+                                    {lead.phone} · {lead.city}
                                   </p>
-                                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                                    {lead.isFileOpened && (
-                                      <span className="text-[10px] font-semibold text-[#b91c1c]">
-                                        • {language === "bn" ? "ভিসা পাইপলাইনে যুক্ত" : "In Visa Pipeline"}
-                                      </span>
-                                    )}
-                                    {lead.isCourseEnrolled && (
-                                      <span className="text-[10px] font-semibold text-emerald-700">
-                                        • {language === "bn" ? "কোর্সে ভর্তিকৃত" : "Course Enrolled"}
-                                      </span>
-                                    )}
-                                    {lead.targetSchoolName && (
-                                      <span className="text-[10px] font-medium text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded">
-                                        🏫 {lead.targetSchoolName}
-                                      </span>
+                                  <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500 font-mono tabular-nums">
+                                    <span
+                                      className={
+                                        elig.totalScore >= 80
+                                          ? "text-emerald-700 font-semibold"
+                                          : elig.totalScore >= 65
+                                            ? "text-amber-700 font-semibold"
+                                            : "text-slate-600 font-semibold"
+                                      }
+                                    >
+                                      যোগ্যতা: {elig.totalScore}%
+                                    </span>
+                                    <span aria-hidden="true">·</span>
+                                    <span>
+                                      ডকুমেন্ট: {elig.verifiedDocsCount}/{elig.totalDocsCount}
+                                    </span>
+                                    {(lead.targetSchoolName || lead.targetSchool) && (
+                                      <>
+                                        <span aria-hidden="true">·</span>
+                                        <span className="font-sans text-slate-700 font-medium">
+                                          {lead.targetSchoolName || lead.targetSchool}
+                                        </span>
+                                      </>
                                     )}
                                   </div>
                                 </td>
                                 <td className="px-4 py-3.5">
                                   <span className="text-[11px] font-medium text-slate-500 block">
-                                    {lead.referredByAgentName
-                                      ? `এজেন্ট: ${lead.referredByAgentName}`
+                                    {lead.referredByAgentName || lead.b2bAgentName
+                                      ? `এজেন্ট: ${lead.referredByAgentName || lead.b2bAgentName}`
                                       : lead.source}
                                   </span>
                                   <span className="font-semibold text-slate-800 mt-0.5 block">
                                     {lead.interest}
                                   </span>
-                                  <span className="text-[10px] text-emerald-700 font-semibold">
-                                    {lead.education} • {lead.japaneseProficiency}
+                                  <span className="text-[10px] text-emerald-700 font-semibold font-mono tabular-nums">
+                                    {lead.education} · {lead.japaneseProficiency}
+                                    {lead.studyGapYears ? ` · ${lead.studyGapYears}y gap` : ""}
                                   </span>
                                 </td>
                                 <td className="px-4 py-3.5 tabular-nums">

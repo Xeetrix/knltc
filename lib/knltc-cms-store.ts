@@ -60,6 +60,32 @@ export type ServiceInterest =
   | "JAPANESE_N5"
   | "JAPANESE_N4";
 
+export type LeadPriority = "HOT" | "WARM" | "COLD";
+
+export interface LeadDocumentItem {
+  id: string;
+  titleBn: string;
+  titleEn: string;
+  category: "IDENTITY" | "ACADEMIC" | "LANGUAGE" | "SPONSOR_FINANCIAL";
+  status: "MISSING" | "SUBMITTED" | "VERIFIED";
+  updatedAt?: string;
+}
+
+export interface LeadActivityItem {
+  id: string;
+  type:
+    | "CALL"
+    | "VISIT"
+    | "MEETING_NOTE"
+    | "WHATSAPP"
+    | "DOC_UPDATE"
+    | "PAYMENT"
+    | "STAGE_CHANGE";
+  summary: string;
+  counselorName: string;
+  createdAt: string;
+}
+
 export interface CrmLead {
   id: string;
   name: string;
@@ -75,8 +101,15 @@ export interface CrmLead {
   source: LeadSource;
   interest: ServiceInterest;
   status: LeadStatus;
+  priority?: LeadPriority;
   education: string;
+  sscGpa?: string;
+  hscGpa?: string;
+  graduationYear?: string;
   japaneseProficiency: "NONE" | "LEARNING_N5" | "PASSED_N5" | "PASSED_N4" | "NAT_JFT";
+  japaneseExamType?: "NONE" | "JLPT_N5" | "JLPT_N4" | "NAT_5Q" | "NAT_4Q" | "JFT_BASIC";
+  japaneseExamScore?: string;
+  japaneseExamStatus?: "NOT_REGISTERED" | "REGISTERED" | "PASSED";
   studyGapYears: number;
   assignedTo: string;
   branch: "DHK-HQ" | "KHULNA-01";
@@ -104,6 +137,21 @@ export interface CrmLead {
   contractAmountBdt?: number;
   paidAmountBdt?: number;
   dueAmountBdt?: number;
+  // Sponsor & Financial Solvency Details
+  sponsorRelation?: "FATHER" | "MOTHER" | "BROTHER" | "SISTER" | "SELF";
+  sponsorOccupation?: string;
+  sponsorMonthlyIncomeBdt?: number;
+  sponsorBankName?: string;
+  sponsorBankBalanceBdt?: number;
+  bankLoanRequired?: boolean;
+  preferredLoanBank?: string;
+  // Visa & School Interview + LMS Attendance
+  schoolInterviewStatus?: "NOT_SCHEDULED" | "SCHEDULED" | "PASSED" | "RE_INTERVIEW";
+  schoolInterviewDate?: string;
+  attendancePercentage?: number;
+  // 12-Item Document Checklist & Activity Timeline
+  documentChecklist?: LeadDocumentItem[];
+  activityLog?: LeadActivityItem[];
   hasLoginAccess?: boolean;
   loginEmail?: string;
   loginPassword?: string;
@@ -2468,5 +2516,304 @@ export function deleteStaffMember(id: string) {
   syncToServer("DELETE", "knltc_staff_members", { id });
 }
 
+// ------------------------------------------------------------------------------
+// 360° Lead Profile: Default 12-Item Immigration Checklist, Eligibility Engine & Activity Log
+// ------------------------------------------------------------------------------
+export const DEFAULT_LEAD_DOCUMENTS: LeadDocumentItem[] = [
+  {
+    id: "doc-passport",
+    titleBn: "মূল পাসপোর্ট (MRP / E-Passport - ন্যূনতম ১ বছর মেয়াদ)",
+    titleEn: "Valid Passport (MRP / E-Passport)",
+    category: "IDENTITY",
+    status: "MISSING",
+  },
+  {
+    id: "doc-nid-birth",
+    titleBn: "ডিজিটাল জন্ম নিবন্ধন (ইংরেজি) ও জাতীয় পরিচয়পত্র (NID)",
+    titleEn: "English Birth Certificate & National ID",
+    category: "IDENTITY",
+    status: "MISSING",
+  },
+  {
+    id: "doc-photos",
+    titleBn: "জাপান ইমিগ্রেশন সাইজ ছবি (4cm x 3cm - সাদা ব্যাকগ্রাউন্ড)",
+    titleEn: "Biometric Photographs (4cm x 3cm)",
+    category: "IDENTITY",
+    status: "MISSING",
+  },
+  {
+    id: "doc-ssc",
+    titleBn: "এসএসসি (SSC) মূল সার্টিফিকেট ও মার্কশিট (ভেরিফাইড)",
+    titleEn: "SSC Original Certificate & Transcript",
+    category: "ACADEMIC",
+    status: "MISSING",
+  },
+  {
+    id: "doc-hsc",
+    titleBn: "এইচএসসি / ডিপ্লোমা / অনার্স মূল সার্টিফিকেট ও মার্কশিট",
+    titleEn: "HSC / Diploma / Bachelor Certificate & Transcript",
+    category: "ACADEMIC",
+    status: "MISSING",
+  },
+  {
+    id: "doc-study-gap",
+    titleBn: "স্টাডি গ্যাপ জাস্টিফিকেশন / জব এক্সপেরিয়েন্স সার্টিফিকেট (প্রযোজ্য ক্ষেত্রে)",
+    titleEn: "Study Gap Explanation / Job Experience Certificate",
+    category: "ACADEMIC",
+    status: "MISSING",
+  },
+  {
+    id: "doc-jp-150hr",
+    titleBn: "KNLTC ১৫০ ঘণ্টা জাপানি ভাষা কোর্স সম্পন্ন সনদ",
+    titleEn: "150+ Hours Japanese Language Study Certificate",
+    category: "LANGUAGE",
+    status: "MISSING",
+  },
+  {
+    id: "doc-jlpt-nat",
+    titleBn: "JLPT N5/N4 অথবা NAT-TEST / JFT-Basic পাস সার্টিফিকেট",
+    titleEn: "JLPT / NAT-TEST / JFT Official Pass Certificate",
+    category: "LANGUAGE",
+    status: "MISSING",
+  },
+  {
+    id: "doc-bank-solvency",
+    titleBn: "স্পন্সরের ব্যাংক সলভেন্সি সার্টিফিকেট (৳১৮–২২ লক্ষ সমপরিমাণ)",
+    titleEn: "Sponsor Bank Solvency Certificate (৳18L–22L BDT)",
+    category: "SPONSOR_FINANCIAL",
+    status: "MISSING",
+  },
+  {
+    id: "doc-bank-statement",
+    titleBn: "স্পন্সরের বিগত ৬ মাসের ব্যাংক স্টেটমেন্ট (অরিজিনাল সিলসহ)",
+    titleEn: "6-Month Official Bank Transaction Statement",
+    category: "SPONSOR_FINANCIAL",
+    status: "MISSING",
+  },
+  {
+    id: "doc-income-tax",
+    titleBn: "স্পন্সরের আয়ের উৎস সনদ, ট্রেড লাইসেন্স / চাকরির সনদ ও TIN/Tax রিটার্ন",
+    titleEn: "Sponsor Income Certificate, Trade License & Tax Return",
+    category: "SPONSOR_FINANCIAL",
+    status: "MISSING",
+  },
+  {
+    id: "doc-family-rel",
+    titleBn: "পরিবারিক সম্পর্ক সনদ (Family Relationship Certificate - ইউনিয়ন/ওয়ার্ড)",
+    titleEn: "Official Family Relationship Certificate",
+    category: "SPONSOR_FINANCIAL",
+    status: "MISSING",
+  },
+];
 
+export function getLeadDocumentChecklist(lead: Partial<CrmLead>): LeadDocumentItem[] {
+  if (lead.documentChecklist && lead.documentChecklist.length > 0) {
+    return lead.documentChecklist;
+  }
+  const hasPassport = Boolean(lead.passportNo && lead.passportNo.trim().length > 3);
+  const hasPassedJp =
+    lead.japaneseProficiency === "PASSED_N5" ||
+    lead.japaneseProficiency === "PASSED_N4" ||
+    lead.japaneseProficiency === "NAT_JFT" ||
+    lead.japaneseExamStatus === "PASSED";
+  const isEnrolled = Boolean(lead.isCourseEnrolled || lead.status === "ADMITTED");
+  const hasSolvency = (lead.sponsorBankBalanceBdt || 0) >= 1500000;
 
+  return DEFAULT_LEAD_DOCUMENTS.map((doc) => {
+    if (doc.id === "doc-passport" && hasPassport) {
+      return { ...doc, status: "VERIFIED" as const };
+    }
+    if (doc.id === "doc-jlpt-nat" && hasPassedJp) {
+      return { ...doc, status: "VERIFIED" as const };
+    }
+    if (doc.id === "doc-jp-150hr" && isEnrolled) {
+      return { ...doc, status: "SUBMITTED" as const };
+    }
+    if ((doc.id === "doc-ssc" || doc.id === "doc-hsc") && isEnrolled) {
+      return { ...doc, status: "VERIFIED" as const };
+    }
+    if (doc.id === "doc-bank-solvency" && hasSolvency) {
+      return { ...doc, status: "VERIFIED" as const };
+    }
+    return { ...doc };
+  });
+}
+
+export function calculateLeadEligibility(lead: Partial<CrmLead>): {
+  totalScore: number;
+  gpaScore: number;
+  gapScore: number;
+  languageScore: number;
+  financialScore: number;
+  verifiedDocsCount: number;
+  submittedDocsCount: number;
+  totalDocsCount: number;
+  tier: "EXCELLENT" | "GOOD" | "MODERATE" | "NEEDS_REVIEW";
+  recommendationBn: string;
+  recommendationEn: string;
+} {
+  // 1. Academic GPA Score (max 30 points)
+  let gpaScore = 20;
+  const parsedSsc = parseFloat(lead.sscGpa || "");
+  const parsedHsc = parseFloat(lead.hscGpa || "");
+  const gpaText = (lead.gpaDetails || "").toLowerCase();
+
+  if (!isNaN(parsedSsc) && !isNaN(parsedHsc)) {
+    const avg = (parsedSsc + parsedHsc) / 2;
+    if (avg >= 4.5) gpaScore = 30;
+    else if (avg >= 4.0) gpaScore = 27;
+    else if (avg >= 3.5) gpaScore = 23;
+    else if (avg >= 3.0) gpaScore = 18;
+    else gpaScore = 12;
+  } else if (gpaText.includes("5.0") || gpaText.includes("4.8") || gpaText.includes("4.5")) {
+    gpaScore = 29;
+  } else if (gpaText.includes("4.") || gpaText.includes("3.8")) {
+    gpaScore = 25;
+  } else if (gpaText.includes("3.")) {
+    gpaScore = 20;
+  }
+
+  // 2. Study Gap Score (max 25 points)
+  const gap = Number(lead.studyGapYears ?? 0);
+  let gapScore = 25;
+  if (gap <= 2) gapScore = 25;
+  else if (gap <= 4) gapScore = 20;
+  else if (gap <= 6) gapScore = 14;
+  else gapScore = 8;
+
+  // 3. Language & Exam Score (max 25 points)
+  let languageScore = 10;
+  if (
+    lead.japaneseProficiency === "PASSED_N4" ||
+    lead.japaneseExamType === "JLPT_N4" ||
+    lead.japaneseExamType === "NAT_4Q" ||
+    lead.japaneseExamType === "JFT_BASIC"
+  ) {
+    languageScore = 25;
+  } else if (
+    lead.japaneseProficiency === "PASSED_N5" ||
+    lead.japaneseProficiency === "NAT_JFT" ||
+    lead.japaneseExamStatus === "PASSED"
+  ) {
+    languageScore = 23;
+  } else if (
+    lead.japaneseProficiency === "LEARNING_N5" ||
+    lead.japaneseExamStatus === "REGISTERED" ||
+    lead.isCourseEnrolled
+  ) {
+    languageScore = 17;
+  } else {
+    languageScore = 10;
+  }
+
+  // 4. Financial Solvency & Document Readiness (max 20 points)
+  const docs = getLeadDocumentChecklist(lead);
+  const verifiedDocsCount = docs.filter((d) => d.status === "VERIFIED").length;
+  const submittedDocsCount = docs.filter((d) => d.status === "SUBMITTED").length;
+  const totalDocsCount = docs.length;
+
+  const balance = Number(lead.sponsorBankBalanceBdt ?? 0);
+  let solvencyPts = 6;
+  if (balance >= 1800000) solvencyPts = 12;
+  else if (balance >= 1200000 || lead.bankLoanRequired) solvencyPts = 10;
+  else if (lead.guardianName) solvencyPts = 7;
+
+  const docPts = Math.min(8, Math.round(((verifiedDocsCount + submittedDocsCount * 0.5) / totalDocsCount) * 8));
+  const financialScore = Math.min(20, solvencyPts + docPts);
+
+  const totalScore = Math.min(100, gpaScore + gapScore + languageScore + financialScore);
+
+  let tier: "EXCELLENT" | "GOOD" | "MODERATE" | "NEEDS_REVIEW" = "GOOD";
+  let recommendationBn = "";
+  let recommendationEn = "";
+
+  if (totalScore >= 82) {
+    tier = "EXCELLENT";
+    recommendationBn =
+      "জাপান স্টুডেন্ট ভিসা (COE) ও টোকিও/ওসাকা প্রথম সারির স্কুলের জন্য অত্যন্ত উপযুক্ত প্রোফাইল।";
+    recommendationEn =
+      "Highly eligible for Japan Student Visa (COE) at top-tier Tokyo/Osaka partner schools.";
+  } else if (totalScore >= 68) {
+    tier = "GOOD";
+    recommendationBn =
+      "স্টুডেন্ট ভিসা ফাইল ওপেনিংয়ের জন্য উপযুক্ত — দ্রুত N5 সার্টিফিকেট ও ব্যাংক সলভেন্সি সম্পন্ন করুন।";
+    recommendationEn =
+      "Good profile for Student Visa — complete N5/NAT exam and bank solvency verification.";
+  } else if (totalScore >= 52) {
+    tier = "MODERATE";
+    recommendationBn =
+      gap > 4
+        ? "স্টাডি গ্যাপ বেশি হওয়ায় জব এক্সপেরিয়েন্স সনদসহ স্টুডেন্ট ভিসা অথবা SSW স্পেসিফাইড স্কিলড ভিসা সুপারিশকৃত।"
+        : "ভাষা দক্ষতা বৃদ্ধি ও স্পন্সর ব্যাংক লোন সহায়তা (অগ্রণী/পূবালী ব্যাংক) নিয়ে ফাইল প্রসেস করা যাবে।";
+    recommendationEn =
+      gap > 4
+        ? "Recommend SSW Specified Skilled Visa or Student Visa with verified job experience."
+        : "Eligible with intensive N5 training and partner bank education loan support.";
+  } else {
+    tier = "NEEDS_REVIEW";
+    recommendationBn =
+      "কাউন্সেলর রিভিউ প্রয়োজন — প্রথমে জাপানি ভাষা N5/N4 কোর্স ও ডকুমেন্ট প্রস্তুতি শুরু করার পরামর্শ দিন।";
+    recommendationEn =
+      "Requires senior counselor review — start with N5/N4 language enrollment first.";
+  }
+
+  return {
+    totalScore,
+    gpaScore,
+    gapScore,
+    languageScore,
+    financialScore,
+    verifiedDocsCount,
+    submittedDocsCount,
+    totalDocsCount,
+    tier,
+    recommendationBn,
+    recommendationEn,
+  };
+}
+
+export function addLeadActivityLog(
+  leadId: string,
+  entry: {
+    type: LeadActivityItem["type"];
+    summary: string;
+    counselorName: string;
+  },
+): CrmLead | null {
+  const store = getCmsStore();
+  const lead = store.crmLeads.find((l) => l.id === leadId);
+  if (!lead) return null;
+
+  const newEntry: LeadActivityItem = {
+    id: `act-${Date.now()}-${Math.floor(Math.random() * 100)}`,
+    type: entry.type,
+    summary: entry.summary,
+    counselorName: entry.counselorName,
+    createdAt: new Date().toISOString(),
+  };
+
+  lead.activityLog = [newEntry, ...(lead.activityLog || [])];
+  lead.lastContactedAt = newEntry.createdAt;
+  saveCmsStore(store);
+  return lead;
+}
+
+export function updateLmsProgressAndAttendance(
+  leadId: string,
+  phone: string,
+  progressPercentage: number,
+  attendancePercentage: number,
+): void {
+  const store = getCmsStore();
+  const lead = store.crmLeads.find((l) => l.id === leadId || l.phone === phone);
+  if (lead) {
+    lead.attendancePercentage = attendancePercentage;
+  }
+  const bridge = store.lmsBridges.find(
+    (b) => b.leadId === leadId || b.linkedLeadId === leadId || b.phone === phone,
+  );
+  if (bridge) {
+    bridge.progressPercentage = progressPercentage;
+  }
+  saveCmsStore(store);
+}
