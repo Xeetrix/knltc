@@ -1,113 +1,100 @@
-# 360° Lead & Student Profile Command Center Upgrade
+# 360° Partner Institution (School / University) & B2B Agent Profile Command Center + Empty-State Centering Fix
 
-This plan transforms the existing two-column Lead Profile modal into a multi-tab **360° Student & Visa Command Center**. Counselors and administrators will be able to evaluate Japan visa eligibility, track 12 required immigration documents, calculate sponsor bank solvency and education loan needs, log timestamped counseling and call activities with priority tags, send 1-click contextual WhatsApp templates, collect fee installments with instant money receipts, advance 10-step visa stages, and print an official Student Assessment & Admission Sheet—all from a single unified profile interface.
+This upgrade resolves the left-shifted empty-state text alignment across the dashboard and introduces a comprehensive **4-Tab 360° Profile Command Center** for both **Partner Institutions (Japanese Language Schools, Universities, Vocational Colleges, SSW Employers)** and **B2B Sub-Agents / Partner Agencies**, complete with institutional logos, brochure/license/MOU document vaults, tuition & commission breakdowns, live student rosters, 1-click financial settlements, B2B portal login credentials, and printable official dossiers.
 
 ---
 
 ## User Review & Critical Decisions
 
 > [!IMPORTANT]
-> All four core product decisions have been confirmed through your selections and are incorporated into this architecture:
+> All four product and workflow decisions below were confirmed during our interactive clarification phase and govern the implementation:
 
-- **Confirmed Decision 1 (Interface Architecture)**: **Multi-Tab 360° Command Center** with five dedicated workspace tabs:
-  1. **Bio & Eligibility (`bio`)**: Personal/academic bio, Japan Exam (JLPT/NAT/JFT) score tracker, and live **Auto Japan Visa Eligibility Score** (0–100%).
-  2. **Documents & Sponsor (`docs`)**: **12-Item Immigration Document Checklist Vault** (Pending / Submitted / Verified) + **Sponsor Bank Solvency & Loan Eligibility Calculator**.
-  3. **Finance & Visa (`finance_visa`)**: **Live Student Ledger** (Contract, Paid, Due, 1-Click Fee Collection & Receipt) + **Direct 10-Step Visa Stage Controller** & School Interview status + **LMS Batch Progress & Attendance Summary**.
-  4. **Counseling Timeline (`timeline`)**: **Timestamped Call & Meeting Activity Log**, **Priority Tags (`HOT`, `WARM`, `COLD`)**, scheduled follow-up reminders, and **1-Click Contextual WhatsApp Templates**.
-  5. **Portal Login & Print (`access_print`)**: Student Portal Login provisioning, module permission toggles, and a **Printable Official Student Assessment & Admission Sheet**.
-- **Confirmed Decision 2 (Eligibility & Document Vault)**: Automatic calculation of Japan Immigration eligibility based on SSC/HSC GPA, Study Gap years, Japanese proficiency/exam scores, and Sponsor Bank Solvency, paired with a persistent 12-document verification vault.
-- **Confirmed Decision 3 (Counseling & Communication Engine)**: Structured activity log entries (Call, Office Visit, Voice/Meeting Summary, Document Follow-up, WhatsApp Sent) with counselor attribution, priority status, and pre-filled WhatsApp message templates in Bengali and English.
-- **Confirmed Decision 4 (Live Cross-Module ERP Actions)**: Direct synchronization with the central ERP store so fee collection, visa stage updates, LMS batch progress updates, and partner school/agent assignments immediately reflect across Overview, CRM, Visa Pipeline, Partners, HR, and Finance.
+- **Confirmed Decision 1 — 4-Tab 360° Profile Command Center Modal**: Both Partner Institutions (Schools/Universities) and B2B Agents will open in a dedicated multi-tab 360° Profile Command Center Modal (`Overview & Branding`, `Brochures, Licenses & MOU Vault`, `Assigned / Referred Students`, and `Commission & Financial Ledger`) alongside a fixed Empty-State Alignment across all centered containers.
+- **Confirmed Decision 2 — Partner School & University Profile Scope**: Tracks Institution Logo, Category (`Japanese Language School`, `University`, `Vocational College / Senmon Gakko`, `SSW Employer`), Website & Contact Details, Intake Sessions (`Jan`, `Apr`, `Jul`, `Oct`), Seat Quota vs. Active Students, 1st-Year Tuition / Admission / Hostel Fee & Commission Breakdown (`JPY ¥` & `BDT ৳`), Eligibility Criteria (Min GPA, Study Gap, JLPT/NAT Requirement), and a Document Vault for Brochures, Prospectuses, Application Forms, and Signed MOUs.
+- **Confirmed Decision 3 — B2B Sub-Agent Profile Scope**: Tracks Agency Logo, Organization Type (`Institutional Partner`, `Local Sub-Agent`, `Campus Ambassador`), Trade License No., NID/Passport No., Bank/bKash/Nagad Settlement Account Details, Document Vault (Trade License, NID, Signed B2B MOU Agreement), Referred Students List with Live 10-Step Visa Stage & COE Status, Commission Ledger with 1-Click Payout & Settlement History, and a B2B Portal Login Credentials Generator.
+- **Confirmed Decision 4 — Live Executable Actions**: Supports direct File/Data-URL or Link Upload for Logos, Brochures, Trade Licenses, and MOUs; 1-Click Student Assignment (linking CRM/Visa students to a School or B2B Agent); 1-Click JPY/BDT Commission Claim & Payout Settlement synced with the Finance Ledger; Direct WhatsApp & Email Communication Templates; and Printable Official Partner Dossier & Commission Statement Sheets.
 
 ---
 
 ## 1. Overview & Core Concept
 
-- **What It Does**: Replaces the static lead edit dialog with a comprehensive 360° candidate dossier that guides a student from initial inquiry all the way to Japanese language batch progress, COE document verification, fee settlement, and visa stamping.
-- **Target Audience / Persona**: Admission Counselors, Tele-Counselors, Visa Processing Officers, and Branch Managers at Dhaka HQ and Khulna Branch.
-- **Key Value**: Eliminates switching between 5 different dashboard tabs to check a student's payment history, visa stage, LMS attendance, or missing documents. Everything linked to a candidate is viewable and actionable in one place.
+- **What It Does**:
+  1. **Empty-State Alignment Fix**: Fixes the global CSS rule (`p { max-width: 72ch }`) that caused paragraphs inside `.text-center` cards and table cells to sit on the left while icons and buttons were centered.
+  2. **360° Partner School / University Command Center**: Transforms each partner school/university card into an interactive institutional hub where admins and counselors can view and edit academic categories, intake sessions, fee structures, download brochures/application forms, assign students, claim JPY commissions, and print official school dossiers.
+  3. **360° B2B Agent Command Center**: Transforms each B2B agency row/card into a complete partner relationship portal with trade license & MOU verification vaults, live tracking of every student referred by that agent across the 10-step visa pipeline, automated COE commission accruals, 1-click payouts, and dedicated B2B login credential issuance.
+- **Target Audience / Persona**: Main Admin (MD Sheikh Baset), Branch Admins (Dhaka HQ & Khulna), Admission Counselors, Visa Officers, and B2B Partner Agencies.
+- **Key Value**: Eliminates scattered institutional documents and manual commission tracking by unifying branding, brochures, legal licenses, student quotas, and financial settlements into a single 360° profile view.
 
 ---
 
 ## 2. User Experience & Visual Design
 
 - **Key User Flows**:
-  1. **Header & Quick-Status Bar**: Displays candidate avatar initials, full name, file tracking ID, priority badge (`HOT` / `WARM` / `COLD`), live **Japan Visa Eligibility Score** meter, quick-call/WhatsApp triggers, and a **"Print Assessment Sheet"** action button.
-  2. **Tab 1 — Bio, Academic & Exam Score Tracker**: Edit personal/guardian details, SSC/HSC/Diploma/BSc GPA breakdown, study gap years, and JLPT/NAT/JFT exam registration/score details. A live **Eligibility Breakdown Panel** explains the candidate's score across 4 criteria (GPA, Study Gap, Language Level, Sponsor Solvency).
-  3. **Tab 2 — Document Checklist Vault & Sponsor Solvency Calculator**:
-     - Interactive 12-item Japan Immigration COE checklist (Passport, Birth Certificate, NID, SSC & HSC Transcripts/Certificates, Language Certificate, Bank Solvency Certificate, 6-Month Bank Statement, Sponsor Tax/TIN Certificate, Income Source Proof, Family Relationship Certificate) with 1-click status cycling (`MISSING` ➔ `SUBMITTED` ➔ `VERIFIED`) and completion progress bar.
-     - Sponsor Solvency Calculator comparing required balance (e.g., ৳18,00,000 – ৳22,00,000 BDT) against current sponsor balance and flagging whether Bank Loan Assistance (Agrani / Social Islami / Pubali Bank) is required.
-  4. **Tab 3 — Live Finance, 10-Step Visa Controller & LMS Summary**:
-     - **Student Ledger**: Shows Contract Amount, Paid Amount, Due Balance, and a chronological table of all receipts linked to this student, plus an inline **"Collect Fee Installment"** form that issues an official receipt and updates Finance immediately.
-     - **10-Step Visa Stage Controller**: Interactive stage selector (Stage 1 to Stage 10), COE status, School Interview status (`NOT_SCHEDULED`, `SCHEDULED`, `PASSED`, `RE_INTERVIEW`), Target Partner School, and Assigned Visa Officer.
-     - **LMS Batch & Attendance Summary**: Shows enrolled batch, assigned Japanese Sensei, course progress percentage slider, and attendance percentage.
-  5. **Tab 4 — Counseling Timeline, Priority & WhatsApp Templates**:
-     - Set lead priority (`HOT` / `WARM` / `COLD`) and next follow-up date.
-     - Add timestamped counseling/call/meeting summary notes (tagged as Phone Call, Office Visit, Document Review, or Guardian Meeting).
-     - 1-Click WhatsApp Templates (Initial Counseling Summary, Missing Document Reminder, Zoom School Interview Prep, Due Fee Installment Reminder, Login Credentials) that open WhatsApp with personalized Bengali/English messages and auto-log the outreach in the timeline.
-  6. **Tab 5 — Portal Login Access & Printable Official Dossier**:
-     - Manage Student Portal credentials and module access permissions.
-     - Preview and print a clean A4 **Official Student Assessment & Admission Sheet** containing bio, eligibility score, document checklist status, financial summary, and signature blocks for Student and Counselor.
-
+  1. **Centered Empty States**: When no Partner Schools or B2B Agents are present, the icon, heading, descriptive subtext, and primary CTA button are all cleanly centered along a single vertical axis.
+  2. **Opening a 360° Partner Profile**: Clicking `"360° প্রোফাইল ও ব্রশিউর"` (`360° Profile & Vault`) or clicking on any Partner School/University card or B2B Agent row opens the full-featured **Partner 360° Command Center Modal**.
+  3. **Uploading Logos, Brochures & Licenses**: Inside Tab 1 (`Overview`) or Tab 2 (`Documents & Brochures Vault`), admins can upload an image/PDF file from their computer (stored as a data URL or file reference) or paste a cloud/Drive link for the Institution Logo, Official Brochure, Application Form, Trade License, NID, or Signed MOU.
+  4. **Assigning Students & Settling Commissions**: Inside Tab 3 (`Students & Quota`), admins can link existing CRM/Visa students to the school or agent with 1 click. Inside Tab 4 (`Commission & Ledger`), admins can claim school commissions (JPY ➔ BDT) or disburse pending B2B agent commissions directly into the Finance Ledger and print an official statement.
 - **Visual Identity & Theme**:
-  - *Aesthetic Direction*: High-density enterprise SaaS dossier with clean single-elevation surfaces, crisp 1px structural borders (`border-slate-200/80`), and zero nested card clutter.
-  - *Color Palette & Mood*: Crisp white (`#FFFFFF`) and cool slate (`#F8FAFC`) canvas, deep slate (`#0F172A`) primary typography and active tab indicators, semantic emerald (`#16A34A`) for verified/eligible states, amber (`#D97706`) for pending documents/warm priority, and crimson (`#B91C1C`) for hot priority/missing critical items.
-  - *Typography & Hierarchy*: Clean sans-serif headings with `tabular-nums` (`font-mono`) strictly enforced on all financial figures, eligibility percentages, GPA numbers, and dates.
+  - *Aesthetic Direction*: High-craft corporate ERP workspace matching the existing KNLTC Command Center (`Plus Jakarta Sans` + `Noto Sans Bengali` + `JetBrains Mono` for tabular numerals).
+  - *Color Palette & Mood*: Crisp white (`#FFFFFF`) and cool slate (`#F8FAFC`) structural surfaces with KNLTC Crimson (`#B91C1C`) primary actions, Emerald (`#15803D`) verified/financial settlement states, and Amber (`#D97706`) pending commission indicators.
+  - *Component Styling & Layout*: Single-elevation bordered surfaces (`border-slate-200/80`), sticky modal header with institutional logo avatar, category/location metadata with clean `·` typographic separators, and `tabular-nums` across all JPY/BDT fee and commission tables.
 
 ---
 
 ## 3. Key Product Decisions & Trade-Offs
 
-- **Decision 1: Deterministic Auto-Calculated Japan Visa Eligibility Score**
-  - *Chosen Approach*: Compute a transparent 0–100% score in real time from 4 weighted factors: Academic GPA (30 pts), Study Gap (25 pts — 0–2 yrs full points, 3–5 yrs moderate, 6+ yrs requires SSW/strong justification), Japanese Language Level/Exam (25 pts), and Sponsor Solvency/Document Readiness (20 pts).
-  - *Why*: Gives counselors an instant, objective assessment of whether a candidate is best suited for Regular Student Visa, Premium Package, or SSW Skill Visa.
-- **Decision 2: Relational Sync Between Profile Tabs and Global ERP Store**
-  - *Chosen Approach*: Recording a fee payment, advancing a visa stage, or updating LMS progress inside the Lead Profile invokes the same central store orchestrators (`addFinancialTransaction`, `updateVisaStage`, `promoteLeadToVisaPipeline`) used by the main dashboard tabs.
-  - *Why*: Guarantees 100% data consistency across CRM, Finance, Visa Pipeline, Partners, and HR KPIs without duplicate state logic.
+- **Decision 1 — Unified vs. Specialized 360° Profile Modals**:
+  - *Chosen Approach*: Dedicated 4-tab 360° Command Center architecture tailored specifically to the distinct needs of **Partner Educational Institutions** (Tuition/Hostel JPY breakdown, Intake months, Brochures, Seat Quota) vs. **B2B Sub-Agents** (Trade License/NID/MOU verification, Referred Student ROI, B2B Portal Login, BDT Payouts & Payment Methods).
+  - *Why*: Educational institutions in Japan operate in JPY with academic intakes and prospectuses, whereas local B2B sub-agents operate in BDT with trade licenses, referral tracking, and mobile/bank payouts.
+- **Decision 2 — Local File Upload + External URL Hybrid for Brochures, Logos & Licenses**:
+  - *Chosen Approach*: Allow admins to either pick a local image/PDF file directly from their device (converted client-side for instant preview/download) OR paste an external URL (Google Drive, official website PDF, etc.) for logos, brochures, trade licenses, and MOUs.
+  - *Why*: Gives immediate zero-friction usability for logos and scanned licenses while supporting large multi-page university brochures hosted on Drive or official school websites.
 
 ---
 
-## 4. Technical Architecture & Data Strategy
+## 4. Technical Architecture & Data Strategy *(Technical Reference)*
 
 ### Architecture & Component Diagram
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────┐
-│                   LeadProfileModal (360° Command Center)                   │
-│  ┌──────────────────────────────────────────────────────────────────────┐  │
-│  │ Top Summary Header: Avatar · Tracking ID · Priority · Eligibility %  │  │
-│  └──────────────────────────────────────────────────────────────────────┘  │
-│  ┌──────────────┬───────────────┬───────────────┬──────────────┬────────┐  │
-│  │ 1. Bio &     │ 2. Docs &     │ 3. Finance,   │ 4. Timeline  │ 5.     │  │
-│  │ Eligibility  │ Sponsor Vault │ Visa & LMS    │ & WhatsApp   │ Login  │  │
-│  │              │               │               │              │ & Print│  │
-│  └──────┬───────┴───────┬───────┴───────┬───────┴──────┬───────┴────┬───┘  │
-└─────────┼───────────────┼───────────────┼──────────────┼────────────┼──────┘
-          │               │               │              │            │
-          ▼               ▼               ▼              ▼            ▼
-┌────────────────────────────────────────────────────────────────────────────┐
-│                    Central ERP Store (knltc-cms-store)                     │
-│  • CrmLead (priority, examScores, documentChecklist, activityLog, sponsor) │
-│  • VisaApplicant (10-Step Stage, interviewStatus, COE & B2B Commission)    │
-│  • FinancialTransaction (Live Student Receipts, Contract/Paid/Due Sync)    │
-│  • LmsUserBridge (Batch, Sensei, Progress %, Attendance %)                 │
-└────────────────────────────────────────────────────────────────────────────┘
+│                   KNLTC Central ERP Store & Supabase Sync                  │
+│  • JapanesePartnerSchool (Logo, Category, Intakes, Fees, Docs, Quota)      │
+│  • B2bAgent (Logo, Trade License, NID, MOU Docs, Payment Info, Login)      │
+│  • Cross-Module Links: CrmLead ⇄ VisaApplicant ⇄ FinancialTransaction      │
+└───────────────────┬────────────────────────────────────┬───────────────────┘
+                    │                                    │
+                    ▼                                    ▼
+┌──────────────────────────────────────┐  ┌──────────────────────────────────┐
+│  360° Partner School / Univ Modal    │  │    360° B2B Agent Profile Modal  │
+│ ──────────────────────────────────── │  │ ──────────────────────────────── │
+│ [Tab 1] Overview, Logo, Fees & Quota │  │ [Tab 1] Agency Bio, License, Pay │
+│ [Tab 2] Brochure, Prospectus & MOU   │  │ [Tab 2] License, NID & MOU Vault │
+│ [Tab 3] Enrolled Students & Assign   │  │ [Tab 3] Referred Students & COE  │
+│ [Tab 4] JPY⇄BDT Commission Ledger    │  │ [Tab 4] Commission Payout & Auth │
+│ [Print] Official Institution Dossier │  │ [Print] Official B2B Statement   │
+└──────────────────────────────────────┘  └──────────────────────────────────┘
 ```
 
-### Data Model Enhancements (`CrmLead`)
-
-We will extend `CrmLead` with structured optional fields (fully backward-compatible with existing leads):
-- `priority?: "HOT" | "WARM" | "COLD"`
-- `sscGpa?: string`, `hscGpa?: string`, `graduationYear?: string`
-- `japaneseExamType?: "NONE" | "JLPT_N5" | "JLPT_N4" | "NAT_5Q" | "NAT_4Q" | "JFT_BASIC"`
-- `japaneseExamScore?: string`, `japaneseExamStatus?: "NOT_REGISTERED" | "REGISTERED" | "PASSED"`
-- `sponsorRelation?: "FATHER" | "MOTHER" | "BROTHER" | "SISTER" | "SELF"`, `sponsorOccupation?: string`, `sponsorMonthlyIncomeBdt?: number`, `sponsorBankName?: string`, `sponsorBankBalanceBdt?: number`, `bankLoanRequired?: boolean`, `preferredLoanBank?: string`
-- `schoolInterviewStatus?: "NOT_SCHEDULED" | "SCHEDULED" | "PASSED" | "RE_INTERVIEW"`, `schoolInterviewDate?: string`
-- `attendancePercentage?: number`
-- `documentChecklist?: Array<{ id: string; titleBn: string; titleEn: string; status: "MISSING" | "SUBMITTED" | "VERIFIED"; updatedAt?: string }>`
-- `activityLog?: Array<{ id: string; type: "CALL" | "VISIT" | "MEETING_NOTE" | "WHATSAPP" | "DOC_UPDATE" | "PAYMENT" | "STAGE_CHANGE"; summary: string; counselorName: string; createdAt: string }>`
+### Data Model Enhancements
+1. **Partner Institution (`JapanesePartnerSchool`) Extensions**:
+   - `institutionType`: `"LANGUAGE_SCHOOL" | "UNIVERSITY" | "VOCATIONAL_COLLEGE" | "SSW_EMPLOYER"`
+   - `logoUrl`, `websiteUrl`, `phone`, `addressJapan`, `establishedYear`
+   - `intakeMonths`: `("JANUARY" | "APRIL" | "JULY" | "OCTOBER")[]`
+   - `firstYearTuitionYen`, `admissionFeeYen`, `hostelFeeMonthlyYen`
+   - `minGpaRequired`, `maxStudyGapYears`, `minLanguageLevel`
+   - `documents`: Array of `PartnerDocumentItem` (`BROCHURE`, `PROSPECTUS`, `MOU_AGREEMENT`, `APPLICATION_FORM`, `FEE_CHART`, `LICENSE_ACCREDITATION`) with status, fileUrl/fileName, uploadedAt, and notes.
+   - `notes`: Institutional summary & interview guidelines.
+2. **B2B Agent (`B2bAgent`) Extensions**:
+   - `logoUrl`, `email`, `whatsapp`, `officeAddress`, `establishedYear`
+   - `tradeLicenseNo`, `nidOrPassportNo`, `tinCertificateNo`
+   - `paymentDetails`: `{ preferredMethod: "BANK" | "BKASH" | "NAGAD"; bankName?: string; accountName?: string; accountNumber?: string; branchName?: string; mobileWalletNo?: string }`
+   - `documents`: Array of `PartnerDocumentItem` (`TRADE_LICENSE`, `NID_PASSPORT`, `SIGNED_MOU`, `TIN_TAX`, `VISITING_CARD`) with verification status (`VERIFIED`, `UPLOADED`, `MISSING`), fileUrl/fileName, and uploadedAt.
+   - `portalAccountId`: Linked system login account ID for 1-click B2B Portal access generation.
+   - `notes`: Agreement terms & bonus tiers.
 
 ### Interactive Component & State Mapping
-
-- **CRM Table Integration**: The main CRM table will display the candidate's **Priority tag (`HOT`/`WARM`/`COLD`)**, **Document Readiness (`X/12 Verified`)**, and **Eligibility Score (`%`)** alongside their school, agent, and financial due status so counselors can filter and prioritize leads at a glance.
-- **Printable Official Dossier**: Clicking **"Print Official Assessment Sheet"** renders a clean print-ready layout (`window.print()`) formatted specifically for physical student files and guardian sign-off.
+- **Global Centering Fix**: Update `p` inside `.text-center` in global styles (`margin-inline: auto`) and wrap empty-state blocks in `flex flex-col items-center justify-center text-center` so headings, descriptions, icons, and buttons are always aligned.
+- **1-Click Student Linking**: Inside both modals, selecting an unlinked student from the dropdown updates `CrmLead` and `VisaApplicant` (`targetSchoolId`/`targetSchoolName` or `referredByAgentId`/`referredByAgentName`), recalculates active student / referral counts, and persists to the store.
+- **Document & Logo Upload Handler**: Supports `<input type="file" accept="image/*,.pdf" />` (converting to data URL with file metadata) as well as external URL attachment, instant preview/download, and status toggling (`MISSING` ➔ `UPLOADED` ➔ `VERIFIED`).
+- **Printable Official Dossier**: Dedicated print view formatter generating an A4 institutional profile & financial statement sheet with KNLTC header, partner logo, fee/commission breakdown, linked student roster, and signature blocks.

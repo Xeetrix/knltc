@@ -80,6 +80,8 @@ import {
   disburseStaffPayroll,
   disburseAllActivePayroll,
   calculateLeadEligibility,
+  getSchoolDocumentVault,
+  getB2bAgentDocumentVault,
   type MasterKnlTcStore,
   type UserRole,
   type BranchCode,
@@ -91,6 +93,7 @@ import {
   type ServiceInterest,
   type JobCircular,
   type JapanesePartnerSchool,
+  type PartnerInstitutionType,
   type B2bAgent,
   type StaffMember,
   type FinancialTransaction,
@@ -104,6 +107,7 @@ import OrderManager from "@/components/admin/OrderManager";
 import ReviewManager from "@/components/admin/ReviewManager";
 import CategoryManager from "@/components/admin/CategoryManager";
 import LeadProfileModal from "@/components/admin/LeadProfileModal";
+import PartnerProfileModal from "@/components/admin/PartnerProfileModal";
 import UserAccessControlPanel from "@/components/admin/UserAccessControlPanel";
 import StudentProfileView from "@/components/admin/StudentProfileView";
 import type {
@@ -143,6 +147,9 @@ export default function DashboardPage() {
   const [activeBranch, setActiveBranch] = useState<BranchCode>("ALL");
   const [isSyncingWithDb, setIsSyncingWithDb] = useState(false);
   const [selectedLeadForProfile, setSelectedLeadForProfile] = useState<CrmLead | null>(null);
+  const [selectedSchoolForProfile, setSelectedSchoolForProfile] =
+    useState<JapanesePartnerSchool | null>(null);
+  const [selectedAgentForProfile, setSelectedAgentForProfile] = useState<B2bAgent | null>(null);
   const [activeTab, setActiveTab] = useState<DashboardTabId>("overview");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [storeSubTab, setStoreSubTab] = useState<
@@ -189,13 +196,17 @@ export default function DashboardPage() {
     linkedLeadId: "",
   });
 
-  // Form states for Partner School
+  // Form states for Partner School / University
   const [schoolForm, setSchoolForm] = useState({
     name: "",
     japaneseName: "",
+    institutionType: "LANGUAGE_SCHOOL" as PartnerInstitutionType,
+    logoUrl: "",
+    websiteUrl: "",
     location: "Tokyo",
     contactPerson: "",
     email: "",
+    firstYearTuitionYen: 760000,
     commissionPerStudentYen: 0,
     commissionPerStudentBdt: 0,
     intakeQuota: 20,
@@ -208,6 +219,9 @@ export default function DashboardPage() {
   const [b2bForm, setB2bForm] = useState({
     organizationName: "",
     agentType: "LOCAL_SUB_AGENT" as B2bAgent["agentType"],
+    logoUrl: "",
+    tradeLicenseNo: "",
+    nidOrPassportNo: "",
     contactPerson: "",
     phone: "",
     city: "Dhaka",
@@ -636,6 +650,9 @@ export default function DashboardPage() {
       setB2bForm({
         organizationName: agent.organizationName,
         agentType: agent.agentType,
+        logoUrl: agent.logoUrl || "",
+        tradeLicenseNo: agent.tradeLicenseNo || "",
+        nidOrPassportNo: agent.nidOrPassportNo || "",
         contactPerson: agent.contactPerson,
         phone: agent.phone,
         city: agent.city,
@@ -650,6 +667,9 @@ export default function DashboardPage() {
       setB2bForm({
         organizationName: "",
         agentType: "LOCAL_SUB_AGENT",
+        logoUrl: "",
+        tradeLicenseNo: "",
+        nidOrPassportNo: "",
         contactPerson: "",
         phone: "017",
         city: "Dhaka",
@@ -670,9 +690,13 @@ export default function DashboardPage() {
       setSchoolForm({
         name: school.name,
         japaneseName: school.japaneseName,
+        institutionType: school.institutionType || "LANGUAGE_SCHOOL",
+        logoUrl: school.logoUrl || "",
+        websiteUrl: school.websiteUrl || "",
         location: school.location,
         contactPerson: school.contactPerson,
         email: school.email,
+        firstYearTuitionYen: school.firstYearTuitionYen ?? 760000,
         commissionPerStudentYen: school.commissionPerStudentYen,
         commissionPerStudentBdt: school.commissionPerStudentBdt,
         intakeQuota: school.intakeQuota || 20,
@@ -685,9 +709,13 @@ export default function DashboardPage() {
       setSchoolForm({
         name: "",
         japaneseName: "",
+        institutionType: "LANGUAGE_SCHOOL",
+        logoUrl: "",
+        websiteUrl: "",
         location: "Tokyo",
         contactPerson: "",
         email: "",
+        firstYearTuitionYen: 760000,
         commissionPerStudentYen: 0,
         commissionPerStudentBdt: 0,
         intakeQuota: 20,
@@ -2361,19 +2389,19 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* Partner Japanese Schools Section */}
+                  {/* Partner Japanese Schools & Universities Section */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-bold text-slate-900">
                         {language === "ja"
-                          ? "提携日本語学校・教育機関"
+                          ? "提携日本語学校・大学・教育機関"
                           : language === "en"
-                            ? "Partner Japanese Language Schools & Academies"
-                            : "জাপানি পার্টনার ভাষা স্কুল ও একাডেমি তালিকা"}
+                            ? "Partner Japanese Language Schools, Universities & Colleges"
+                            : "জাপানি পার্টনার ভাষা স্কুল, ইউনিভার্সিটি ও কলেজ তালিকা"}
                       </h3>
                       <span className="text-xs text-slate-400 tabular-nums">
                         {store.partnerSchools.length}{" "}
-                        {language === "bn" ? "টি স্কুল" : "schools"}
+                        {language === "bn" ? "টি প্রতিষ্ঠান" : "institutions"}
                       </span>
                     </div>
 
@@ -2381,12 +2409,19 @@ export default function DashboardPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {store.partnerSchools.map((sch) => {
                           const quota = sch.intakeQuota || 20;
-                          const quotaPct = Math.min(100, Math.round((sch.activeStudentsCount / quota) * 100));
+                          const quotaPct = Math.min(
+                            100,
+                            Math.round((sch.activeStudentsCount / quota) * 100),
+                          );
                           const coeStudentsForSchool = store.visaApplicants.filter(
                             (v) =>
                               (v.targetSchoolId === sch.id ||
                                 v.targetSchool.toLowerCase() === sch.name.toLowerCase()) &&
                               v.stage >= 6,
+                          ).length;
+                          const schoolDocs = getSchoolDocumentVault(sch);
+                          const readySchoolDocs = schoolDocs.filter(
+                            (d) => d.status === "VERIFIED" || d.status === "UPLOADED",
                           ).length;
 
                           return (
@@ -2395,29 +2430,83 @@ export default function DashboardPage() {
                               className="hover-spotlight rounded-2xl border border-slate-200/80 bg-white p-5"
                             >
                               <div className="flex items-start justify-between gap-3">
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-[11px] font-semibold text-[#b91c1c]">
-                                      {sch.location}
-                                    </span>
-                                    <span className="text-slate-300">•</span>
-                                    <span className="text-[11px] font-medium text-emerald-700">
-                                      {sch.status === "ACTIVE_PARTNER" ? "Active Partner" : "In Review"}
-                                    </span>
+                                <div className="flex items-start gap-3.5 min-w-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedSchoolForProfile(sch)}
+                                    className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50/70 hover:border-slate-300 transition"
+                                    title="Open 360° School Profile"
+                                  >
+                                    {sch.logoUrl ? (
+                                      <img
+                                        src={sch.logoUrl}
+                                        alt={sch.name}
+                                        referrerPolicy="no-referrer"
+                                        className="h-full w-full object-contain p-1"
+                                      />
+                                    ) : (
+                                      <Building2 className="h-5 w-5 text-[#b91c1c]" />
+                                    )}
+                                  </button>
+
+                                  <div className="min-w-0">
+                                    <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
+                                      <span className="font-semibold text-[#b91c1c]">
+                                        {sch.institutionType === "UNIVERSITY"
+                                          ? language === "bn"
+                                            ? "ইউনিভার্সিটি"
+                                            : "University"
+                                          : sch.institutionType === "VOCATIONAL_COLLEGE"
+                                            ? language === "bn"
+                                              ? "ভোকেশনাল কলেজ"
+                                              : "Vocational College"
+                                            : sch.institutionType === "SSW_EMPLOYER"
+                                              ? "SSW Employer"
+                                              : language === "bn"
+                                                ? "ভাষা স্কুল"
+                                                : "Language School"}
+                                      </span>
+                                      <span aria-hidden="true">·</span>
+                                      <span className="font-medium text-slate-700">
+                                        {sch.location}
+                                      </span>
+                                      <span aria-hidden="true">·</span>
+                                      <span className="font-medium text-emerald-700">
+                                        {readySchoolDocs}/{schoolDocs.length}{" "}
+                                        {language === "bn" ? "ব্রশিউর/MOU" : "Docs"}
+                                      </span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedSchoolForProfile(sch)}
+                                      className="text-left group"
+                                    >
+                                      <h4 className="text-base font-bold text-slate-900 mt-0.5 group-hover:text-[#b91c1c] transition">
+                                        {sch.name}
+                                      </h4>
+                                    </button>
+                                    {sch.japaneseName && (
+                                      <p className="text-xs text-slate-400">{sch.japaneseName}</p>
+                                    )}
                                   </div>
-                                  <h4 className="text-base font-bold text-slate-900 mt-1">
-                                    {sch.name}
-                                  </h4>
-                                  {sch.japaneseName && (
-                                    <p className="text-xs text-slate-400">{sch.japaneseName}</p>
-                                  )}
                                 </div>
-                                <div className="flex items-center gap-1">
+
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedSchoolForProfile(sch)}
+                                    className="inline-flex items-center gap-1 rounded-lg bg-slate-900 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-slate-800 transition"
+                                  >
+                                    <FileText className="h-3 w-3" />
+                                    <span>
+                                      {language === "bn" ? "৩৬০° প্রোফাইল" : "360° Profile"}
+                                    </span>
+                                  </button>
                                   <button
                                     type="button"
                                     onClick={() => openPartnerSchoolModal(sch)}
                                     className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
-                                    title="Edit School"
+                                    title="Quick Edit"
                                   >
                                     <Edit3 className="h-3.5 w-3.5" />
                                   </button>
@@ -2444,10 +2533,13 @@ export default function DashboardPage() {
                               <div className="mt-3.5 rounded-xl bg-slate-50/80 border border-slate-100 p-3">
                                 <div className="flex items-center justify-between text-xs">
                                   <span className="font-semibold text-slate-600">
-                                    {language === "bn" ? "সিট কোটা ও ভর্তি অগ্রগতি" : "Intake Seat Quota"}
+                                    {language === "bn"
+                                      ? "সিট কোটা ও ভর্তি অগ্রগতি"
+                                      : "Intake Seat Quota"}
                                   </span>
                                   <span className="font-bold text-slate-900 tabular-nums">
-                                    {sch.activeStudentsCount} / {quota} {t.b2b.studentsSuffix} ({quotaPct}%)
+                                    {sch.activeStudentsCount} / {quota} {t.b2b.studentsSuffix} (
+                                    {quotaPct}%)
                                   </span>
                                 </div>
                                 <div className="mt-1.5 h-1.5 w-full rounded-full bg-slate-200/80 overflow-hidden">
@@ -2461,10 +2553,12 @@ export default function DashboardPage() {
                               <div className="mt-3.5 grid grid-cols-2 sm:grid-cols-4 gap-3 border-t border-slate-100 pt-3.5 text-xs">
                                 <div>
                                   <span className="text-slate-400 block text-[11px]">
-                                    {t.b2b.contactPerson}
+                                    {language === "bn" ? "১ম বর্ষ টিউশন ফি" : "1st Yr Tuition"}
                                   </span>
-                                  <p className="font-semibold text-slate-800 mt-0.5 truncate">
-                                    {sch.contactPerson || "N/A"}
+                                  <p className="font-semibold text-slate-800 mt-0.5 tabular-nums">
+                                    {sch.firstYearTuitionYen
+                                      ? `¥${sch.firstYearTuitionYen.toLocaleString()}`
+                                      : sch.contactPerson || "N/A"}
                                   </p>
                                 </div>
                                 <div>
@@ -2472,7 +2566,7 @@ export default function DashboardPage() {
                                     {t.b2b.commissionRate}
                                   </span>
                                   <p className="font-semibold text-slate-900 mt-0.5 tabular-nums">
-                                    ¥{sch.commissionPerStudentYen.toLocaleString()}
+                                    ¥{(sch.commissionPerStudentYen || 0).toLocaleString()}
                                   </p>
                                 </div>
                                 <div>
@@ -2488,19 +2582,29 @@ export default function DashboardPage() {
                                     {t.b2b.totalEarned}
                                   </span>
                                   <p className="font-bold text-emerald-700 mt-0.5 tabular-nums">
-                                    ¥{sch.totalCommissionReceivedYen.toLocaleString()}
+                                    ¥{(sch.totalCommissionReceivedYen || 0).toLocaleString()}
                                   </p>
                                 </div>
                               </div>
 
-                              {/* 1-Click Claim JPY Commission into Finance Ledger */}
-                              <div className="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                                <span className="text-[11px] text-slate-500 tabular-nums">
-                                  ≈ ৳{Math.round(sch.commissionPerStudentYen * 0.8).toLocaleString()} BDT / স্টুডেন্ট
-                                </span>
+                              {/* Quick Actions: 360 Brochure Vault + 1-Click Claim Commission */}
+                              <div className="mt-3.5 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedSchoolForProfile(sch)}
+                                  className="text-[11px] font-semibold text-slate-600 hover:text-slate-900 underline underline-offset-2"
+                                >
+                                  {language === "bn"
+                                    ? "ব্রশিউর, প্রসপেক্টাস, লোগো ও চুক্তিপত্র ভল্ট দেখুন →"
+                                    : "Open Brochure, Logo & MOU Vault →"}
+                                </button>
                                 <button
                                   type="button"
                                   onClick={() => {
+                                    if (!sch.commissionPerStudentYen) {
+                                      setSelectedSchoolForProfile(sch);
+                                      return;
+                                    }
                                     const tx = claimPartnerSchoolCommission(sch.id, 1);
                                     if (tx) {
                                       setStore({ ...getCmsStore() });
@@ -2524,22 +2628,22 @@ export default function DashboardPage() {
                         })}
                       </div>
                     ) : (
-                      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center">
-                        <Building2 className="h-7 w-7 text-slate-300 mx-auto mb-2" />
-                        <p className="text-sm font-semibold text-slate-700">
+                      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center">
+                        <Building2 className="h-8 w-8 text-slate-300 mx-auto mb-2.5" />
+                        <p className="mx-auto text-sm font-semibold text-slate-700">
                           {language === "bn"
-                            ? "এখনো কোনো জাপানি পার্টনার স্কুল যোগ করা হয়নি"
+                            ? "এখনো কোনো জাপানি পার্টনার স্কুল বা ইউনিভার্সিটি যোগ করা হয়নি"
                             : "No Japanese partner schools added yet"}
                         </p>
-                        <p className="text-xs text-slate-400 mt-1">
+                        <p className="mx-auto text-xs text-slate-400 mt-1">
                           {language === "bn"
-                            ? "আপনার চুক্তিবদ্ধ জাপানি ভাষা স্কুল ও কমিশনের তথ্য যোগ করুন।"
-                            : "Add your partnered Japanese schools to track students and yen commissions."}
+                            ? "আপনার চুক্তিবদ্ধ জাপানি ভাষা স্কুল, ইউনিভার্সিটি, ব্রশিউর ও কমিশনের তথ্য যোগ করুন।"
+                            : "Add your partnered Japanese schools to track students, brochures, and yen commissions."}
                         </p>
                         <button
                           type="button"
                           onClick={() => openPartnerSchoolModal()}
-                          className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition"
+                          className="mt-3.5 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition"
                         >
                           <Plus className="h-3.5 w-3.5" />
                           <span>
@@ -2559,8 +2663,8 @@ export default function DashboardPage() {
                         <h3 className="font-bold text-sm text-slate-900">{t.b2b.ledgerTitle}</h3>
                         <p className="text-[11px] text-slate-400 mt-0.5">
                           {language === "bn"
-                            ? "আপনার নিজস্ব বিটুবি এজেন্ট, সাব-এজেন্ট ও অ্যাম্বাসেডরদের হিসাব (COE অনুমোদনে স্বয়ংক্রিয় কমিশন হিসাব)"
-                            : "Manage your B2B agencies, sub-agents, and auto-accrued COE commissions"}
+                            ? "বিটুবি এজেন্টের ট্রেড লাইসেন্স, চুক্তিপত্র (MOU), রেফার্ড স্টুডেন্ট ও স্বয়ংক্রিয় COE কমিশন লেজার"
+                            : "Manage your B2B agencies, trade licenses, MOUs, and auto-accrued COE commissions"}
                         </p>
                       </div>
                       <button
@@ -2584,116 +2688,176 @@ export default function DashboardPage() {
                             <th className="px-4 py-3">{t.b2b.colAgreedCommission}</th>
                             <th className="px-4 py-3">{t.b2b.colPaidVsPending}</th>
                             <th className="px-4 py-3 text-right">
-                              {language === "bn" ? "অ্যাকশন" : "Actions"}
+                              {language === "bn" ? "৩৬০° প্রোফাইল ও অ্যাকশন" : "360° Profile & Actions"}
                             </th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                          {store.b2bAgents.map((agent) => (
-                            <tr key={agent.id} className="hover:bg-slate-50/70 transition-colors">
-                              <td className="px-4 py-3.5">
-                                <p className="font-bold text-slate-900">{agent.organizationName}</p>
-                                <p className="text-slate-400 text-[11px]">
-                                  {agent.contactPerson} • <span className="font-mono">{agent.phone}</span>
-                                </p>
-                              </td>
-                              <td className="px-4 py-3.5">
-                                <span className="text-[11px] font-medium text-slate-700 block">
-                                  {agent.agentType}
-                                </span>
-                                <span className="text-[11px] text-slate-400">{agent.city}</span>
-                              </td>
-                              <td className="px-4 py-3.5 font-semibold text-slate-800 tabular-nums">
-                                {agent.referredStudentsCount} {t.b2b.studentsSuffix}
-                              </td>
-                              <td className="px-4 py-3.5 font-bold text-emerald-700 tabular-nums">
-                                {agent.successfulVisasCount} {t.b2b.studentsSuffix}
-                              </td>
-                              <td className="px-4 py-3.5 font-semibold text-slate-900 tabular-nums">
-                                ৳{agent.agreedCommissionBdt.toLocaleString()}
-                              </td>
-                              <td className="px-4 py-3.5 tabular-nums">
-                                <span className="text-emerald-700 font-semibold block">
-                                  {t.b2b.paidPrefix} ৳{agent.paidCommissionBdt.toLocaleString()}
-                                </span>
-                                <span className="text-amber-600 text-[11px] font-medium block">
-                                  {t.b2b.pendingPrefix} ৳{agent.pendingCommissionBdt.toLocaleString()}
-                                </span>
-                              </td>
-                              <td className="px-4 py-3.5 text-right">
-                                <div className="inline-flex items-center justify-end gap-1.5">
-                                  {agent.pendingCommissionBdt > 0 && (
+                          {store.b2bAgents.map((agent) => {
+                            const agentDocs = getB2bAgentDocumentVault(agent);
+                            const readyAgentDocs = agentDocs.filter(
+                              (d) => d.status === "VERIFIED" || d.status === "UPLOADED",
+                            ).length;
+
+                            return (
+                              <tr key={agent.id} className="hover:bg-slate-50/70 transition-colors">
+                                <td className="px-4 py-3.5">
+                                  <div className="flex items-center gap-3">
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedAgentForProfile(agent)}
+                                      className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50 hover:border-slate-300 transition"
+                                    >
+                                      {agent.logoUrl ? (
+                                        <img
+                                          src={agent.logoUrl}
+                                          alt={agent.organizationName}
+                                          referrerPolicy="no-referrer"
+                                          className="h-full w-full object-contain p-0.5"
+                                        />
+                                      ) : (
+                                        <Briefcase className="h-4 w-4 text-emerald-700" />
+                                      )}
+                                    </button>
+                                    <div>
+                                      <button
+                                        type="button"
+                                        onClick={() => setSelectedAgentForProfile(agent)}
+                                        className="font-bold text-slate-900 hover:text-[#b91c1c] transition text-left"
+                                      >
+                                        {agent.organizationName}
+                                      </button>
+                                      <p className="text-slate-400 text-[11px]">
+                                        {agent.contactPerson} ·{" "}
+                                        <span className="font-mono">{agent.phone}</span>
+                                        {" · "}
+                                        <span className="text-emerald-700 font-semibold">
+                                          {readyAgentDocs}/{agentDocs.length}{" "}
+                                          {language === "bn" ? "ডকুমেন্ট" : "Docs"}
+                                        </span>
+                                      </p>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3.5">
+                                  <span className="text-[11px] font-medium text-slate-700 block">
+                                    {agent.agentType}
+                                  </span>
+                                  <span className="text-[11px] text-slate-400">
+                                    {agent.city}
+                                    {agent.tradeLicenseNo
+                                      ? ` · TL: ${agent.tradeLicenseNo}`
+                                      : ""}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3.5 font-semibold text-slate-800 tabular-nums">
+                                  {agent.referredStudentsCount} {t.b2b.studentsSuffix}
+                                </td>
+                                <td className="px-4 py-3.5 font-bold text-emerald-700 tabular-nums">
+                                  {agent.successfulVisasCount} {t.b2b.studentsSuffix}
+                                </td>
+                                <td className="px-4 py-3.5 font-semibold text-slate-900 tabular-nums">
+                                  ৳{agent.agreedCommissionBdt.toLocaleString()}
+                                </td>
+                                <td className="px-4 py-3.5 tabular-nums">
+                                  <span className="text-emerald-700 font-semibold block">
+                                    {t.b2b.paidPrefix} ৳{agent.paidCommissionBdt.toLocaleString()}
+                                  </span>
+                                  <span className="text-amber-600 text-[11px] font-medium block">
+                                    {t.b2b.pendingPrefix} ৳
+                                    {agent.pendingCommissionBdt.toLocaleString()}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3.5 text-right">
+                                  <div className="inline-flex items-center justify-end gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedAgentForProfile(agent)}
+                                      className="inline-flex items-center gap-1 rounded-lg bg-slate-900 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-slate-800 transition"
+                                    >
+                                      <FileText className="h-3 w-3" />
+                                      <span>
+                                        {language === "bn"
+                                          ? "৩৬০° প্রোফাইল ও লাইসেন্স"
+                                          : "360° Profile"}
+                                      </span>
+                                    </button>
+                                    {agent.pendingCommissionBdt > 0 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const tx = settleB2bAgentCommission(agent.id);
+                                          if (tx) {
+                                            setStore({ ...getCmsStore() });
+                                            showToast(
+                                              `${agent.organizationName}: ৳${tx.amountBdt.toLocaleString()} কমিশন পরিশোধ ও লেজারে রেকর্ড হয়েছে`,
+                                            );
+                                          }
+                                        }}
+                                        className="inline-flex items-center gap-1 rounded-lg bg-emerald-700 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-emerald-800 transition"
+                                        title="Settle Pending Commission & Record Expense"
+                                      >
+                                        <CheckCircle2 className="h-3 w-3" />
+                                        <span>{language === "bn" ? "কমিশন দিন" : "Pay Due"}</span>
+                                      </button>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => openB2bAgentModal(agent)}
+                                      className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
+                                      title="Quick Edit Agent"
+                                    >
+                                      <Edit3 className="h-3.5 w-3.5" />
+                                    </button>
                                     <button
                                       type="button"
                                       onClick={() => {
-                                        const tx = settleB2bAgentCommission(agent.id);
-                                        if (tx) {
-                                          setStore({ ...getCmsStore() });
-                                          showToast(
-                                            `${agent.organizationName}: ৳${tx.amountBdt.toLocaleString()} কমিশন পরিশোধ ও লেজারে রেকর্ড হয়েছে`,
-                                          );
-                                        }
+                                        deleteB2bAgent(agent.id);
+                                        setStore({ ...getCmsStore() });
+                                        showToast(
+                                          language === "bn"
+                                            ? `${agent.organizationName} মুছে ফেলা হয়েছে`
+                                            : `${agent.organizationName} removed`,
+                                        );
                                       }}
-                                      className="inline-flex items-center gap-1 rounded-lg bg-emerald-700 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-emerald-800 transition"
-                                      title="Settle Pending Commission & Record Expense"
+                                      className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-[#b91c1c] transition"
+                                      title="Delete Agent"
                                     >
-                                      <CheckCircle2 className="h-3 w-3" />
-                                      <span>{language === "bn" ? "কমিশন দিন" : "Pay Due"}</span>
+                                      <Trash2 className="h-3.5 w-3.5" />
                                     </button>
-                                  )}
-                                  <button
-                                    type="button"
-                                    onClick={() => openB2bAgentModal(agent)}
-                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
-                                    title="Edit Agent"
-                                  >
-                                    <Edit3 className="h-3.5 w-3.5" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      deleteB2bAgent(agent.id);
-                                      setStore({ ...getCmsStore() });
-                                      showToast(
-                                        language === "bn"
-                                          ? `${agent.organizationName} মুছে ফেলা হয়েছে`
-                                          : `${agent.organizationName} removed`,
-                                      );
-                                    }}
-                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-[#b91c1c] transition"
-                                    title="Delete Agent"
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
                           {store.b2bAgents.length === 0 && (
                             <tr>
                               <td colSpan={7} className="py-12 text-center">
-                                <p className="text-sm font-semibold text-slate-700">
-                                  {language === "bn"
-                                    ? "কোনো বিটুবি এজেন্ট বা সাব-এজেন্টের তথ্য নেই"
-                                    : "No B2B agents or sub-agents added yet"}
-                                </p>
-                                <p className="text-xs text-slate-400 mt-1">
-                                  {language === "bn"
-                                    ? "আপনার প্রতিষ্ঠানের বিটুবি এজেন্ট ও কমিশন হিসাব রাখতে নতুন এজেন্ট যুক্ত করুন।"
-                                    : "Click below to add your B2B partner agencies and commission details."}
-                                </p>
-                                <button
-                                  type="button"
-                                  onClick={() => openB2bAgentModal()}
-                                  className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-[#b91c1c] px-4 py-2 text-xs font-semibold text-white hover:bg-red-800 transition"
-                                >
-                                  <Plus className="h-3.5 w-3.5" />
-                                  <span>
+                                <div className="flex flex-col items-center justify-center text-center">
+                                  <Briefcase className="h-8 w-8 text-slate-300 mx-auto mb-2.5" />
+                                  <p className="mx-auto text-sm font-semibold text-slate-700">
                                     {language === "bn"
-                                      ? "নতুন বিটুবি এজেন্ট যোগ করুন"
-                                      : "Add New B2B Agent"}
-                                  </span>
-                                </button>
+                                      ? "কোনো বিটুবি এজেন্ট বা সাব-এজেন্টের তথ্য নেই"
+                                      : "No B2B agents or sub-agents added yet"}
+                                  </p>
+                                  <p className="mx-auto text-xs text-slate-400 mt-1">
+                                    {language === "bn"
+                                      ? "আপনার প্রতিষ্ঠানের বিটুবি এজেন্ট, ট্রেড লাইসেন্স ও কমিশন হিসাব রাখতে নতুন এজেন্ট যুক্ত করুন।"
+                                      : "Click below to add your B2B partner agencies, licenses, and commission details."}
+                                  </p>
+                                  <button
+                                    type="button"
+                                    onClick={() => openB2bAgentModal()}
+                                    className="mt-3.5 inline-flex items-center gap-1.5 rounded-xl bg-[#b91c1c] px-4 py-2 text-xs font-semibold text-white hover:bg-red-800 transition"
+                                  >
+                                    <Plus className="h-3.5 w-3.5" />
+                                    <span>
+                                      {language === "bn"
+                                        ? "নতুন বিটুবি এজেন্ট যোগ করুন"
+                                        : "Add New B2B Agent"}
+                                    </span>
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           )}
@@ -4313,6 +4477,50 @@ export default function DashboardPage() {
               }}
             />
           )}
+
+          {/* 360° Partner School / University Profile Command Center Modal */}
+          {selectedSchoolForProfile && (
+            <PartnerProfileModal
+              mode="SCHOOL"
+              school={selectedSchoolForProfile}
+              allLeads={store.crmLeads}
+              allVisaApplicants={store.visaApplicants}
+              allTransactions={store.transactions}
+              language={language}
+              onClose={() => setSelectedSchoolForProfile(null)}
+              onRefreshStore={() => {
+                const updatedStore = getCmsStore();
+                setStore({ ...updatedStore });
+                const refreshed = updatedStore.partnerSchools.find(
+                  (s) => s.id === selectedSchoolForProfile.id,
+                );
+                if (refreshed) setSelectedSchoolForProfile(refreshed);
+              }}
+              onShowToast={(msg, sub) => showToast(msg, sub)}
+            />
+          )}
+
+          {/* 360° B2B Agent Profile Command Center Modal */}
+          {selectedAgentForProfile && (
+            <PartnerProfileModal
+              mode="AGENT"
+              agent={selectedAgentForProfile}
+              allLeads={store.crmLeads}
+              allVisaApplicants={store.visaApplicants}
+              allTransactions={store.transactions}
+              language={language}
+              onClose={() => setSelectedAgentForProfile(null)}
+              onRefreshStore={() => {
+                const updatedStore = getCmsStore();
+                setStore({ ...updatedStore });
+                const refreshed = updatedStore.b2bAgents.find(
+                  (a) => a.id === selectedAgentForProfile.id,
+                );
+                if (refreshed) setSelectedAgentForProfile(refreshed);
+              }}
+              onShowToast={(msg, sub) => showToast(msg, sub)}
+            />
+          )}
         </main>
       </div>
 
@@ -4453,6 +4661,45 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
+                        {language === "bn" ? "ট্রেড লাইসেন্স নম্বর" : "Trade License No."}
+                      </label>
+                      <input
+                        type="text"
+                        value={b2bForm.tradeLicenseNo}
+                        onChange={(e) => setB2bForm({ ...b2bForm, tradeLicenseNo: e.target.value })}
+                        placeholder="TRAD/DSCC/..."
+                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-semibold text-slate-700">
+                        {language === "bn" ? "NID / পাসপোর্ট নম্বর" : "NID / Passport No."}
+                      </label>
+                      <input
+                        type="text"
+                        value={b2bForm.nidOrPassportNo}
+                        onChange={(e) => setB2bForm({ ...b2bForm, nidOrPassportNo: e.target.value })}
+                        placeholder="NID / Passport"
+                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="font-semibold text-slate-700">
+                        {language === "bn" ? "এজেন্সির লোগো URL (ঐচ্ছিক)" : "Agency Logo URL (Optional)"}
+                      </label>
+                      <input
+                        type="text"
+                        value={b2bForm.logoUrl}
+                        onChange={(e) => setB2bForm({ ...b2bForm, logoUrl: e.target.value })}
+                        placeholder={language === "bn" ? "লোগো ইমেজ লিংক দিন (অথবা ৩৬০° প্রোফাইলে ফাইল আপলোড করুন)" : "https://... (or upload in 360° profile)"}
+                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-semibold text-slate-700">
                         {language === "bn" ? "রেফার্ড শিক্ষার্থী সংখ্যা" : "Referred Students"}
                       </label>
                       <input
@@ -4495,20 +4742,6 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "পরিশোধিত কমিশন (BDT)" : "Paid Commission (BDT)"}
-                      </label>
-                      <input
-                        type="number"
-                        value={b2bForm.paidCommissionBdt}
-                        onChange={(e) =>
-                          setB2bForm({ ...b2bForm, paidCommissionBdt: Number(e.target.value) })
-                        }
-                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold tabular-nums"
-                      />
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <label className="font-semibold text-slate-700">
                         {language === "bn" ? "বকেয়া কমিশন (BDT)" : "Pending Commission (BDT)"}
                       </label>
                       <input
@@ -4522,13 +4755,33 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                  <div className="flex flex-wrap justify-end gap-2 pt-3 border-t border-slate-100">
                     <button
                       type="button"
                       onClick={() => setActiveModal(null)}
                       className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
                     >
                       {language === "bn" ? "বাতিল" : "Cancel"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!b2bForm.organizationName.trim()) return;
+                        let savedAgent: B2bAgent | null = null;
+                        if (editingB2bAgent) {
+                          savedAgent = updateB2bAgent(editingB2bAgent.id, b2bForm);
+                        } else {
+                          savedAgent = addB2bAgent(b2bForm);
+                        }
+                        setStore({ ...getCmsStore() });
+                        setActiveModal(null);
+                        if (savedAgent) {
+                          setSelectedAgentForProfile(savedAgent);
+                        }
+                      }}
+                      className="rounded-xl border border-slate-900 bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition"
+                    >
+                      {language === "bn" ? "সেভ ও ৩৬০° প্রোফাইল খুলুন" : "Save & Open 360° Profile"}
                     </button>
                     <button
                       type="submit"
@@ -4562,11 +4815,11 @@ export default function DashboardPage() {
                     <h3 className="text-base font-bold text-slate-900">
                       {editingPartnerSchool
                         ? language === "bn"
-                          ? "পার্টনার স্কুল সম্পাদনা"
-                          : "Edit Partner School"
+                          ? "পার্টনার স্কুল / ভার্সিটি সম্পাদনা"
+                          : "Edit Partner School / University"
                         : language === "bn"
-                          ? "নতুন জাপানি পার্টনার স্কুল যোগ করুন"
-                          : "Add Japanese Partner School"}
+                          ? "নতুন জাপানি পার্টনার স্কুল / ভার্সিটি যোগ করুন"
+                          : "Add Japanese Partner School / University"}
                     </h3>
                     <button
                       type="button"
@@ -4580,16 +4833,45 @@ export default function DashboardPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
                     <div className="sm:col-span-2">
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "স্কুলের নাম (English / বাংলা) *" : "School Name *"}
+                        {language === "bn" ? "প্রতিষ্ঠানের নাম (English / বাংলা) *" : "Institution Name *"}
                       </label>
                       <input
                         type="text"
                         required
                         value={schoolForm.name}
                         onChange={(e) => setSchoolForm({ ...schoolForm, name: e.target.value })}
-                        placeholder="e.g. Tokyo International Language Academy"
+                        placeholder="e.g. Tokyo International Language Academy / University"
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-medium"
                       />
+                    </div>
+
+                    <div>
+                      <label className="font-semibold text-slate-700">
+                        {language === "bn" ? "প্রতিষ্ঠানের ক্যাটাগরি" : "Institution Category"}
+                      </label>
+                      <select
+                        value={schoolForm.institutionType}
+                        onChange={(e) =>
+                          setSchoolForm({
+                            ...schoolForm,
+                            institutionType: e.target.value as PartnerInstitutionType,
+                          })
+                        }
+                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold"
+                      >
+                        <option value="LANGUAGE_SCHOOL">
+                          {language === "bn" ? "জাপানি ভাষা স্কুল (Language School)" : "Japanese Language School"}
+                        </option>
+                        <option value="UNIVERSITY">
+                          {language === "bn" ? "বিশ্ববিদ্যালয় (University)" : "University (Daigaku)"}
+                        </option>
+                        <option value="VOCATIONAL_COLLEGE">
+                          {language === "bn" ? "ভোকেশনাল কলেজ (Senmon Gakko)" : "Vocational College"}
+                        </option>
+                        <option value="SSW_EMPLOYER">
+                          {language === "bn" ? "SSW নিয়োগদাতা কোম্পানি" : "SSW Employer Company"}
+                        </option>
+                      </select>
                     </div>
 
                     <div>
@@ -4647,6 +4929,23 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
+                        {language === "bn" ? "১ম বর্ষের টিউশন ফি (Yen)" : "1st Year Tuition (Yen)"}
+                      </label>
+                      <input
+                        type="number"
+                        value={schoolForm.firstYearTuitionYen}
+                        onChange={(e) =>
+                          setSchoolForm({
+                            ...schoolForm,
+                            firstYearTuitionYen: Number(e.target.value),
+                          })
+                        }
+                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold tabular-nums"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-semibold text-slate-700">
                         {language === "bn" ? "স্টুডেন্ট পিছু কমিশন (Yen)" : "Commission / Student (Yen)"}
                       </label>
                       <input
@@ -4664,15 +4963,15 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "চলমান শিক্ষার্থী সংখ্যা" : "Active Students"}
+                        {language === "bn" ? "স্টুডেন্ট পিছু কমিশন (BDT - ঐচ্ছিক)" : "Commission / Student (BDT)"}
                       </label>
                       <input
                         type="number"
-                        value={schoolForm.activeStudentsCount}
+                        value={schoolForm.commissionPerStudentBdt}
                         onChange={(e) =>
                           setSchoolForm({
                             ...schoolForm,
-                            activeStudentsCount: Number(e.target.value),
+                            commissionPerStudentBdt: Number(e.target.value),
                           })
                         }
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold tabular-nums"
@@ -4698,29 +4997,45 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "মোট প্রাপ্ত কমিশন (Yen)" : "Total Earned Commission (Yen)"}
+                        {language === "bn" ? "লোগো URL (ঐচ্ছিক)" : "Logo URL (Optional)"}
                       </label>
                       <input
-                        type="number"
-                        value={schoolForm.totalCommissionReceivedYen}
-                        onChange={(e) =>
-                          setSchoolForm({
-                            ...schoolForm,
-                            totalCommissionReceivedYen: Number(e.target.value),
-                          })
-                        }
-                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold tabular-nums"
+                        type="text"
+                        value={schoolForm.logoUrl}
+                        onChange={(e) => setSchoolForm({ ...schoolForm, logoUrl: e.target.value })}
+                        placeholder="https://..."
+                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
                       />
                     </div>
                   </div>
 
-                  <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                  <div className="flex flex-wrap justify-end gap-2 pt-3 border-t border-slate-100">
                     <button
                       type="button"
                       onClick={() => setActiveModal(null)}
                       className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
                     >
                       {language === "bn" ? "বাতিল" : "Cancel"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!schoolForm.name.trim()) return;
+                        let savedSchool: JapanesePartnerSchool | null = null;
+                        if (editingPartnerSchool) {
+                          savedSchool = updatePartnerSchool(editingPartnerSchool.id, schoolForm);
+                        } else {
+                          savedSchool = addPartnerSchool(schoolForm);
+                        }
+                        setStore({ ...getCmsStore() });
+                        setActiveModal(null);
+                        if (savedSchool) {
+                          setSelectedSchoolForProfile(savedSchool);
+                        }
+                      }}
+                      className="rounded-xl border border-[#b91c1c] bg-red-50 px-4 py-2 text-xs font-semibold text-[#b91c1c] hover:bg-red-100 transition"
+                    >
+                      {language === "bn" ? "সেভ ও ৩৬০° প্রোফাইল খুলুন" : "Save & Open 360° Profile"}
                     </button>
                     <button
                       type="submit"

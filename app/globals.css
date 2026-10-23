@@ -125,6 +125,11 @@
     max-width: 72ch;
   }
 
+  .text-center p,
+  p.text-center {
+    margin-inline: auto;
+  }
+
   section {
     scroll-margin-top: 5rem;
   }

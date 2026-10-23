@@ -237,23 +237,67 @@ export interface LmsUserBridge {
 }
 
 // ------------------------------------------------------------------------------
-// B2B & Japanese School Partners
+// B2B & Japanese School / University Partners (360° Profile System)
 // ------------------------------------------------------------------------------
+export interface PartnerDocumentItem {
+  id: string;
+  titleBn: string;
+  titleEn: string;
+  category:
+    | "BROCHURE_PROSPECTUS"
+    | "APPLICATION_FORM"
+    | "MOU_AGREEMENT"
+    | "FEE_STRUCTURE"
+    | "ACCREDITATION_LICENSE"
+    | "TRADE_LICENSE"
+    | "NID_PASSPORT"
+    | "TIN_TAX"
+    | "OFFICE_IDENTITY";
+  status: "MISSING" | "UPLOADED" | "VERIFIED";
+  fileUrl?: string;
+  fileName?: string;
+  uploadedAt?: string;
+  notes?: string;
+}
+
+export type PartnerInstitutionType =
+  | "LANGUAGE_SCHOOL"
+  | "UNIVERSITY"
+  | "VOCATIONAL_COLLEGE"
+  | "SSW_EMPLOYER";
+
+export type IntakeMonth = "JANUARY" | "APRIL" | "JULY" | "OCTOBER";
+
 export interface JapanesePartnerSchool {
   id: string;
   name: string;
   schoolName?: string;
   japaneseName: string;
+  institutionType?: PartnerInstitutionType;
+  logoUrl?: string;
+  websiteUrl?: string;
+  phone?: string;
+  addressJapan?: string;
+  establishedYear?: string;
   location: string;
   city?: string;
   contactPerson: string;
   email: string;
-  commissionPerStudentYen: number; // 80,000 JPY
-  commissionPerStudentBdt: number; // ~60,000–64,000 BDT
+  commissionPerStudentYen: number;
+  commissionPerStudentBdt: number;
+  firstYearTuitionYen?: number;
+  admissionFeeYen?: number;
+  hostelFeeMonthlyYen?: number;
+  intakeMonths?: IntakeMonth[];
+  minGpaRequired?: string;
+  maxStudyGapYears?: number;
+  minLanguageLevel?: string;
   activeStudentsCount: number;
   intakeQuota?: number; // e.g. 20 seats per intake
   totalCommissionReceivedYen: number;
   status: "ACTIVE_PARTNER" | "IN_REVIEW";
+  documents?: PartnerDocumentItem[];
+  notes?: string;
 }
 
 export interface B2bAgent {
@@ -261,14 +305,33 @@ export interface B2bAgent {
   organizationName: string; // e.g. Nexus Group, BWBS Global, Local Agent
   agencyName?: string;
   agentType: "INSTITUTIONAL" | "LOCAL_SUB_AGENT" | "CAMPUS_AMBASSADOR";
+  logoUrl?: string;
   contactPerson: string;
   phone: string;
+  whatsapp?: string;
+  email?: string;
   city: string;
+  officeAddress?: string;
+  establishedYear?: string;
+  tradeLicenseNo?: string;
+  nidOrPassportNo?: string;
+  tinCertificateNo?: string;
+  paymentDetails?: {
+    preferredMethod: "BANK" | "BKASH" | "NAGAD";
+    bankName?: string;
+    accountName?: string;
+    accountNumber?: string;
+    branchName?: string;
+    mobileWalletNo?: string;
+  };
   referredStudentsCount: number;
   successfulVisasCount: number;
   agreedCommissionBdt: number;
   pendingCommissionBdt: number;
   paidCommissionBdt: number;
+  documents?: PartnerDocumentItem[];
+  portalAccountId?: string;
+  notes?: string;
 }
 
 // ------------------------------------------------------------------------------
@@ -2818,3 +2881,209 @@ export function updateLmsProgressAndAttendance(
   }
   saveCmsStore(store);
 }
+
+// ------------------------------------------------------------------------------
+// 360° Partner School / University & B2B Agent Document Vaults & Helpers
+// ------------------------------------------------------------------------------
+export const DEFAULT_SCHOOL_DOCUMENTS: PartnerDocumentItem[] = [
+  {
+    id: "sch-doc-brochure",
+    titleBn: "অফিসিয়াল স্কুল / ইউনিভার্সিটি ব্রশিউর ও প্রসপেক্টাস (PDF/Image)",
+    titleEn: "Official Institution Brochure & Prospectus",
+    category: "BROCHURE_PROSPECTUS",
+    status: "MISSING",
+  },
+  {
+    id: "sch-doc-app-form",
+    titleBn: "ভর্তি আবেদন ফরম (Application Form & CV Template)",
+    titleEn: "Student Application & Rirekisho Template",
+    category: "APPLICATION_FORM",
+    status: "MISSING",
+  },
+  {
+    id: "sch-doc-fee-chart",
+    titleBn: "১ম বছরের টিউশন ফি, এডমিশন ফি ও হোস্টেল চার্জ চার্ট",
+    titleEn: "1st Year Tuition, Admission & Dormitory Fee Breakdown",
+    category: "FEE_STRUCTURE",
+    status: "MISSING",
+  },
+  {
+    id: "sch-doc-mou",
+    titleBn: "দ্বিপাক্ষিক চুক্তিপত্র ও কমিশন এগ্রিমেন্ট (Signed MOU / Agency Certificate)",
+    titleEn: "Signed Bilateral MOU & Official Representation Agreement",
+    category: "MOU_AGREEMENT",
+    status: "MISSING",
+  },
+  {
+    id: "sch-doc-accreditation",
+    titleBn: "জাপান মিনিস্ট্রি অফ জাস্টিস / MEXT অ্যাক্রেডিটেশন ও লাইসেন্স সনদ",
+    titleEn: "Ministry of Justice / MEXT Accreditation & School License",
+    category: "ACCREDITATION_LICENSE",
+    status: "MISSING",
+  },
+];
+
+export const DEFAULT_B2B_AGENT_DOCUMENTS: PartnerDocumentItem[] = [
+  {
+    id: "b2b-doc-trade-license",
+    titleBn: "হালনাগাদ ট্রেড লাইসেন্স (Trade License Copy)",
+    titleEn: "Valid Business Trade License",
+    category: "TRADE_LICENSE",
+    status: "MISSING",
+  },
+  {
+    id: "b2b-doc-nid-passport",
+    titleBn: "স্বত্বাধিকারীর জাতীয় পরিচয়পত্র (NID) / পাসপোর্ট কপি",
+    titleEn: "Proprietor National ID (NID) / Passport Copy",
+    category: "NID_PASSPORT",
+    status: "MISSING",
+  },
+  {
+    id: "b2b-doc-mou",
+    titleBn: "স্বাক্ষরিত বিটুবি পার্টনারশিপ ও কমিশন চুক্তিপত্র (Signed B2B MOU)",
+    titleEn: "Signed B2B Sub-Agent MOU & Commission Agreement",
+    category: "MOU_AGREEMENT",
+    status: "MISSING",
+  },
+  {
+    id: "b2b-doc-tin",
+    titleBn: "টিন সার্টিফিকেট ও ব্যাংক একাউন্ট ভেরিফিকেশন কপি (TIN / Bank Cheque)",
+    titleEn: "TIN Certificate & Cancelled Cheque Leaf",
+    category: "TIN_TAX",
+    status: "MISSING",
+  },
+  {
+    id: "b2b-doc-office-card",
+    titleBn: "অফিস ভিজিটিং কার্ড / ব্রশিউর ও সাইনবোর্ড ছবি",
+    titleEn: "Agency Visiting Card, Brochure & Office Photo",
+    category: "OFFICE_IDENTITY",
+    status: "MISSING",
+  },
+];
+
+export function getSchoolDocumentVault(
+  school: Partial<JapanesePartnerSchool>,
+): PartnerDocumentItem[] {
+  if (school.documents && school.documents.length > 0) {
+    return school.documents;
+  }
+  return DEFAULT_SCHOOL_DOCUMENTS.map((d) => ({ ...d }));
+}
+
+export function getB2bAgentDocumentVault(agent: Partial<B2bAgent>): PartnerDocumentItem[] {
+  if (agent.documents && agent.documents.length > 0) {
+    return agent.documents;
+  }
+  const hasLicense = Boolean(agent.tradeLicenseNo && agent.tradeLicenseNo.trim().length > 2);
+  const hasNid = Boolean(agent.nidOrPassportNo && agent.nidOrPassportNo.trim().length > 4);
+  return DEFAULT_B2B_AGENT_DOCUMENTS.map((d) => {
+    if (d.id === "b2b-doc-trade-license" && hasLicense) {
+      return { ...d, status: "VERIFIED" as const };
+    }
+    if (d.id === "b2b-doc-nid-passport" && hasNid) {
+      return { ...d, status: "VERIFIED" as const };
+    }
+    return { ...d };
+  });
+}
+
+export function assignStudentToPartnerSchool(
+  schoolId: string,
+  leadOrVisaId: string,
+): JapanesePartnerSchool | null {
+  const store = getCmsStore();
+  const school = store.partnerSchools.find((s) => s.id === schoolId);
+  if (!school) return null;
+
+  const lead = store.crmLeads.find((l) => l.id === leadOrVisaId);
+  const visa = store.visaApplicants.find(
+    (v) => v.id === leadOrVisaId || (lead && v.leadId === lead.id),
+  );
+
+  if (lead) {
+    lead.targetSchoolId = school.id;
+    lead.targetSchoolName = school.name;
+  }
+  if (visa) {
+    visa.targetSchoolId = school.id;
+    visa.targetSchool = school.name;
+  }
+
+  // Recompute activeStudentsCount for this school based on linked leads/visas
+  const linkedStudentPhones = new Set<string>();
+  store.crmLeads.forEach((l) => {
+    if (
+      l.targetSchoolId === school.id ||
+      (l.targetSchoolName && l.targetSchoolName.toLowerCase() === school.name.toLowerCase())
+    ) {
+      linkedStudentPhones.add(l.phone || l.id);
+    }
+  });
+  store.visaApplicants.forEach((v) => {
+    if (
+      v.targetSchoolId === school.id ||
+      (v.targetSchool && v.targetSchool.toLowerCase() === school.name.toLowerCase())
+    ) {
+      linkedStudentPhones.add(v.phone || v.id);
+    }
+  });
+
+  school.activeStudentsCount = Math.max(school.activeStudentsCount || 0, linkedStudentPhones.size);
+  saveCmsStore(store);
+  return school;
+}
+
+export function assignStudentToB2bAgent(
+  agentId: string,
+  leadOrVisaId: string,
+): B2bAgent | null {
+  const store = getCmsStore();
+  const agent = store.b2bAgents.find((a) => a.id === agentId);
+  if (!agent) return null;
+
+  const lead = store.crmLeads.find((l) => l.id === leadOrVisaId);
+  const visa = store.visaApplicants.find(
+    (v) => v.id === leadOrVisaId || (lead && v.leadId === lead.id),
+  );
+
+  if (lead) {
+    lead.referredByAgentId = agent.id;
+    lead.referredByAgentName = agent.organizationName;
+    lead.source = "SUB_AGENT";
+  }
+  if (visa) {
+    visa.b2bAgentId = agent.id;
+    visa.referredByAgentId = agent.id;
+    visa.b2bAgentName = agent.organizationName;
+    visa.referredByAgentName = agent.organizationName;
+  }
+
+  // Recompute referredStudentsCount for this agent
+  const linkedStudentPhones = new Set<string>();
+  store.crmLeads.forEach((l) => {
+    if (
+      l.referredByAgentId === agent.id ||
+      (l.referredByAgentName &&
+        l.referredByAgentName.toLowerCase() === agent.organizationName.toLowerCase())
+    ) {
+      linkedStudentPhones.add(l.phone || l.id);
+    }
+  });
+  store.visaApplicants.forEach((v) => {
+    if (
+      v.b2bAgentId === agent.id ||
+      v.referredByAgentId === agent.id ||
+      (v.b2bAgentName && v.b2bAgentName.toLowerCase() === agent.organizationName.toLowerCase())
+    ) {
+      linkedStudentPhones.add(v.phone || v.id);
+    }
+  });
+
+  agent.referredStudentsCount = Math.max(
+    agent.referredStudentsCount || 0,
+    linkedStudentPhones.size,
+  );
+  saveCmsStore(store);
+  return agent;
+}
+
