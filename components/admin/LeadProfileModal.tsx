@@ -10,6 +10,7 @@ import {
   Save,
 } from "lucide-react";
 import {
+  getCmsStore,
   updateCrmLeadProfile,
   provisionLeadLoginAndEnrollment,
   type CrmLead,
@@ -372,6 +373,17 @@ export default function LeadProfileModal({
     [language],
   );
 
+  // Load live entities from CMS Store for relational linking
+  const liveStore = useMemo(() => getCmsStore(), []);
+  const partnerSchools = liveStore.partnerSchools || [];
+  const b2bAgents = liveStore.b2bAgents || [];
+  const counselors = liveStore.staffList.filter(
+    (s) => s.role === "TELE_COUNSELOR" || s.role === "COUNSELOR" || s.role === "BRANCH_MANAGER",
+  );
+  const visaOfficers = liveStore.staffList.filter(
+    (s) => s.role === "VISA_OFFICER" || s.role === "BRANCH_MANAGER",
+  );
+
   // Personal & Academic Profile State
   const [name, setName] = useState(lead.name || "");
   const [phone, setPhone] = useState(lead.phone || "");
@@ -391,7 +403,14 @@ export default function LeadProfileModal({
   const [interest, setInterest] = useState<ServiceInterest>(lead.interest || "STUDENT_VISA_REGULAR");
   const [status, setStatus] = useState<LeadStatus>(lead.status || "NEW");
   const [branch, setBranch] = useState<"DHK-HQ" | "KHULNA-01">(lead.branch || "DHK-HQ");
-  const [assignedTo, setAssignedTo] = useState(lead.assignedTo || "Sumaiya Sultana");
+  const [assignedTo, setAssignedTo] = useState(
+    lead.assignedTo || counselors[0]?.name || "শেখ বাসেত",
+  );
+  const [assignedCounselorId, setAssignedCounselorId] = useState(
+    lead.assignedCounselorId || counselors.find((c) => c.name === lead.assignedTo)?.id || "",
+  );
+  const [b2bAgentId, setB2bAgentId] = useState(lead.b2bAgentId || "");
+  const [b2bAgentName, setB2bAgentName] = useState(lead.b2bAgentName || "");
   const [followUpDate, setFollowUpDate] = useState(
     lead.followUpDate || new Date().toISOString().slice(0, 10),
   );
@@ -411,7 +430,19 @@ export default function LeadProfileModal({
   );
   const [courseLevel, setCourseLevel] = useState<"N5" | "N4" | "IRODORI">("N5");
   const [packageType, setPackageType] = useState<"REGULAR" | "PREMIUM">(lead.packageType || "REGULAR");
-  const [targetSchool, setTargetSchool] = useState(lead.targetSchool || "HLA Gakuin (Hiroshima)");
+  const [partnerSchoolId, setPartnerSchoolId] = useState(
+    lead.partnerSchoolId || partnerSchools[0]?.id || "",
+  );
+  const [targetSchool, setTargetSchool] = useState(
+    lead.targetSchool || partnerSchools[0]?.name || "",
+  );
+  const [assignedVisaOfficerId, setAssignedVisaOfficerId] = useState(
+    lead.assignedVisaOfficerId || visaOfficers[0]?.id || "",
+  );
+  const [contractAmountBdt, setContractAmountBdt] = useState<number>(
+    lead.contractAmountBdt ?? (lead.packageType === "PREMIUM" ? 1100000 : 120000),
+  );
+  const [initialPaymentBdt, setInitialPaymentBdt] = useState<number>(0);
   const [enrolledBatchOrSession, setEnrolledBatchOrSession] = useState(
     lead.enrolledBatchOrSession || "APRIL_2027 • N5 Special Batch",
   );
@@ -438,6 +469,9 @@ export default function LeadProfileModal({
   };
 
   const handleSaveProfileOnly = () => {
+    const selectedAgent = b2bAgents.find((a) => a.id === b2bAgentId);
+    const selectedSchool = partnerSchools.find((s) => s.id === partnerSchoolId);
+    const selectedOfficer = visaOfficers.find((v) => v.id === assignedVisaOfficerId);
     updateCrmLeadProfile(lead.id, {
       name,
       phone,
@@ -456,6 +490,14 @@ export default function LeadProfileModal({
       status,
       branch,
       assignedTo,
+      assignedCounselorId: assignedCounselorId || undefined,
+      b2bAgentId: b2bAgentId || undefined,
+      b2bAgentName: selectedAgent?.organizationName || b2bAgentName || undefined,
+      partnerSchoolId: partnerSchoolId || undefined,
+      targetSchool: selectedSchool?.name || targetSchool || undefined,
+      assignedVisaOfficerId: assignedVisaOfficerId || undefined,
+      assignedVisaOfficerName: selectedOfficer?.name || undefined,
+      contractAmountBdt,
       followUpDate,
       notes,
     });
@@ -470,6 +512,11 @@ export default function LeadProfileModal({
 
     const finalTabs: DashboardTabId[] =
       allowedTabs.length > 0 ? allowedTabs : ["my_profile", "visa", "lms"];
+
+    const selectedAgent = b2bAgents.find((a) => a.id === b2bAgentId);
+    const selectedSchool = partnerSchools.find((s) => s.id === partnerSchoolId);
+    const selectedOfficer = visaOfficers.find((v) => v.id === assignedVisaOfficerId);
+    const resolvedSchoolName = selectedSchool?.name || targetSchool || "Unassigned School";
 
     provisionLeadLoginAndEnrollment(
       {
@@ -493,7 +540,15 @@ export default function LeadProfileModal({
         isCourseEnrolled,
         enrolledBatchOrSession,
         packageType,
-        targetSchool,
+        targetSchool: resolvedSchoolName,
+        partnerSchoolId: partnerSchoolId || undefined,
+        b2bAgentId: b2bAgentId || undefined,
+        b2bAgentName: selectedAgent?.organizationName || b2bAgentName || undefined,
+        assignedCounselorId: assignedCounselorId || undefined,
+        assignedVisaOfficerId: assignedVisaOfficerId || undefined,
+        assignedVisaOfficerName: selectedOfficer?.name || undefined,
+        contractAmountBdt,
+        initialPaymentBdt: Number(initialPaymentBdt) || 0,
         courseLevel,
         accountStatus: "ACTIVE",
         address,
@@ -522,13 +577,20 @@ export default function LeadProfileModal({
       status: isFileOpened || isCourseEnrolled ? "ADMITTED" : status,
       branch,
       assignedTo,
+      assignedCounselorId: assignedCounselorId || undefined,
+      b2bAgentId: b2bAgentId || undefined,
+      b2bAgentName: selectedAgent?.organizationName || b2bAgentName || undefined,
+      partnerSchoolId: partnerSchoolId || undefined,
+      assignedVisaOfficerId: assignedVisaOfficerId || undefined,
+      assignedVisaOfficerName: selectedOfficer?.name || undefined,
+      contractAmountBdt,
       followUpDate,
       notes,
       isFileOpened,
       isCourseEnrolled,
       enrolledBatchOrSession,
       packageType,
-      targetSchool,
+      targetSchool: resolvedSchoolName,
       hasLoginAccess: true,
       loginEmail: loginEmail.trim().toLowerCase(),
       loginPassword: loginPassword.trim(),
@@ -767,12 +829,59 @@ export default function LeadProfileModal({
                 </div>
                 <div>
                   <label className="font-bold text-slate-700">{t.counselor}</label>
-                  <input
-                    type="text"
-                    value={assignedTo}
-                    onChange={(e) => setAssignedTo(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2"
-                  />
+                  {counselors.length > 0 ? (
+                    <select
+                      value={assignedCounselorId || assignedTo}
+                      onChange={(e) => {
+                        const found = counselors.find((c) => c.id === e.target.value);
+                        if (found) {
+                          setAssignedCounselorId(found.id);
+                          setAssignedTo(found.name);
+                        } else {
+                          setAssignedCounselorId("");
+                          setAssignedTo(e.target.value);
+                        }
+                      }}
+                      className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 font-bold"
+                    >
+                      {counselors.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} ({c.role})
+                        </option>
+                      ))}
+                      <option value="শেখ বাসেত (MD)">শেখ বাসেত (MD)</option>
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={assignedTo}
+                      onChange={(e) => setAssignedTo(e.target.value)}
+                      className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2"
+                    />
+                  )}
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700">
+                    {language === "bn" ? "রেফারকারী বিটুবি এজেন্ট (যদি থাকে)" : "Referring B2B Agent"}
+                  </label>
+                  <select
+                    value={b2bAgentId}
+                    onChange={(e) => {
+                      const ag = b2bAgents.find((a) => a.id === e.target.value);
+                      setB2bAgentId(e.target.value);
+                      setB2bAgentName(ag?.organizationName || "");
+                    }}
+                    className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 font-semibold"
+                  >
+                    <option value="">
+                      {language === "bn" ? "ডিরেক্ট / কোনো এজেন্ট নেই" : "Direct Inquiry (No Agent)"}
+                    </option>
+                    {b2bAgents.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.organizationName} ({a.city})
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="sm:col-span-2">
                   <label className="font-bold text-slate-700">{t.notes}</label>
@@ -875,7 +984,11 @@ export default function LeadProfileModal({
                     </select>
                     <select
                       value={packageType}
-                      onChange={(e) => setPackageType(e.target.value as any)}
+                      onChange={(e) => {
+                        const pkg = e.target.value as "REGULAR" | "PREMIUM";
+                        setPackageType(pkg);
+                        setContractAmountBdt(pkg === "PREMIUM" ? 1100000 : 120000);
+                      }}
                       className="w-1/2 rounded-xl border border-stone-300 bg-white px-2 py-2 font-bold"
                     >
                       <option value="REGULAR">Regular</option>
@@ -884,16 +997,84 @@ export default function LeadProfileModal({
                   </div>
                 </div>
                 {isFileOpened && (
-                  <div className="sm:col-span-2">
-                    <label className="font-bold text-slate-700">{t.targetSchoolLabel}</label>
-                    <input
-                      type="text"
-                      value={targetSchool}
-                      onChange={(e) => setTargetSchool(e.target.value)}
-                      className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 font-semibold"
-                    />
-                  </div>
+                  <>
+                    <div className="sm:col-span-2">
+                      <label className="font-bold text-slate-700">{t.targetSchoolLabel}</label>
+                      {partnerSchools.length > 0 ? (
+                        <select
+                          value={partnerSchoolId}
+                          onChange={(e) => {
+                            const sch = partnerSchools.find((s) => s.id === e.target.value);
+                            setPartnerSchoolId(e.target.value);
+                            if (sch) setTargetSchool(sch.name);
+                          }}
+                          className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 font-semibold"
+                        >
+                          <option value="">
+                            {language === "bn" ? "-- পার্টনার স্কুল নির্বাচন করুন --" : "-- Select Partner School --"}
+                          </option>
+                          {partnerSchools.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name} ({s.location})
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type="text"
+                          value={targetSchool}
+                          onChange={(e) => setTargetSchool(e.target.value)}
+                          placeholder={language === "bn" ? "পার্টনার স্কুলের নাম লিখুন" : "Enter partner school name"}
+                          className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 font-semibold"
+                        />
+                      )}
+                    </div>
+                    <div>
+                      <label className="font-bold text-slate-700">
+                        {language === "bn" ? "ভিসা প্রসেসিং অফিসার" : "Assigned Visa Officer"}
+                      </label>
+                      <select
+                        value={assignedVisaOfficerId}
+                        onChange={(e) => setAssignedVisaOfficerId(e.target.value)}
+                        className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 font-semibold"
+                      >
+                        <option value="">
+                          {language === "bn" ? "ডিফল্ট ভিসা ডেস্ক" : "Default Visa Desk"}
+                        </option>
+                        {visaOfficers.map((vo) => (
+                          <option key={vo.id} value={vo.id}>
+                            {vo.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="font-bold text-slate-700">
+                        {language === "bn" ? "মোট প্যাকেজ চুক্তি (৳)" : "Total Contract (BDT)"}
+                      </label>
+                      <input
+                        type="number"
+                        value={contractAmountBdt}
+                        onChange={(e) => setContractAmountBdt(Number(e.target.value))}
+                        className="mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 font-mono font-bold tabular-nums"
+                      />
+                    </div>
+                  </>
                 )}
+                <div className="sm:col-span-2">
+                  <label className="font-bold text-emerald-800">
+                    {language === "bn"
+                      ? "আজকের জমাকৃত ফি / অগ্রিম (৳) — অটো ফিন্যান্স লেজারে যুক্ত হবে"
+                      : "Initial Payment Received Today (BDT) — Auto-logs to Finance"}
+                  </label>
+                  <input
+                    type="number"
+                    value={initialPaymentBdt}
+                    onChange={(e) => setInitialPaymentBdt(Number(e.target.value))}
+                    placeholder="0"
+                    className="mt-1 w-full rounded-xl border border-emerald-300 bg-emerald-50/40 px-3 py-2 font-mono font-bold text-emerald-900 tabular-nums"
+                  />
+                </div>
               </div>
 
               {/* Login Credentials Box */}

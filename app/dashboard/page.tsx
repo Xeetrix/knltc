@@ -74,6 +74,11 @@ import {
   addStaffMember,
   updateStaffMember,
   deleteStaffMember,
+  promoteLeadToVisaPipeline,
+  claimPartnerSchoolCommission,
+  settleB2bAgentCommission,
+  disburseStaffPayroll,
+  disburseAllActivePayroll,
   type MasterKnlTcStore,
   type UserRole,
   type BranchCode,
@@ -144,7 +149,7 @@ export default function DashboardPage() {
   >("summary");
 
   // Finance Sub Tabs, Search & Filter states
-  const [financeSubTab, setFinanceSubTab] = useState<"overview" | "ledger" | "investor">("overview");
+  const [financeSubTab, setFinanceSubTab] = useState<"overview" | "ledger" | "dues" | "investor">("overview");
   const [financeFilterCategory, setFinanceFilterCategory] = useState<"ALL" | "INCOME" | "EXPENSE">("ALL");
   const [financeSearchQuery, setFinanceSearchQuery] = useState("");
   const [selectedTxForReceipt, setSelectedTxForReceipt] = useState<FinancialTransaction | null>(null);
@@ -166,6 +171,9 @@ export default function DashboardPage() {
     japaneseProficiency: "LEARNING_N5" as CrmLead["japaneseProficiency"],
     studyGapYears: 1,
     notes: "",
+    assignedCounselorId: "",
+    referredByAgentId: "",
+    targetSchoolId: "",
   });
 
   // Form states for Issue LMS Account
@@ -176,6 +184,8 @@ export default function DashboardPage() {
     activeBatch: "N5 Intensive Batch (Dhaka HQ)",
     portalUsername: "",
     portalPasswordMasked: "N5@knltc2026",
+    assignedSenseiId: "",
+    linkedLeadId: "",
   });
 
   // Form states for Partner School
@@ -187,6 +197,7 @@ export default function DashboardPage() {
     email: "",
     commissionPerStudentYen: 80000,
     commissionPerStudentBdt: 64000,
+    intakeQuota: 20,
     activeStudentsCount: 0,
     totalCommissionReceivedYen: 0,
     status: "ACTIVE_PARTNER" as JapanesePartnerSchool["status"],
@@ -227,6 +238,7 @@ export default function DashboardPage() {
 
   // Form states for Finance Payment (Income)
   const [paymentForm, setPaymentForm] = useState({
+    linkedLeadId: "",
     studentName: "",
     studentPhone: "",
     type: "SERVICE_CHARGE_COE" as FinancialTransaction["type"],
@@ -662,6 +674,7 @@ export default function DashboardPage() {
         email: school.email,
         commissionPerStudentYen: school.commissionPerStudentYen,
         commissionPerStudentBdt: school.commissionPerStudentBdt,
+        intakeQuota: school.intakeQuota || 20,
         activeStudentsCount: school.activeStudentsCount,
         totalCommissionReceivedYen: school.totalCommissionReceivedYen,
         status: school.status,
@@ -676,12 +689,35 @@ export default function DashboardPage() {
         email: "",
         commissionPerStudentYen: 80000,
         commissionPerStudentBdt: 64000,
+        intakeQuota: 20,
         activeStudentsCount: 0,
         totalCommissionReceivedYen: 0,
         status: "ACTIVE_PARTNER",
       });
     }
     setActiveModal("ADD_PARTNER_SCHOOL");
+  };
+
+  // Helper to open payment collection pre-filled for a specific student
+  const openStudentPaymentModal = (lead: CrmLead) => {
+    const due = Math.max(0, (lead.contractAmountBdt || 120000) - (lead.paidAmountBdt || 0));
+    setPaymentForm({
+      linkedLeadId: lead.id,
+      studentName: lead.name,
+      studentPhone: lead.phone,
+      type:
+        lead.interest === "STUDENT_VISA_PREMIUM"
+          ? "PREMIUM_PACKAGE"
+          : lead.interest === "JAPANESE_N5" || lead.interest === "JAPANESE_N4"
+            ? "COURSE_FEE"
+            : "SERVICE_CHARGE_COE",
+      amountBdt: due > 0 ? due : 12000,
+      paymentMethod: "BKASH",
+      referenceOrTrx: "",
+      branch: lead.branch || "DHK-HQ",
+      notes: `${lead.name} — কিস্তি / বকেয়া পরিশোধ`,
+    });
+    setActiveModal("ADD_PAYMENT");
   };
 
   // Open HR Staff Modal (for Add or Edit)
@@ -1290,15 +1326,30 @@ export default function DashboardPage() {
                         </div>
 
                         {store.partnerSchools.length > 0 ? (
-                          <div className="mt-2.5 space-y-2">
-                            {store.partnerSchools.slice(0, 2).map((sch) => (
-                              <div key={sch.id} className="pt-1.5 first:pt-0 border-t border-slate-100 first:border-0">
-                                <h3 className="text-sm font-bold text-slate-900">{sch.name}</h3>
-                                <p className="text-xs text-slate-500 mt-0.5">
-                                  {sch.location} {sch.contactPerson ? `• ${sch.contactPerson}` : ""}
-                                </p>
-                              </div>
-                            ))}
+                          <div className="mt-2.5 space-y-2.5">
+                            {store.partnerSchools.slice(0, 3).map((sch) => {
+                              const quota = sch.intakeQuota || 20;
+                              const pct = Math.min(100, Math.round((sch.activeStudentsCount / quota) * 100));
+                              return (
+                                <div key={sch.id} className="pt-2 first:pt-0 border-t border-slate-100 first:border-0">
+                                  <div className="flex items-center justify-between">
+                                    <h3 className="text-xs font-bold text-slate-900 truncate">{sch.name}</h3>
+                                    <span className="text-[11px] font-bold text-slate-700 tabular-nums">
+                                      {sch.activeStudentsCount}/{quota} সিট
+                                    </span>
+                                  </div>
+                                  <div className="mt-1.5 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+                                    <div
+                                      className="h-full rounded-full bg-[#b91c1c] transition-all"
+                                      style={{ width: `${pct}%` }}
+                                    />
+                                  </div>
+                                  <p className="text-[10px] text-slate-400 mt-1">
+                                    {sch.location} • কমিশন ¥{sch.commissionPerStudentYen.toLocaleString()}/স্টুডেন্ট
+                                  </p>
+                                </div>
+                              );
+                            })}
                           </div>
                         ) : (
                           <div className="mt-3 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-4 text-center">
@@ -1322,6 +1373,349 @@ export default function DashboardPage() {
                       </div>
                     </div>
                   </div>
+
+                  {/* =====================================================================
+                      CROSS-MODULE EXECUTIVE INTELLIGENCE (Funnel, Dues/Commissions, Leaderboard)
+                      ===================================================================== */}
+                  {(() => {
+                    const totalLeadsCount = filteredLeads.length;
+                    const counseledCount = filteredLeads.filter(
+                      (l) => l.status === "COUNSELED" || l.status === "OFFICE_VISIT_BOOKED" || l.status === "ADMITTED",
+                    ).length;
+                    const enrolledCount = filteredLeads.filter(
+                      (l) => l.status === "ADMITTED" || l.isCourseEnrolled || l.isFileOpened,
+                    ).length;
+                    const visaPipelineCount = filteredVisaApplicants.length;
+                    const coeApprovedCount = filteredVisaApplicants.filter((v) => v.stage >= 6).length;
+                    const visaFlyCount = filteredVisaApplicants.filter((v) => v.stage >= 9).length;
+
+                    const studentsWithDues = store.crmLeads.filter(
+                      (l) =>
+                        (l.isFileOpened || l.isCourseEnrolled || l.status === "ADMITTED") &&
+                        (l.dueAmountBdt ?? Math.max(0, (l.contractAmountBdt || 120000) - (l.paidAmountBdt || 0))) > 0,
+                    );
+                    const totalStudentDuesBdt = studentsWithDues.reduce(
+                      (sum, l) =>
+                        sum + (l.dueAmountBdt ?? Math.max(0, (l.contractAmountBdt || 120000) - (l.paidAmountBdt || 0))),
+                      0,
+                    );
+                    const agentsWithPending = store.b2bAgents.filter((a) => (a.pendingCommissionBdt || 0) > 0);
+                    const totalPendingAgentBdt = agentsWithPending.reduce((sum, a) => sum + a.pendingCommissionBdt, 0);
+
+                    const topCounselors = [...store.staffList]
+                      .filter((s) => s.role === "COUNSELOR" || s.role === "TELE_COUNSELOR")
+                      .sort((a, b) => (b.admissionsAchieved || 0) - (a.admissionsAchieved || 0))
+                      .slice(0, 3);
+
+                    const topAgents = [...store.b2bAgents]
+                      .sort((a, b) => (b.successfulVisasCount || 0) - (a.successfulVisasCount || 0))
+                      .slice(0, 3);
+
+                    const funnelSteps = [
+                      {
+                        label: language === "bn" ? "মোট লিড (CRM)" : "Total Leads",
+                        count: totalLeadsCount,
+                        sub: language === "bn" ? "ইনকোয়ারি" : "Inquiries",
+                        tab: "crm" as DashboardTabId,
+                      },
+                      {
+                        label: language === "bn" ? "কাউন্সেলিং সম্পন্ন" : "Counseled",
+                        count: counseledCount,
+                        sub: language === "bn" ? "ভিজিট / কল" : "Assessed",
+                        tab: "crm" as DashboardTabId,
+                      },
+                      {
+                        label: language === "bn" ? "ভর্তি ও LMS ব্যাচ" : "Enrolled / LMS",
+                        count: enrolledCount || store.lmsBridges.length,
+                        sub: language === "bn" ? "ভাষা ও ফাইল" : "Active Students",
+                        tab: "lms" as DashboardTabId,
+                      },
+                      {
+                        label: language === "bn" ? "ভিসা প্রসেসিং ফাইল" : "Visa Pipeline",
+                        count: visaPipelineCount,
+                        sub: language === "bn" ? "ডকুমেন্টেশন" : "In Process",
+                        tab: "visa" as DashboardTabId,
+                      },
+                      {
+                        label: language === "bn" ? "COE অনুমোদিত" : "COE Approved",
+                        count: coeApprovedCount,
+                        sub: language === "bn" ? "জাপান ইমিগ্রেশন" : "Stage 6+",
+                        tab: "visa" as DashboardTabId,
+                      },
+                      {
+                        label: language === "bn" ? "ভিসা স্ট্যাম্প ও ফ্লাই" : "Visa & Fly",
+                        count: visaFlyCount,
+                        sub: language === "bn" ? "চূড়ান্ত সফলতা" : "Stage 9-10",
+                        tab: "visa" as DashboardTabId,
+                      },
+                    ];
+
+                    return (
+                      <>
+                        {/* 1. End-to-End Student Conversion Funnel */}
+                        <div className="rounded-2xl border border-slate-200/80 bg-white p-5">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-4 border-b border-slate-100">
+                            <div>
+                              <h2 className="text-sm font-bold text-slate-900">
+                                {language === "bn"
+                                  ? "এন্ড-টু-এন্ড স্টুডেন্ট কনভার্সন ফানেল (CRM ➔ LMS ➔ Visa ➔ COE ➔ Fly)"
+                                  : "End-to-End Student Conversion Funnel (CRM to COE & Fly)"}
+                              </h2>
+                              <p className="text-xs text-slate-400 mt-0.5">
+                                {language === "bn"
+                                  ? "প্রাথমিক লিড থেকে শুরু করে জাপানে ফ্লাইট পর্যন্ত প্রতিটি ধাপের লাইভ সিঙ্ক ট্র্যাকার"
+                                  : "Live relational synchronization from initial inquiry to visa stamping"}
+                              </p>
+                            </div>
+                            <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200/60">
+                              {language === "bn" ? "অটো-সিঙ্ক সক্রিয়" : "Auto-Sync Active"}
+                            </span>
+                          </div>
+
+                          <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                            {funnelSteps.map((step, idx) => (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => setActiveTab(step.tab)}
+                                className="group text-left rounded-xl border border-slate-200/70 bg-slate-50/60 hover:bg-white hover:border-slate-300 p-3.5 transition"
+                              >
+                                <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
+                                  <span>STEP 0{idx + 1}</span>
+                                  <ChevronRight className="h-3 w-3 text-slate-300 group-hover:text-[#b91c1c] transition" />
+                                </div>
+                                <p className="mt-1.5 text-xl font-bold text-slate-900 tabular-nums">
+                                  {step.count}
+                                </p>
+                                <p className="mt-0.5 text-xs font-semibold text-slate-700 truncate">
+                                  {step.label}
+                                </p>
+                                <p className="text-[10px] text-slate-400">{step.sub}</p>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* 2. Actionable Financial Alerts & Top Performers Leaderboard */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                          {/* Pending Dues & B2B Commission Action Alerts */}
+                          <div className="rounded-2xl border border-slate-200/80 bg-white p-5 flex flex-col justify-between">
+                            <div>
+                              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                                <div>
+                                  <h3 className="text-sm font-bold text-slate-900">
+                                    {language === "bn"
+                                      ? "বকেয়া ফি ও প্রদেয় এজেন্ট কমিশন অ্যালার্ট"
+                                      : "Pending Student Dues & Payable B2B Commissions"}
+                                  </h3>
+                                  <p className="text-[11px] text-slate-400 mt-0.5">
+                                    {language === "bn"
+                                      ? "১-ক্লিকে বকেয়া আদায় অথবা সাব-এজেন্ট কমিশন পরিশোধ করুন"
+                                      : "Collect due installments or settle B2B commissions in 1 click"}
+                                  </p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveTab("finance");
+                                    setFinanceSubTab("dues");
+                                  }}
+                                  className="text-xs font-semibold text-[#b91c1c] hover:underline"
+                                >
+                                  {language === "bn" ? "সব বকেয়া দেখুন" : "View All"}
+                                </button>
+                              </div>
+
+                              <div className="mt-3 grid grid-cols-2 gap-3">
+                                <div className="rounded-xl border border-amber-200/70 bg-amber-50/40 p-3">
+                                  <span className="text-[11px] font-semibold text-amber-800">
+                                    {language === "bn" ? "শিক্ষার্থীদের মোট বকেয়া" : "Student Receivable Dues"}
+                                  </span>
+                                  <p className="text-lg font-bold text-slate-900 mt-0.5 tabular-nums">
+                                    ৳{totalStudentDuesBdt.toLocaleString()}
+                                  </p>
+                                  <p className="text-[10px] text-amber-700 mt-0.5 tabular-nums">
+                                    {studentsWithDues.length} {language === "bn" ? "জন শিক্ষার্থীর কিস্তি বাকি" : "students with balance"}
+                                  </p>
+                                </div>
+
+                                <div className="rounded-xl border border-slate-200/80 bg-slate-50/60 p-3">
+                                  <span className="text-[11px] font-semibold text-slate-600">
+                                    {language === "bn" ? "বিটুবি এজেন্ট কমিশন প্রদেয়" : "Payable B2B Commission"}
+                                  </span>
+                                  <p className="text-lg font-bold text-slate-900 mt-0.5 tabular-nums">
+                                    ৳{totalPendingAgentBdt.toLocaleString()}
+                                  </p>
+                                  <p className="text-[10px] text-slate-500 mt-0.5 tabular-nums">
+                                    {agentsWithPending.length} {language === "bn" ? "টি এজেন্সির COE কমিশন" : "agencies pending"}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="mt-3 space-y-2">
+                                {studentsWithDues.slice(0, 3).map((stu) => {
+                                  const due =
+                                    stu.dueAmountBdt ??
+                                    Math.max(0, (stu.contractAmountBdt || 120000) - (stu.paidAmountBdt || 0));
+                                  return (
+                                    <div
+                                      key={stu.id}
+                                      className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2 text-xs"
+                                    >
+                                      <div>
+                                        <p className="font-bold text-slate-900">{stu.name}</p>
+                                        <p className="text-[11px] text-slate-500 tabular-nums">
+                                          {language === "bn" ? "বকেয়া:" : "Due:"}{" "}
+                                          <span className="font-semibold text-[#b91c1c]">
+                                            ৳{due.toLocaleString()}
+                                          </span>{" "}
+                                          ({stu.targetSchoolName || stu.interest})
+                                        </p>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => openStudentPaymentModal(stu)}
+                                        className="rounded-lg bg-emerald-700 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-emerald-800 transition"
+                                      >
+                                        {language === "bn" ? "ফি গ্রহণ" : "Collect Fee"}
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+
+                                {agentsWithPending.slice(0, 2).map((ag) => (
+                                  <div
+                                    key={ag.id}
+                                    className="flex items-center justify-between rounded-xl border border-amber-200/60 bg-amber-50/30 px-3 py-2 text-xs"
+                                  >
+                                    <div>
+                                      <p className="font-bold text-slate-900">{ag.organizationName}</p>
+                                      <p className="text-[11px] text-amber-800 tabular-nums">
+                                        {language === "bn" ? "প্রদেয় কমিশন:" : "Payable:"}{" "}
+                                        <span className="font-bold">৳{ag.pendingCommissionBdt.toLocaleString()}</span>
+                                      </p>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const tx = settleB2bAgentCommission(ag.id);
+                                        if (tx) {
+                                          setStore({ ...getCmsStore() });
+                                          showToast(`${ag.organizationName}: ৳${tx.amountBdt.toLocaleString()} কমিশন পরিশোধিত`);
+                                        }
+                                      }}
+                                      className="rounded-lg bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-slate-800 transition"
+                                    >
+                                      {language === "bn" ? "পরিশোধ করুন" : "Settle Now"}
+                                    </button>
+                                  </div>
+                                ))}
+
+                                {studentsWithDues.length === 0 && agentsWithPending.length === 0 && (
+                                  <div className="rounded-xl border border-dashed border-slate-200 py-5 text-center text-xs text-slate-400">
+                                    {language === "bn"
+                                      ? "কোনো বকেয়া ফি বা অমীমাংসিত এজেন্ট কমিশন নেই"
+                                      : "No pending student dues or unsettled agent commissions"}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Top Performing Counselor & B2B Agent Leaderboard */}
+                          <div className="rounded-2xl border border-slate-200/80 bg-white p-5">
+                            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                              <div>
+                                <h3 className="text-sm font-bold text-slate-900">
+                                  {language === "bn"
+                                    ? "টপ পারফর্মিং কাউন্সেলর ও বিটুবি এজেন্ট লিডারবোর্ড"
+                                    : "Top Performing Counselors & B2B Partners"}
+                                </h3>
+                                <p className="text-[11px] text-slate-400 mt-0.5">
+                                  {language === "bn"
+                                    ? "ভর্তি ও সফল ভিসা প্রাপ্তির ভিত্তিতে সেরা পারফর্মার তালিকা"
+                                    : "Ranked by confirmed student admissions and successful COE/Visas"}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setActiveTab("hr")}
+                                className="text-xs font-semibold text-slate-600 hover:text-slate-900"
+                              >
+                                {language === "bn" ? "HR প্যানেল" : "HR Panel"}
+                              </button>
+                            </div>
+
+                            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <div>
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                  {language === "bn" ? "সেরা এডমিশন কাউন্সেলর" : "Top Counselors"}
+                                </span>
+                                <div className="mt-2 space-y-2">
+                                  {topCounselors.length > 0 ? (
+                                    topCounselors.map((c, i) => (
+                                      <div
+                                        key={c.id}
+                                        className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2 text-xs"
+                                      >
+                                        <div className="min-w-0">
+                                          <p className="font-bold text-slate-900 truncate">
+                                            {i + 1}. {c.name}
+                                          </p>
+                                          <p className="text-[10px] text-slate-400 tabular-nums">
+                                            {c.callsCompleted || 0} কল • বোনাস ৳{(c.performanceBonusBdt || 0).toLocaleString()}
+                                          </p>
+                                        </div>
+                                        <span className="rounded-lg bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-200/60 tabular-nums shrink-0">
+                                          {c.admissionsAchieved} ভর্তি
+                                        </span>
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <p className="text-xs text-slate-400 py-3">
+                                      {language === "bn" ? "কোনো কাউন্সেলর তথ্য নেই" : "No counselors added"}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div>
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                  {language === "bn" ? "সেরা বিটুবি সাব-এজেন্ট" : "Top B2B Agents"}
+                                </span>
+                                <div className="mt-2 space-y-2">
+                                  {topAgents.length > 0 ? (
+                                    topAgents.map((ag, i) => (
+                                      <div
+                                        key={ag.id}
+                                        className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-2 text-xs"
+                                      >
+                                        <div className="min-w-0">
+                                          <p className="font-bold text-slate-900 truncate">
+                                            {i + 1}. {ag.organizationName}
+                                          </p>
+                                          <p className="text-[10px] text-slate-400 tabular-nums">
+                                            রেফার্ড: {ag.referredStudentsCount} জন • {ag.city}
+                                          </p>
+                                        </div>
+                                        <span className="rounded-lg bg-slate-900 px-2 py-0.5 text-[11px] font-bold text-white tabular-nums shrink-0">
+                                          {ag.successfulVisasCount} ভিসা
+                                        </span>
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <p className="text-xs text-slate-400 py-3">
+                                      {language === "bn" ? "কোনো বিটুবি এজেন্ট যুক্ত নেই" : "No B2B agents added"}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
 
@@ -1356,7 +1750,9 @@ export default function DashboardPage() {
                           <tr>
                             <th className="px-4 py-3">{t.crm.colCandidate}</th>
                             <th className="px-4 py-3">{t.crm.colSource}</th>
-                            <th className="px-4 py-3">{t.crm.colEducation}</th>
+                            <th className="px-4 py-3">
+                              {language === "bn" ? "চুক্তি ও বকেয়া হিসাব (Finance)" : "Contract & Dues"}
+                            </th>
                             <th className="px-4 py-3">{t.crm.colCounselor}</th>
                             <th className="px-4 py-3">{t.crm.colStatus}</th>
                             <th className="px-4 py-3 text-right">{t.crm.colAction}</th>
@@ -1368,6 +1764,15 @@ export default function DashboardPage() {
                               `Hello ${lead.name}, greetings from KNLTC. We would like to follow up on your Japan study & visa inquiry.`,
                             );
                             const waLink = `https://wa.me/${lead.whatsapp.replace(/[^0-9]/g, "")}?text=${waText}`;
+                            const contractBdt =
+                              lead.contractAmountBdt ||
+                              (lead.interest === "STUDENT_VISA_PREMIUM"
+                                ? 1100000
+                                : lead.interest === "JAPANESE_N5" || lead.interest === "JAPANESE_N4"
+                                  ? 12000
+                                  : 120000);
+                            const paidBdt = lead.paidAmountBdt || 0;
+                            const dueBdt = lead.dueAmountBdt ?? Math.max(0, contractBdt - paidBdt);
 
                             return (
                               <tr key={lead.id} className="hover:bg-slate-50/70 transition-colors">
@@ -1387,7 +1792,7 @@ export default function DashboardPage() {
                                   <div className="mt-1 flex flex-wrap items-center gap-1.5">
                                     {lead.isFileOpened && (
                                       <span className="text-[10px] font-semibold text-[#b91c1c]">
-                                        • {language === "bn" ? "ফাইল ওপেনকৃত" : "File Opened"}
+                                        • {language === "bn" ? "ভিসা পাইপলাইনে যুক্ত" : "In Visa Pipeline"}
                                       </span>
                                     )}
                                     {lead.isCourseEnrolled && (
@@ -1395,21 +1800,44 @@ export default function DashboardPage() {
                                         • {language === "bn" ? "কোর্সে ভর্তিকৃত" : "Course Enrolled"}
                                       </span>
                                     )}
+                                    {lead.targetSchoolName && (
+                                      <span className="text-[10px] font-medium text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded">
+                                        🏫 {lead.targetSchoolName}
+                                      </span>
+                                    )}
                                   </div>
                                 </td>
                                 <td className="px-4 py-3.5">
                                   <span className="text-[11px] font-medium text-slate-500 block">
-                                    {lead.source}
+                                    {lead.referredByAgentName
+                                      ? `এজেন্ট: ${lead.referredByAgentName}`
+                                      : lead.source}
                                   </span>
                                   <span className="font-semibold text-slate-800 mt-0.5 block">
                                     {lead.interest}
                                   </span>
-                                </td>
-                                <td className="px-4 py-3.5">
-                                  <p className="font-medium text-slate-800">{lead.education}</p>
-                                  <span className="text-[11px] font-semibold text-emerald-700">
-                                    {lead.japaneseProficiency}
+                                  <span className="text-[10px] text-emerald-700 font-semibold">
+                                    {lead.education} • {lead.japaneseProficiency}
                                   </span>
+                                </td>
+                                <td className="px-4 py-3.5 tabular-nums">
+                                  <div className="space-y-0.5">
+                                    <p className="text-[11px] text-slate-500">
+                                      চুক্তি: <span className="font-semibold text-slate-800">৳{contractBdt.toLocaleString()}</span>
+                                    </p>
+                                    <p className="text-[11px] text-emerald-700 font-semibold">
+                                      জমা: ৳{paidBdt.toLocaleString()}
+                                    </p>
+                                    {dueBdt > 0 ? (
+                                      <p className="text-[11px] text-[#b91c1c] font-bold">
+                                        বকেয়া: ৳{dueBdt.toLocaleString()}
+                                      </p>
+                                    ) : (
+                                      <span className="inline-block rounded bg-emerald-50 px-1.5 py-0.2 text-[10px] font-bold text-emerald-700">
+                                        পরিশোধিত
+                                      </span>
+                                    )}
+                                  </div>
                                 </td>
                                 <td className="px-4 py-3.5">
                                   <p className="font-medium text-slate-700">{lead.assignedTo}</p>
@@ -1421,8 +1849,14 @@ export default function DashboardPage() {
                                   <select
                                     value={lead.status}
                                     onChange={(e) => {
-                                      updateCrmLeadStatus(lead.id, e.target.value as LeadStatus);
-                                      showToast(`${lead.name} — ${e.target.value}`);
+                                      const nextStatus = e.target.value as LeadStatus;
+                                      updateCrmLeadStatus(lead.id, nextStatus);
+                                      setStore({ ...getCmsStore() });
+                                      showToast(
+                                        nextStatus === "ADMITTED"
+                                          ? `${lead.name} — ভর্তি সম্পন্ন ও ভিসা পাইপলাইনে সিঙ্ক হয়েছে`
+                                          : `${lead.name} — ${nextStatus}`,
+                                      );
                                     }}
                                     className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-800 focus:border-slate-400 focus:outline-hidden"
                                   >
@@ -1435,23 +1869,46 @@ export default function DashboardPage() {
                                   </select>
                                 </td>
                                 <td className="px-4 py-3.5 text-right">
-                                  <div className="inline-flex items-center justify-end gap-1.5">
+                                  <div className="inline-flex flex-wrap items-center justify-end gap-1.5">
                                     <button
                                       type="button"
                                       onClick={() => setSelectedLeadForProfile(lead)}
                                       className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
                                     >
                                       <UserCheck className="h-3.5 w-3.5 text-[#b91c1c]" />
-                                      <span>{language === "bn" ? "প্রোফাইল" : "Profile"}</span>
+                                      <span>{language === "bn" ? "প্রোফাইল ও ভর্তি" : "360° Profile"}</span>
                                     </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => openStudentPaymentModal(lead)}
+                                      className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 border border-emerald-200/80 px-2.5 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 transition"
+                                      title="Collect Fee Installment"
+                                    >
+                                      <DollarSign className="h-3 w-3 text-emerald-700" />
+                                      <span>{language === "bn" ? "ফি জমা" : "Fee"}</span>
+                                    </button>
+                                    {!lead.isFileOpened && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          promoteLeadToVisaPipeline({ leadId: lead.id });
+                                          setStore({ ...getCmsStore() });
+                                          showToast(`${lead.name} ভিসা পাইপলাইনে যুক্ত হয়েছে`);
+                                        }}
+                                        className="inline-flex items-center gap-1 rounded-lg bg-slate-900 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 transition"
+                                        title="Promote to 10-Step Visa Pipeline"
+                                      >
+                                        <FileCheck2 className="h-3 w-3" />
+                                        <span>{language === "bn" ? "পাইপলাইন" : "Pipeline"}</span>
+                                      </button>
+                                    )}
                                     <a
                                       href={waLink}
                                       target="_blank"
                                       rel="noreferrer"
-                                      className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 transition"
+                                      className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 transition"
                                     >
                                       <Send className="h-3 w-3" />
-                                      <span>WA</span>
                                     </a>
                                   </div>
                                 </td>
@@ -1594,43 +2051,85 @@ export default function DashboardPage() {
                             </div>
 
                             <div className="mt-2.5 space-y-2">
-                              {applicantsInStage.map((app) => (
-                                <div
-                                  key={app.id}
-                                  className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-2xs hover:border-slate-300 transition"
-                                >
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-[10px] font-mono text-slate-400">
-                                      {app.trackingNo}
-                                    </span>
-                                    <span className="text-[10px] font-semibold text-slate-600">
-                                      {app.packageType === "PREMIUM"
-                                        ? t.visa.packagePremium
-                                        : t.visa.packageRegular}
-                                    </span>
-                                  </div>
-                                  <p className="font-bold text-xs text-slate-900 mt-1">{app.name}</p>
-                                  <p className="text-[11px] text-slate-500">{app.targetSchool}</p>
-                                  <div className="mt-2.5 flex items-center justify-between pt-2 border-t border-slate-100">
-                                    <span className="text-[10px] text-slate-400 truncate max-w-[110px]">
-                                      {app.intakeSession}
-                                    </span>
-                                    {col.stage < 10 && (
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          updateVisaStage(app.id, (col.stage + 1) as VisaStage);
-                                          showToast(`${app.name} → Step ${col.stage + 1}`);
-                                        }}
-                                        className="inline-flex items-center gap-0.5 rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-semibold text-white hover:bg-emerald-700 transition"
-                                      >
-                                        <span>{t.visa.nextStageBtn}</span>
-                                        <ChevronRight className="h-3 w-3" />
-                                      </button>
+                              {applicantsInStage.map((app) => {
+                                const linkedAgent = app.referredByAgentId
+                                  ? store.b2bAgents.find((a) => a.id === app.referredByAgentId)
+                                  : null;
+                                const linkedOfficer = app.assignedVisaOfficerId
+                                  ? store.staffList.find((s) => s.id === app.assignedVisaOfficerId)
+                                  : null;
+                                const dueAmt =
+                                  app.dueAmountBdt ??
+                                  Math.max(0, (app.contractAmountBdt || 120000) - (app.paidAmountBdt || 0));
+
+                                return (
+                                  <div
+                                    key={app.id}
+                                    className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-2xs hover:border-slate-300 transition"
+                                  >
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-[10px] font-mono text-slate-400">
+                                        {app.trackingNo}
+                                      </span>
+                                      <span className="text-[10px] font-semibold text-slate-600">
+                                        {app.packageType === "PREMIUM"
+                                          ? t.visa.packagePremium
+                                          : t.visa.packageRegular}
+                                      </span>
+                                    </div>
+                                    <p className="font-bold text-xs text-slate-900 mt-1">{app.name}</p>
+                                    <p className="text-[11px] font-medium text-slate-600 truncate">
+                                      🏫 {app.targetSchool}
+                                    </p>
+                                    {linkedAgent && (
+                                      <p className="text-[10px] text-amber-700 font-medium mt-0.5 truncate">
+                                        এজেন্ট: {linkedAgent.organizationName}
+                                      </p>
                                     )}
+                                    {linkedOfficer && (
+                                      <p className="text-[10px] text-slate-400 mt-0.5 truncate">
+                                        অফিসার: {linkedOfficer.name}
+                                      </p>
+                                    )}
+                                    <div className="mt-1.5 flex items-center justify-between text-[10px] tabular-nums">
+                                      <span className="text-emerald-700 font-semibold">
+                                        জমা: ৳{(app.paidAmountBdt || 0).toLocaleString()}
+                                      </span>
+                                      {dueAmt > 0 && (
+                                        <span className="text-[#b91c1c] font-semibold">
+                                          বকেয়া: ৳{dueAmt.toLocaleString()}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="mt-2.5 flex items-center justify-between pt-2 border-t border-slate-100">
+                                      <span className="text-[10px] text-slate-400 truncate max-w-[110px]">
+                                        {app.intakeSession}
+                                      </span>
+                                      {col.stage < 10 && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const nextStage = (col.stage + 1) as VisaStage;
+                                            updateVisaStage(app.id, nextStage);
+                                            setStore({ ...getCmsStore() });
+                                            if (nextStage === 6 && linkedAgent) {
+                                              showToast(
+                                                `${app.name} → COE অনুমোদিত! (${linkedAgent.organizationName}-এর কমিশন যুক্ত হয়েছে)`,
+                                              );
+                                            } else {
+                                              showToast(`${app.name} → Step ${nextStage}`);
+                                            }
+                                          }}
+                                          className="inline-flex items-center gap-0.5 rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-semibold text-white hover:bg-emerald-700 transition"
+                                        >
+                                          <span>{t.visa.nextStageBtn}</span>
+                                          <ChevronRight className="h-3 w-3" />
+                                        </button>
+                                      )}
+                                    </div>
                                   </div>
-                                </div>
-                              ))}
+                                );
+                              })}
                               {applicantsInStage.length === 0 && (
                                 <div className="py-6 text-center text-[11px] text-slate-400">
                                   {t.visa.noApplicants}
@@ -1846,93 +2345,149 @@ export default function DashboardPage() {
 
                     {store.partnerSchools.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {store.partnerSchools.map((sch) => (
-                          <div
-                            key={sch.id}
-                            className="hover-spotlight rounded-2xl border border-slate-200/80 bg-white p-5"
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[11px] font-semibold text-[#b91c1c]">
-                                    {sch.location}
+                        {store.partnerSchools.map((sch) => {
+                          const quota = sch.intakeQuota || 20;
+                          const quotaPct = Math.min(100, Math.round((sch.activeStudentsCount / quota) * 100));
+                          const coeStudentsForSchool = store.visaApplicants.filter(
+                            (v) =>
+                              (v.targetSchoolId === sch.id ||
+                                v.targetSchool.toLowerCase() === sch.name.toLowerCase()) &&
+                              v.stage >= 6,
+                          ).length;
+
+                          return (
+                            <div
+                              key={sch.id}
+                              className="hover-spotlight rounded-2xl border border-slate-200/80 bg-white p-5"
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[11px] font-semibold text-[#b91c1c]">
+                                      {sch.location}
+                                    </span>
+                                    <span className="text-slate-300">•</span>
+                                    <span className="text-[11px] font-medium text-emerald-700">
+                                      {sch.status === "ACTIVE_PARTNER" ? "Active Partner" : "In Review"}
+                                    </span>
+                                  </div>
+                                  <h4 className="text-base font-bold text-slate-900 mt-1">
+                                    {sch.name}
+                                  </h4>
+                                  {sch.japaneseName && (
+                                    <p className="text-xs text-slate-400">{sch.japaneseName}</p>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => openPartnerSchoolModal(sch)}
+                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
+                                    title="Edit School"
+                                  >
+                                    <Edit3 className="h-3.5 w-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      deletePartnerSchool(sch.id);
+                                      setStore({ ...getCmsStore() });
+                                      showToast(
+                                        language === "bn"
+                                          ? `${sch.name} মুছে ফেলা হয়েছে`
+                                          : `${sch.name} removed`,
+                                      );
+                                    }}
+                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-[#b91c1c] transition"
+                                    title="Delete School"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Seat Quota Progress Bar */}
+                              <div className="mt-3.5 rounded-xl bg-slate-50/80 border border-slate-100 p-3">
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="font-semibold text-slate-600">
+                                    {language === "bn" ? "সিট কোটা ও ভর্তি অগ্রগতি" : "Intake Seat Quota"}
                                   </span>
-                                  <span className="text-slate-300">•</span>
-                                  <span className="text-[11px] font-medium text-emerald-700">
-                                    {sch.status === "ACTIVE_PARTNER" ? "Active Partner" : "In Review"}
+                                  <span className="font-bold text-slate-900 tabular-nums">
+                                    {sch.activeStudentsCount} / {quota} {t.b2b.studentsSuffix} ({quotaPct}%)
                                   </span>
                                 </div>
-                                <h4 className="text-base font-bold text-slate-900 mt-1">
-                                  {sch.name}
-                                </h4>
-                                {sch.japaneseName && (
-                                  <p className="text-xs text-slate-400">{sch.japaneseName}</p>
-                                )}
+                                <div className="mt-1.5 h-1.5 w-full rounded-full bg-slate-200/80 overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full bg-[#b91c1c] transition-all"
+                                    style={{ width: `${quotaPct}%` }}
+                                  />
+                                </div>
                               </div>
-                              <div className="flex items-center gap-1">
-                                <button
-                                  type="button"
-                                  onClick={() => openPartnerSchoolModal(sch)}
-                                  className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
-                                  title="Edit School"
-                                >
-                                  <Edit3 className="h-3.5 w-3.5" />
-                                </button>
+
+                              <div className="mt-3.5 grid grid-cols-2 sm:grid-cols-4 gap-3 border-t border-slate-100 pt-3.5 text-xs">
+                                <div>
+                                  <span className="text-slate-400 block text-[11px]">
+                                    {t.b2b.contactPerson}
+                                  </span>
+                                  <p className="font-semibold text-slate-800 mt-0.5 truncate">
+                                    {sch.contactPerson || "N/A"}
+                                  </p>
+                                </div>
+                                <div>
+                                  <span className="text-slate-400 block text-[11px]">
+                                    {t.b2b.commissionRate}
+                                  </span>
+                                  <p className="font-semibold text-slate-900 mt-0.5 tabular-nums">
+                                    ¥{sch.commissionPerStudentYen.toLocaleString()}
+                                  </p>
+                                </div>
+                                <div>
+                                  <span className="text-slate-400 block text-[11px]">
+                                    {language === "bn" ? "COE অনুমোদিত" : "COE Approved"}
+                                  </span>
+                                  <p className="font-bold text-slate-900 mt-0.5 tabular-nums">
+                                    {coeStudentsForSchool} {t.b2b.studentsSuffix}
+                                  </p>
+                                </div>
+                                <div>
+                                  <span className="text-slate-400 block text-[11px]">
+                                    {t.b2b.totalEarned}
+                                  </span>
+                                  <p className="font-bold text-emerald-700 mt-0.5 tabular-nums">
+                                    ¥{sch.totalCommissionReceivedYen.toLocaleString()}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* 1-Click Claim JPY Commission into Finance Ledger */}
+                              <div className="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                                <span className="text-[11px] text-slate-500 tabular-nums">
+                                  ≈ ৳{Math.round(sch.commissionPerStudentYen * 0.8).toLocaleString()} BDT / স্টুডেন্ট
+                                </span>
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    deletePartnerSchool(sch.id);
-                                    setStore({ ...getCmsStore() });
-                                    showToast(
-                                      language === "bn"
-                                        ? `${sch.name} মুছে ফেলা হয়েছে`
-                                        : `${sch.name} removed`,
-                                    );
+                                    const tx = claimPartnerSchoolCommission(sch.id, 1);
+                                    if (tx) {
+                                      setStore({ ...getCmsStore() });
+                                      showToast(
+                                        `${sch.name}: ¥${sch.commissionPerStudentYen.toLocaleString()} (৳${tx.amountBdt.toLocaleString()}) কমিশন ফাইন্যান্স লেজারে যুক্ত হয়েছে`,
+                                      );
+                                    }
                                   }}
-                                  className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-[#b91c1c] transition"
-                                  title="Delete School"
+                                  className="inline-flex items-center gap-1 rounded-xl bg-emerald-700 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-emerald-800 transition"
                                 >
-                                  <Trash2 className="h-3.5 w-3.5" />
+                                  <Coins className="h-3.5 w-3.5" />
+                                  <span>
+                                    {language === "bn"
+                                      ? "+ ১ স্টুডেন্ট কমিশন ক্লেইম (JPY➔BDT)"
+                                      : "+ Claim 1 Student Commission"}
+                                  </span>
                                 </button>
                               </div>
                             </div>
-
-                            <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 border-t border-slate-100 pt-3.5 text-xs">
-                              <div>
-                                <span className="text-slate-400 block text-[11px]">
-                                  {t.b2b.contactPerson}
-                                </span>
-                                <p className="font-semibold text-slate-800 mt-0.5 truncate">
-                                  {sch.contactPerson || "N/A"}
-                                </p>
-                              </div>
-                              <div>
-                                <span className="text-slate-400 block text-[11px]">
-                                  {t.b2b.commissionRate}
-                                </span>
-                                <p className="font-semibold text-slate-900 mt-0.5 tabular-nums">
-                                  ¥{sch.commissionPerStudentYen.toLocaleString()}
-                                </p>
-                              </div>
-                              <div>
-                                <span className="text-slate-400 block text-[11px]">
-                                  {t.b2b.activeStudents}
-                                </span>
-                                <p className="font-bold text-slate-900 mt-0.5 tabular-nums">
-                                  {sch.activeStudentsCount} {t.b2b.studentsSuffix}
-                                </p>
-                              </div>
-                              <div>
-                                <span className="text-slate-400 block text-[11px]">
-                                  {t.b2b.totalEarned}
-                                </span>
-                                <p className="font-bold text-emerald-700 mt-0.5 tabular-nums">
-                                  ¥{sch.totalCommissionReceivedYen.toLocaleString()}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center">
@@ -1970,8 +2525,8 @@ export default function DashboardPage() {
                         <h3 className="font-bold text-sm text-slate-900">{t.b2b.ledgerTitle}</h3>
                         <p className="text-[11px] text-slate-400 mt-0.5">
                           {language === "bn"
-                            ? "আপনার নিজস্ব বিটুবি এজেন্ট, সাব-এজেন্ট ও অ্যাম্বাসেডরদের হিসাব"
-                            : "Manage your B2B agencies, sub-agents, and referral commissions"}
+                            ? "আপনার নিজস্ব বিটুবি এজেন্ট, সাব-এজেন্ট ও অ্যাম্বাসেডরদের হিসাব (COE অনুমোদনে স্বয়ংক্রিয় কমিশন হিসাব)"
+                            : "Manage your B2B agencies, sub-agents, and auto-accrued COE commissions"}
                         </p>
                       </div>
                       <button
@@ -2032,7 +2587,26 @@ export default function DashboardPage() {
                                 </span>
                               </td>
                               <td className="px-4 py-3.5 text-right">
-                                <div className="inline-flex items-center justify-end gap-1">
+                                <div className="inline-flex items-center justify-end gap-1.5">
+                                  {agent.pendingCommissionBdt > 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const tx = settleB2bAgentCommission(agent.id);
+                                        if (tx) {
+                                          setStore({ ...getCmsStore() });
+                                          showToast(
+                                            `${agent.organizationName}: ৳${tx.amountBdt.toLocaleString()} কমিশন পরিশোধ ও লেজারে রেকর্ড হয়েছে`,
+                                          );
+                                        }
+                                      }}
+                                      className="inline-flex items-center gap-1 rounded-lg bg-emerald-700 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-emerald-800 transition"
+                                      title="Settle Pending Commission & Record Expense"
+                                    >
+                                      <CheckCircle2 className="h-3 w-3" />
+                                      <span>{language === "bn" ? "কমিশন দিন" : "Pay Due"}</span>
+                                    </button>
+                                  )}
                                   <button
                                     type="button"
                                     onClick={() => openB2bAgentModal(agent)}
@@ -2178,7 +2752,7 @@ export default function DashboardPage() {
                   </div>
 
                   {/* Finance Sub-Tab Selector */}
-                  <div className="flex items-center gap-2 border-b border-slate-200/80 pb-2">
+                  <div className="flex flex-wrap items-center gap-2 border-b border-slate-200/80 pb-2">
                     <button
                       type="button"
                       onClick={() => setFinanceSubTab("overview")}
@@ -2202,6 +2776,20 @@ export default function DashboardPage() {
                       <span>{language === "bn" ? "জেনারেল লেজার ও ট্রানজেকশন" : "General Ledger"}</span>
                       <span className="rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-700">
                         {store.transactions.length}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFinanceSubTab("dues")}
+                      className={`rounded-xl px-3.5 py-2 text-xs font-semibold transition flex items-center gap-1.5 ${
+                        financeSubTab === "dues"
+                          ? "bg-slate-900 text-white shadow-2xs"
+                          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                      }`}
+                    >
+                      <span>{language === "bn" ? "শিক্ষার্থীদের বকেয়া ও কিস্তি (Student Dues)" : "Student Dues & Contracts"}</span>
+                      <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
+                        {store.crmLeads.filter((l) => (l.dueAmountBdt ?? ((l.contractAmountBdt || 0) - (l.paidAmountBdt || 0))) > 0).length}
                       </span>
                     </button>
                     <button
@@ -2480,19 +3068,21 @@ export default function DashboardPage() {
                                                   ? "প্রিমিয়াম প্যাকেজ ফি"
                                                   : tx.type === "BOOK_STORE_SALE"
                                                     ? "মিন্না নো নিহোঙ্গো বই সেল"
-                                                    : tx.type === "EXPENSE_RENT"
-                                                      ? "অফিস ভাড়া ও ইউটিলিটি"
-                                                      : tx.type === "EXPENSE_PAYROLL"
-                                                        ? "শিক্ষক/স্টাফ সম্মানী"
-                                                        : tx.type === "EXPENSE_MARKETING"
-                                                          ? "মেটা অ্যাডস খরচ"
-                                                          : tx.type === "EXPENSE_EMBASSY_NOTARY"
-                                                            ? "নোটারি ও পররাষ্ট্র মন্ত্রণালয়"
-                                                            : tx.type === "EXPENSE_EXAM_FEE"
-                                                              ? "JLPT / NAT-TEST ফি"
-                                                              : tx.type === "EXPENSE_B2B_COMMISSION"
-                                                                ? "এজেন্ট কমিশন প্রদান"
-                                                                : tx.type}
+                                                    : tx.type === "SCHOOL_COMMISSION_JPY"
+                                                      ? "জাপানি স্কুল কমিশন (JPY➔BDT)"
+                                                      : tx.type === "EXPENSE_RENT"
+                                                        ? "অফিস ভাড়া ও ইউটিলিটি"
+                                                        : tx.type === "EXPENSE_PAYROLL"
+                                                          ? "শিক্ষক/স্টাফ সম্মানী"
+                                                          : tx.type === "EXPENSE_MARKETING"
+                                                            ? "মেটা অ্যাডস খরচ"
+                                                            : tx.type === "EXPENSE_EMBASSY_NOTARY"
+                                                              ? "নোটারি ও পররাষ্ট্র মন্ত্রণালয়"
+                                                              : tx.type === "EXPENSE_EXAM_FEE"
+                                                                ? "JLPT / NAT-TEST ফি"
+                                                                : tx.type === "EXPENSE_B2B_COMMISSION"
+                                                                  ? "এজেন্ট কমিশন প্রদান"
+                                                                  : tx.type}
                                         </span>
                                       </span>
                                     </td>
@@ -2557,6 +3147,109 @@ export default function DashboardPage() {
                                 </td>
                               </tr>
                             )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 2.5 STUDENT DUES & INSTALLMENT TRACKER SUB-TAB */}
+                  {financeSubTab === "dues" && (
+                    <div className="rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-2xs">
+                      <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div>
+                          <h3 className="text-sm font-bold text-slate-900">
+                            {language === "bn"
+                              ? "শিক্ষার্থীদের চুক্তিমূল্য, পরিশোধিত ফি ও বকেয়া খতিয়ান"
+                              : "Student Contract Value, Paid Installments & Due Balance"}
+                          </h3>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            {language === "bn"
+                              ? "CRM ও Visa Pipeline-এর সাথে সরাসরি সংযুক্ত — রসিদ ইস্যু করলেই বকেয়া স্বয়ংক্রিয়ভাবে কমে যাবে।"
+                              : "Directly synced with CRM & Visa Pipeline — issuing a receipt automatically updates student dues."}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs tabular-nums">
+                          <span className="rounded-lg bg-amber-50 border border-amber-200/60 px-3 py-1.5 font-bold text-amber-900">
+                            {language === "bn" ? "মোট বকেয়া: " : "Total Receivable: "}
+                            ৳
+                            {store.crmLeads
+                              .reduce(
+                                (sum, l) =>
+                                  sum + Math.max(0, l.dueAmountBdt ?? ((l.contractAmountBdt || 0) - (l.paidAmountBdt || 0))),
+                                0,
+                              )
+                              .toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                          <thead className="bg-slate-50/70 border-b border-slate-100 font-semibold text-slate-500">
+                            <tr>
+                              <th className="px-4 py-3">{language === "bn" ? "শিক্ষার্থীর নাম ও ফোন" : "Student"}</th>
+                              <th className="px-4 py-3">{language === "bn" ? "টার্গেট স্কুল ও এজেন্ট" : "School & Agent"}</th>
+                              <th className="px-4 py-3 text-right">{language === "bn" ? "মোট চুক্তি (Contract)" : "Contract (BDT)"}</th>
+                              <th className="px-4 py-3 text-right">{language === "bn" ? "জমা (Paid)" : "Paid (BDT)"}</th>
+                              <th className="px-4 py-3 text-right">{language === "bn" ? "বকেয়া (Due)" : "Due (BDT)"}</th>
+                              <th className="px-4 py-3 text-right">{language === "bn" ? "অ্যাকশন" : "Action"}</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {store.crmLeads.map((lead) => {
+                              const contract = lead.contractAmountBdt || 0;
+                              const paid = lead.paidAmountBdt || 0;
+                              const due = lead.dueAmountBdt ?? Math.max(0, contract - paid);
+                              const school = store.partnerSchools.find((s) => s.id === lead.targetSchoolId);
+                              const agent = store.b2bAgents.find((a) => a.id === lead.referredByAgentId);
+                              return (
+                                <tr key={lead.id} className="hover:bg-slate-50/70 transition-colors">
+                                  <td className="px-4 py-3.5">
+                                    <p className="font-bold text-slate-900">{lead.name}</p>
+                                    <p className="font-mono text-[11px] text-slate-400">{lead.phone}</p>
+                                  </td>
+                                  <td className="px-4 py-3.5">
+                                    <p className="font-medium text-slate-800">
+                                      {school?.schoolName || lead.targetSchoolName || "নির্ধারিত নয়"}
+                                    </p>
+                                    {agent && (
+                                      <p className="text-[10px] text-amber-700 font-medium">
+                                        এজেন্ট: {agent.agencyName}
+                                      </p>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-3.5 text-right font-semibold text-slate-800 tabular-nums">
+                                    ৳{contract.toLocaleString()}
+                                  </td>
+                                  <td className="px-4 py-3.5 text-right font-semibold text-emerald-700 tabular-nums">
+                                    ৳{paid.toLocaleString()}
+                                  </td>
+                                  <td className="px-4 py-3.5 text-right font-bold tabular-nums">
+                                    <span className={due > 0 ? "text-amber-700" : "text-slate-400"}>
+                                      ৳{due.toLocaleString()}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3.5 text-right">
+                                    {due > 0 ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => openStudentPaymentModal(lead)}
+                                        className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-emerald-700 transition"
+                                      >
+                                        <Plus className="h-3 w-3" />
+                                        <span>{language === "bn" ? "বকেয়া আদায়" : "Collect Due"}</span>
+                                      </button>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                        <CheckCircle2 className="h-3 w-3" />
+                                        <span>পরিশোধিত</span>
+                                      </span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>
@@ -2649,20 +3342,50 @@ export default function DashboardPage() {
                           : t.hr.subtitle}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => openStaffModal()}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-[#b91c1c] px-4 py-2.5 text-xs font-semibold text-white hover:bg-red-800 transition shadow-2xs shrink-0"
-                    >
-                      <UserPlus className="h-4 w-4" />
-                      <span>
-                        {language === "ja"
-                          ? "+ 新規チームメンバー追加"
-                          : language === "en"
-                            ? "+ Add Team Member"
-                            : "+ নতুন টিম মেম্বার যোগ করুন"}
-                      </span>
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const res = disburseAllActivePayroll(currentUser?.name || "Sheikh Baset (MD)");
+                          setStore({ ...getCmsStore() });
+                          if (res.count > 0) {
+                            showToast(
+                              language === "bn"
+                                ? `${res.count} জন স্টাফের বেতন (মোট ৳${res.totalBdt.toLocaleString()}) পরিশোধ ও লেজারে যুক্ত হয়েছে!`
+                                : `Disbursed payroll for ${res.count} staff (৳${res.totalBdt.toLocaleString()})`,
+                            );
+                          } else {
+                            showToast(
+                              language === "bn"
+                                ? "চলতি মাসের সকল সক্রিয় স্টাফের বেতন ইতিমধ্যে পরিশোধ করা হয়েছে।"
+                                : "All active staff have already been paid for this month.",
+                            );
+                          }
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-3.5 py-2.5 text-xs font-semibold text-white hover:bg-emerald-800 transition shadow-2xs shrink-0"
+                      >
+                        <DollarSign className="h-4 w-4" />
+                        <span>
+                          {language === "bn"
+                            ? "সকল বেতন পরিশোধ (Run Monthly Payroll)"
+                            : "Run Monthly Payroll"}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openStaffModal()}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-[#b91c1c] px-4 py-2.5 text-xs font-semibold text-white hover:bg-red-800 transition shadow-2xs shrink-0"
+                      >
+                        <UserPlus className="h-4 w-4" />
+                        <span>
+                          {language === "ja"
+                            ? "+ 新規チームメンバー追加"
+                            : language === "en"
+                              ? "+ Add Team Member"
+                              : "+ নতুন টিম মেম্বার যোগ করুন"}
+                        </span>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-2xs">
@@ -2868,6 +3591,32 @@ export default function DashboardPage() {
                                 </td>
                                 <td className="px-4 py-3.5 text-right">
                                   <div className="inline-flex items-center justify-end gap-1">
+                                    {stf.lastPaidMonth === new Date().toISOString().slice(0, 7) ? (
+                                      <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700 border border-emerald-200/60">
+                                        <CheckCircle2 className="h-3 w-3" />
+                                        <span>Paid ({stf.lastPaidMonth})</span>
+                                      </span>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const tx = disburseStaffPayroll(stf.id, currentUser?.name || "Sheikh Baset (MD)");
+                                          if (tx) {
+                                            setStore({ ...getCmsStore() });
+                                            showToast(
+                                              language === "bn"
+                                                ? `${stf.name}-এর বেতন (৳${tx.amountBdt.toLocaleString()}) পরিশোধ ও ফিন্যান্স লেজারে যুক্ত হয়েছে`
+                                                : `Salary ৳${tx.amountBdt.toLocaleString()} disbursed to ${stf.name}`,
+                                            );
+                                          }
+                                        }}
+                                        className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2 py-1 text-[10px] font-semibold text-white hover:bg-emerald-700 transition"
+                                        title="Disburse Monthly Salary & Sync to Finance Ledger"
+                                      >
+                                        <DollarSign className="h-3 w-3" />
+                                        <span>{language === "bn" ? "বেতন দিন" : "Pay Salary"}</span>
+                                      </button>
+                                    )}
                                     <button
                                       type="button"
                                       onClick={() => openStaffModal(stf)}
@@ -3867,7 +4616,24 @@ export default function DashboardPage() {
                       />
                     </div>
 
-                    <div className="sm:col-span-2">
+                    <div>
+                      <label className="font-semibold text-slate-700">
+                        {language === "bn" ? "ইনটেক সিট কোটা (Seat Quota)" : "Intake Seat Quota"}
+                      </label>
+                      <input
+                        type="number"
+                        value={schoolForm.intakeQuota}
+                        onChange={(e) =>
+                          setSchoolForm({
+                            ...schoolForm,
+                            intakeQuota: Number(e.target.value),
+                          })
+                        }
+                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold tabular-nums"
+                      />
+                    </div>
+
+                    <div>
                       <label className="font-semibold text-slate-700">
                         {language === "bn" ? "মোট প্রাপ্ত কমিশন (Yen)" : "Total Earned Commission (Yen)"}
                       </label>
@@ -4222,6 +4988,12 @@ export default function DashboardPage() {
                   onSubmit={(e) => {
                     e.preventDefault();
                     if (!leadForm.name.trim() || !leadForm.phone.trim()) return;
+                    const selectedCounselor = store.staffList.find(
+                      (s) => s.id === leadForm.assignedCounselorId,
+                    );
+                    const selectedSchool = store.partnerSchools.find(
+                      (s) => s.id === leadForm.targetSchoolId,
+                    );
                     addCrmLead({
                       name: leadForm.name.trim(),
                       phone: leadForm.phone.trim(),
@@ -4229,19 +5001,31 @@ export default function DashboardPage() {
                         ? leadForm.phone.trim()
                         : `+88${leadForm.phone.trim()}`,
                       city: leadForm.city,
-                      source: leadForm.source,
+                      source: leadForm.referredByAgentId ? "SUB_AGENT" : leadForm.source,
                       interest: leadForm.interest,
                       status: "NEW",
                       education: leadForm.education,
                       japaneseProficiency: leadForm.japaneseProficiency,
                       studyGapYears: leadForm.studyGapYears,
-                      assignedTo: currentUser?.name || "শেখ বাসেত",
+                      assignedTo: selectedCounselor?.name || currentUser?.name || "শেখ বাসেত",
+                      assignedCounselorId: leadForm.assignedCounselorId || undefined,
+                      referredByAgentId: leadForm.referredByAgentId || undefined,
+                      targetSchoolId: leadForm.targetSchoolId || undefined,
+                      targetSchoolName: selectedSchool?.schoolName || undefined,
                       branch: activeBranch === "KHULNA-01" ? "KHULNA-01" : "DHK-HQ",
                       notes: leadForm.notes || "New lead inquiry added.",
                       followUpDate: new Date().toISOString().slice(0, 10),
                     });
                     setStore({ ...getCmsStore() });
-                    setLeadForm({ ...leadForm, name: "", phone: "", notes: "" });
+                    setLeadForm({
+                      ...leadForm,
+                      name: "",
+                      phone: "",
+                      notes: "",
+                      assignedCounselorId: "",
+                      referredByAgentId: "",
+                      targetSchoolId: "",
+                    });
                     setActiveModal(null);
                     showToast(t.toastSuccess);
                   }}
@@ -4347,6 +5131,65 @@ export default function DashboardPage() {
                         <option value="PASSED_N4">Passed N4</option>
                       </select>
                     </div>
+                    <div>
+                      <label className="font-semibold text-slate-700">
+                        {language === "bn" ? "দায়িত্বপ্রাপ্ত কাউন্সেলর (HR)" : "Assigned Counselor"}
+                      </label>
+                      <select
+                        value={leadForm.assignedCounselorId}
+                        onChange={(e) =>
+                          setLeadForm({ ...leadForm, assignedCounselorId: e.target.value })
+                        }
+                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
+                      >
+                        <option value="">-- স্বয়ংক্রিয় / নির্বাচন করুন --</option>
+                        {store.staffList
+                          .filter((s) => s.role === "COUNSELOR" || s.role === "TELE_COUNSELOR" || s.role === "BRANCH_MANAGER")
+                          .map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name} ({s.role})
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="font-semibold text-slate-700">
+                        {language === "bn" ? "রেফারকারী বিটুবি এজেন্ট (যদি থাকে)" : "Referring B2B Agent"}
+                      </label>
+                      <select
+                        value={leadForm.referredByAgentId}
+                        onChange={(e) =>
+                          setLeadForm({ ...leadForm, referredByAgentId: e.target.value })
+                        }
+                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
+                      >
+                        <option value="">-- সরাসরি অফিস (Direct Lead) --</option>
+                        {store.b2bAgents.map((ag) => (
+                          <option key={ag.id} value={ag.id}>
+                            {ag.agencyName} ({ag.contactPerson})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="font-semibold text-slate-700">
+                        {language === "bn" ? "পছন্দের জাপানি পার্টনার স্কুল (ঐচ্ছিক)" : "Target Partner School"}
+                      </label>
+                      <select
+                        value={leadForm.targetSchoolId}
+                        onChange={(e) =>
+                          setLeadForm({ ...leadForm, targetSchoolId: e.target.value })
+                        }
+                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
+                      >
+                        <option value="">-- পরবর্তীতে নির্ধারণ করা হবে --</option>
+                        {store.partnerSchools.map((sc) => (
+                          <option key={sc.id} value={sc.id}>
+                            {sc.schoolName} ({sc.city}) — কোটা: {sc.activeStudentsCount}/{sc.intakeQuota || 20}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                     <div className="sm:col-span-2">
                       <label className="font-semibold text-slate-700">
                         {language === "bn" ? "কাউন্সেলিং নোট" : "Notes"}
@@ -4394,6 +5237,8 @@ export default function DashboardPage() {
                         `${lmsForm.studentName.toLowerCase().replace(/\s+/g, "_")}_knltc`,
                       portalPasswordMasked: lmsForm.portalPasswordMasked,
                       activeBatch: lmsForm.activeBatch,
+                      assignedSenseiId: lmsForm.assignedSenseiId || undefined,
+                      linkedLeadId: lmsForm.linkedLeadId || undefined,
                     });
                     setStore({ ...getCmsStore() });
                     setActiveModal(null);
@@ -4413,6 +5258,35 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+                    <div className="sm:col-span-2">
+                      <label className="font-semibold text-slate-700">
+                        {language === "bn" ? "CRM থেকে শিক্ষার্থী নির্বাচন করুন (ঐচ্ছিক)" : "Link CRM Student (Optional)"}
+                      </label>
+                      <select
+                        value={lmsForm.linkedLeadId}
+                        onChange={(e) => {
+                          const lead = store.crmLeads.find((l) => l.id === e.target.value);
+                          if (lead) {
+                            setLmsForm({
+                              ...lmsForm,
+                              linkedLeadId: lead.id,
+                              studentName: lead.name,
+                              phone: lead.phone,
+                            });
+                          } else {
+                            setLmsForm({ ...lmsForm, linkedLeadId: "" });
+                          }
+                        }}
+                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
+                      >
+                        <option value="">-- ম্যানুয়ালি নাম লিখুন অথবা তালিকা থেকে বাছুন --</option>
+                        {store.crmLeads.map((l) => (
+                          <option key={l.id} value={l.id}>
+                            {l.name} ({l.phone}) — {l.status}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                     <div>
                       <label className="font-semibold text-slate-700">Student Name *</label>
                       <input
@@ -4456,6 +5330,25 @@ export default function DashboardPage() {
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-medium"
                       />
                     </div>
+                    <div className="sm:col-span-2">
+                      <label className="font-semibold text-slate-700">
+                        {language === "bn" ? "দায়িত্বপ্রাপ্ত জাপানি শিক্ষক / সেন্সি (HR)" : "Assigned Sensei (HR)"}
+                      </label>
+                      <select
+                        value={lmsForm.assignedSenseiId}
+                        onChange={(e) => setLmsForm({ ...lmsForm, assignedSenseiId: e.target.value })}
+                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
+                      >
+                        <option value="">-- সেন্সি নির্বাচন করুন --</option>
+                        {store.staffList
+                          .filter((s) => s.role === "SENIOR_SENSEI")
+                          .map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name} ({s.location})
+                            </option>
+                          ))}
+                      </select>
+                    </div>
                   </div>
 
                   <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
@@ -4496,13 +5389,14 @@ export default function DashboardPage() {
                       branch: paymentForm.branch || (activeBranch === "KHULNA-01" ? "KHULNA-01" : "DHK-HQ"),
                       verifiedBy: currentUser?.name || "Sheikh Baset (MD)",
                       notes: paymentForm.notes,
+                      linkedLeadId: paymentForm.linkedLeadId || undefined,
                     });
                     setStore({ ...getCmsStore() });
                     setActiveModal(null);
                     showToast(
                       language === "bn"
-                        ? `৳${Number(paymentForm.amountBdt).toLocaleString()} টাকা জমা নেওয়া হয়েছে`
-                        : `Payment recorded successfully`,
+                        ? `৳${Number(paymentForm.amountBdt).toLocaleString()} টাকা জমা নেওয়া হয়েছে ও বকেয়া হালনাগাদ হয়েছে`
+                        : `Payment recorded & student dues updated`,
                     );
                     setSelectedTxForReceipt(newTx);
                     setActiveModal("VIEW_RECEIPT");
@@ -4528,6 +5422,48 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+                    <div className="sm:col-span-2">
+                      <label className="font-semibold text-slate-700">
+                        {language === "bn"
+                          ? "CRM শিক্ষার্থী নির্বাচন করুন (স্বয়ংক্রিয় বকেয়া সমন্বয়)"
+                          : "Select CRM Student (Auto-sync Dues)"}
+                      </label>
+                      <select
+                        value={paymentForm.linkedLeadId}
+                        onChange={(e) => {
+                          const lead = store.crmLeads.find((l) => l.id === e.target.value);
+                          if (lead) {
+                            const due =
+                              lead.dueAmountBdt ??
+                              Math.max(0, (lead.contractAmountBdt || 0) - (lead.paidAmountBdt || 0));
+                            setPaymentForm({
+                              ...paymentForm,
+                              linkedLeadId: lead.id,
+                              studentName: lead.name,
+                              studentPhone: lead.phone,
+                              branch: lead.branch,
+                              amountBdt: due > 0 ? due : paymentForm.amountBdt,
+                            });
+                          } else {
+                            setPaymentForm({ ...paymentForm, linkedLeadId: "" });
+                          }
+                        }}
+                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
+                      >
+                        <option value="">-- তালিকা থেকে শিক্ষার্থী বাছুন অথবা নিচে নাম লিখুন --</option>
+                        {store.crmLeads.map((l) => {
+                          const due =
+                            l.dueAmountBdt ??
+                            Math.max(0, (l.contractAmountBdt || 0) - (l.paidAmountBdt || 0));
+                          return (
+                            <option key={l.id} value={l.id}>
+                              {l.name} ({l.phone}) — বকেয়া: ৳{due.toLocaleString()}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+
                     <div className="sm:col-span-2">
                       <label className="font-semibold text-slate-700">
                         {language === "bn" ? "শিক্ষার্থীর পূর্ণ নাম *" : "Student Name *"}

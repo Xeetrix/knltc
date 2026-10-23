@@ -47,7 +47,7 @@ export interface SystemUserAccount {
 // ------------------------------------------------------------------------------
 // CRM & Lead Management
 // ------------------------------------------------------------------------------
-export type LeadSource = "FACEBOOK_META" | "WHATSAPP_DIRECT" | "WEBSITE_FORM" | "OFFICE_WALKIN" | "B2B_REFERRAL";
+export type LeadSource = "FACEBOOK_META" | "WHATSAPP_DIRECT" | "WEBSITE_FORM" | "OFFICE_WALKIN" | "B2B_REFERRAL" | "SUB_AGENT";
 export type LeadStatus = "NEW" | "CONTACTED" | "COUNSELED" | "OFFICE_VISIT_BOOKED" | "ADMITTED" | "ARCHIVED";
 export type ServiceInterest =
   | "STUDENT_VISA_REGULAR"
@@ -91,6 +91,19 @@ export interface CrmLead {
   fileTrackingNo?: string;
   packageType?: "REGULAR" | "PREMIUM";
   targetSchool?: string;
+  targetSchoolName?: string;
+  partnerSchoolId?: string;
+  targetSchoolId?: string;
+  b2bAgentId?: string;
+  referredByAgentId?: string;
+  b2bAgentName?: string;
+  referredByAgentName?: string;
+  assignedCounselorId?: string;
+  assignedVisaOfficerId?: string;
+  assignedVisaOfficerName?: string;
+  contractAmountBdt?: number;
+  paidAmountBdt?: number;
+  dueAmountBdt?: number;
   hasLoginAccess?: boolean;
   loginEmail?: string;
   loginPassword?: string;
@@ -122,6 +135,7 @@ export interface VisaApplicant {
   intakeSession: "APRIL_2027" | "JULY_2027" | "OCTOBER_2027" | "JANUARY_2028";
   stage: VisaStage;
   targetSchool: string;
+  targetSchoolName?: string;
   sponsorName: string;
   sponsorRelation: "FATHER" | "MOTHER" | "BROTHER" | "SISTER";
   sponsorBank: string;
@@ -131,6 +145,23 @@ export interface VisaApplicant {
   coEStatus: "PENDING" | "APPROVED" | "REJECTED";
   visaStatus: "IN_PROCESS" | "STAMPED" | "DEPARTED";
   counselorName: string;
+  leadId?: string;
+  linkedLeadId?: string;
+  partnerSchoolId?: string;
+  targetSchoolId?: string;
+  b2bAgentId?: string;
+  referredByAgentId?: string;
+  b2bAgentName?: string;
+  referredByAgentName?: string;
+  visaOfficerId?: string;
+  assignedVisaOfficerId?: string;
+  visaOfficerName?: string;
+  assignedVisaOfficerName?: string;
+  contractAmountBdt?: number;
+  paidAmountBdt?: number;
+  dueAmountBdt?: number;
+  b2bCommissionTriggered?: boolean;
+  schoolCommissionClaimed?: boolean;
   updatedAt: string;
 }
 
@@ -151,6 +182,10 @@ export interface LmsUserBridge {
   credentialsSentAt?: string;
   progressPercentage: number;
   activeBatch: string;
+  leadId?: string;
+  linkedLeadId?: string;
+  assignedSenseiId?: string;
+  assignedSenseiName?: string;
 }
 
 // ------------------------------------------------------------------------------
@@ -159,13 +194,16 @@ export interface LmsUserBridge {
 export interface JapanesePartnerSchool {
   id: string;
   name: string;
+  schoolName?: string;
   japaneseName: string;
   location: string;
-  contactPerson: string; // e.g. Principal Fujii Keiko, Donaka-san
+  city?: string;
+  contactPerson: string;
   email: string;
   commissionPerStudentYen: number; // 80,000 JPY
   commissionPerStudentBdt: number; // ~60,000–64,000 BDT
   activeStudentsCount: number;
+  intakeQuota?: number; // e.g. 20 seats per intake
   totalCommissionReceivedYen: number;
   status: "ACTIVE_PARTNER" | "IN_REVIEW";
 }
@@ -173,6 +211,7 @@ export interface JapanesePartnerSchool {
 export interface B2bAgent {
   id: string;
   organizationName: string; // e.g. Nexus Group, BWBS Global, Local Agent
+  agencyName?: string;
   agentType: "INSTITUTIONAL" | "LOCAL_SUB_AGENT" | "CAMPUS_AMBASSADOR";
   contactPerson: string;
   phone: string;
@@ -197,6 +236,7 @@ export type TransactionType =
   | "REGULAR_SERVICE_CHARGE"
   | "PREMIUM_PACKAGE_ADVANCE"
   | "BOOK_STORE_SALE"
+  | "SCHOOL_COMMISSION_JPY"
   | "EXPENSE_RENT"
   | "EXPENSE_PAYROLL"
   | "EXPENSE_MARKETING"
@@ -221,6 +261,11 @@ export interface FinancialTransaction {
   notes?: string;
   studentPhone?: string;
   dueAmountBdt?: number;
+  linkedLeadId?: string;
+  linkedVisaId?: string;
+  linkedAgentId?: string;
+  linkedStaffId?: string;
+  linkedSchoolId?: string;
 }
 
 // ------------------------------------------------------------------------------
@@ -282,6 +327,7 @@ export interface StaffMember {
   admissionsTarget: number;
   admissionsAchieved: number;
   performanceBonusBdt: number;
+  lastPaidMonth?: string;
   status: "ACTIVE" | "ON_LEAVE";
 }
 
@@ -1283,6 +1329,14 @@ export function provisionLeadLoginAndEnrollment(
     enrolledBatchOrSession: string;
     packageType?: "REGULAR" | "PREMIUM";
     targetSchool?: string;
+    partnerSchoolId?: string;
+    b2bAgentId?: string;
+    b2bAgentName?: string;
+    assignedCounselorId?: string;
+    assignedVisaOfficerId?: string;
+    assignedVisaOfficerName?: string;
+    contractAmountBdt?: number;
+    initialPaymentBdt?: number;
     courseLevel?: "N5" | "N4" | "IRODORI";
     accountStatus?: "ACTIVE" | "SUSPENDED";
     address?: string;
@@ -1297,8 +1351,42 @@ export function provisionLeadLoginAndEnrollment(
   if (!cms.leadExtendedProfiles) cms.leadExtendedProfiles = {};
 
   let existingLead = store.crmLeads.find((l) => l.id === leadBase.id);
+  const wasAlreadyAdmitted = existingLead?.status === "ADMITTED";
   const trackingNo =
     existingLead?.fileTrackingNo || `KNLTC-VISA-2027-${Math.floor(10 + Math.random() * 89)}`;
+
+  const matchedSchool = store.partnerSchools.find(
+    (s) =>
+      (config.partnerSchoolId && s.id === config.partnerSchoolId) ||
+      (config.targetSchool && s.name.toLowerCase() === config.targetSchool.toLowerCase()),
+  );
+  const resolvedSchoolName =
+    matchedSchool?.name ||
+    config.targetSchool ||
+    existingLead?.targetSchool ||
+    store.partnerSchools[0]?.name ||
+    "Unassigned School";
+
+  const matchedAgent = store.b2bAgents.find(
+    (a) =>
+      (config.b2bAgentId && a.id === config.b2bAgentId) ||
+      (config.b2bAgentName && a.organizationName.toLowerCase() === config.b2bAgentName.toLowerCase()),
+  );
+
+  const defaultContract =
+    config.contractAmountBdt ??
+    existingLead?.contractAmountBdt ??
+    (config.packageType === "PREMIUM"
+      ? 1100000
+      : config.isFileOpened
+        ? 120000
+        : config.isCourseEnrolled
+          ? 12000
+          : 0);
+
+  const currentPaid =
+    (existingLead?.paidAmountBdt || 0) + (config.initialPaymentBdt ? Number(config.initialPaymentBdt) : 0);
+  const currentDue = Math.max(0, defaultContract - currentPaid);
 
   const profileUpdates: Partial<CrmLead> = {
     name: leadBase.name,
@@ -1315,7 +1403,16 @@ export function provisionLeadLoginAndEnrollment(
     enrolledBatchOrSession: config.enrolledBatchOrSession,
     fileTrackingNo: config.isFileOpened ? trackingNo : existingLead?.fileTrackingNo,
     packageType: config.packageType || existingLead?.packageType || "REGULAR",
-    targetSchool: config.targetSchool || existingLead?.targetSchool || "HLA Gakuin (Hiroshima)",
+    targetSchool: resolvedSchoolName,
+    partnerSchoolId: matchedSchool?.id || config.partnerSchoolId || existingLead?.partnerSchoolId,
+    b2bAgentId: matchedAgent?.id || config.b2bAgentId || existingLead?.b2bAgentId,
+    b2bAgentName: matchedAgent?.organizationName || config.b2bAgentName || existingLead?.b2bAgentName,
+    assignedCounselorId: config.assignedCounselorId || existingLead?.assignedCounselorId,
+    assignedVisaOfficerId: config.assignedVisaOfficerId || existingLead?.assignedVisaOfficerId,
+    assignedVisaOfficerName: config.assignedVisaOfficerName || existingLead?.assignedVisaOfficerName,
+    contractAmountBdt: defaultContract,
+    paidAmountBdt: currentPaid,
+    dueAmountBdt: currentDue,
     hasLoginAccess: true,
     loginEmail: config.loginEmail.trim().toLowerCase(),
     loginPassword: config.loginPassword.trim(),
@@ -1330,7 +1427,7 @@ export function provisionLeadLoginAndEnrollment(
       whatsapp: leadBase.whatsapp || leadBase.phone,
       email: config.loginEmail.trim().toLowerCase(),
       city: leadBase.city || "ঢাকা",
-      source: "WEBSITE_FORM",
+      source: matchedAgent ? "B2B_REFERRAL" : "WEBSITE_FORM",
       interest: leadBase.interest || "STUDENT_VISA_REGULAR",
       status: "ADMITTED",
       education: leadBase.education || "HSC / Equivalent",
@@ -1354,12 +1451,28 @@ export function provisionLeadLoginAndEnrollment(
     ...profileUpdates,
   };
 
-  // If Visa File is opened, ensure a VisaApplicant card exists in pipeline
-  if (config.isFileOpened) {
-    const hasVisaCard = store.visaApplicants.some(
-      (v) => v.phone === existingLead!.phone || v.trackingNo === trackingNo,
+  // Auto-increment Counselor KPI if newly admitted
+  if (!wasAlreadyAdmitted && existingLead.status === "ADMITTED") {
+    const counselor = store.staffList.find(
+      (st) =>
+        (existingLead?.assignedCounselorId && st.id === existingLead.assignedCounselorId) ||
+        st.name.toLowerCase() === (existingLead?.assignedTo || "").toLowerCase(),
     );
-    if (!hasVisaCard) {
+    if (counselor) {
+      counselor.admissionsAchieved = (counselor.admissionsAchieved || 0) + 1;
+      counselor.performanceBonusBdt = (counselor.performanceBonusBdt || 0) + 1000;
+    }
+    if (matchedAgent) {
+      matchedAgent.referredStudentsCount = (matchedAgent.referredStudentsCount || 0) + 1;
+    }
+  }
+
+  // If Visa File is opened, ensure a VisaApplicant card exists in pipeline and sync school seats
+  if (config.isFileOpened) {
+    let existingVisa = store.visaApplicants.find(
+      (v) => v.leadId === existingLead!.id || v.phone === existingLead!.phone || v.trackingNo === trackingNo,
+    );
+    if (!existingVisa) {
       const newVisa: VisaApplicant = {
         id: `visa-${Date.now()}`,
         trackingNo,
@@ -1369,7 +1482,16 @@ export function provisionLeadLoginAndEnrollment(
         packageType: config.packageType || "REGULAR",
         intakeSession: "APRIL_2027",
         stage: 1,
-        targetSchool: config.targetSchool || "HLA Gakuin (Hiroshima)",
+        targetSchool: resolvedSchoolName,
+        partnerSchoolId: matchedSchool?.id || config.partnerSchoolId,
+        b2bAgentId: matchedAgent?.id || config.b2bAgentId,
+        b2bAgentName: matchedAgent?.organizationName || config.b2bAgentName,
+        visaOfficerId: config.assignedVisaOfficerId,
+        visaOfficerName: config.assignedVisaOfficerName,
+        leadId: existingLead.id,
+        contractAmountBdt: defaultContract,
+        paidAmountBdt: currentPaid,
+        dueAmountBdt: currentDue,
         sponsorName: config.guardianName || "অভিভাবক (যাচাইকৃত)",
         sponsorRelation: "FATHER",
         sponsorBank: "অগ্রণী ব্যাংক লি.",
@@ -1381,6 +1503,26 @@ export function provisionLeadLoginAndEnrollment(
         updatedAt: new Date().toISOString(),
       };
       store.visaApplicants.unshift(newVisa);
+      if (matchedSchool) {
+        matchedSchool.activeStudentsCount = (matchedSchool.activeStudentsCount || 0) + 1;
+      }
+    } else {
+      Object.assign(existingVisa, {
+        name: existingLead.name,
+        phone: existingLead.phone,
+        packageType: config.packageType || existingVisa.packageType,
+        targetSchool: resolvedSchoolName,
+        partnerSchoolId: matchedSchool?.id || existingVisa.partnerSchoolId,
+        b2bAgentId: matchedAgent?.id || existingVisa.b2bAgentId,
+        b2bAgentName: matchedAgent?.organizationName || existingVisa.b2bAgentName,
+        visaOfficerId: config.assignedVisaOfficerId || existingVisa.visaOfficerId,
+        visaOfficerName: config.assignedVisaOfficerName || existingVisa.visaOfficerName,
+        leadId: existingLead.id,
+        contractAmountBdt: defaultContract,
+        paidAmountBdt: currentPaid,
+        dueAmountBdt: currentDue,
+        updatedAt: new Date().toISOString(),
+      });
     }
   }
 
@@ -1388,8 +1530,10 @@ export function provisionLeadLoginAndEnrollment(
   if (config.isCourseEnrolled) {
     const hasLms = store.lmsBridges.some((l) => l.phone === existingLead!.phone);
     if (!hasLms) {
+      const sensei = store.staffList.find((st) => st.role === "SENIOR_SENSEI");
       store.lmsBridges.unshift({
         id: `lms-${Date.now()}`,
+        leadId: existingLead.id,
         studentName: existingLead.name,
         phone: existingLead.phone,
         courseLevel: config.courseLevel || "N5",
@@ -1402,8 +1546,35 @@ export function provisionLeadLoginAndEnrollment(
         credentialsSentAt: new Date().toISOString(),
         progressPercentage: 10,
         activeBatch: config.enrolledBatchOrSession || "N5 Special Batch",
+        assignedSenseiId: sensei?.id,
+        assignedSenseiName: sensei?.name,
       });
     }
+  }
+
+  // If an initial payment was entered during admission, record it in Finance Ledger
+  if (config.initialPaymentBdt && Number(config.initialPaymentBdt) > 0) {
+    store.transactions.unshift({
+      id: `trx-${Date.now()}`,
+      receiptNo: `KNLTC-REC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+      date: new Date().toISOString().slice(0, 10),
+      studentName: existingLead.name,
+      studentPhone: existingLead.phone,
+      category: "INCOME",
+      type: config.isFileOpened
+        ? config.packageType === "PREMIUM"
+          ? "PREMIUM_PACKAGE"
+          : "REGULAR_SERVICE_CHARGE"
+        : "COURSE_FEE",
+      amountBdt: Number(config.initialPaymentBdt),
+      dueAmountBdt: currentDue,
+      paymentMethod: "CASH_OFFICE",
+      referenceOrTrx: `ADM-${Date.now().toString().slice(-6)}`,
+      branch: existingLead.branch,
+      verifiedBy: existingLead.assignedTo,
+      notes: `Initial admission payment (${config.enrolledBatchOrSession})`,
+      linkedLeadId: existingLead.id,
+    });
   }
 
   store.websiteCms = [cms];
@@ -1447,13 +1618,65 @@ export function updateWebsiteCms(partial: Partial<WebsiteCmsContent>) {
 
 export function addCrmLead(lead: Omit<CrmLead, "id" | "createdAt" | "lastContactedAt">): CrmLead {
   const store = getCmsStore();
+
+  const schoolId = lead.partnerSchoolId || lead.targetSchoolId;
+  const schoolLabel = lead.targetSchool || lead.targetSchoolName;
+  const agentId = lead.b2bAgentId || lead.referredByAgentId;
+
+  // Resolve Partner School & B2B Agent if linked
+  const matchedSchool = store.partnerSchools.find(
+    (s) =>
+      (schoolId && s.id === schoolId) ||
+      (schoolLabel && s.name.toLowerCase() === schoolLabel.toLowerCase()),
+  );
+  const matchedAgent = store.b2bAgents.find(
+    (a) =>
+      (agentId && a.id === agentId) ||
+      (lead.b2bAgentName && a.organizationName.toLowerCase() === lead.b2bAgentName.toLowerCase()),
+  );
+  const matchedCounselor = store.staffList.find(
+    (st) =>
+      (lead.assignedCounselorId && st.id === lead.assignedCounselorId) ||
+      (lead.assignedTo && st.name.toLowerCase() === lead.assignedTo.toLowerCase()),
+  );
+
+  const defaultContract =
+    lead.contractAmountBdt ??
+    (lead.interest === "STUDENT_VISA_PREMIUM"
+      ? 1100000
+      : lead.interest === "JAPANESE_N5" || lead.interest === "JAPANESE_N4"
+        ? 12000
+        : 120000);
+
+  const paid = lead.paidAmountBdt ?? 0;
+  const due = Math.max(0, defaultContract - paid);
+
   const newLead: CrmLead = {
     ...lead,
     id: `lead-${Date.now()}`,
+    partnerSchoolId: matchedSchool?.id || schoolId,
+    targetSchoolId: matchedSchool?.id || schoolId,
+    targetSchool: matchedSchool?.name || schoolLabel,
+    targetSchoolName: matchedSchool?.name || schoolLabel,
+    b2bAgentId: matchedAgent?.id || agentId,
+    referredByAgentId: matchedAgent?.id || agentId,
+    b2bAgentName: matchedAgent?.organizationName || lead.b2bAgentName,
+    assignedCounselorId: matchedCounselor?.id || lead.assignedCounselorId,
+    assignedTo: matchedCounselor?.name || lead.assignedTo,
+    contractAmountBdt: defaultContract,
+    paidAmountBdt: paid,
+    dueAmountBdt: due,
     createdAt: new Date().toISOString(),
     lastContactedAt: new Date().toISOString(),
   };
+
   store.crmLeads.unshift(newLead);
+
+  // If referred by a B2B agent, increment their referred count
+  if (matchedAgent) {
+    matchedAgent.referredStudentsCount = (matchedAgent.referredStudentsCount || 0) + 1;
+  }
+
   saveCmsStore(store);
 
   syncToServer("INSERT", "knltc_crm_leads", {
@@ -1482,47 +1705,245 @@ export function updateCrmLeadStatus(id: string, status: LeadStatus, notes?: stri
   const store = getCmsStore();
   const index = store.crmLeads.findIndex((l) => l.id === id);
   if (index === -1) return null;
-  store.crmLeads[index].status = status;
-  store.crmLeads[index].lastContactedAt = new Date().toISOString();
-  if (notes) store.crmLeads[index].notes = notes;
+
+  const lead = store.crmLeads[index];
+  const prevStatus = lead.status;
+  lead.status = status;
+  lead.lastContactedAt = new Date().toISOString();
+  if (notes) lead.notes = notes;
+
+  // Auto-sync when status changes to ADMITTED
+  if (status === "ADMITTED" && prevStatus !== "ADMITTED") {
+    lead.isFileOpened = true;
+    const trackingNo =
+      lead.fileTrackingNo || `KNLTC-VISA-2027-${Math.floor(10 + Math.random() * 89)}`;
+    lead.fileTrackingNo = trackingNo;
+
+    const defaultContract =
+      lead.contractAmountBdt ??
+      (lead.packageType === "PREMIUM" || lead.interest === "STUDENT_VISA_PREMIUM"
+        ? 1100000
+        : lead.interest === "JAPANESE_N5" || lead.interest === "JAPANESE_N4"
+          ? 12000
+          : 120000);
+    lead.contractAmountBdt = defaultContract;
+    lead.paidAmountBdt = lead.paidAmountBdt ?? 0;
+    lead.dueAmountBdt = Math.max(0, defaultContract - lead.paidAmountBdt);
+
+    // 1. Increment assigned Counselor KPI & performance bonus
+    const counselor = store.staffList.find(
+      (st) =>
+        (lead.assignedCounselorId && st.id === lead.assignedCounselorId) ||
+        st.name.toLowerCase() === (lead.assignedTo || "").toLowerCase(),
+    );
+    if (counselor) {
+      counselor.admissionsAchieved = (counselor.admissionsAchieved || 0) + 1;
+      counselor.performanceBonusBdt = (counselor.performanceBonusBdt || 0) + 1000;
+    }
+
+    // 2. Match Partner School & increment activeStudentsCount
+    const matchedSchool = store.partnerSchools.find(
+      (s) =>
+        (lead.partnerSchoolId && s.id === lead.partnerSchoolId) ||
+        (lead.targetSchool && s.name.toLowerCase() === lead.targetSchool.toLowerCase()),
+    );
+
+    // 3. Match B2B Agent
+    const matchedAgent = store.b2bAgents.find(
+      (a) =>
+        (lead.b2bAgentId && a.id === lead.b2bAgentId) ||
+        (lead.b2bAgentName && a.organizationName.toLowerCase() === lead.b2bAgentName.toLowerCase()),
+    );
+
+    // 4. Auto-create VisaApplicant in Pipeline if not already present
+    const hasVisa = store.visaApplicants.some(
+      (v) => v.leadId === lead.id || v.phone === lead.phone || v.trackingNo === trackingNo,
+    );
+    if (!hasVisa) {
+      const visaOfficer = store.staffList.find(
+        (st) =>
+          (lead.assignedVisaOfficerId && st.id === lead.assignedVisaOfficerId) ||
+          st.role === "VISA_OFFICER",
+      );
+      const newVisa: VisaApplicant = {
+        id: `visa-${Date.now()}`,
+        leadId: lead.id,
+        linkedLeadId: lead.id,
+        trackingNo,
+        name: lead.name,
+        phone: lead.phone,
+        branch: lead.branch,
+        packageType:
+          lead.packageType ||
+          (lead.interest === "STUDENT_VISA_PREMIUM" ? "PREMIUM" : "REGULAR"),
+        intakeSession: "APRIL_2027",
+        stage: 1,
+        targetSchool: matchedSchool?.name || lead.targetSchool || lead.targetSchoolName || store.partnerSchools[0]?.name || "Unassigned School",
+        targetSchoolName: matchedSchool?.name || lead.targetSchool || lead.targetSchoolName || store.partnerSchools[0]?.name || "Unassigned School",
+        partnerSchoolId: matchedSchool?.id || lead.partnerSchoolId || lead.targetSchoolId,
+        targetSchoolId: matchedSchool?.id || lead.partnerSchoolId || lead.targetSchoolId,
+        b2bAgentId: matchedAgent?.id || lead.b2bAgentId || lead.referredByAgentId,
+        referredByAgentId: matchedAgent?.id || lead.b2bAgentId || lead.referredByAgentId,
+        b2bAgentName: matchedAgent?.organizationName || lead.b2bAgentName,
+        visaOfficerId: visaOfficer?.id || lead.assignedVisaOfficerId,
+        assignedVisaOfficerId: visaOfficer?.id || lead.assignedVisaOfficerId,
+        visaOfficerName: visaOfficer?.name || lead.assignedVisaOfficerName,
+        contractAmountBdt: lead.contractAmountBdt,
+        paidAmountBdt: lead.paidAmountBdt,
+        dueAmountBdt: lead.dueAmountBdt,
+        sponsorName: lead.guardianName || "অভিভাবক (যাচাইকৃত)",
+        sponsorRelation: "FATHER",
+        sponsorBank: "অগ্রণী ব্যাংক লি.",
+        sponsorBalanceBdt: 1850000,
+        bankLoanAssistance: false,
+        coEStatus: "PENDING",
+        visaStatus: "IN_PROCESS",
+        counselorName: lead.assignedTo,
+        updatedAt: new Date().toISOString(),
+      };
+      store.visaApplicants.unshift(newVisa);
+      if (matchedSchool) {
+        matchedSchool.activeStudentsCount = (matchedSchool.activeStudentsCount || 0) + 1;
+      }
+    }
+  }
+
   saveCmsStore(store);
 
   syncToServer("UPSERT", "knltc_crm_leads", {
-    id: store.crmLeads[index].id,
+    id: lead.id,
     status: status,
-    notes: store.crmLeads[index].notes,
-    last_contacted_at: store.crmLeads[index].lastContactedAt,
+    notes: lead.notes,
+    last_contacted_at: lead.lastContactedAt,
   });
 
-  return store.crmLeads[index];
+  return lead;
+}
+
+export function promoteLeadToVisaPipeline(
+  leadIdOrPayload:
+    | string
+    | {
+        leadId: string;
+        partnerSchoolId?: string;
+        targetSchoolId?: string;
+        targetSchool?: string;
+        targetSchoolName?: string;
+        packageType?: "REGULAR" | "PREMIUM";
+        b2bAgentId?: string;
+        referredByAgentId?: string;
+        visaOfficerId?: string;
+        assignedVisaOfficerId?: string;
+        contractAmountBdt?: number;
+      },
+  optionsArg?: {
+    partnerSchoolId?: string;
+    targetSchoolId?: string;
+    targetSchool?: string;
+    targetSchoolName?: string;
+    packageType?: "REGULAR" | "PREMIUM";
+    b2bAgentId?: string;
+    referredByAgentId?: string;
+    visaOfficerId?: string;
+    assignedVisaOfficerId?: string;
+    contractAmountBdt?: number;
+  },
+): VisaApplicant | null {
+  const leadId = typeof leadIdOrPayload === "string" ? leadIdOrPayload : leadIdOrPayload.leadId;
+  const options = typeof leadIdOrPayload === "string" ? optionsArg : leadIdOrPayload;
+
+  const store = getCmsStore();
+  const lead = store.crmLeads.find((l) => l.id === leadId);
+  if (!lead) return null;
+
+  if (options?.partnerSchoolId || options?.targetSchoolId) {
+    lead.partnerSchoolId = options.partnerSchoolId || options.targetSchoolId;
+    lead.targetSchoolId = options.partnerSchoolId || options.targetSchoolId;
+  }
+  if (options?.targetSchool || options?.targetSchoolName) {
+    lead.targetSchool = options.targetSchool || options.targetSchoolName;
+    lead.targetSchoolName = options.targetSchool || options.targetSchoolName;
+  }
+  if (options?.packageType) lead.packageType = options.packageType;
+  if (options?.b2bAgentId || options?.referredByAgentId) {
+    lead.b2bAgentId = options.b2bAgentId || options.referredByAgentId;
+    lead.referredByAgentId = options.b2bAgentId || options.referredByAgentId;
+  }
+  if (options?.visaOfficerId || options?.assignedVisaOfficerId) {
+    lead.assignedVisaOfficerId = options.visaOfficerId || options.assignedVisaOfficerId;
+  }
+  if (options?.contractAmountBdt !== undefined) lead.contractAmountBdt = options.contractAmountBdt;
+
+  saveCmsStore(store);
+  updateCrmLeadStatus(leadId, "ADMITTED");
+  const updatedStore = getCmsStore();
+  return (
+    updatedStore.visaApplicants.find((v) => v.leadId === leadId || v.linkedLeadId === leadId || v.phone === lead.phone) || null
+  );
 }
 
 export function updateVisaStage(id: string, nextStage: VisaStage): VisaApplicant | null {
   const store = getCmsStore();
   const index = store.visaApplicants.findIndex((v) => v.id === id);
   if (index === -1) return null;
-  store.visaApplicants[index].stage = nextStage;
-  store.visaApplicants[index].updatedAt = new Date().toISOString();
-  if (nextStage >= 6) {
-    store.visaApplicants[index].coEStatus = "APPROVED";
+
+  const app = store.visaApplicants[index];
+  const prevStage = app.stage;
+  app.stage = nextStage;
+  app.updatedAt = new Date().toISOString();
+
+  // 1. Auto-increment Visa Officer KPI when progressing stages
+  if (nextStage > prevStage) {
+    const officer = store.staffList.find(
+      (st) =>
+        ((app.visaOfficerId || app.assignedVisaOfficerId) && st.id === (app.visaOfficerId || app.assignedVisaOfficerId)) ||
+        (app.visaOfficerName && st.name.toLowerCase() === app.visaOfficerName.toLowerCase()) ||
+        st.role === "VISA_OFFICER",
+    );
+    if (officer) {
+      officer.kpiAchieved = (officer.kpiAchieved || 0) + 1;
+    }
   }
+
+  // 2. Stage 6 (Pre-Visa COE Approval): Trigger B2B Agent Commission & COE Status
+  if (nextStage >= 6) {
+    app.coEStatus = "APPROVED";
+
+    const agentId = app.b2bAgentId || app.referredByAgentId;
+    if (!app.b2bCommissionTriggered && (agentId || app.b2bAgentName)) {
+      const agent = store.b2bAgents.find(
+        (a) =>
+          (agentId && a.id === agentId) ||
+          (app.b2bAgentName && a.organizationName.toLowerCase() === app.b2bAgentName.toLowerCase()),
+      );
+      if (agent) {
+        agent.successfulVisasCount = (agent.successfulVisasCount || 0) + 1;
+        agent.pendingCommissionBdt =
+          (agent.pendingCommissionBdt || 0) + (agent.agreedCommissionBdt || 30000);
+        app.b2bCommissionTriggered = true;
+      }
+    }
+  }
+
+  // 3. Stage 9 (Visa Stamped): Update status
   if (nextStage >= 9) {
-    store.visaApplicants[index].visaStatus = "STAMPED";
+    app.visaStatus = "STAMPED";
   }
   if (nextStage === 10) {
-    store.visaApplicants[index].visaStatus = "DEPARTED";
+    app.visaStatus = "DEPARTED";
   }
+
   saveCmsStore(store);
 
   syncToServer("UPSERT", "knltc_visa_applicants", {
-    id: store.visaApplicants[index].id,
+    id: app.id,
     stage: nextStage,
-    coe_status: store.visaApplicants[index].coEStatus,
-    visa_status: store.visaApplicants[index].visaStatus,
-    updated_at: store.visaApplicants[index].updatedAt,
+    coe_status: app.coEStatus,
+    visa_status: app.visaStatus,
+    updated_at: app.updatedAt,
   });
 
-  return store.visaApplicants[index];
+  return app;
 }
 
 export function addLmsCredentials(data: {
@@ -1533,11 +1954,30 @@ export function addLmsCredentials(data: {
   portalUsername: string;
   portalPasswordMasked: string;
   activeBatch: string;
+  assignedSenseiId?: string;
+  assignedSenseiName?: string;
+  leadId?: string;
+  linkedLeadId?: string;
 }): LmsUserBridge {
   const store = getCmsStore();
+  const sensei = store.staffList.find(
+    (st) =>
+      (data.assignedSenseiId && st.id === data.assignedSenseiId) || st.role === "SENIOR_SENSEI",
+  );
+  const matchedLead = store.crmLeads.find(
+    (l) =>
+      (data.leadId && l.id === data.leadId) ||
+      (data.linkedLeadId && l.id === data.linkedLeadId) ||
+      l.phone === data.phone,
+  );
+
   const newBridge: LmsUserBridge = {
     id: `lms-${Date.now()}`,
     ...data,
+    leadId: matchedLead?.id || data.leadId || data.linkedLeadId,
+    linkedLeadId: matchedLead?.id || data.leadId || data.linkedLeadId,
+    assignedSenseiId: sensei?.id || data.assignedSenseiId,
+    assignedSenseiName: sensei?.name || data.assignedSenseiName,
     portalFeeDeductedBdt: 2000,
     netKnlTcMarginBdt: 10000,
     credentialsSentViaWa: true,
@@ -1545,6 +1985,12 @@ export function addLmsCredentials(data: {
     progressPercentage: 5,
   };
   store.lmsBridges.unshift(newBridge);
+
+  if (matchedLead) {
+    matchedLead.isCourseEnrolled = true;
+    matchedLead.enrolledBatchOrSession = data.activeBatch;
+  }
+
   saveCmsStore(store);
 
   syncToServer("INSERT", "knltc_lms_bridges", {
@@ -1568,9 +2014,67 @@ export function addLmsCredentials(data: {
 
 export function addFinancialTransaction(tx: Omit<FinancialTransaction, "id">): FinancialTransaction {
   const store = getCmsStore();
+  const isExpense = tx.category === "EXPENSE" || tx.type.startsWith("EXPENSE");
+
+  // If INCOME, sync with student's CrmLead and VisaApplicant paid/due balance
+  let computedDue = tx.dueAmountBdt;
+  let resolvedLeadId = tx.linkedLeadId;
+  let resolvedVisaId = tx.linkedVisaId;
+
+  if (!isExpense && tx.type !== "SCHOOL_COMMISSION_JPY") {
+    const matchedLead = store.crmLeads.find(
+      (l) =>
+        (tx.linkedLeadId && l.id === tx.linkedLeadId) ||
+        (tx.studentPhone && l.phone === tx.studentPhone) ||
+        l.name.toLowerCase() === (tx.studentName || "").toLowerCase(),
+    );
+    const matchedVisa = store.visaApplicants.find(
+      (v) =>
+        (tx.linkedVisaId && v.id === tx.linkedVisaId) ||
+        (matchedLead && v.leadId === matchedLead.id) ||
+        (tx.studentPhone && v.phone === tx.studentPhone) ||
+        v.name.toLowerCase() === (tx.studentName || "").toLowerCase(),
+    );
+
+    const defaultContract =
+      matchedLead?.contractAmountBdt ||
+      matchedVisa?.contractAmountBdt ||
+      (tx.type === "PREMIUM_PACKAGE" || tx.type === "PREMIUM_PACKAGE_ADVANCE"
+        ? 1100000
+        : tx.type === "COURSE_FEE"
+          ? 12000
+          : 120000);
+
+    if (matchedLead) {
+      resolvedLeadId = matchedLead.id;
+      const contract = matchedLead.contractAmountBdt || defaultContract;
+      const newPaid = (matchedLead.paidAmountBdt || 0) + Number(tx.amountBdt || 0);
+      const newDue = Math.max(0, contract - newPaid);
+      matchedLead.contractAmountBdt = contract;
+      matchedLead.paidAmountBdt = newPaid;
+      matchedLead.dueAmountBdt = newDue;
+      computedDue = newDue;
+    }
+
+    if (matchedVisa) {
+      resolvedVisaId = matchedVisa.id;
+      const contract = matchedVisa.contractAmountBdt || defaultContract;
+      const newPaid = (matchedVisa.paidAmountBdt || 0) + Number(tx.amountBdt || 0);
+      const newDue = Math.max(0, contract - newPaid);
+      matchedVisa.contractAmountBdt = contract;
+      matchedVisa.paidAmountBdt = newPaid;
+      matchedVisa.dueAmountBdt = newDue;
+      computedDue = newDue;
+    }
+  }
+
   const newTx: FinancialTransaction = {
     ...tx,
     id: `trx-${Date.now()}`,
+    category: isExpense ? "EXPENSE" : "INCOME",
+    dueAmountBdt: computedDue,
+    linkedLeadId: resolvedLeadId,
+    linkedVisaId: resolvedVisaId,
   };
   store.transactions.unshift(newTx);
   saveCmsStore(store);
@@ -1607,9 +2111,165 @@ export function updateFinancialTransaction(
 
 export function deleteFinancialTransaction(id: string) {
   const store = getCmsStore();
+  const tx = store.transactions.find((t) => t.id === id);
+  if (tx && tx.category !== "EXPENSE" && !tx.type.startsWith("EXPENSE")) {
+    const matchedLead = store.crmLeads.find(
+      (l) =>
+        (tx.linkedLeadId && l.id === tx.linkedLeadId) ||
+        (tx.studentPhone && l.phone === tx.studentPhone) ||
+        l.name.toLowerCase() === (tx.studentName || "").toLowerCase(),
+    );
+    if (matchedLead && matchedLead.paidAmountBdt) {
+      matchedLead.paidAmountBdt = Math.max(0, matchedLead.paidAmountBdt - tx.amountBdt);
+      matchedLead.dueAmountBdt = Math.max(
+        0,
+        (matchedLead.contractAmountBdt || 120000) - matchedLead.paidAmountBdt,
+      );
+    }
+    const matchedVisa = store.visaApplicants.find(
+      (v) =>
+        (tx.linkedVisaId && v.id === tx.linkedVisaId) ||
+        (tx.studentPhone && v.phone === tx.studentPhone) ||
+        v.name.toLowerCase() === (tx.studentName || "").toLowerCase(),
+    );
+    if (matchedVisa && matchedVisa.paidAmountBdt) {
+      matchedVisa.paidAmountBdt = Math.max(0, matchedVisa.paidAmountBdt - tx.amountBdt);
+      matchedVisa.dueAmountBdt = Math.max(
+        0,
+        (matchedVisa.contractAmountBdt || 120000) - matchedVisa.paidAmountBdt,
+      );
+    }
+  }
   store.transactions = store.transactions.filter((t) => t.id !== id);
   saveCmsStore(store);
   syncToServer("DELETE", "knltc_finance_transactions", { id });
+}
+
+// ------------------------------------------------------------------------------
+// Cross-Module Financial Settlement Actions (School Commission, B2B Payout, HR Payroll)
+// ------------------------------------------------------------------------------
+export function claimPartnerSchoolCommission(
+  schoolId: string,
+  studentCount = 1,
+  jpyToBdtRate = 0.8,
+  verifiedBy = "Sheikh Baset (MD)",
+): FinancialTransaction | null {
+  const store = getCmsStore();
+  const school = store.partnerSchools.find((s) => s.id === schoolId);
+  if (!school) return null;
+
+  const yenAmount = (school.commissionPerStudentYen || 80000) * studentCount;
+  const bdtAmount = Math.round(yenAmount * jpyToBdtRate);
+
+  school.totalCommissionReceivedYen = (school.totalCommissionReceivedYen || 0) + yenAmount;
+  saveCmsStore(store);
+
+  return addFinancialTransaction({
+    receiptNo: `JP-COM-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+    date: new Date().toISOString().slice(0, 10),
+    studentName: `${school.name} (${studentCount} Student Commission)`,
+    category: "INCOME",
+    type: "SCHOOL_COMMISSION_JPY",
+    amountBdt: bdtAmount,
+    paymentMethod: "BANK_TRANSFER",
+    referenceOrTrx: `JPY-${yenAmount.toLocaleString()}`,
+    branch: "DHK-HQ",
+    verifiedBy,
+    notes: `Japanese Partner School Commission: ¥${yenAmount.toLocaleString()} JPY @ ${jpyToBdtRate} BDT`,
+    linkedSchoolId: school.id,
+  });
+}
+
+export function settleB2bAgentCommission(
+  agentId: string,
+  amountBdt?: number,
+  paymentMethod: FinancialTransaction["paymentMethod"] = "BKASH",
+  branch: "DHK-HQ" | "KHULNA-01" = "DHK-HQ",
+  verifiedBy = "Sheikh Baset (MD)",
+): FinancialTransaction | null {
+  const store = getCmsStore();
+  const agent = store.b2bAgents.find((a) => a.id === agentId);
+  if (!agent) return null;
+
+  const payoutAmount = amountBdt ?? (agent.pendingCommissionBdt || agent.agreedCommissionBdt || 0);
+  if (payoutAmount <= 0) return null;
+
+  agent.pendingCommissionBdt = Math.max(0, (agent.pendingCommissionBdt || 0) - payoutAmount);
+  agent.paidCommissionBdt = (agent.paidCommissionBdt || 0) + payoutAmount;
+  saveCmsStore(store);
+
+  return addFinancialTransaction({
+    receiptNo: `B2B-PAY-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+    date: new Date().toISOString().slice(0, 10),
+    studentName: `${agent.organizationName} (${agent.contactPerson})`,
+    studentPhone: agent.phone,
+    category: "EXPENSE",
+    type: "EXPENSE_B2B_COMMISSION",
+    amountBdt: payoutAmount,
+    paymentMethod,
+    referenceOrTrx: `B2B-${Date.now().toString().slice(-6)}`,
+    branch,
+    verifiedBy,
+    notes: `B2B Referral Commission Settlement for ${agent.organizationName}`,
+    linkedAgentId: agent.id,
+  });
+}
+
+export function disburseStaffPayroll(
+  staffId: string,
+  branchOrVerifiedBy: string = "DHK-HQ",
+  verifiedByArg = "Sheikh Baset (MD)",
+): FinancialTransaction | null {
+  const store = getCmsStore();
+  const staff = store.staffList.find((s) => s.id === staffId);
+  if (!staff) return null;
+
+  const isBranch = branchOrVerifiedBy === "DHK-HQ" || branchOrVerifiedBy === "KHULNA-01";
+  const branch: "DHK-HQ" | "KHULNA-01" = isBranch ? branchOrVerifiedBy : "DHK-HQ";
+  const verifiedBy = isBranch ? verifiedByArg : branchOrVerifiedBy;
+
+  const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+  const totalPay = (staff.monthlyBaseSalaryBdt || 0) + (staff.performanceBonusBdt || 0);
+  const bonusIncluded = staff.performanceBonusBdt || 0;
+
+  staff.lastPaidMonth = currentMonth;
+  staff.performanceBonusBdt = 0;
+  saveCmsStore(store);
+
+  return addFinancialTransaction({
+    receiptNo: `PAY-${currentMonth.replace("-", "")}-${Math.floor(100 + Math.random() * 899)}`,
+    date: new Date().toISOString().slice(0, 10),
+    studentName: `${staff.name} (${staff.role})`,
+    studentPhone: staff.phone,
+    category: "EXPENSE",
+    type: "EXPENSE_PAYROLL",
+    amountBdt: totalPay,
+    paymentMethod: "BANK_TRANSFER",
+    referenceOrTrx: `SAL-${currentMonth}-${staff.id.slice(-4)}`,
+    branch: staff.location === "KHULNA_OFFICE" ? "KHULNA-01" : branch,
+    verifiedBy,
+    notes: `Monthly Salary (${currentMonth}) — Base: ৳${staff.monthlyBaseSalaryBdt.toLocaleString()}${bonusIncluded > 0 ? ` + Bonus: ৳${bonusIncluded.toLocaleString()}` : ""}`,
+    linkedStaffId: staff.id,
+  });
+}
+
+export function disburseAllActivePayroll(
+  branchOrVerifiedBy: string = "DHK-HQ",
+  verifiedByArg = "Sheikh Baset (MD)",
+): { count: number; totalAmountBdt: number; totalBdt: number } {
+  const store = getCmsStore();
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const unpaidActiveStaff = store.staffList.filter(
+    (s) => s.status === "ACTIVE" && s.lastPaidMonth !== currentMonth,
+  );
+
+  let totalAmountBdt = 0;
+  for (const stf of unpaidActiveStaff) {
+    const tx = disburseStaffPayroll(stf.id, branchOrVerifiedBy, verifiedByArg);
+    if (tx) totalAmountBdt += tx.amountBdt;
+  }
+
+  return { count: unpaidActiveStaff.length, totalAmountBdt, totalBdt: totalAmountBdt };
 }
 
 export function updateStoreOrderStatus(orderId: string, status: CustomerStoreOrder["orderStatus"]) {
@@ -1630,6 +2290,7 @@ export function addPartnerSchool(school: Omit<JapanesePartnerSchool, "id">): Jap
   const store = getCmsStore();
   const newSchool: JapanesePartnerSchool = {
     ...school,
+    intakeQuota: school.intakeQuota || 20,
     id: `sch-${Date.now()}`,
   };
   store.partnerSchools.unshift(newSchool);
@@ -1806,5 +2467,6 @@ export function deleteStaffMember(id: string) {
   saveCmsStore(store);
   syncToServer("DELETE", "knltc_staff_members", { id });
 }
+
 
 
