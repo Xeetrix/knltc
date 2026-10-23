@@ -2206,7 +2206,8 @@ export function claimPartnerSchoolCommission(
   const school = store.partnerSchools.find((s) => s.id === schoolId);
   if (!school) return null;
 
-  const yenAmount = (school.commissionPerStudentYen || 80000) * studentCount;
+  const yenAmount = (school.commissionPerStudentYen || 0) * studentCount;
+  if (yenAmount <= 0) return null;
   const bdtAmount = Math.round(yenAmount * jpyToBdtRate);
 
   school.totalCommissionReceivedYen = (school.totalCommissionReceivedYen || 0) + yenAmount;

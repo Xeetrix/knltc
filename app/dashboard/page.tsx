@@ -196,8 +196,8 @@ export default function DashboardPage() {
     location: "Tokyo",
     contactPerson: "",
     email: "",
-    commissionPerStudentYen: 80000,
-    commissionPerStudentBdt: 64000,
+    commissionPerStudentYen: 0,
+    commissionPerStudentBdt: 0,
     intakeQuota: 20,
     activeStudentsCount: 0,
     totalCommissionReceivedYen: 0,
@@ -688,8 +688,8 @@ export default function DashboardPage() {
         location: "Tokyo",
         contactPerson: "",
         email: "",
-        commissionPerStudentYen: 80000,
-        commissionPerStudentBdt: 64000,
+        commissionPerStudentYen: 0,
+        commissionPerStudentBdt: 0,
         intakeQuota: 20,
         activeStudentsCount: 0,
         totalCommissionReceivedYen: 0,
@@ -1181,7 +1181,15 @@ export default function DashboardPage() {
                         <Building2 className="h-4 w-4" />
                       </div>
                       <p className="mt-3 text-2xl font-bold text-slate-900 tabular-nums">
-                        ¥{store.partnerSchools.reduce((sum, s) => sum + (s.totalCommissionReceivedYen || 0), 0).toLocaleString()}
+                        ¥{store.partnerSchools.reduce(
+                          (sum, s) =>
+                            sum +
+                            Math.max(
+                              s.totalCommissionReceivedYen || 0,
+                              (s.activeStudentsCount || 0) * (s.commissionPerStudentYen || 0),
+                            ),
+                          0,
+                        ).toLocaleString()}
                       </p>
                       <p className="mt-1 text-[11px] text-slate-400">{t.kpi.yenCommissionSub}</p>
                     </div>
@@ -2941,12 +2949,41 @@ export default function DashboardPage() {
                         <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
                           <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
                             <span className="font-semibold text-slate-600">
-                              {language === "bn" ? "জাপানি স্কুল কমিশন (স্টুডেন্ট পিছু)" : "School Commission (Per Student)"}
+                              {language === "bn" ? "জাপানি স্কুল কমিশন (প্রতিষ্ঠানভেদে)" : "School Commission (By Institution)"}
                             </span>
-                            <p className="text-lg font-bold text-slate-900 mt-1 tabular-nums">¥80,000 JPY</p>
-                            <p className="text-xs text-emerald-700 font-semibold mt-0.5 tabular-nums">
-                              ≈ ৳ 64,000 BDT
-                            </p>
+                            {(() => {
+                              const validRates = store.partnerSchools
+                                .map((s) => s.commissionPerStudentYen)
+                                .filter((r) => r > 0);
+                              if (validRates.length === 0) {
+                                return (
+                                  <>
+                                    <p className="text-base font-bold text-slate-900 mt-1">
+                                      {language === "bn" ? "প্রতিষ্ঠানভেদে ভিন্ন" : "Varies by Institution"}
+                                    </p>
+                                    <p className="text-xs text-emerald-700 font-semibold mt-0.5">
+                                      {language === "bn" ? "চুক্তিবদ্ধ হার অনুযায়ী নির্ধারিত" : "Based on school agreement"}
+                                    </p>
+                                  </>
+                                );
+                              }
+                              const minRate = Math.min(...validRates);
+                              const maxRate = Math.max(...validRates);
+                              return (
+                                <>
+                                  <p className="text-lg font-bold text-slate-900 mt-1 tabular-nums">
+                                    {minRate === maxRate
+                                      ? `¥${minRate.toLocaleString()} JPY`
+                                      : `¥${minRate.toLocaleString()} – ¥${maxRate.toLocaleString()} JPY`}
+                                  </p>
+                                  <p className="text-xs text-emerald-700 font-semibold mt-0.5 tabular-nums">
+                                    {minRate === maxRate
+                                      ? `≈ ৳ ${Math.round(minRate * 0.8).toLocaleString()} BDT`
+                                      : `≈ ৳ ${Math.round(minRate * 0.8).toLocaleString()} – ৳ ${Math.round(maxRate * 0.8).toLocaleString()} BDT`}
+                                  </p>
+                                </>
+                              );
+                            })()}
                           </div>
 
                           <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
