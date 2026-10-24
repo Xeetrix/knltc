@@ -4316,7 +4316,7 @@ export default function DashboardPage() {
                         className="hover-spotlight text-left rounded-2xl border border-slate-200/80 bg-white p-5"
                       >
                         <span className="text-xs text-slate-500">
-                          {language === "bn" ? "পেন্ডিং বুক অর্ডার" : "Pending Orders"}
+                          {tr("পেন্ডিং বুক অর্ডার", "Pending Orders", "未処理の注文")}
                         </span>
                         <p className="mt-2 text-2xl font-bold text-slate-900 tabular-nums">
                           {adminBundle.summary?.pendingOrders ?? 0}
@@ -4329,7 +4329,7 @@ export default function DashboardPage() {
                         className="hover-spotlight text-left rounded-2xl border border-slate-200/80 bg-white p-5"
                       >
                         <span className="text-xs text-slate-500">
-                          {language === "bn" ? "পেন্ডিং রিভিউ" : "Pending Reviews"}
+                          {tr("পেন্ডিং রিভিউ", "Pending Reviews", "承認待ちレビュー")}
                         </span>
                         <p className="mt-2 text-2xl font-bold text-slate-900 tabular-nums">
                           {adminBundle.summary?.pendingReviews ?? 0}
@@ -4342,7 +4342,7 @@ export default function DashboardPage() {
                         className="hover-spotlight text-left rounded-2xl border border-slate-200/80 bg-white p-5"
                       >
                         <span className="text-xs text-slate-500">
-                          {language === "bn" ? "মোট বইয়ের সংখ্যা" : "Total Books"}
+                          {tr("মোট বইয়ের সংখ্যা", "Total Books", "登録書籍総数")}
                         </span>
                         <p className="mt-2 text-2xl font-bold text-slate-900 tabular-nums">
                           {adminBundle.products.length}
@@ -4355,7 +4355,7 @@ export default function DashboardPage() {
                         className="hover-spotlight text-left rounded-2xl border border-slate-200/80 bg-white p-5"
                       >
                         <span className="text-xs text-slate-500">
-                          {language === "bn" ? "প্রকাশিত ব্লগ" : "Published Articles"}
+                          {tr("প্রকাশিত ব্লগ", "Published Articles", "公開ブログ記事")}
                         </span>
                         <p className="mt-2 text-2xl font-bold text-slate-900 tabular-nums">
                           {adminBundle.posts.length}
@@ -4527,7 +4527,7 @@ export default function DashboardPage() {
                     }) || store.lmsBridges[0]
                   }
                   userEmail={currentUser?.email || "student@knltc.com"}
-                  userName={currentUser?.name || "রাকিবুল ইসলাম"}
+                  userName={currentUser?.name || tr("রাকিবুল ইসলাম", "Rakibul Islam", "ラキブル・イスラム")}
                 />
               )}
 
@@ -4632,16 +4632,20 @@ export default function DashboardPage() {
                     if (editingB2bAgent) {
                       updateB2bAgent(editingB2bAgent.id, b2bForm);
                       showToast(
-                        language === "bn"
-                          ? `${b2bForm.organizationName} আপডেট করা হয়েছে`
-                          : `${b2bForm.organizationName} updated`,
+                        tr(
+                          `${b2bForm.organizationName} আপডেট করা হয়েছে`,
+                          `${b2bForm.organizationName} updated`,
+                          `${b2bForm.organizationName}を更新しました`,
+                        ),
                       );
                     } else {
                       addB2bAgent(b2bForm);
                       showToast(
-                        language === "bn"
-                          ? `নতুন বিটুবি এজেন্ট (${b2bForm.organizationName}) যোগ করা হয়েছে`
-                          : `B2B Agent (${b2bForm.organizationName}) added`,
+                        tr(
+                          `নতুন বিটুবি এজেন্ট (${b2bForm.organizationName}) যোগ করা হয়েছে`,
+                          `B2B Agent (${b2bForm.organizationName}) added`,
+                          `新規B2B代理店（${b2bForm.organizationName}）を追加しました`,
+                        ),
                       );
                     }
                     setStore({ ...getCmsStore() });
@@ -5127,16 +5131,20 @@ export default function DashboardPage() {
                     if (editingStaff) {
                       updateStaffMember(editingStaff.id, staffForm);
                       showToast(
-                        language === "bn"
-                          ? `${staffForm.name}-এর তথ্য আপডেট হয়েছে`
-                          : `${staffForm.name} updated`,
+                        tr(
+                          `${staffForm.name}-এর তথ্য আপডেট হয়েছে`,
+                          `${staffForm.name} updated`,
+                          `${staffForm.name}の情報を更新しました`,
+                        ),
                       );
                     } else {
                       addStaffMember(staffForm);
                       showToast(
-                        language === "bn"
-                          ? `নতুন টিম মেম্বার (${staffForm.name}) যুক্ত করা হয়েছে`
-                          : `Team member (${staffForm.name}) added`,
+                        tr(
+                          `নতুন টিম মেম্বার (${staffForm.name}) যুক্ত করা হয়েছে`,
+                          `Team member (${staffForm.name}) added`,
+                          `新規スタッフ（${staffForm.name}）を追加しました`,
+                        ),
                       );
                     }
                     setStore({ ...getCmsStore() });
@@ -5454,7 +5462,7 @@ export default function DashboardPage() {
                       education: leadForm.education,
                       japaneseProficiency: leadForm.japaneseProficiency,
                       studyGapYears: leadForm.studyGapYears,
-                      assignedTo: selectedCounselor?.name || currentUser?.name || "শেখ বাসেত",
+                      assignedTo: selectedCounselor?.name || currentUser?.name || tr("শেখ বাসেত", "Sheikh Baset", "シェイク・バセット"),
                       assignedCounselorId: leadForm.assignedCounselorId || undefined,
                       referredByAgentId: leadForm.referredByAgentId || undefined,
                       targetSchoolId: leadForm.targetSchoolId || undefined,

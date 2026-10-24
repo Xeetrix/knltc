@@ -1272,7 +1272,7 @@ export default function RbacPortal({ initialRole = "MAIN_ADMIN" }: Props) {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-slate-900 text-sm">
-                          {language === "bn" ? m.bnTitle : m.title}
+                          {language === "bn" ? m.bnTitle : language === "ja" ? ((m as any).jaTitle || m.title) : m.title}
                         </span>
                         {m.date && (
                           <span className="text-[11px] text-[#15803d] font-semibold bg-green-50 px-2 py-0.5 rounded-md border border-green-200">

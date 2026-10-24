@@ -1373,7 +1373,7 @@ export default function InteractiveLanguageLab() {
                                     {row.labelJa}
                                   </span>
                                   <span className="text-xs sm:text-sm font-bold text-slate-800">
-                                    {language === "bn" ? row.labelBn : row.labelEn}
+                                    {language === "ja" ? (row.labelJa || row.labelEn) : language === "bn" ? row.labelBn : row.labelEn}
                                   </span>
                                 </div>
                                 <p className="text-[11px] text-slate-500 mt-1 hidden md:block">
@@ -1587,7 +1587,7 @@ export default function InteractiveLanguageLab() {
                                     {row.labelJa}
                                   </span>
                                   <span className="text-xs sm:text-sm font-bold text-slate-800">
-                                    {language === "bn" ? row.labelBn : row.labelEn}
+                                    {language === "ja" ? (row.labelJa || row.labelEn) : language === "bn" ? row.labelBn : row.labelEn}
                                   </span>
                                 </div>
                                 <p className="text-[11px] text-slate-500 mt-1 hidden md:block">

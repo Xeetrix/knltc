@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { trModal } from "@/lib/modal-translations";
 import {
   X,
   Building2,
@@ -114,8 +115,7 @@ export default function PartnerProfileModal({
   onRefreshStore,
   onShowToast,
 }: PartnerProfileModalProps) {
-  const tr = (bn: string, en: string, ja?: string) =>
-    language === "ja" ? (ja || en) : language === "en" ? en : bn;
+  const tr = (bn: string, en: string, ja?: string) => trModal(language, bn, en, ja);
   const [activeTab, setActiveTab] = useState<ModalTab>("overview");
   const [isPrintView, setIsPrintView] = useState(false);
 
@@ -376,9 +376,7 @@ export default function PartnerProfileModal({
       setSchoolState(updated);
       onRefreshStore();
       onShowToast(
-        language === "bn"
-          ? `${schoolState.name}-এর ৩৬০° প্রোফাইল ও ব্রশিউর সংরক্ষিত হয়েছে`
-          : `${schoolState.name} 360° profile saved`,
+        tr(`${schoolState.name}-এর ৩৬০° প্রোফাইল ও ব্রশিউর সংরক্ষিত হয়েছে`, `${schoolState.name} 360° profile saved`),
       );
     } else {
       const updated = {
@@ -389,9 +387,7 @@ export default function PartnerProfileModal({
       setAgentState(updated);
       onRefreshStore();
       onShowToast(
-        language === "bn"
-          ? `${agentState.organizationName}-এর বিটুবি প্রোফাইল ও ডকুমেন্ট সংরক্ষিত হয়েছে`
-          : `${agentState.organizationName} B2B profile saved`,
+        tr(`${agentState.organizationName}-এর বিটুবি প্রোফাইল ও ডকুমেন্ট সংরক্ষিত হয়েছে`, `${agentState.organizationName} B2B profile saved`),
       );
     }
   };
@@ -415,14 +411,12 @@ export default function PartnerProfileModal({
       }
       onRefreshStore();
       onShowToast(
-        language === "bn"
-          ? "প্রতিষ্ঠানের লোগো স্থায়ীভাবে ক্লাউড ও সিস্টেমে সংরক্ষিত হয়েছে"
-          : "Logo uploaded & permanently saved",
+        tr("প্রতিষ্ঠানের লোগো স্থায়ীভাবে ক্লাউড ও সিস্টেমে সংরক্ষিত হয়েছে", "Logo uploaded & permanently saved"),
       );
     } catch (err) {
       console.error("Logo upload error:", err);
       onShowToast(
-        language === "bn" ? "লোগো আপলোড সমস্যা হয়েছে" : "Logo upload failed",
+        tr("লোগো আপলোড সমস্যা হয়েছে", "Logo upload failed"),
       );
     } finally {
       setIsUploadingLogo(false);
@@ -477,9 +471,7 @@ export default function PartnerProfileModal({
       }
       onRefreshStore();
       onShowToast(
-        language === "bn"
-          ? `${file.name} ভল্টে সংরক্ষিত হয়েছে`
-          : `${file.name} saved to vault`,
+        tr(`${file.name} ভল্টে সংরক্ষিত হয়েছে`, `${file.name} saved to vault`),
       );
     } catch (err) {
       console.error("Doc upload error:", err);
@@ -596,9 +588,7 @@ export default function PartnerProfileModal({
     setNewDocUrl("");
     onRefreshStore();
     onShowToast(
-      language === "bn"
-        ? "নতুন ডকুমেন্ট স্লট যুক্ত হয়েছে"
-        : "New document slot added",
+      tr("নতুন ডকুমেন্ট স্লট যুক্ত হয়েছে", "New document slot added"),
     );
   };
 
@@ -659,9 +649,7 @@ export default function PartnerProfileModal({
     setSelectedStudentIdToAssign("");
     onRefreshStore();
     onShowToast(
-      language === "bn"
-        ? "শিক্ষার্থীকে সফলভাবে এই প্রোফাইলের সাথে যুক্ত করা হয়েছে"
-        : "Student linked to partner profile",
+      tr("শিক্ষার্থীকে সফলভাবে এই প্রোফাইলের সাথে যুক্ত করা হয়েছে", "Student linked to partner profile"),
     );
   };
 
@@ -685,11 +673,7 @@ export default function PartnerProfileModal({
       portalAccountId: created.id,
     });
     onRefreshStore();
-    onShowToast(
-      language === "bn"
-        ? `${agentState.organizationName}-এর বিটুবি পোর্টাল লগইন একাউন্ট তৈরি হয়েছে`
-        : "B2B Portal Login issued",
-    );
+    onShowToast(tr(`${agentState.organizationName}-এর বিটুবি পোর্টাল লগইন একাউন্ট তৈরি হয়েছে`, `${agentState.organizationName} B2B Portal Login issued`, `${agentState.organizationName}のB2Bポータルログインを発行しました`));
   };
 
   const currentDocs =
@@ -737,9 +721,7 @@ export default function PartnerProfileModal({
                 </div>
                 <label
                   title={
-                    language === "bn"
-                      ? "লোগো পরিবর্তন বা আপলোড করুন"
-                      : "Upload Logo"
+                    tr("লোগো পরিবর্তন বা আপলোড করুন", "Upload Logo")
                   }
                   className={`absolute -bottom-1.5 -right-1.5 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-slate-900 text-white shadow-md hover:bg-[#b91c1c] transition ${
                     isUploadingLogo ? "opacity-50 pointer-events-none" : ""
@@ -834,7 +816,7 @@ export default function PartnerProfileModal({
                   className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition whitespace-nowrap"
                 >
                   <Mail className="h-3.5 w-3.5" />
-                  <span>{language === "bn" ? "ইমেইল পাঠান" : "Send Email"}</span>
+                  <span>{tr("ইমেইল পাঠান", "Send Email")}</span>
                 </a>
               )}
 
@@ -850,12 +832,8 @@ export default function PartnerProfileModal({
                 <Printer className="h-3.5 w-3.5" />
                 <span>
                   {isPrintView
-                    ? language === "bn"
-                      ? "এডিট মোডে ফিরুন"
-                      : "Back to Edit"
-                    : language === "bn"
-                      ? "প্রিন্ট প্রোফাইল শিট"
-                      : "Print Dossier"}
+                    ? tr("এডিট মোডে ফিরুন", "Back to Edit")
+                    : tr("প্রিন্ট প্রোফাইল শিট", "Print Dossier")}
                 </span>
               </button>
 
@@ -865,7 +843,7 @@ export default function PartnerProfileModal({
                 className="inline-flex items-center gap-1.5 rounded-xl bg-[#b91c1c] px-4 py-2 text-xs font-semibold text-white hover:bg-red-800 transition whitespace-nowrap"
               >
                 <CheckCircle2 className="h-3.5 w-3.5" />
-                <span>{language === "bn" ? "সেভ করুন" : "Save Profile"}</span>
+                <span>{tr("সেভ করুন", "Save Profile")}</span>
               </button>
 
               <button
@@ -936,7 +914,7 @@ export default function PartnerProfileModal({
                     }`}
                   >
                     <Icon className="h-3.5 w-3.5" />
-                    <span>{language === "bn" ? tab.labelBn : tab.labelEn}</span>
+                    <span>{language === "ja" ? (tab as any).labelJa || tab.labelEn : language === "bn" ? tab.labelBn : tab.labelEn}</span>
                   </button>
                 );
               })}
@@ -1110,17 +1088,13 @@ export default function PartnerProfileModal({
                   {/* Branding & Basic Identity */}
                   <div className="rounded-2xl border border-slate-200/80 bg-white p-5">
                     <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">
-                      {language === "bn"
-                        ? "প্রতিষ্ঠানের পরিচিতি, লোগো ও ক্যাটাগরি (School / University Identity)"
-                        : "Institution Identity, Logo & Category"}
+                      {tr("প্রতিষ্ঠানের পরিচিতি, লোগো ও ক্যাটাগরি (School / University Identity)", "Institution Identity, Logo & Category")}
                     </h3>
 
                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
                       <div className="sm:col-span-2">
                         <label className="font-semibold text-slate-700">
-                          {language === "bn"
-                            ? "স্কুল / ইউনিভার্সিটির নাম (ইংরেজি) *"
-                            : "Institution Name (English) *"}
+                          {tr("স্কুল / ইউনিভার্সিটির নাম (ইংরেজি) *", "Institution Name (English) *")}
                         </label>
                         <input
                           type="text"
@@ -1135,9 +1109,7 @@ export default function PartnerProfileModal({
 
                       <div>
                         <label className="font-semibold text-slate-700">
-                          {language === "bn"
-                            ? "প্রতিষ্ঠানের ধরন (Category)"
-                            : "Institution Category"}
+                          {tr("প্রতিষ্ঠানের ধরন (Category)", "Institution Category")}
                         </label>
                         <select
                           value={schoolState.institutionType || "LANGUAGE_SCHOOL"}
@@ -1167,9 +1139,7 @@ export default function PartnerProfileModal({
 
                       <div>
                         <label className="font-semibold text-slate-700">
-                          {language === "bn"
-                            ? "জাপানি নাম (日本語名)"
-                            : "Japanese Name"}
+                          {tr("জাপানি নাম (日本語名)", "Japanese Name")}
                         </label>
                         <input
                           type="text"
@@ -1187,9 +1157,7 @@ export default function PartnerProfileModal({
 
                       <div>
                         <label className="font-semibold text-slate-700">
-                          {language === "bn"
-                            ? "জাপানে শহর / প্রিফেকচার"
-                            : "City / Prefecture in Japan"}
+                          {tr("জাপানে শহর / প্রিফেকচার", "City / Prefecture in Japan")}
                         </label>
                         <input
                           type="text"
@@ -1207,9 +1175,7 @@ export default function PartnerProfileModal({
 
                       <div>
                         <label className="font-semibold text-slate-700">
-                          {language === "bn"
-                            ? "প্রতিষ্ঠানের লোগো URL (অথবা বাম পাশের আইকনে আপলোড)"
-                            : "Logo URL (or click avatar to upload)"}
+                          {tr("প্রতিষ্ঠানের লোগো URL (অথবা বাম পাশের আইকনে আপলোড)", "Logo URL (or click avatar to upload)")}
                         </label>
                         <input
                           type="text"
@@ -1227,9 +1193,7 @@ export default function PartnerProfileModal({
 
                       <div>
                         <label className="font-semibold text-slate-700">
-                          {language === "bn"
-                            ? "দায়িত্বশীল প্রতিনিধি / প্রিন্সিপাল"
-                            : "Contact Person / Principal"}
+                          {tr("দায়িত্বশীল প্রতিনিধি / প্রিন্সিপাল", "Contact Person / Principal")}
                         </label>
                         <input
                           type="text"
@@ -1247,7 +1211,7 @@ export default function PartnerProfileModal({
 
                       <div>
                         <label className="font-semibold text-slate-700">
-                          {language === "bn" ? "অফিসিয়াল ইমেইল" : "Official Email"}
+                          {tr("অফিসিয়াল ইমেইল", "Official Email")}
                         </label>
                         <input
                           type="email"
@@ -1265,9 +1229,7 @@ export default function PartnerProfileModal({
 
                       <div>
                         <label className="font-semibold text-slate-700">
-                          {language === "bn"
-                            ? "ওয়েবসাইট লিংক"
-                            : "Official Website"}
+                          {tr("ওয়েবসাইট লিংক", "Official Website")}
                         </label>
                         <input
                           type="text"
@@ -1289,9 +1251,7 @@ export default function PartnerProfileModal({
                   <div className="rounded-2xl border border-slate-200/80 bg-white p-5">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3">
                       <h3 className="text-sm font-bold text-slate-900">
-                        {language === "bn"
-                          ? "টিউশন ফি, হোস্টেল চার্জ ও চুক্তিবদ্ধ কমিশন কাঠামো (JPY ¥ ⇄ BDT ৳)"
-                          : "Tuition, Dormitory & Commission Breakdown (JPY ⇄ BDT)"}
+                        {tr("টিউশন ফি, হোস্টেল চার্জ ও চুক্তিবদ্ধ কমিশন কাঠামো (JPY ¥ ⇄ BDT ৳)", "Tuition, Dormitory & Commission Breakdown (JPY ⇄ BDT)")}
                       </h3>
                       <span className="text-xs font-semibold text-emerald-700 tabular-nums">
                         1 JPY ≈ ৳{jpyRate} BDT
@@ -1301,9 +1261,7 @@ export default function PartnerProfileModal({
                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
                       <div>
                         <label className="font-semibold text-slate-700">
-                          {language === "bn"
-                            ? "১ম বছরের মোট টিউশন ফি (Yen)"
-                            : "1st Year Tuition Fee (Yen)"}
+                          {tr("১ম বছরের মোট টিউশন ফি (Yen)", "1st Year Tuition Fee (Yen)")}
                         </label>
                         <input
                           type="number"
@@ -1327,9 +1285,7 @@ export default function PartnerProfileModal({
 
                       <div>
                         <label className="font-semibold text-slate-700">
-                          {language === "bn"
-                            ? "অ্যাপ্লিকেশন / সিলেকশন ফি (Yen)"
-                            : "Application / Screening Fee (Yen)"}
+                          {tr("অ্যাপ্লিকেশন / সিলেকশন ফি (Yen)", "Application / Screening Fee (Yen)")}
                         </label>
                         <input
                           type="number"
@@ -1353,9 +1309,7 @@ export default function PartnerProfileModal({
 
                       <div>
                         <label className="font-semibold text-slate-700">
-                          {language === "bn"
-                            ? "মাসিক ডরমেটরি / হোস্টেল ভাড়া (Yen)"
-                            : "Monthly Dormitory Fee (Yen)"}
+                          {tr("মাসিক ডরমেটরি / হোস্টেল ভাড়া (Yen)", "Monthly Dormitory Fee (Yen)")}
                         </label>
                         <input
                           type="number"
@@ -1373,15 +1327,13 @@ export default function PartnerProfileModal({
                           {Math.round(
                             (schoolState.hostelFeeMonthlyYen || 0) * jpyRate,
                           ).toLocaleString()}{" "}
-                          BDT / মাস
+                          BDT / {tr("মাস", "Month", "月")}
                         </p>
                       </div>
 
                       <div>
                         <label className="font-semibold text-emerald-800">
-                          {language === "bn"
-                            ? "চুক্তিবদ্ধ কমিশন / স্টুডেন্ট (Yen)"
-                            : "Agreed Commission / Student (Yen)"}
+                          {tr("চুক্তিবদ্ধ কমিশন / স্টুডেন্ট (Yen)", "Agreed Commission / Student (Yen)")}
                         </label>
                         <input
                           type="number"
@@ -1399,7 +1351,7 @@ export default function PartnerProfileModal({
                           {Math.round(
                             (schoolState.commissionPerStudentYen || 0) * jpyRate,
                           ).toLocaleString()}{" "}
-                          BDT / স্টুডেন্ট
+                          BDT / {tr("স্টুডেন্ট", "Student", "生徒")}
                         </p>
                       </div>
                     </div>
@@ -1408,17 +1360,13 @@ export default function PartnerProfileModal({
                   {/* Intake Months, Quota & Eligibility Requirements */}
                   <div className="rounded-2xl border border-slate-200/80 bg-white p-5">
                     <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">
-                      {language === "bn"
-                        ? "ইনটেক সেশন, সিট কোটা ও ভর্তির যোগ্যতা (Intakes & Eligibility)"
-                        : "Intake Sessions, Seat Quota & Eligibility Criteria"}
+                      {tr("ইনটেক সেশন, সিট কোটা ও ভর্তির যোগ্যতা (Intakes & Eligibility)", "Intake Sessions, Seat Quota & Eligibility Criteria")}
                     </h3>
 
                     <div className="mt-4 space-y-4 text-xs">
                       <div>
                         <label className="font-semibold text-slate-700 block mb-2">
-                          {language === "bn"
-                            ? "ভর্তি সেশন (Intake Months — ক্লিক করে সিলেক্ট করুন)"
-                            : "Available Intake Sessions"}
+                          {tr("ভর্তি সেশন (Intake Months — ক্লিক করে সিলেক্ট করুন)", "Available Intake Sessions")}
                         </label>
                         <div className="flex flex-wrap gap-2">
                           {(
@@ -1452,9 +1400,7 @@ export default function PartnerProfileModal({
                       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-2">
                         <div>
                           <label className="font-semibold text-slate-700">
-                            {language === "bn"
-                              ? "সর্বনিম্ন GPA রিকোয়ারমেন্ট"
-                              : "Minimum GPA Required"}
+                            {tr("সর্বনিম্ন GPA রিকোয়ারমেন্ট", "Minimum GPA Required")}
                           </label>
                           <input
                             type="text"
@@ -1472,9 +1418,7 @@ export default function PartnerProfileModal({
 
                         <div>
                           <label className="font-semibold text-slate-700">
-                            {language === "bn"
-                              ? "সর্বোচ্চ স্টাডি গ্যাপ (বছর)"
-                              : "Max Study Gap (Years)"}
+                            {tr("সর্বোচ্চ স্টাডি গ্যাপ (বছর)", "Max Study Gap (Years)")}
                           </label>
                           <input
                             type="number"
@@ -1491,9 +1435,7 @@ export default function PartnerProfileModal({
 
                         <div>
                           <label className="font-semibold text-slate-700">
-                            {language === "bn"
-                              ? "ন্যূনতম জাপানি ভাষা দক্ষতা"
-                              : "Min Language Requirement"}
+                            {tr("ন্যূনতম জাপানি ভাষা দক্ষতা", "Min Language Requirement")}
                           </label>
                           <input
                             type="text"
@@ -1511,9 +1453,7 @@ export default function PartnerProfileModal({
 
                         <div>
                           <label className="font-semibold text-slate-700">
-                            {language === "bn"
-                              ? "KNLTC বরাদ্দকৃত সিট কোটা"
-                              : "Allocated Seat Quota"}
+                            {tr("KNLTC বরাদ্দকৃত সিট কোটা", "Allocated Seat Quota")}
                           </label>
                           <input
                             type="number"
@@ -1531,9 +1471,7 @@ export default function PartnerProfileModal({
 
                       <div>
                         <label className="font-semibold text-slate-700">
-                          {language === "bn"
-                            ? "ইন্টারভিউ নির্দেশনা ও বিশেষ নোট (School Interview & Part-time Job Support Notes)"
-                            : "Interview Guidelines & Notes"}
+                          {tr("ইন্টারভিউ নির্দেশনা ও বিশেষ নোট (School Interview & Part-time Job Support Notes)", "Interview Guidelines & Notes")}
                         </label>
                         <textarea
                           rows={2}
@@ -1544,7 +1482,11 @@ export default function PartnerProfileModal({
                               notes: e.target.value,
                             })
                           }
-                          placeholder="জুম ইন্টারভিউ প্রশ্ন, ডরমেটরি সুবিধা ও পার্ট-টাইম কাজের সুযোগ সংক্রান্ত নোট..."
+                          placeholder={tr(
+                            "জুম ইন্টারভিউ প্রশ্ন, ডরমেটরি সুবিধা ও পার্ট-টাইম কাজের সুযোগ সংক্রান্ত নোট...",
+                            "Zoom interview notes, dorm features & part-time job notes...",
+                            "Zoom面接対策、寮施設、アルバイト支援に関する特記事項...",
+                          )}
                           className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-medium"
                         />
                       </div>
@@ -1560,17 +1502,13 @@ export default function PartnerProfileModal({
                 <div className="space-y-6">
                   <div className="rounded-2xl border border-slate-200/80 bg-white p-5">
                     <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">
-                      {language === "bn"
-                        ? "বিটুবি এজেন্সি পরিচিতি, লোগো ও লাইসেন্স তথ্য (Agency Profile & Verification)"
-                        : "B2B Agency Identity, Logo & Legal Verification"}
+                      {tr("বিটুবি এজেন্সি পরিচিতি, লোগো ও লাইসেন্স তথ্য (Agency Profile & Verification)", "B2B Agency Identity, Logo & Legal Verification")}
                     </h3>
 
                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
                       <div className="sm:col-span-2">
                         <label className="font-semibold text-slate-700">
-                          {language === "bn"
-                            ? "এজেন্সি / প্রতিষ্ঠানের নাম *"
-                            : "Agency / Organization Name *"}
+                          {tr("এজেন্সি / প্রতিষ্ঠানের নাম *", "Agency / Organization Name *")}
                         </label>
                         <input
                           type="text"
@@ -1587,9 +1525,7 @@ export default function PartnerProfileModal({
 
                       <div>
                         <label className="font-semibold text-slate-700">
-                          {language === "bn"
-                            ? "পার্টনারশিপ ক্যাটাগরি"
-                            : "Agent Category"}
+                          {tr("পার্টনারশিপ ক্যাটাগরি", "Agent Category")}
                         </label>
                         <select
                           value={agentState.agentType}
@@ -1602,22 +1538,20 @@ export default function PartnerProfileModal({
                           className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold"
                         >
                           <option value="LOCAL_SUB_AGENT">
-                            লোকাল বিটুবি সাব-এজেন্ট (Local Sub-Agent)
+                            {tr("লোকাল বিটুবি সাব-এজেন্ট (Local Sub-Agent)", "Local Sub-Agent", "地域B2B代理店（Local Sub-Agent）")}
                           </option>
                           <option value="INSTITUTIONAL">
-                            ইনস্টিটিউশনাল পার্টনার (Institutional)
+                            {tr("ইনস্টিটিউশনাল পার্টনার (Institutional)", "Institutional Partner", "提携機関パートナー（Institutional）")}
                           </option>
                           <option value="CAMPUS_AMBASSADOR">
-                            ক্যাম্পাস অ্যাম্বাসেডর (Campus Ambassador)
+                            {tr("ক্যাম্পাস অ্যাম্বাসেডর (Campus Ambassador)", "Campus Ambassador", "キャンパスアンバサダー（Campus Ambassador）")}
                           </option>
                         </select>
                       </div>
 
                       <div>
                         <label className="font-semibold text-slate-700">
-                          {language === "bn"
-                            ? "স্বত্বাধিকারী / দায়িত্বশীল ব্যক্তি"
-                            : "Proprietor / Contact Person"}
+                          {tr("স্বত্বাধিকারী / দায়িত্বশীল ব্যক্তি", "Proprietor / Contact Person")}
                         </label>
                         <input
                           type="text"
@@ -1634,9 +1568,7 @@ export default function PartnerProfileModal({
 
                       <div>
                         <label className="font-semibold text-slate-700">
-                          {language === "bn"
-                            ? "ফোন / WhatsApp নম্বর"
-                            : "Phone / WhatsApp"}
+                          {tr("ফোন / WhatsApp নম্বর", "Phone / WhatsApp")}
                         </label>
                         <input
                           type="text"
@@ -1653,7 +1585,7 @@ export default function PartnerProfileModal({
 
                       <div>
                         <label className="font-semibold text-slate-700">
-                          {language === "bn" ? "শহর / জেলা" : "City / District"}
+                          {tr("শহর / জেলা", "City / District")}
                         </label>
                         <input
                           type="text"
@@ -1670,9 +1602,7 @@ export default function PartnerProfileModal({
 
                       <div>
                         <label className="font-semibold text-slate-700">
-                          {language === "bn"
-                            ? "ট্রেড লাইসেন্স নম্বর (Trade License No.)"
-                            : "Trade License Number"}
+                          {tr("ট্রেড লাইসেন্স নম্বর (Trade License No.)", "Trade License Number")}
                         </label>
                         <input
                           type="text"
@@ -1690,9 +1620,7 @@ export default function PartnerProfileModal({
 
                       <div>
                         <label className="font-semibold text-slate-700">
-                          {language === "bn"
-                            ? "জাতীয় পরিচয়পত্র (NID) / পাসপোর্ট নং"
-                            : "Proprietor NID / Passport No."}
+                          {tr("জাতীয় পরিচয়পত্র (NID) / পাসপোর্ট নং", "Proprietor NID / Passport No.")}
                         </label>
                         <input
                           type="text"
@@ -1710,9 +1638,7 @@ export default function PartnerProfileModal({
 
                       <div>
                         <label className="font-semibold text-slate-700">
-                          {language === "bn"
-                            ? "এজেন্সি লোগো URL (অথবা উপরে বামে আপলোড)"
-                            : "Agency Logo URL"}
+                          {tr("এজেন্সি লোগো URL (অথবা উপরে বামে আপলোড)", "Agency Logo URL")}
                         </label>
                         <input
                           type="text"
@@ -1730,9 +1656,7 @@ export default function PartnerProfileModal({
 
                       <div className="sm:col-span-3">
                         <label className="font-semibold text-slate-700">
-                          {language === "bn"
-                            ? "অফিসের পূর্ণ ঠিকানা"
-                            : "Full Office Address"}
+                          {tr("অফিসের পূর্ণ ঠিকানা", "Full Office Address")}
                         </label>
                         <input
                           type="text"
@@ -1743,7 +1667,7 @@ export default function PartnerProfileModal({
                               officeAddress: e.target.value,
                             })
                           }
-                          placeholder="বাড়ি/রোড, থানা, জেলা..."
+                          placeholder={tr("বাড়ি/রোড, থানা, জেলা...", "House/Road, Area, District...", "番地・道路・地区...")}
                           className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-medium"
                         />
                       </div>
@@ -1753,17 +1677,13 @@ export default function PartnerProfileModal({
                   {/* Commission & Settlement Bank / Mobile Wallet Details */}
                   <div className="rounded-2xl border border-slate-200/80 bg-white p-5">
                     <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">
-                      {language === "bn"
-                        ? "চুক্তিবদ্ধ কমিশন হার ও ব্যাংক / মোবাইল ওয়ালেট পেমেন্ট তথ্য"
-                        : "Agreed Commission Rate & Bank / Wallet Settlement Info"}
+                      {tr("চুক্তিবদ্ধ কমিশন হার ও ব্যাংক / মোবাইল ওয়ালেট পেমেন্ট তথ্য", "Agreed Commission Rate & Bank / Wallet Settlement Info")}
                     </h3>
 
                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
                       <div>
                         <label className="font-semibold text-emerald-800">
-                          {language === "bn"
-                            ? "চুক্তিবদ্ধ কমিশন / ভিসা (BDT ৳)"
-                            : "Agreed Commission / Visa (BDT)"}
+                          {tr("চুক্তিবদ্ধ কমিশন / ভিসা (BDT ৳)", "Agreed Commission / Visa (BDT)")}
                         </label>
                         <input
                           type="number"
@@ -1780,9 +1700,7 @@ export default function PartnerProfileModal({
 
                       <div>
                         <label className="font-semibold text-slate-700">
-                          {language === "bn"
-                            ? "পছন্দের পেমেন্ট মাধ্যম"
-                            : "Preferred Payout Method"}
+                          {tr("পছন্দের পেমেন্ট মাধ্যম", "Preferred Payout Method")}
                         </label>
                         <select
                           value={
@@ -1804,17 +1722,15 @@ export default function PartnerProfileModal({
                           }
                           className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold"
                         >
-                          <option value="BANK">ব্যাংক একাউন্ট ট্রান্সফার (Bank)</option>
-                          <option value="BKASH">বিকাশ (bKash Merchant/Personal)</option>
-                          <option value="NAGAD">নগদ (Nagad)</option>
+                          <option value="BANK">{tr("ব্যাংক একাউন্ট ট্রান্সফার (Bank)", "Bank Account Transfer", "銀行振込（Bank Transfer）")}</option>
+                          <option value="BKASH">{tr("বিকাশ (bKash Merchant/Personal)", "bKash Merchant/Personal", "bKashモバイル決済")}</option>
+                          <option value="NAGAD">{tr("নগদ (Nagad)", "Nagad", "Nagadモバイル決済")}</option>
                         </select>
                       </div>
 
                       <div>
                         <label className="font-semibold text-slate-700">
-                          {language === "bn"
-                            ? "বিকাশ / নগদ ওয়ালেট নম্বর"
-                            : "bKash / Nagad Wallet No."}
+                          {tr("বিকাশ / নগদ ওয়ালেট নম্বর", "bKash / Nagad Wallet No.")}
                         </label>
                         <input
                           type="text"
@@ -1839,7 +1755,7 @@ export default function PartnerProfileModal({
 
                       <div>
                         <label className="font-semibold text-slate-700">
-                          {language === "bn" ? "ব্যাংকের নাম" : "Bank Name"}
+                          {tr("ব্যাংকের নাম", "Bank Name")}
                         </label>
                         <input
                           type="text"
@@ -1862,9 +1778,7 @@ export default function PartnerProfileModal({
 
                       <div>
                         <label className="font-semibold text-slate-700">
-                          {language === "bn"
-                            ? "একাউন্ট হোল্ডার নাম"
-                            : "Account Holder Name"}
+                          {tr("একাউন্ট হোল্ডার নাম", "Account Holder Name")}
                         </label>
                         <input
                           type="text"
@@ -1886,9 +1800,7 @@ export default function PartnerProfileModal({
 
                       <div>
                         <label className="font-semibold text-slate-700">
-                          {language === "bn"
-                            ? "ব্যাংক একাউন্ট নম্বর ও ব্রাঞ্চ"
-                            : "Bank Account No. & Branch"}
+                          {tr("ব্যাংক একাউন্ট নম্বর ও ব্রাঞ্চ", "Bank Account No. & Branch")}
                         </label>
                         <input
                           type="text"
@@ -1923,22 +1835,16 @@ export default function PartnerProfileModal({
                       <div>
                         <h3 className="text-sm font-bold text-slate-900">
                           {mode === "SCHOOL"
-                            ? language === "bn"
-                              ? "স্কুল / ইউনিভার্সিটি ব্রশিউর, প্রসপেক্টাস, আবেদন ফরম ও MOU ভল্ট"
-                              : "Institution Brochure, Prospectus, Application Form & MOU Vault"
-                            : language === "bn"
-                              ? "বিটুবি এজেন্টের ট্রেড লাইসেন্স, NID, চুক্তিপত্র (MOU) ও অফিস ডকুমেন্ট ভল্ট"
-                              : "B2B Agent Trade License, NID & Signed MOU Document Vault"}
+                            ? tr("স্কুল / ইউনিভার্সিটি ব্রশিউর, প্রসপেক্টাস, আবেদন ফরম ও MOU ভল্ট", "Institution Brochure, Prospectus, Application Form & MOU Vault")
+                            : tr("বিটুবি এজেন্টের ট্রেড লাইসেন্স, NID, চুক্তিপত্র (MOU) ও অফিস ডকুমেন্ট ভল্ট", "B2B Agent Trade License, NID & Signed MOU Document Vault")}
                         </h3>
                         <p className="text-xs text-slate-500 mt-0.5">
-                          {language === "bn"
-                            ? "সরাসরি আপনার কম্পিউটার থেকে PDF/ছবি আপলোড করুন অথবা Google Drive / ওয়েবসাইটের লিংক যুক্ত করুন।"
-                            : "Upload PDF/image files directly from your device or attach an external link."}
+                          {tr("সরাসরি আপনার কম্পিউটার থেকে PDF/ছবি আপলোড করুন অথবা Google Drive / ওয়েবসাইটের লিংক যুক্ত করুন।", "Upload PDF/image files directly from your device or attach an external link.")}
                         </p>
                       </div>
                       <span className="text-xs font-bold text-emerald-700 tabular-nums">
                         {verifiedDocsCount} / {currentDocs.length}{" "}
-                        {language === "bn" ? "ডকুমেন্ট সংযুক্ত" : "Attached"}
+                        {tr("ডকুমেন্ট সংযুক্ত", "Attached")}
                       </span>
                     </div>
 
@@ -1969,14 +1875,12 @@ export default function PartnerProfileModal({
                                     }`}
                                   />
                                   <p className="text-xs sm:text-sm font-bold text-slate-900">
-                                    {language === "bn"
-                                      ? doc.titleBn
-                                      : doc.titleEn}
+                                    {language === "ja" ? ((doc as any).titleJa || doc.titleEn) : language === "bn" ? doc.titleBn : doc.titleEn}
                                   </p>
                                 </div>
                                 {doc.fileName && (
                                   <p className="mt-1 text-[11px] text-emerald-700 font-medium pl-6">
-                                    সংযুক্ত ফাইল: {doc.fileName}{" "}
+                                    {tr("সংযুক্ত ফাইল:", "Attached File:", "添付ファイル:")} {doc.fileName}{" "}
                                     {doc.uploadedAt
                                       ? `(${doc.uploadedAt})`
                                       : ""}
@@ -1997,9 +1901,7 @@ export default function PartnerProfileModal({
                                     handleUpdateDocUrl(doc.id, e.target.value)
                                   }
                                   placeholder={
-                                    language === "bn"
-                                      ? "Drive / PDF লিংক দিন..."
-                                      : "Paste PDF / Drive URL..."
+                                    tr("Drive / PDF লিংক দিন...", "Paste PDF / Drive URL...")
                                   }
                                   className="w-44 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-mono"
                                 />
@@ -2014,12 +1916,8 @@ export default function PartnerProfileModal({
                                   )}
                                   <span>
                                     {uploadingDocId === doc.id
-                                      ? language === "bn"
-                                        ? "আপলোড হচ্ছে..."
-                                        : "Uploading..."
-                                      : language === "bn"
-                                        ? "ফাইল আপলোড"
-                                        : "Upload File"}
+                                      ? tr("আপলোড হচ্ছে...", "Uploading...")
+                                      : tr("ফাইল আপলোড", "Upload File")}
                                   </span>
                                   <input
                                     type="file"
@@ -2042,9 +1940,7 @@ export default function PartnerProfileModal({
                                   >
                                     <Download className="h-3.5 w-3.5" />
                                     <span>
-                                      {language === "bn"
-                                        ? "দেখুন / ডাউনলোড"
-                                        : "View / Download"}
+                                      {tr("দেখুন / ডাউনলোড", "View / Download")}
                                     </span>
                                   </a>
                                 )}
@@ -2086,9 +1982,7 @@ export default function PartnerProfileModal({
                     {/* Add Custom Brochure / License / Document Slot */}
                     <div className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50/70 p-4">
                       <p className="text-xs font-bold text-slate-800">
-                        {language === "bn"
-                          ? "+ নতুন ব্রশিউর, লাইসেন্স বা অতিরিক্ত ডকুমেন্ট স্লট যুক্ত করুন"
-                          : "+ Add Custom Brochure, License or Document"}
+                        {tr("+ নতুন ব্রশিউর, লাইসেন্স বা অতিরিক্ত ডকুমেন্ট স্লট যুক্ত করুন", "+ Add Custom Brochure, License or Document")}
                       </p>
                       <div className="mt-2.5 flex flex-col sm:flex-row gap-2.5">
                         <input
@@ -2096,9 +1990,7 @@ export default function PartnerProfileModal({
                           value={newDocTitle}
                           onChange={(e) => setNewDocTitle(e.target.value)}
                           placeholder={
-                            language === "bn"
-                              ? "ডকুমেন্টের নাম (যেমন: ২০২৭ স্পেশাল স্কলারশিপ ব্রশিউর / চেম্বার সনদ)"
-                              : "Document Title (e.g. 2027 Scholarship Brochure)"
+                            tr("ডকুমেন্টের নাম (যেমন: ২০২৭ স্পেশাল স্কলারশিপ ব্রশিউর / চেম্বার সনদ)", "Document Title (e.g. 2027 Scholarship Brochure)")
                           }
                           className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium"
                         />
@@ -2107,9 +1999,7 @@ export default function PartnerProfileModal({
                           value={newDocUrl}
                           onChange={(e) => setNewDocUrl(e.target.value)}
                           placeholder={
-                            language === "bn"
-                              ? "ড্রাইভ বা পিডিএফ লিংক (ঐচ্ছিক)"
-                              : "External URL (Optional)"
+                            tr("ড্রাইভ বা পিডিএফ লিংক (ঐচ্ছিক)", "External URL (Optional)")
                           }
                           className="sm:w-64 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-mono"
                         />
@@ -2120,7 +2010,7 @@ export default function PartnerProfileModal({
                         >
                           <Plus className="h-3.5 w-3.5" />
                           <span>
-                            {language === "bn" ? "যুক্ত করুন" : "Add Document"}
+                            {tr("যুক্ত করুন", "Add Document")}
                           </span>
                         </button>
                       </div>
@@ -2138,12 +2028,8 @@ export default function PartnerProfileModal({
                   <div className="rounded-2xl border border-slate-200/80 bg-white p-5">
                     <h3 className="text-sm font-bold text-slate-900">
                       {mode === "SCHOOL"
-                        ? language === "bn"
-                          ? "এই স্কুল / ইউনিভার্সিটিতে নতুন শিক্ষার্থী অ্যাসাইন করুন (1-Click Student Assignment)"
-                          : "Assign CRM / Visa Student to this Partner Institution"
-                        : language === "bn"
-                          ? "এই বিটুবি এজেন্টের অধীনে রেফার্ড শিক্ষার্থী যুক্ত করুন (Link Referred Student)"
-                          : "Link Student Referred by this B2B Agent"}
+                        ? tr("এই স্কুল / ইউনিভার্সিটিতে নতুন শিক্ষার্থী অ্যাসাইন করুন (1-Click Student Assignment)", "Assign CRM / Visa Student to this Partner Institution")
+                        : tr("এই বিটুবি এজেন্টের অধীনে রেফার্ড শিক্ষার্থী যুক্ত করুন (Link Referred Student)", "Link Student Referred by this B2B Agent")}
                     </h3>
                     <div className="mt-3 flex flex-col sm:flex-row gap-2.5">
                       <select
@@ -2154,9 +2040,7 @@ export default function PartnerProfileModal({
                         className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium"
                       >
                         <option value="">
-                          {language === "bn"
-                            ? "-- তালিকা থেকে শিক্ষার্থী নির্বাচন করুন --"
-                            : "-- Select a student from CRM / Visa Pipeline --"}
+                          {tr("-- তালিকা থেকে শিক্ষার্থী নির্বাচন করুন --", "-- Select a student from CRM / Visa Pipeline --")}
                         </option>
                         {allLeads.map((l) => (
                           <option key={l.id} value={l.id}>
@@ -2171,9 +2055,7 @@ export default function PartnerProfileModal({
                       >
                         <Plus className="h-3.5 w-3.5" />
                         <span>
-                          {language === "bn"
-                            ? "+ প্রোফাইলে শিক্ষার্থী যুক্ত করুন"
-                            : "+ Assign Student"}
+                          {tr("+ প্রোফাইলে শিক্ষার্থী যুক্ত করুন", "+ Assign Student")}
                         </span>
                       </button>
                     </div>
@@ -2184,12 +2066,8 @@ export default function PartnerProfileModal({
                     <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
                       <h3 className="text-sm font-bold text-slate-900">
                         {mode === "SCHOOL"
-                          ? language === "bn"
-                            ? `${schoolState.name}-এ যুক্ত শিক্ষার্থীদের তালিকা (${linkedStudents.length} জন)`
-                            : `Enrolled / Assigned Students (${linkedStudents.length})`
-                          : language === "bn"
-                            ? `${agentState.organizationName} কর্তৃক রেফার্ড শিক্ষার্থী তালিকা (${linkedStudents.length} জন)`
-                            : `Referred Students List (${linkedStudents.length})`}
+                          ? tr(`${schoolState.name}-এ যুক্ত শিক্ষার্থীদের তালিকা (${linkedStudents.length} জন)`, `Enrolled / Assigned Students (${linkedStudents.length})`)
+                          : tr(`${agentState.organizationName} কর্তৃক রেফার্ড শিক্ষার্থী তালিকা (${linkedStudents.length} জন)`, `Referred Students List (${linkedStudents.length})`)}
                       </h3>
                       {mode === "SCHOOL" && (
                         <span className="text-xs font-semibold text-slate-600 tabular-nums">
@@ -2266,14 +2144,10 @@ export default function PartnerProfileModal({
                                 <div className="flex flex-col items-center justify-center text-center">
                                   <Users className="h-6 w-6 text-slate-300 mb-1.5" />
                                   <p className="text-xs font-semibold text-slate-600">
-                                    {language === "bn"
-                                      ? "এখনো কোনো শিক্ষার্থী এই প্রোফাইলে যুক্ত করা হয়নি"
-                                      : "No students linked to this profile yet"}
+                                    {tr("এখনো কোনো শিক্ষার্থী এই প্রোফাইলে যুক্ত করা হয়নি", "No students linked to this profile yet")}
                                   </p>
                                   <p className="text-[11px] text-slate-400 mt-0.5">
-                                    {language === "bn"
-                                      ? "উপরের ড্রপডাউন থেকে যেকোনো শিক্ষার্থীকে ১-ক্লিকে যুক্ত করুন।"
-                                      : "Use the dropdown above to assign a student in 1 click."}
+                                    {tr("উপরের ড্রপডাউন থেকে যেকোনো শিক্ষার্থীকে ১-ক্লিকে যুক্ত করুন।", "Use the dropdown above to assign a student in 1 click.")}
                                   </p>
                                 </div>
                               </td>
@@ -2297,9 +2171,7 @@ export default function PartnerProfileModal({
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div className="rounded-2xl border border-slate-200/80 bg-white p-4">
                           <span className="text-xs text-slate-500">
-                            {language === "bn"
-                              ? "চুক্তিবদ্ধ কমিশন রেট (প্রতি স্টুডেন্ট)"
-                              : "Agreed Commission Rate"}
+                            {tr("চুক্তিবদ্ধ কমিশন রেট (প্রতি স্টুডেন্ট)", "Agreed Commission Rate")}
                           </span>
                           <p className="mt-1 text-xl font-bold text-slate-900 tabular-nums">
                             ¥
@@ -2320,9 +2192,7 @@ export default function PartnerProfileModal({
 
                         <div className="rounded-2xl border border-slate-200/80 bg-white p-4">
                           <span className="text-xs text-slate-500">
-                            {language === "bn"
-                              ? "প্রত্যাশিত মোট কমিশন (চলমান স্টুডেন্ট অনুযায়ী)"
-                              : "Projected Total Commission"}
+                            {tr("প্রত্যাশিত মোট কমিশন (চলমান স্টুডেন্ট অনুযায়ী)", "Projected Total Commission")}
                           </span>
                           <p className="mt-1 text-xl font-bold text-slate-900 tabular-nums">
                             ¥
@@ -2333,15 +2203,13 @@ export default function PartnerProfileModal({
                             JPY
                           </p>
                           <p className="text-[11px] text-slate-500 tabular-nums">
-                            {schoolState.activeStudentsCount} জন স্টুডেন্ট
+                            {schoolState.activeStudentsCount} {tr("জন স্টুডেন্ট", "Students", "名")}
                           </p>
                         </div>
 
                         <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4">
                           <span className="text-xs font-semibold text-emerald-800">
-                            {language === "bn"
-                              ? "মোট প্রাপ্ত কমিশন (Received)"
-                              : "Total Commission Received"}
+                            {tr("মোট প্রাপ্ত কমিশন (Received)", "Total Commission Received")}
                           </span>
                           <p className="mt-1 text-xl font-bold text-emerald-700 tabular-nums">
                             ¥
@@ -2364,16 +2232,12 @@ export default function PartnerProfileModal({
                       {/* 1-Click School Commission Claim Box */}
                       <div className="rounded-2xl border border-slate-200/80 bg-white p-5">
                         <h3 className="text-sm font-bold text-slate-900">
-                          {language === "bn"
-                            ? "জাপানি স্কুল থেকে প্রাপ্ত কমিশন ফাইন্যান্স লেজারে যুক্ত করুন (Claim JPY ➔ BDT)"
-                            : "Claim School Commission into Finance Ledger"}
+                          {tr("জাপানি স্কুল থেকে প্রাপ্ত কমিশন ফাইন্যান্স লেজারে যুক্ত করুন (Claim JPY ➔ BDT)", "Claim School Commission into Finance Ledger")}
                         </h3>
                         <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 items-end text-xs">
                           <div>
                             <label className="font-semibold text-slate-700">
-                              {language === "bn"
-                                ? "শিক্ষার্থী সংখ্যা (Students)"
-                                : "Student Count"}
+                              {tr("শিক্ষার্থী সংখ্যা (Students)", "Student Count")}
                             </label>
                             <input
                               type="number"
@@ -2389,9 +2253,7 @@ export default function PartnerProfileModal({
                           </div>
                           <div>
                             <label className="font-semibold text-slate-700">
-                              {language === "bn"
-                                ? "এক্সচেঞ্জ রেট (1 JPY = ? BDT)"
-                                : "Exchange Rate (BDT per JPY)"}
+                              {tr("এক্সচেঞ্জ রেট (1 JPY = ? BDT)", "Exchange Rate (BDT per JPY)")}
                             </label>
                             <input
                               type="number"
@@ -2410,9 +2272,7 @@ export default function PartnerProfileModal({
                                 (schoolState.commissionPerStudentYen || 0) <= 0
                               ) {
                                 onShowToast(
-                                  language === "bn"
-                                    ? "প্রথমে Tab 1-এ স্কুলের কমিশন রেট (Yen) নির্ধারণ করুন"
-                                    : "Please set the school commission rate (Yen) in Tab 1 first",
+                                  tr("প্রথমে Tab 1-এ স্কুলের কমিশন রেট (Yen) নির্ধারণ করুন", "Please set the school commission rate (Yen) in Tab 1 first"),
                                 );
                                 return;
                               }
@@ -2434,9 +2294,7 @@ export default function PartnerProfileModal({
                                 });
                                 onRefreshStore();
                                 onShowToast(
-                                  language === "bn"
-                                    ? `¥${addYen.toLocaleString()} (৳${tx.amountBdt.toLocaleString()}) কমিশন ফাইন্যান্স লেজারে জমা হয়েছে`
-                                    : `Commission claimed & recorded in Finance Ledger`,
+                                  tr(`¥${addYen.toLocaleString()} (৳${tx.amountBdt.toLocaleString()}) কমিশন ফাইন্যান্স লেজারে জমা হয়েছে`, `Commission claimed & recorded in Finance Ledger`),
                                 );
                               }
                             }}
@@ -2444,13 +2302,23 @@ export default function PartnerProfileModal({
                           >
                             <Coins className="h-4 w-4" />
                             <span>
-                              {language === "bn"
-                                ? `+ কমিশন ক্লেইম করুন (৳${Math.round(
-                                    (schoolState.commissionPerStudentYen || 0) *
-                                      claimStudentCount *
-                                      jpyRate,
-                                  ).toLocaleString()})`
-                                : "+ Claim Commission to Ledger"}
+                              {tr(
+                                `+ কমিশন ক্লেইম করুন (৳${Math.round(
+                                  (schoolState.commissionPerStudentYen || 0) *
+                                    claimStudentCount *
+                                    jpyRate,
+                                ).toLocaleString()})`,
+                                `+ Claim Commission (৳${Math.round(
+                                  (schoolState.commissionPerStudentYen || 0) *
+                                    claimStudentCount *
+                                    jpyRate,
+                                ).toLocaleString()})`,
+                                `+ 手数料を計上（৳${Math.round(
+                                  (schoolState.commissionPerStudentYen || 0) *
+                                    claimStudentCount *
+                                    jpyRate,
+                                ).toLocaleString()}）`,
+                              )}
                             </span>
                           </button>
                         </div>
@@ -2462,9 +2330,7 @@ export default function PartnerProfileModal({
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div className="rounded-2xl border border-slate-200/80 bg-white p-4">
                           <span className="text-xs text-slate-500">
-                            {language === "bn"
-                              ? "চুক্তিবদ্ধ কমিশন (প্রতি সফল ভিসা)"
-                              : "Agreed Commission Rate"}
+                            {tr("চুক্তিবদ্ধ কমিশন (প্রতি সফল ভিসা)", "Agreed Commission Rate")}
                           </span>
                           <p className="mt-1 text-xl font-bold text-slate-900 tabular-nums">
                             ৳
@@ -2477,9 +2343,7 @@ export default function PartnerProfileModal({
 
                         <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4">
                           <span className="text-xs font-semibold text-emerald-800">
-                            {language === "bn"
-                              ? "পরিশোধিত মোট কমিশন (Paid)"
-                              : "Total Paid Commission"}
+                            {tr("পরিশোধিত মোট কমিশন (Paid)", "Total Paid Commission")}
                           </span>
                           <p className="mt-1 text-xl font-bold text-emerald-700 tabular-nums">
                             ৳
@@ -2492,9 +2356,7 @@ export default function PartnerProfileModal({
 
                         <div className="rounded-2xl border border-amber-200 bg-amber-50/40 p-4">
                           <span className="text-xs font-semibold text-amber-800">
-                            {language === "bn"
-                              ? "বকেয়া প্রদেয় কমিশন (Pending Due)"
-                              : "Pending Commission Due"}
+                            {tr("বকেয়া প্রদেয় কমিশন (Pending Due)", "Pending Commission Due")}
                           </span>
                           <p className="mt-1 text-xl font-bold text-amber-700 tabular-nums">
                             ৳
@@ -2509,16 +2371,12 @@ export default function PartnerProfileModal({
                       {/* 1-Click Payout Settlement Box */}
                       <div className="rounded-2xl border border-slate-200/80 bg-white p-5">
                         <h3 className="text-sm font-bold text-slate-900">
-                          {language === "bn"
-                            ? "বিটুবি এজেন্টের কমিশন পরিশোধ ও ফাইন্যান্স ভাউচার ইস্যু (1-Click Commission Payout)"
-                            : "Disburse B2B Agent Commission & Record Expense"}
+                          {tr("বিটুবি এজেন্টের কমিশন পরিশোধ ও ফাইন্যান্স ভাউচার ইস্যু (1-Click Commission Payout)", "Disburse B2B Agent Commission & Record Expense")}
                         </h3>
                         <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 items-end text-xs">
                           <div>
                             <label className="font-semibold text-slate-700">
-                              {language === "bn"
-                                ? "পরিশোধের পরিমাণ (BDT ৳)"
-                                : "Payout Amount (BDT)"}
+                              {tr("পরিশোধের পরিমাণ (BDT ৳)", "Payout Amount (BDT)")}
                             </label>
                             <input
                               type="number"
@@ -2532,9 +2390,7 @@ export default function PartnerProfileModal({
 
                           <div>
                             <label className="font-semibold text-slate-700">
-                              {language === "bn"
-                                ? "পেমেন্ট মাধ্যম"
-                                : "Payment Method"}
+                              {tr("পেমেন্ট মাধ্যম", "Payment Method")}
                             </label>
                             <select
                               value={agentPayoutMethod}
@@ -2544,12 +2400,12 @@ export default function PartnerProfileModal({
                               className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold"
                             >
                               <option value="BANK_TRANSFER">
-                                ব্যাংক ট্রান্সফার (Bank Transfer)
+                                {tr("ব্যাংক ট্রান্সফার (Bank Transfer)", "Bank Transfer", "銀行振込（Bank Transfer）")}
                               </option>
-                              <option value="BKASH">বিকাশ (bKash)</option>
-                              <option value="NAGAD">নগদ (Nagad)</option>
+                              <option value="BKASH">{tr("বিকাশ (bKash)", "bKash", "bKash")}</option>
+                              <option value="NAGAD">{tr("নগদ (Nagad)", "Nagad", "Nagad")}</option>
                               <option value="CASH_OFFICE">
-                                অফিস ক্যাশ (Office Cash)
+                                {tr("অফিস ক্যাশ (Office Cash)", "Office Cash", "現金窓口精算（Office Cash）")}
                               </option>
                             </select>
                           </div>
@@ -2578,9 +2434,7 @@ export default function PartnerProfileModal({
                                 });
                                 onRefreshStore();
                                 onShowToast(
-                                  language === "bn"
-                                    ? `৳${agentPayoutAmount.toLocaleString()} বিটুবি কমিশন পরিশোধ ও ফাইন্যান্স লেজারে রেকর্ড হয়েছে`
-                                    : `B2B commission disbursed & recorded`,
+                                  tr(`৳${agentPayoutAmount.toLocaleString()} বিটুবি কমিশন পরিশোধ ও ফাইন্যান্স লেজারে রেকর্ড হয়েছে`, `B2B commission disbursed & recorded`),
                                 );
                               }
                             }}
@@ -2588,9 +2442,7 @@ export default function PartnerProfileModal({
                           >
                             <CheckCircle2 className="h-4 w-4" />
                             <span>
-                              {language === "bn"
-                                ? "কমিশন পরিশোধ রেকর্ড করুন"
-                                : "Disburse Commission"}
+                              {tr("কমিশন পরিশোধ রেকর্ড করুন", "Disburse Commission")}
                             </span>
                           </button>
                         </div>
@@ -2602,9 +2454,7 @@ export default function PartnerProfileModal({
                           <div className="flex items-center gap-2">
                             <KeyRound className="h-4 w-4 text-[#b91c1c]" />
                             <h3 className="text-sm font-bold text-slate-900">
-                              {language === "bn"
-                                ? "ডেডিকেটেড বিটুবি পার্টনার পোর্টাল লগইন একাউন্ট (B2B Portal Access)"
-                                : "Dedicated B2B Partner Portal Login Credentials"}
+                              {tr("ডেডিকেটেড বিটুবি পার্টনার পোর্টাল লগইন একাউন্ট (B2B Portal Access)", "Dedicated B2B Partner Portal Login Credentials")}
                             </h3>
                           </div>
                           {existingPortalAccount && (
@@ -2617,9 +2467,7 @@ export default function PartnerProfileModal({
                         <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 items-end text-xs">
                           <div>
                             <label className="font-semibold text-slate-700">
-                              {language === "bn"
-                                ? "লগইন ইমেইল / ইউজারনেম"
-                                : "Login Email"}
+                              {tr("লগইন ইমেইল / ইউজারনেম", "Login Email")}
                             </label>
                             <input
                               type="email"
@@ -2631,9 +2479,7 @@ export default function PartnerProfileModal({
 
                           <div>
                             <label className="font-semibold text-slate-700">
-                              {language === "bn"
-                                ? "পোর্টাল পাসওয়ার্ড"
-                                : "Portal Password"}
+                              {tr("পোর্টাল পাসওয়ার্ড", "Portal Password")}
                             </label>
                             <input
                               type="text"
@@ -2654,12 +2500,8 @@ export default function PartnerProfileModal({
                               <KeyRound className="h-3.5 w-3.5" />
                               <span>
                                 {existingPortalAccount
-                                  ? language === "bn"
-                                    ? "লগইন আপডেট"
-                                    : "Update Login"
-                                  : language === "bn"
-                                    ? "লগইন তৈরি করুন"
-                                    : "Issue Login"}
+                                  ? tr("লগইন আপডেট", "Update Login")
+                                  : tr("লগইন তৈরি করুন", "Issue Login")}
                               </span>
                             </button>
 
@@ -2694,20 +2536,18 @@ export default function PartnerProfileModal({
                   <div className="rounded-2xl border border-slate-200/80 bg-white overflow-hidden">
                     <div className="px-5 py-3.5 border-b border-slate-100">
                       <h4 className="text-xs font-bold text-slate-900">
-                        {language === "bn"
-                          ? `কমিশন ও লেনদেন হিস্ট্রি (${linkedTransactions.length} টি রেকর্ড)`
-                          : `Commission Settlement History (${linkedTransactions.length})`}
+                        {tr(`কমিশন ও লেনদেন হিস্ট্রি (${linkedTransactions.length} টি রেকর্ড)`, `Commission Settlement History (${linkedTransactions.length})`)}
                       </h4>
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs">
                         <thead className="bg-slate-50/70 border-b border-slate-100 font-semibold text-slate-500">
                           <tr>
-                            <th className="px-4 py-2.5">রসিদ ও তারিখ</th>
-                            <th className="px-4 py-2.5">বিবরণ / নোট</th>
-                            <th className="px-4 py-2.5">মাধ্যম ও রেফারেন্স</th>
+                            <th className="px-4 py-2.5">{tr("রসিদ ও তারিখ", "Receipt & Date", "領収書・日付")}</th>
+                            <th className="px-4 py-2.5">{tr("বিবরণ / নোট", "Description / Notes", "詳細・備考")}</th>
+                            <th className="px-4 py-2.5">{tr("মাধ্যম ও রেফারেন্স", "Method & Ref", "決済手段・参照番号")}</th>
                             <th className="px-4 py-2.5 text-right">
-                              পরিমাণ (BDT)
+                              {tr("পরিমাণ (BDT)", "Amount (BDT)", "金額 (BDT)")}
                             </th>
                           </tr>
                         </thead>
@@ -2744,9 +2584,7 @@ export default function PartnerProfileModal({
                             <tr>
                               <td colSpan={4} className="py-8 text-center">
                                 <p className="text-xs text-slate-400">
-                                  {language === "bn"
-                                    ? "এখনো কোনো কমিশন লেনদেন রেকর্ড করা হয়নি।"
-                                    : "No commission transactions recorded yet."}
+                                  {tr("এখনো কোনো কমিশন লেনদেন রেকর্ড করা হয়নি।", "No commission transactions recorded yet.")}
                                 </p>
                               </td>
                             </tr>

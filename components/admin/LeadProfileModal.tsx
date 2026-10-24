@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { trModal } from "@/lib/modal-translations";
 import {
   X,
   UserCheck,
@@ -119,8 +120,7 @@ export default function LeadProfileModal({
   onSaved: (message: string) => void;
 }) {
   const { language } = useLanguage();
-  const tr = (bn: string, en: string, ja?: string) =>
-    language === "ja" ? (ja || en) : language === "en" ? en : bn;
+  const tr = (bn: string, en: string, ja?: string) => trModal(language, bn, en, ja);
   const isBn = language === "bn";
 
   // Active 360° Command Center Tab
@@ -459,9 +459,7 @@ export default function LeadProfileModal({
     updateLmsProgressAndAttendance(lead.id, phone, lmsProgressPct, attendancePct);
     setStoreTick((t) => t + 1);
     onSaved(
-      isBn
-        ? `${name}-এর ৩৬০° প্রোফাইল, ডকুমেন্ট ভল্ট ও এসেসমেন্ট সেভ হয়েছে!`
-        : `${name}'s 360° profile and assessment saved!`,
+      tr(`${name}-এর ৩৬০° প্রোফাইল, ডকুমেন্ট ভল্ট ও এসেসমেন্ট সেভ হয়েছে!`, `${name}'s 360° profile and assessment saved!`),
     );
   };
 
@@ -489,9 +487,7 @@ export default function LeadProfileModal({
     setDocumentChecklist(nextList);
     updateCrmLeadProfile(lead.id, { documentChecklist: nextList });
     onSaved(
-      isBn
-        ? `সকল ডকুমেন্ট "${targetStatus}" হিসেবে চিহ্নিত করা হয়েছে`
-        : `All documents marked as ${targetStatus}`,
+      tr(`সকল ডকুমেন্ট "${targetStatus}" হিসেবে চিহ্নিত করা হয়েছে`, `All documents marked as ${targetStatus}`),
     );
   };
 
@@ -516,9 +512,7 @@ export default function LeadProfileModal({
       setDocumentChecklist(nextList);
       updateCrmLeadProfile(lead.id, { documentChecklist: nextList });
       onSaved(
-        isBn
-          ? `${file.name} ভল্টে সংরক্ষিত হয়েছে`
-          : `${file.name} saved to student vault`,
+        tr(`${file.name} ভল্টে সংরক্ষিত হয়েছে`, `${file.name} saved to student vault`),
       );
     } catch (err) {
       console.error("Student doc upload error:", err);
@@ -592,9 +586,7 @@ export default function LeadProfileModal({
     setFeeTrxRef("");
     setStoreTick((t) => t + 1);
     onSaved(
-      isBn
-        ? `৳${tx.amountBdt.toLocaleString()} জমা নেওয়া হয়েছে (রসিদ: ${tx.receiptNo})`
-        : `Collected ৳${tx.amountBdt.toLocaleString()} (Receipt: ${tx.receiptNo})`,
+      tr(`৳${tx.amountBdt.toLocaleString()} জমা নেওয়া হয়েছে (রসিদ: ${tx.receiptNo})`, `Collected ৳${tx.amountBdt.toLocaleString()} (Receipt: ${tx.receiptNo})`),
     );
   };
 
@@ -644,7 +636,7 @@ export default function LeadProfileModal({
 
   const handleProvisionLoginAndAdmission = () => {
     if (!loginEmail.trim() || !loginPassword.trim()) {
-      onSaved(isBn ? "লগইন ইমেইল ও পাসওয়ার্ড প্রদান করুন।" : "Please provide Login ID and Password.");
+      onSaved(tr("লগইন ইমেইল ও পাসওয়ার্ড প্রদান করুন।", "Please provide Login ID and Password."));
       return;
     }
 
@@ -712,9 +704,7 @@ export default function LeadProfileModal({
     });
 
     onSaved(
-      isBn
-        ? `${name} (${loginEmail.trim()}) — ভর্তি ও পোর্টাল লগইন চালু হয়েছে!`
-        : `${name} (${loginEmail.trim()}) — Admission & Portal Login activated!`,
+      tr(`${name} (${loginEmail.trim()}) — ভর্তি ও পোর্টাল লগইন চালু হয়েছে!`, `${name} (${loginEmail.trim()}) — Admission & Portal Login activated!`),
     );
     onClose();
   };
@@ -820,7 +810,7 @@ export default function LeadProfileModal({
                   </span>
                   {lead.hasLoginAccess && (
                     <span className="rounded-md bg-emerald-500/20 border border-emerald-400/30 px-2 py-0.5 text-[11px] font-semibold text-emerald-200">
-                      {isBn ? "পোর্টাল লগইন সচল" : "Portal Active"}
+                      {tr("পোর্টাল লগইন সচল", "Portal Active")}
                     </span>
                   )}
                 </div>
@@ -832,16 +822,16 @@ export default function LeadProfileModal({
                   <span className="font-sans">{city}</span>
                   <span aria-hidden="true">·</span>
                   <span>
-                    {isBn ? "ডকুমেন্ট:" : "Docs:"} {eligibility.verifiedDocsCount}/
+                    {tr("ডকুমেন্ট:", "Docs:")} {eligibility.verifiedDocsCount}/
                     {eligibility.totalDocsCount} Verified
                   </span>
                   <span aria-hidden="true">·</span>
                   <span className="text-emerald-300 font-semibold">
-                    {isBn ? "জমা:" : "Paid:"} ৳{livePaidAmountBdt.toLocaleString()}
+                    {tr("জমা:", "Paid:")} ৳{livePaidAmountBdt.toLocaleString()}
                   </span>
                   <span aria-hidden="true">·</span>
                   <span className={liveDueAmountBdt > 0 ? "text-amber-300 font-semibold" : "text-slate-400"}>
-                    {isBn ? "বকেয়া:" : "Due:"} ৳{liveDueAmountBdt.toLocaleString()}
+                    {tr("বকেয়া:", "Due:")} ৳{liveDueAmountBdt.toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -852,7 +842,7 @@ export default function LeadProfileModal({
               <div className="rounded-xl bg-white/10 border border-white/10 px-3.5 py-2 flex items-center gap-3">
                 <div>
                   <span className="block text-[10px] text-slate-300">
-                    {isBn ? "জাপান ভিসা এলিজিবিলিটি" : "Japan Visa Eligibility"}
+                    {tr("জাপান ভিসা এলিজিবিলিটি", "Japan Visa Eligibility")}
                   </span>
                   <span className="text-sm font-bold tabular-nums text-white">
                     {eligibility.totalScore}%{" "}
@@ -889,7 +879,7 @@ export default function LeadProfileModal({
                 className="inline-flex items-center gap-1.5 rounded-xl bg-white/10 hover:bg-white/20 px-3 py-2 text-xs font-semibold text-white transition whitespace-nowrap shrink-0"
               >
                 <Printer className="h-3.5 w-3.5" />
-                <span>{isBn ? "এসেসমেন্ট শিট" : "Print Sheet"}</span>
+                <span>{tr("এসেসমেন্ট শিট", "Print Sheet")}</span>
               </button>
 
               <button
@@ -898,7 +888,7 @@ export default function LeadProfileModal({
                 className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-3.5 py-2 text-xs font-semibold text-white transition whitespace-nowrap shrink-0"
               >
                 <Save className="h-3.5 w-3.5" />
-                <span>{isBn ? "সব তথ্য সেভ" : "Save Profile"}</span>
+                <span>{tr("সব তথ্য সেভ", "Save Profile")}</span>
               </button>
 
               <button
@@ -921,30 +911,35 @@ export default function LeadProfileModal({
                   icon: UserCheck,
                   labelBn: "১. বায়োডাটা, জিপিএ ও এলিজিবিলিটি",
                   labelEn: "1. Bio & Eligibility",
+                  labelJa: "1. 履歴書・評定・資格判定",
                 },
                 {
                   id: "docs" as ProfileTabId,
                   icon: FileCheck2,
                   labelBn: `২. ডকুমেন্ট ভল্ট (${eligibility.verifiedDocsCount}/12) ও স্পন্সর`,
                   labelEn: `2. Docs (${eligibility.verifiedDocsCount}/12) & Sponsor`,
+                  labelJa: `2. 提出書類 (${eligibility.verifiedDocsCount}/12)・経費支弁者`,
                 },
                 {
                   id: "finance_visa" as ProfileTabId,
                   icon: Wallet,
                   labelBn: "৩. পেমেন্ট লেজার, ভিসা ধাপ ও LMS",
                   labelEn: "3. Finance, Visa & LMS",
+                  labelJa: "3. 学費出納帳・ビザ段階・LMS",
                 },
                 {
                   id: "timeline" as ProfileTabId,
                   icon: MessageSquare,
                   labelBn: `৪. কাউন্সেলিং টাইমলাইন (${activityLog.length}) ও WhatsApp`,
                   labelEn: `4. Timeline (${activityLog.length}) & WhatsApp`,
+                  labelJa: `4. 面談タイムライン (${activityLog.length})・WhatsApp`,
                 },
                 {
                   id: "access_print" as ProfileTabId,
                   icon: KeyRound,
                   labelBn: "৫. পোর্টাল লগইন ও প্রিন্ট ডসিয়ার",
                   labelEn: "5. Portal Login & Print",
+                  labelJa: "5. ポータルログイン・調書印刷",
                 },
               ] as const
             ).map((tab) => {
@@ -962,7 +957,7 @@ export default function LeadProfileModal({
                   }`}
                 >
                   <Icon className="h-3.5 w-3.5" />
-                  <span>{isBn ? tab.labelBn : tab.labelEn}</span>
+                  <span>{language === "ja" ? (tab as any).labelJa || tab.labelEn : isBn ? tab.labelBn : tab.labelEn}</span>
                 </button>
               );
             })}
@@ -983,17 +978,15 @@ export default function LeadProfileModal({
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pb-4 border-b border-slate-100">
                   <div>
                     <h3 className="text-sm font-bold text-slate-900">
-                      {isBn
-                        ? "স্বয়ংক্রিয় জাপান ভিসা এলিজিবিলিটি মূল্যায়ন (Auto Eligibility Assessment)"
-                        : "Automated Japan Immigration Eligibility Assessment"}
+                      {tr("স্বয়ংক্রিয় জাপান ভিসা এলিজিবিলিটি মূল্যায়ন (Auto Eligibility Assessment)", "Automated Japan Immigration Eligibility Assessment")}
                     </h3>
                     <p className="text-xs text-slate-600 mt-0.5">
-                      {isBn ? eligibility.recommendationBn : eligibility.recommendationEn}
+                      {language === "ja" ? ((eligibility as any).recommendationJa || eligibility.recommendationEn) : isBn ? eligibility.recommendationBn : eligibility.recommendationEn}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="text-xs text-slate-500">
-                      {isBn ? "মোট স্কোর:" : "Total Score:"}
+                      {tr("মোট স্কোর:", "Total Score:")}
                     </span>
                     <span className="text-xl font-bold text-slate-900 font-mono tabular-nums">
                       {eligibility.totalScore} / 100
@@ -1004,7 +997,7 @@ export default function LeadProfileModal({
                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
                   <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3.5">
                     <div className="flex items-center justify-between font-semibold text-slate-700">
-                      <span>{isBn ? "১. একাডেমিক GPA" : "1. Academic GPA"}</span>
+                      <span>{tr("১. একাডেমিক GPA", "1. Academic GPA")}</span>
                       <span className="font-mono tabular-nums">{eligibility.gpaScore} / 30</span>
                     </div>
                     <div className="mt-2 h-1.5 w-full rounded-full bg-slate-200 overflow-hidden">
@@ -1020,7 +1013,7 @@ export default function LeadProfileModal({
 
                   <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3.5">
                     <div className="flex items-center justify-between font-semibold text-slate-700">
-                      <span>{isBn ? "২. স্টাডি গ্যাপ" : "2. Study Gap"}</span>
+                      <span>{tr("২. স্টাডি গ্যাপ", "2. Study Gap")}</span>
                       <span className="font-mono tabular-nums">{eligibility.gapScore} / 25</span>
                     </div>
                     <div className="mt-2 h-1.5 w-full rounded-full bg-slate-200 overflow-hidden">
@@ -1030,13 +1023,13 @@ export default function LeadProfileModal({
                       />
                     </div>
                     <p className="mt-1.5 text-[11px] text-slate-500 font-mono tabular-nums">
-                      {studyGapYears} {isBn ? "বছর গ্যাপ" : "Years Gap"} (Pass: {graduationYear})
+                      {studyGapYears} {tr("বছর গ্যাপ", "Years Gap")} (Pass: {graduationYear})
                     </p>
                   </div>
 
                   <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3.5">
                     <div className="flex items-center justify-between font-semibold text-slate-700">
-                      <span>{isBn ? "৩. জাপানি ভাষা দক্ষতা" : "3. Language & Exam"}</span>
+                      <span>{tr("৩. জাপানি ভাষা দক্ষতা", "3. Language & Exam")}</span>
                       <span className="font-mono tabular-nums">{eligibility.languageScore} / 25</span>
                     </div>
                     <div className="mt-2 h-1.5 w-full rounded-full bg-slate-200 overflow-hidden">
@@ -1052,7 +1045,7 @@ export default function LeadProfileModal({
 
                   <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3.5">
                     <div className="flex items-center justify-between font-semibold text-slate-700">
-                      <span>{isBn ? "৪. সলভেন্সি ও ডকুমেন্ট" : "4. Solvency & Docs"}</span>
+                      <span>{tr("৪. সলভেন্সি ও ডকুমেন্ট", "4. Solvency & Docs")}</span>
                       <span className="font-mono tabular-nums">{eligibility.financialScore} / 20</span>
                     </div>
                     <div className="mt-2 h-1.5 w-full rounded-full bg-slate-200 overflow-hidden">
@@ -1073,15 +1066,13 @@ export default function LeadProfileModal({
                 {/* Left 7 Cols: Personal & Guardian Information */}
                 <div className="lg:col-span-7 rounded-2xl border border-slate-200/80 bg-white p-5 space-y-4">
                   <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">
-                    {isBn
-                      ? "ব্যক্তিগত, পাসপোর্ট ও অভিভাবকের তথ্য"
-                      : "Personal, Passport & Guardian Information"}
+                    {tr("ব্যক্তিগত, পাসপোর্ট ও অভিভাবকের তথ্য", "Personal, Passport & Guardian Information")}
                   </h3>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {isBn ? "প্রার্থীর পূর্ণ নাম *" : "Candidate Full Name *"}
+                        {tr("প্রার্থীর পূর্ণ নাম *", "Candidate Full Name *")}
                       </label>
                       <input
                         type="text"
@@ -1092,7 +1083,7 @@ export default function LeadProfileModal({
                     </div>
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {isBn ? "মোবাইল নম্বর *" : "Phone Number *"}
+                        {tr("মোবাইল নম্বর *", "Phone Number *")}
                       </label>
                       <input
                         type="text"
@@ -1103,7 +1094,7 @@ export default function LeadProfileModal({
                     </div>
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {isBn ? "WhatsApp নম্বর" : "WhatsApp Number"}
+                        {tr("WhatsApp নম্বর", "WhatsApp Number")}
                       </label>
                       <input
                         type="text"
@@ -1114,7 +1105,7 @@ export default function LeadProfileModal({
                     </div>
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {isBn ? "ইমেইল ঠিকানা" : "Email Address"}
+                        {tr("ইমেইল ঠিকানা", "Email Address")}
                       </label>
                       <input
                         type="email"
@@ -1126,7 +1117,7 @@ export default function LeadProfileModal({
                     </div>
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {isBn ? "জেলা / শহর" : "City / District"}
+                        {tr("জেলা / শহর", "City / District")}
                       </label>
                       <input
                         type="text"
@@ -1137,7 +1128,7 @@ export default function LeadProfileModal({
                     </div>
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {isBn ? "পাসপোর্ট নম্বর (যদি থাকে)" : "Passport Number"}
+                        {tr("পাসপোর্ট নম্বর (যদি থাকে)", "Passport Number")}
                       </label>
                       <input
                         type="text"
@@ -1149,31 +1140,31 @@ export default function LeadProfileModal({
                     </div>
                     <div className="sm:col-span-2">
                       <label className="font-semibold text-slate-700">
-                        {isBn ? "বর্তমান ও স্থায়ী ঠিকানা" : "Current & Permanent Address"}
+                        {tr("বর্তমান ও স্থায়ী ঠিকানা", "Current & Permanent Address")}
                       </label>
                       <input
                         type="text"
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
-                        placeholder={isBn ? "বাসা/রোড, থানা, জেলা..." : "House/Road, Area, District..."}
+                        placeholder={tr("বাসা/রোড, থানা, জেলা...", "House/Road, Area, District...")}
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
                       />
                     </div>
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {isBn ? "অভিভাবক / স্পন্সরের নাম" : "Guardian / Sponsor Name"}
+                        {tr("অভিভাবক / স্পন্সরের নাম", "Guardian / Sponsor Name")}
                       </label>
                       <input
                         type="text"
                         value={guardianName}
                         onChange={(e) => setGuardianName(e.target.value)}
-                        placeholder={isBn ? "পিতা / মাতা / ভাই" : "Father / Mother / Sibling"}
+                        placeholder={tr("পিতা / মাতা / ভাই", "Father / Mother / Sibling")}
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
                       />
                     </div>
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {isBn ? "অভিভাবকের ফোন নম্বর" : "Guardian Phone"}
+                        {tr("অভিভাবকের ফোন নম্বর", "Guardian Phone")}
                       </label>
                       <input
                         type="text"
@@ -1189,15 +1180,13 @@ export default function LeadProfileModal({
                 {/* Right 5 Cols: Academic GPA, Study Gap, Japanese Exam & ERP Assignment */}
                 <div className="lg:col-span-5 rounded-2xl border border-slate-200/80 bg-white p-5 space-y-4">
                   <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">
-                    {isBn
-                      ? "একাডেমিক ফলাফল, জাপানি পরীক্ষা ও অ্যাসাইনমেন্ট"
-                      : "Academic GPA, Japanese Exam & ERP Links"}
+                    {tr("একাডেমিক ফলাফল, জাপানি পরীক্ষা ও অ্যাসাইনমেন্ট", "Academic GPA, Japanese Exam & ERP Links")}
                   </h3>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {isBn ? "সর্বশেষ শিক্ষাগত যোগ্যতা" : "Highest Education"}
+                        {tr("সর্বশেষ শিক্ষাগত যোগ্যতা", "Highest Education")}
                       </label>
                       <input
                         type="text"
@@ -1209,7 +1198,7 @@ export default function LeadProfileModal({
                     </div>
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {isBn ? "পাসের সাল ও স্টাডি গ্যাপ" : "Pass Year & Gap (Yrs)"}
+                        {tr("পাসের সাল ও স্টাডি গ্যাপ", "Pass Year & Gap (Yrs)")}
                       </label>
                       <div className="mt-1 grid grid-cols-2 gap-2">
                         <input
@@ -1253,7 +1242,7 @@ export default function LeadProfileModal({
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {isBn ? "জাপানি ভাষা স্তর" : "Japanese Level"}
+                        {tr("জাপানি ভাষা স্তর", "Japanese Level")}
                       </label>
                       <select
                         value={japaneseProficiency}
@@ -1270,7 +1259,7 @@ export default function LeadProfileModal({
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {isBn ? "অফিসিয়াল পরীক্ষা (JLPT/NAT/JFT)" : "Official Exam Type"}
+                        {tr("অফিসিয়াল পরীক্ষা (JLPT/NAT/JFT)", "Official Exam Type")}
                       </label>
                       <select
                         value={japaneseExamType}
@@ -1288,7 +1277,7 @@ export default function LeadProfileModal({
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {isBn ? "পরীক্ষার স্ট্যাটাস" : "Exam Status"}
+                        {tr("পরীক্ষার স্ট্যাটাস", "Exam Status")}
                       </label>
                       <select
                         value={japaneseExamStatus}
@@ -1303,7 +1292,7 @@ export default function LeadProfileModal({
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {isBn ? "স্কোর / রেজিঃ নম্বর" : "Exam Score / Reg No"}
+                        {tr("স্কোর / রেজিঃ নম্বর", "Exam Score / Reg No")}
                       </label>
                       <input
                         type="text"
@@ -1316,7 +1305,7 @@ export default function LeadProfileModal({
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {isBn ? "লিড প্রায়োরিটি" : "Priority"}
+                        {tr("লিড প্রায়োরিটি", "Priority")}
                       </label>
                       <select
                         value={priority}
@@ -1331,7 +1320,7 @@ export default function LeadProfileModal({
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {isBn ? "লিড স্ট্যাটাস" : "Lead Status"}
+                        {tr("লিড স্ট্যাটাস", "Lead Status")}
                       </label>
                       <select
                         value={status}
@@ -1349,7 +1338,7 @@ export default function LeadProfileModal({
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {isBn ? "দায়িত্বপ্রাপ্ত কাউন্সেলর (HR)" : "Assigned Counselor"}
+                        {tr("দায়িত্বপ্রাপ্ত কাউন্সেলর (HR)", "Assigned Counselor")}
                       </label>
                       <select
                         value={assignedCounselorId}
@@ -1371,7 +1360,7 @@ export default function LeadProfileModal({
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {isBn ? "রেফারকারী বিটুবি এজেন্ট" : "Referring B2B Agent"}
+                        {tr("রেফারকারী বিটুবি এজেন্ট", "Referring B2B Agent")}
                       </label>
                       <select
                         value={b2bAgentId}
@@ -1406,14 +1395,10 @@ export default function LeadProfileModal({
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 border-b border-slate-100">
                   <div>
                     <h3 className="text-sm font-bold text-slate-900">
-                      {isBn
-                        ? "জাপান ইমিগ্রেশন (COE) ১২টি আবশ্যিক ডকুমেন্ট চেকলিস্ট ভল্ট"
-                        : "12-Item Japan Immigration COE Document Checklist Vault"}
+                      {tr("জাপান ইমিগ্রেশন (COE) ১২টি আবশ্যিক ডকুমেন্ট চেকলিস্ট ভল্ট", "12-Item Japan Immigration COE Document Checklist Vault")}
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      {isBn
-                        ? "যেকোনো ডকুমেন্টে ক্লিক করে স্ট্যাটাস পরিবর্তন করুন (Missing ➔ Submitted ➔ Verified)"
-                        : "Click any item to cycle status between Missing, Submitted, and Verified"}
+                      {tr("যেকোনো ডকুমেন্টে ক্লিক করে স্ট্যাটাস পরিবর্তন করুন (Missing ➔ Submitted ➔ Verified)", "Click any item to cycle status between Missing, Submitted, and Verified")}
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
@@ -1422,14 +1407,14 @@ export default function LeadProfileModal({
                       onClick={() => markAllDocsStatus("SUBMITTED")}
                       className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 transition"
                     >
-                      {isBn ? "সব জমা হয়েছে" : "All Submitted"}
+                      {tr("সব জমা হয়েছে", "All Submitted")}
                     </button>
                     <button
                       type="button"
                       onClick={() => markAllDocsStatus("VERIFIED")}
                       className="rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-emerald-700 transition"
                     >
-                      {isBn ? "সব ভেরিফাইড" : "Verify All"}
+                      {tr("সব ভেরিফাইড", "Verify All")}
                     </button>
                   </div>
                 </div>
@@ -1438,7 +1423,7 @@ export default function LeadProfileModal({
                 <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
                   <div className="flex items-center justify-between text-xs font-semibold text-slate-700 tabular-nums">
                     <span>
-                      {isBn ? "ডকুমেন্ট প্রস্তুতি অগ্রগতি" : "Document Readiness"}
+                      {tr("ডকুমেন্ট প্রস্তুতি অগ্রগতি", "Document Readiness")}
                     </span>
                     <span>
                       {eligibility.verifiedDocsCount} Verified · {eligibility.submittedDocsCount} Submitted /{" "}
@@ -1473,7 +1458,7 @@ export default function LeadProfileModal({
                         </span>
                         <div className="min-w-0">
                           <p className="text-xs font-semibold text-slate-900 truncate">
-                            {isBn ? doc.titleBn : doc.titleEn}
+                            {language === "ja" ? ((doc as any).titleJa || doc.titleEn) : isBn ? doc.titleBn : doc.titleEn}
                           </p>
                           <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-400">
                             <span>{doc.category}</span>
@@ -1501,7 +1486,7 @@ export default function LeadProfileModal({
 
                         <label className={`cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition ${
                           uploadingDocId === doc.id ? "opacity-50 pointer-events-none" : ""
-                        }`} title={isBn ? "ফাইল আপলোড করুন" : "Upload File"}>
+                        }`} title={tr("ফাইল আপলোড করুন", "Upload File")}>
                           {uploadingDocId === doc.id ? (
                             <Loader2 className="h-3.5 w-3.5 animate-spin text-[#b91c1c]" />
                           ) : (
@@ -1528,16 +1513,10 @@ export default function LeadProfileModal({
                           }`}
                         >
                           {doc.status === "VERIFIED"
-                            ? isBn
-                              ? "✓ ভেরিফাইড"
-                              : "✓ Verified"
+                            ? tr("✓ ভেরিফাইড", "✓ Verified")
                             : doc.status === "SUBMITTED"
-                              ? isBn
-                                ? "জমা দিয়েছে"
-                                : "Submitted"
-                              : isBn
-                                ? "বাকি আছে"
-                                : "Missing"}
+                              ? tr("জমা দিয়েছে", "Submitted")
+                              : tr("বাকি আছে", "Missing")}
                         </button>
                       </div>
                     </div>
@@ -1551,15 +1530,11 @@ export default function LeadProfileModal({
                   <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                     <Landmark className="h-4 w-4 text-slate-700" />
                     <span>
-                      {isBn
-                        ? "স্পন্সর ব্যাংক সলভেন্সি ও লোন ক্যালকুলেটর"
-                        : "Sponsor Bank Solvency & Loan Calculator"}
+                      {tr("স্পন্সর ব্যাংক সলভেন্সি ও লোন ক্যালকুলেটর", "Sponsor Bank Solvency & Loan Calculator")}
                     </span>
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    {isBn
-                      ? "জাপান ইমিগ্রেশনের নিয়ম অনুযায়ী স্পন্সরের ন্যূনতম ১৮–২০ লক্ষ টাকা সলভেন্সি যাচাই"
-                      : "Verify required ৳18L–20L BDT sponsor bank solvency for Japan Immigration"}
+                    {tr("জাপান ইমিগ্রেশনের নিয়ম অনুযায়ী স্পন্সরের ন্যূনতম ১৮–২০ লক্ষ টাকা সলভেন্সি যাচাই", "Verify required ৳18L–20L BDT sponsor bank solvency for Japan Immigration")}
                   </p>
                 </div>
 
@@ -1573,7 +1548,7 @@ export default function LeadProfileModal({
                 >
                   <div className="flex items-center justify-between text-xs font-semibold">
                     <span>
-                      {isBn ? "প্রয়োজনীয় সলভেন্সি:" : "Required Solvency:"} ৳
+                      {tr("প্রয়োজনীয় সলভেন্সি:", "Required Solvency:")} ৳
                       {requiredSolvencyBdt.toLocaleString()}
                     </span>
                     <span className="font-mono tabular-nums">
@@ -1584,19 +1559,15 @@ export default function LeadProfileModal({
                   </div>
                   <p className="mt-1.5 text-xs">
                     {solvencyDeltaBdt >= 0
-                      ? isBn
-                        ? "✓ স্পন্সরের ব্যাংক ব্যালেন্স জাপান ইমিগ্রেশনের COE আবেদনের জন্য সম্পূর্ণ পর্যাপ্ত।"
-                        : "✓ Sponsor bank balance meets Japan Immigration COE requirements."
-                      : isBn
-                        ? "⚠ ব্যালেন্স কিছুটা কম রয়েছে — অগ্রণী / সোস্যাল ইসলামী / পূবালী ব্যাংকের এডুকেশন লোন সহায়তা নেওয়ার পরামর্শ দিন।"
-                        : "⚠ Balance shortfall detected — enable Partner Bank Education Loan support below."}
+                      ? tr("✓ স্পন্সরের ব্যাংক ব্যালেন্স জাপান ইমিগ্রেশনের COE আবেদনের জন্য সম্পূর্ণ পর্যাপ্ত।", "✓ Sponsor bank balance meets Japan Immigration COE requirements.")
+                      : tr("⚠ ব্যালেন্স কিছুটা কম রয়েছে — অগ্রণী / সোস্যাল ইসলামী / পূবালী ব্যাংকের এডুকেশন লোন সহায়তা নেওয়ার পরামর্শ দিন।", "⚠ Balance shortfall detected — enable Partner Bank Education Loan support below.")}
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
                   <div>
                     <label className="font-semibold text-slate-700">
-                      {isBn ? "স্পন্সরের সাথে সম্পর্ক" : "Sponsor Relation"}
+                      {tr("স্পন্সরের সাথে সম্পর্ক", "Sponsor Relation")}
                     </label>
                     <select
                       value={sponsorRelation}
@@ -1613,7 +1584,7 @@ export default function LeadProfileModal({
 
                   <div>
                     <label className="font-semibold text-slate-700">
-                      {isBn ? "স্পন্সরের পেশা / আয়ের উৎস" : "Sponsor Occupation"}
+                      {tr("স্পন্সরের পেশা / আয়ের উৎস", "Sponsor Occupation")}
                     </label>
                     <input
                       type="text"
@@ -1625,7 +1596,7 @@ export default function LeadProfileModal({
 
                   <div>
                     <label className="font-semibold text-slate-700">
-                      {isBn ? "স্পন্সরের মাসিক আয় (BDT)" : "Monthly Income (BDT)"}
+                      {tr("স্পন্সরের মাসিক আয় (BDT)", "Monthly Income (BDT)")}
                     </label>
                     <input
                       type="number"
@@ -1637,7 +1608,7 @@ export default function LeadProfileModal({
 
                   <div>
                     <label className="font-semibold text-slate-700">
-                      {isBn ? "বার্ষিক আয় হিসাব (১২ মাস)" : "Annual Income (Calculated)"}
+                      {tr("বার্ষিক আয় হিসাব (১২ মাস)", "Annual Income (Calculated)")}
                     </label>
                     <div className="mt-1 w-full rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 font-mono font-bold text-slate-800 tabular-nums">
                       ৳{(sponsorMonthlyIncomeBdt * 12).toLocaleString()} / yr
@@ -1646,7 +1617,7 @@ export default function LeadProfileModal({
 
                   <div className="sm:col-span-2">
                     <label className="font-semibold text-slate-700">
-                      {isBn ? "স্পন্সরের ব্যাংকের নাম ও শাখা" : "Sponsor Bank Name"}
+                      {tr("স্পন্সরের ব্যাংকের নাম ও শাখা", "Sponsor Bank Name")}
                     </label>
                     <input
                       type="text"
@@ -1658,7 +1629,7 @@ export default function LeadProfileModal({
 
                   <div className="sm:col-span-2">
                     <label className="font-semibold text-slate-700">
-                      {isBn ? "বর্তমান ব্যাংক সলভেন্সি ব্যালেন্স (BDT)" : "Current Bank Balance (BDT)"}
+                      {tr("বর্তমান ব্যাংক সলভেন্সি ব্যালেন্স (BDT)", "Current Bank Balance (BDT)")}
                     </label>
                     <input
                       type="number"
@@ -1678,16 +1649,14 @@ export default function LeadProfileModal({
                         className="h-4 w-4 rounded accent-slate-900"
                       />
                       <span className="font-semibold text-slate-800">
-                        {isBn
-                          ? "KNLTC পার্টনার ব্যাংক এডুকেশন লোন সহায়তা প্রয়োজন"
-                          : "Requires Partner Bank Education Loan Assistance"}
+                        {tr("KNLTC পার্টনার ব্যাংক এডুকেশন লোন সহায়তা প্রয়োজন", "Requires Partner Bank Education Loan Assistance")}
                       </span>
                     </label>
 
                     {bankLoanRequired && (
                       <div className="mt-2.5">
                         <label className="font-semibold text-slate-700">
-                          {isBn ? "পছন্দের লোন প্রদানকারী ব্যাংক" : "Preferred Partner Bank"}
+                          {tr("পছন্দের লোন প্রদানকারী ব্যাংক", "Preferred Partner Bank")}
                         </label>
                         <select
                           value={preferredLoanBank}
@@ -1726,14 +1695,10 @@ export default function LeadProfileModal({
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                     <div>
                       <h3 className="text-sm font-bold text-slate-900">
-                        {isBn
-                          ? "শিক্ষার্থীর লাইভ পেমেন্ট লেজার ও কিস্তি আদায়"
-                          : "Live Student Financial Ledger & Fee Collection"}
+                        {tr("শিক্ষার্থীর লাইভ পেমেন্ট লেজার ও কিস্তি আদায়", "Live Student Financial Ledger & Fee Collection")}
                       </h3>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        {isBn
-                          ? "এখান থেকে ফি জমা নিলে মূল Finance লেজার ও রসিদে স্বয়ংক্রিয়ভাবে যুক্ত হবে"
-                          : "Collecting fees here syncs directly with the main Finance Ledger"}
+                        {tr("এখান থেকে ফি জমা নিলে মূল Finance লেজার ও রসিদে স্বয়ংক্রিয়ভাবে যুক্ত হবে", "Collecting fees here syncs directly with the main Finance Ledger")}
                       </p>
                     </div>
                     <Receipt className="h-4 w-4 text-slate-400" />
@@ -1743,7 +1708,7 @@ export default function LeadProfileModal({
                   <div className="grid grid-cols-3 gap-3 text-xs">
                     <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3">
                       <span className="text-[11px] text-slate-500 block">
-                        {isBn ? "মোট চুক্তিমূল্য (Contract)" : "Total Contract"}
+                        {tr("মোট চুক্তিমূল্য (Contract)", "Total Contract")}
                       </span>
                       <input
                         type="number"
@@ -1755,7 +1720,7 @@ export default function LeadProfileModal({
                     </div>
                     <div className="rounded-xl border border-emerald-200/70 bg-emerald-50/50 p-3">
                       <span className="text-[11px] text-emerald-800 block">
-                        {isBn ? "মোট পরিশোধিত (Paid)" : "Total Paid"}
+                        {tr("মোট পরিশোধিত (Paid)", "Total Paid")}
                       </span>
                       <p className="mt-1.5 font-mono text-base font-bold text-emerald-700 tabular-nums">
                         ৳{livePaidAmountBdt.toLocaleString()}
@@ -1763,7 +1728,7 @@ export default function LeadProfileModal({
                     </div>
                     <div className="rounded-xl border border-amber-200/70 bg-amber-50/50 p-3">
                       <span className="text-[11px] text-amber-900 block">
-                        {isBn ? "বর্তমান বকেয়া (Due)" : "Current Due"}
+                        {tr("বর্তমান বকেয়া (Due)", "Current Due")}
                       </span>
                       <p className="mt-1.5 font-mono text-base font-bold text-amber-800 tabular-nums">
                         ৳{liveDueAmountBdt.toLocaleString()}
@@ -1777,12 +1742,12 @@ export default function LeadProfileModal({
                     className="rounded-xl border border-slate-200/80 bg-slate-50/60 p-4 space-y-3 text-xs"
                   >
                     <p className="font-bold text-slate-900">
-                      {isBn ? "+ তাৎক্ষণিক কিস্তি / ফি জমা নিন" : "+ Record Instant Fee Payment"}
+                      {tr("+ তাৎক্ষণিক কিস্তি / ফি জমা নিন", "+ Record Instant Fee Payment")}
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="font-semibold text-slate-700">
-                          {isBn ? "জমার পরিমাণ (BDT)" : "Amount (BDT)"}
+                          {tr("জমার পরিমাণ (BDT)", "Amount (BDT)")}
                         </label>
                         <input
                           type="number"
@@ -1795,7 +1760,7 @@ export default function LeadProfileModal({
                       </div>
                       <div>
                         <label className="font-semibold text-slate-700">
-                          {isBn ? "খাত / ফি টাইপ" : "Fee Type"}
+                          {tr("খাত / ফি টাইপ", "Fee Type")}
                         </label>
                         <select
                           value={feeType}
@@ -1810,7 +1775,7 @@ export default function LeadProfileModal({
                       </div>
                       <div>
                         <label className="font-semibold text-slate-700">
-                          {isBn ? "পেমেন্ট মাধ্যম" : "Payment Method"}
+                          {tr("পেমেন্ট মাধ্যম", "Payment Method")}
                         </label>
                         <select
                           value={feeMethod}
@@ -1825,7 +1790,7 @@ export default function LeadProfileModal({
                       </div>
                       <div>
                         <label className="font-semibold text-slate-700">
-                          {isBn ? "TrxID / রেফারেন্স" : "TrxID / Reference"}
+                          {tr("TrxID / রেফারেন্স", "TrxID / Reference")}
                         </label>
                         <input
                           type="text"
@@ -1840,18 +1805,14 @@ export default function LeadProfileModal({
                       type="submit"
                       className="w-full rounded-xl bg-emerald-600 py-2.5 text-xs font-semibold text-white hover:bg-emerald-700 transition"
                     >
-                      {isBn
-                        ? "ফি জমা দিন ও মানি রসিদ জেনারেট করুন"
-                        : "Collect Fee & Issue Official Receipt"}
+                      {tr("ফি জমা দিন ও মানি রসিদ জেনারেট করুন", "Collect Fee & Issue Official Receipt")}
                     </button>
                   </form>
 
                   {/* Student Payment History Table */}
                   <div>
                     <h4 className="text-xs font-bold text-slate-700 mb-2">
-                      {isBn
-                        ? `পূর্বে পরিশোধিত রসিদসমূহ (${studentTransactions.length})`
-                        : `Payment Receipt History (${studentTransactions.length})`}
+                      {tr(`পূর্বে পরিশোধিত রসিদসমূহ (${studentTransactions.length})`, `Payment Receipt History (${studentTransactions.length})`)}
                     </h4>
                     {studentTransactions.length > 0 ? (
                       <div className="divide-y divide-slate-100 rounded-xl border border-slate-200/80 overflow-hidden text-xs">
@@ -1878,9 +1839,7 @@ export default function LeadProfileModal({
                       </div>
                     ) : (
                       <p className="rounded-xl border border-slate-200/60 bg-slate-50 p-4 text-center text-xs text-slate-400">
-                        {isBn
-                          ? "এই শিক্ষার্থীর নামে এখনো কোনো পেমেন্ট রসিদ নেই।"
-                          : "No payment receipts recorded for this student yet."}
+                        {tr("এই শিক্ষার্থীর নামে এখনো কোনো পেমেন্ট রসিদ নেই।", "No payment receipts recorded for this student yet.")}
                       </p>
                     )}
                   </div>
@@ -1894,16 +1853,12 @@ export default function LeadProfileModal({
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                     <div>
                       <h3 className="text-sm font-bold text-slate-900">
-                        {isBn
-                          ? "১০-ধাপ ভিসা পাইপলাইন ও জাপানি স্কুল ইন্টারভিউ কন্ট্রোল"
-                          : "10-Step Visa Pipeline & School Interview Controller"}
+                        {tr("১০-ধাপ ভিসা পাইপলাইন ও জাপানি স্কুল ইন্টারভিউ কন্ট্রোল", "10-Step Visa Pipeline & School Interview Controller")}
                       </h3>
                       <p className="text-xs text-slate-500 mt-0.5">
                         {linkedVisa
                           ? `Tracking ID: ${linkedVisa.trackingNo} · COE: ${linkedVisa.coEStatus}`
-                          : isBn
-                            ? "যেকোনো ধাপে ক্লিক করলেই ভিসা পাইপলাইনে ফাইল চালু ও সিঙ্ক হবে"
-                            : "Select a stage below to activate or advance in the Visa Pipeline"}
+                          : tr("যেকোনো ধাপে ক্লিক করলেই ভিসা পাইপলাইনে ফাইল চালু ও সিঙ্ক হবে", "Select a stage below to activate or advance in the Visa Pipeline")}
                       </p>
                     </div>
                     <Plane className="h-4 w-4 text-slate-400" />
@@ -1912,7 +1867,7 @@ export default function LeadProfileModal({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {isBn ? "ভিসা প্রসেসিং ধাপ (Stage 1–10)" : "Current Visa Stage (1–10)"}
+                        {tr("ভিসা প্রসেসিং ধাপ (Stage 1–10)", "Current Visa Stage (1–10)")}
                       </label>
                       <select
                         value={linkedVisa?.stage || 1}
@@ -1931,7 +1886,7 @@ export default function LeadProfileModal({
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {isBn ? "টার্গেট জাপানি পার্টনার স্কুল" : "Target Partner School"}
+                        {tr("টার্গেট জাপানি পার্টনার স্কুল", "Target Partner School")}
                       </label>
                       <select
                         value={partnerSchoolId}
@@ -1953,7 +1908,7 @@ export default function LeadProfileModal({
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {isBn ? "স্কুল জুম ইন্টারভিউ স্ট্যাটাস" : "School Interview Status"}
+                        {tr("স্কুল জুম ইন্টারভিউ স্ট্যাটাস", "School Interview Status")}
                       </label>
                       <select
                         value={schoolInterviewStatus}
@@ -1969,7 +1924,7 @@ export default function LeadProfileModal({
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {isBn ? "ইন্টারভিউ তারিখ" : "Interview Date"}
+                        {tr("ইন্টারভিউ তারিখ", "Interview Date")}
                       </label>
                       <input
                         type="date"
@@ -1981,7 +1936,7 @@ export default function LeadProfileModal({
 
                     <div className="sm:col-span-2">
                       <label className="font-semibold text-slate-700">
-                        {isBn ? "দায়িত্বপ্রাপ্ত ভিসা প্রসেসিং অফিসার (HR)" : "Assigned Visa Officer"}
+                        {tr("দায়িত্বপ্রাপ্ত ভিসা প্রসেসিং অফিসার (HR)", "Assigned Visa Officer")}
                       </label>
                       <select
                         value={assignedVisaOfficerId}
@@ -2004,16 +1959,12 @@ export default function LeadProfileModal({
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                     <div>
                       <h3 className="text-sm font-bold text-slate-900">
-                        {isBn
-                          ? "জাপানি ভাষা ব্যাচ (LMS) অগ্রগতি ও উপস্থিতি"
-                          : "LMS Language Batch Progress & Attendance"}
+                        {tr("জাপানি ভাষা ব্যাচ (LMS) অগ্রগতি ও উপস্থিতি", "LMS Language Batch Progress & Attendance")}
                       </h3>
                       <p className="text-xs text-slate-500 mt-0.5">
                         {linkedLms
                           ? `Enrollment: ${linkedLms.enrollmentNo} · Sensei: ${linkedLms.assignedSenseiName || senseis[0]?.name || "Assigned"}`
-                          : isBn
-                            ? "শিক্ষার্থীর ক্লাস উপস্থিতি ও সিলেবাস সম্পন্ন করার হার"
-                            : "Track syllabus completion and classroom attendance"}
+                          : tr("শিক্ষার্থীর ক্লাস উপস্থিতি ও সিলেবাস সম্পন্ন করার হার", "Track syllabus completion and classroom attendance")}
                       </p>
                     </div>
                     <BookOpen className="h-4 w-4 text-slate-400" />
@@ -2022,7 +1973,7 @@ export default function LeadProfileModal({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {isBn ? "ভর্তিকৃত ব্যাচ / সেশন" : "Active Batch / Session"}
+                        {tr("ভর্তিকৃত ব্যাচ / সেশন", "Active Batch / Session")}
                       </label>
                       <input
                         type="text"
@@ -2033,7 +1984,7 @@ export default function LeadProfileModal({
                     </div>
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {isBn ? "কোর্স লেভেল" : "Course Level"}
+                        {tr("কোর্স লেভেল", "Course Level")}
                       </label>
                       <select
                         value={courseLevel}
@@ -2048,7 +1999,7 @@ export default function LeadProfileModal({
 
                     <div>
                       <div className="flex items-center justify-between font-semibold text-slate-700">
-                        <span>{isBn ? "সিলেবাস অগ্রগতি (LMS)" : "Syllabus Progress"}</span>
+                        <span>{tr("সিলেবাস অগ্রগতি (LMS)", "Syllabus Progress")}</span>
                         <span className="font-mono tabular-nums">{lmsProgressPct}%</span>
                       </div>
                       <input
@@ -2063,7 +2014,7 @@ export default function LeadProfileModal({
 
                     <div>
                       <div className="flex items-center justify-between font-semibold text-slate-700">
-                        <span>{isBn ? "ক্লাস উপস্থিতির হার (Attendance)" : "Class Attendance"}</span>
+                        <span>{tr("ক্লাস উপস্থিতির হার (Attendance)", "Class Attendance")}</span>
                         <span className="font-mono tabular-nums">{attendancePct}%</span>
                       </div>
                       <input
@@ -2092,19 +2043,15 @@ export default function LeadProfileModal({
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3">
                     <div>
                       <h3 className="text-sm font-bold text-slate-900">
-                        {isBn
-                          ? "কাউন্সেলিং ও কল অ্যাক্টিভিটি লগ (Timestamped Timeline)"
-                          : "Timestamped Counseling & Call Activity Log"}
+                        {tr("কাউন্সেলিং ও কল অ্যাক্টিভিটি লগ (Timestamped Timeline)", "Timestamped Counseling & Call Activity Log")}
                       </h3>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        {isBn
-                          ? "প্রার্থীর সাথে প্রতিটি ফোনালাপ, অফিস ভিজিট ও মিটিং নোট তারিখসহ সংরক্ষণ করুন"
-                          : "Record every phone call, office visit, and guardian meeting with timestamps"}
+                        {tr("প্রার্থীর সাথে প্রতিটি ফোনালাপ, অফিস ভিজিট ও মিটিং নোট তারিখসহ সংরক্ষণ করুন", "Record every phone call, office visit, and guardian meeting with timestamps")}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 text-xs">
                       <span className="font-semibold text-slate-600">
-                        {isBn ? "পরবর্তী ফলো-আপ:" : "Next Follow-up:"}
+                        {tr("পরবর্তী ফলো-আপ:", "Next Follow-up:")}
                       </span>
                       <input
                         type="date"
@@ -2147,9 +2094,7 @@ export default function LeadProfileModal({
                         value={newActivitySummary}
                         onChange={(e) => setNewActivitySummary(e.target.value)}
                         placeholder={
-                          isBn
-                            ? "কথোপকথনের সারসংক্ষেপ লিখুন (যেমন: অভিভাবক আগামীকাল পাসপোর্ট ও মার্কশিট নিয়ে আসবেন)..."
-                            : "Write call or meeting summary..."
+                          tr("কথোপকথনের সারসংক্ষেপ লিখুন (যেমন: অভিভাবক আগামীকাল পাসপোর্ট ও মার্কশিট নিয়ে আসবেন)...", "Write call or meeting summary...")
                         }
                         className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs"
                       />
@@ -2158,7 +2103,7 @@ export default function LeadProfileModal({
                         onClick={() => handleAddActivityEntry()}
                         className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition shrink-0"
                       >
-                        {isBn ? "+ লগ যুক্ত করুন" : "+ Log Entry"}
+                        {tr("+ লগ যুক্ত করুন", "+ Log Entry")}
                       </button>
                     </div>
                   </div>
@@ -2185,14 +2130,10 @@ export default function LeadProfileModal({
                 <div className="rounded-2xl border border-slate-200/80 bg-white p-5 space-y-4">
                   <div className="border-b border-slate-100 pb-3">
                     <h3 className="text-sm font-bold text-slate-900">
-                      {isBn
-                        ? "১-ক্লিক প্রফেশনাল WhatsApp মেসেজ টেমপ্লেট"
-                        : "1-Click Contextual WhatsApp Templates"}
+                      {tr("১-ক্লিক প্রফেশনাল WhatsApp মেসেজ টেমপ্লেট", "1-Click Contextual WhatsApp Templates")}
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      {isBn
-                        ? "যেকোনো টেমপ্লেটে ক্লিক করলে প্রার্থীর নাম ও তথ্যসহ WhatsApp ওপেন হবে এবং টাইমলাইনে রেকর্ড থাকবে"
-                        : "Click any template to send via WhatsApp and auto-log in the timeline"}
+                      {tr("যেকোনো টেমপ্লেটে ক্লিক করলে প্রার্থীর নাম ও তথ্যসহ WhatsApp ওপেন হবে এবং টাইমলাইনে রেকর্ড থাকবে", "Click any template to send via WhatsApp and auto-log in the timeline")}
                     </p>
                   </div>
 
@@ -2206,7 +2147,7 @@ export default function LeadProfileModal({
                         >
                           <div className="flex items-center justify-between gap-2">
                             <span className="text-xs font-bold text-slate-900">
-                              {isBn ? tpl.titleBn : tpl.titleEn}
+                              {language === "ja" ? ((tpl as any).titleJa || tpl.titleEn) : isBn ? tpl.titleBn : tpl.titleEn}
                             </span>
                             <a
                               href={href}
@@ -2247,15 +2188,11 @@ export default function LeadProfileModal({
                   <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                     <KeyRound className="h-4 w-4 text-slate-700" />
                     <span>
-                      {isBn
-                        ? "স্টুডেন্ট পোর্টাল লগইন ও অ্যাক্সেস কন্ট্রোল"
-                        : "Student Portal Login & Access Control"}
+                      {tr("স্টুডেন্ট পোর্টাল লগইন ও অ্যাক্সেস কন্ট্রোল", "Student Portal Login & Access Control")}
                     </span>
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    {isBn
-                      ? "শিক্ষার্থীকে পোর্টাল আইডি ও পাসওয়ার্ড দিয়ে তার নিজস্ব ফাইল ও ক্লাসরুম অ্যাক্সেস দিন"
-                      : "Provision student portal credentials and module permissions"}
+                    {tr("শিক্ষার্থীকে পোর্টাল আইডি ও পাসওয়ার্ড দিয়ে তার নিজস্ব ফাইল ও ক্লাসরুম অ্যাক্সেস দিন", "Provision student portal credentials and module permissions")}
                   </p>
                 </div>
 
@@ -2275,7 +2212,7 @@ export default function LeadProfileModal({
                     />
                     <div>
                       <p className="font-bold text-slate-900">
-                        {isBn ? "ভাষা কোর্সে ভর্তি" : "Course Enrolled"}
+                        {tr("ভাষা কোর্সে ভর্তি", "Course Enrolled")}
                       </p>
                       <p className="text-[10px] text-slate-500">LMS ক্লাসরুম চালু হবে</p>
                     </div>
@@ -2296,7 +2233,7 @@ export default function LeadProfileModal({
                     />
                     <div>
                       <p className="font-bold text-slate-900">
-                        {isBn ? "ভিসা ফাইল ওপেন" : "Visa File Opened"}
+                        {tr("ভিসা ফাইল ওপেন", "Visa File Opened")}
                       </p>
                       <p className="text-[10px] text-slate-500">১০-ধাপ বোর্ডে যুক্ত হবে</p>
                     </div>
@@ -2306,14 +2243,14 @@ export default function LeadProfileModal({
                 <div className="space-y-3 text-xs">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-slate-700">
-                      {isBn ? "লগইন ইমেইল ও পাসওয়ার্ড" : "Login Credentials"}
+                      {tr("লগইন ইমেইল ও পাসওয়ার্ড", "Login Credentials")}
                     </span>
                     <button
                       type="button"
                       onClick={generateRandomPassword}
                       className="rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-200"
                     >
-                      {isBn ? "নতুন পাসওয়ার্ড জেনারেট" : "Generate Password"}
+                      {tr("নতুন পাসওয়ার্ড জেনারেট", "Generate Password")}
                     </button>
                   </div>
 
@@ -2339,7 +2276,7 @@ export default function LeadProfileModal({
 
                   <div>
                     <label className="font-semibold text-slate-600">
-                      {isBn ? "আজকের প্রাথমিক পেমেন্ট জমা (যদি থাকে)" : "Initial Payment Today (BDT)"}
+                      {tr("আজকের প্রাথমিক পেমেন্ট জমা (যদি থাকে)", "Initial Payment Today (BDT)")}
                     </label>
                     <input
                       type="number"
@@ -2353,7 +2290,7 @@ export default function LeadProfileModal({
 
                   <div className="space-y-1.5 pt-2">
                     <p className="font-semibold text-slate-700">
-                      {isBn ? "পোর্টাল মডিউল পারমিশন:" : "Allowed Student Tabs:"}
+                      {tr("পোর্টাল মডিউল পারমিশন:", "Allowed Student Tabs:")}
                     </p>
                     {(
                       [
@@ -2383,9 +2320,7 @@ export default function LeadProfileModal({
                     onClick={handleProvisionLoginAndAdmission}
                     className="w-full rounded-xl bg-slate-900 py-3 text-xs font-bold text-white hover:bg-slate-800 transition"
                   >
-                    {isBn
-                      ? "ভর্তি কনফার্ম ও লগইন অ্যাক্সেস চালু করুন"
-                      : "Confirm Admission & Activate Portal Login"}
+                    {tr("ভর্তি কনফার্ম ও লগইন অ্যাক্সেস চালু করুন", "Confirm Admission & Activate Portal Login")}
                   </button>
                 </div>
               </div>
@@ -2411,7 +2346,7 @@ export default function LeadProfileModal({
                     className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition shrink-0"
                   >
                     <Printer className="h-3.5 w-3.5" />
-                    <span>{isBn ? "প্রিন্ট করুন (A4)" : "Print Dossier"}</span>
+                    <span>{tr("প্রিন্ট করুন (A4)", "Print Dossier")}</span>
                   </button>
                 </div>
 
