@@ -56,17 +56,57 @@ import { useLanguage } from "@/components/layout/LanguageProvider";
 
 type ProfileTabId = "bio" | "docs" | "finance_visa" | "timeline" | "access_print";
 
-const VISA_STAGE_LABELS_BN: Record<VisaStage, string> = {
-  1: "ধাপ ১: ফাইল ওপেনিং (৳০ অগ্রিম)",
-  2: "ধাপ ২: ভাষা প্রশিক্ষণ (N5/N4)",
-  3: "ধাপ ৩: ডকুমেন্ট সংগ্রহ ও নোটারি",
-  4: "ধাপ ৪: জাপানি স্কুল জুম ইন্টারভিউ",
-  5: "ধাপ ৫: ইমিগ্রেশনে COE আবেদন",
-  6: "ধাপ ৬: প্রি-ভিসা (COE) অনুমোদন",
-  7: "ধাপ ৭: টিউশন ফি ও মূল COE রিলিজ",
-  8: "ধাপ ৮: এম্বাসি ইন্টারভিউ ও VFS",
-  9: "ধাপ ৯: ভিসা স্ট্যাম্পিং ও সার্ভিস চার্জ",
-  10: "ধাপ ১০: এয়ার টিকিট ও জাপান ফ্লাই",
+const VISA_STAGE_LABELS: Record<VisaStage, { bn: string; en: string; ja: string }> = {
+  1: {
+    bn: "ধাপ ১: ফাইল ওপেনিং (৳০ অগ্রিম)",
+    en: "Stage 1: File Opening (৳0 Advance)",
+    ja: "ステップ1: ファイル開設（事前費用৳0）",
+  },
+  2: {
+    bn: "ধাপ ২: ভাষা প্রশিক্ষণ (N5/N4)",
+    en: "Stage 2: Language Training (N5/N4)",
+    ja: "ステップ2: 日本語講習（N5/N4）",
+  },
+  3: {
+    bn: "ধাপ ৩: ডকুমেন্ট সংগ্রহ ও নোটারি",
+    en: "Stage 3: Document Collection & Notary",
+    ja: "ステップ3: 書類収集・公証翻訳",
+  },
+  4: {
+    bn: "ধাপ ৪: জাপানি স্কুল জুম ইন্টারভিউ",
+    en: "Stage 4: Japanese School Zoom Interview",
+    ja: "ステップ4: 日本語学校Zoom面接",
+  },
+  5: {
+    bn: "ধাপ ৫: ইমিগ্রেশনে COE আবেদন",
+    en: "Stage 5: Immigration COE Submission",
+    ja: "ステップ5: 入管COE申請提出",
+  },
+  6: {
+    bn: "ধাপ ৬: প্রি-ভিসা (COE) অনুমোদন",
+    en: "Stage 6: Pre-Visa (COE) Approval",
+    ja: "ステップ6: 在留資格認定証明書（COE）交付",
+  },
+  7: {
+    bn: "ধাপ ৭: টিউশন ফি ও মূল COE রিলিজ",
+    en: "Stage 7: Tuition Payment & Original COE",
+    ja: "ステップ7: 学費送金・原本COE交付",
+  },
+  8: {
+    bn: "ধাপ ৮: এম্বাসি ইন্টারভিউ ও VFS",
+    en: "Stage 8: Embassy Submission & VFS",
+    ja: "ステップ8: 日本大使館・VFS査証申請",
+  },
+  9: {
+    bn: "ধাপ ৯: ভিসা স্ট্যাম্পিং ও সার্ভিস চার্জ",
+    en: "Stage 9: Visa Stamping & Service Charge",
+    ja: "ステップ9: ビザ発給・成功報酬精算",
+  },
+  10: {
+    bn: "ধাপ ১০: এয়ার টিকিট ও জাপান ফ্লাই",
+    en: "Stage 10: Air Ticket & Departure to Japan",
+    ja: "ステップ10: 航空券手配・日本渡航",
+  },
 };
 
 export default function LeadProfileModal({
@@ -79,6 +119,8 @@ export default function LeadProfileModal({
   onSaved: (message: string) => void;
 }) {
   const { language } = useLanguage();
+  const tr = (bn: string, en: string, ja?: string) =>
+    language === "ja" ? (ja || en) : language === "en" ? en : bn;
   const isBn = language === "bn";
 
   // Active 360° Command Center Tab
@@ -576,13 +618,15 @@ export default function LeadProfileModal({
       updateVisaStage(targetVisa.id, nextStage);
       handleAddActivityEntry(
         "STAGE_CHANGE",
-        `ভিসা পাইপলাইন আপডেট: ${VISA_STAGE_LABELS_BN[nextStage]}`,
+        `${tr("ভিসা পাইপলাইন আপডেট", "Visa Pipeline Update", "ビザ進捗更新")}: ${VISA_STAGE_LABELS[nextStage][language === "ja" ? "ja" : language === "en" ? "en" : "bn"]}`,
       );
       setStoreTick((t) => t + 1);
       onSaved(
-        isBn
-          ? `${name}-এর ভিসা ধাপ আপডেট হয়েছে: ${VISA_STAGE_LABELS_BN[nextStage]}`
-          : `Visa stage updated to Stage ${nextStage}`,
+        tr(
+          `${name}-এর ভিসা ধাপ আপডেট হয়েছে: ${VISA_STAGE_LABELS[nextStage].bn}`,
+          `Visa stage updated: ${VISA_STAGE_LABELS[nextStage].en}`,
+          `ビザ段階更新: ${VISA_STAGE_LABELS[nextStage].ja}`
+        ),
       );
     }
   };
@@ -1879,7 +1923,7 @@ export default function LeadProfileModal({
                       >
                         {([1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as VisaStage[]).map((st) => (
                           <option key={st} value={st}>
-                            {VISA_STAGE_LABELS_BN[st]}
+                            {VISA_STAGE_LABELS[st][language === "ja" ? "ja" : language === "en" ? "en" : "bn"]}
                           </option>
                         ))}
                       </select>

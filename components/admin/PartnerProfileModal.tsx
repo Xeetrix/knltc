@@ -71,31 +71,35 @@ type ModalTab = "overview" | "docs" | "students" | "ledger";
 
 const INSTITUTION_TYPE_LABELS: Record<
   PartnerInstitutionType,
-  { bn: string; en: string }
+  { bn: string; en: string; ja: string }
 > = {
   LANGUAGE_SCHOOL: {
     bn: "জাপানি ভাষা ইনস্টিটিউট (Nihongo Gakko)",
     en: "Japanese Language School",
+    ja: "日本語教育機関（日本語学校）",
   },
   UNIVERSITY: {
     bn: "জাপানি ইউনিভার্সিটি (Daigaku)",
     en: "University (Undergraduate / Postgrad)",
+    ja: "日本の大学・大学院",
   },
   VOCATIONAL_COLLEGE: {
     bn: "ভোকেশনাল / টেকনিক্যাল কলেজ (Senmon Gakko)",
     en: "Vocational / Technical College",
+    ja: "専門学校（専修学校専門課程）",
   },
   SSW_EMPLOYER: {
     bn: "SSW নিয়োগকারী কোম্পানি / অর্গানাইজেশন",
     en: "SSW Accepting Organization / Employer",
+    ja: "特定技能受入企業・登録支援機関",
   },
 };
 
-const INTAKE_LABELS: Record<IntakeMonth, { bn: string; en: string }> = {
-  JANUARY: { bn: "জানুয়ারি ইনটেক", en: "Jan Intake" },
-  APRIL: { bn: "এপ্রিল ইনটেক", en: "Apr Intake" },
-  JULY: { bn: "জুলাই ইনটেক", en: "Jul Intake" },
-  OCTOBER: { bn: "অক্টোবর ইনটেক", en: "Oct Intake" },
+const INTAKE_LABELS: Record<IntakeMonth, { bn: string; en: string; ja: string }> = {
+  JANUARY: { bn: "জানুয়ারি ইনটেক", en: "Jan Intake", ja: "1月期生募集" },
+  APRIL: { bn: "এপ্রিল ইনটেক", en: "Apr Intake", ja: "4月期生募集" },
+  JULY: { bn: "জুলাই ইনটেক", en: "Jul Intake", ja: "7月期生募集" },
+  OCTOBER: { bn: "অক্টোবর ইনটেক", en: "Oct Intake", ja: "10月期生募集" },
 };
 
 export default function PartnerProfileModal({
@@ -110,6 +114,8 @@ export default function PartnerProfileModal({
   onRefreshStore,
   onShowToast,
 }: PartnerProfileModalProps) {
+  const tr = (bn: string, en: string, ja?: string) =>
+    language === "ja" ? (ja || en) : language === "en" ? en : bn;
   const [activeTab, setActiveTab] = useState<ModalTab>("overview");
   const [isPrintView, setIsPrintView] = useState(false);
 
@@ -760,18 +766,12 @@ export default function PartnerProfileModal({
                     {mode === "SCHOOL"
                       ? INSTITUTION_TYPE_LABELS[
                           schoolState.institutionType || "LANGUAGE_SCHOOL"
-                        ][language === "bn" ? "bn" : "en"]
+                        ][language === "ja" ? "ja" : language === "en" ? "en" : "bn"]
                       : agentState.agentType === "INSTITUTIONAL"
-                        ? language === "bn"
-                          ? "ইনস্টিটিউশনাল বিটুবি পার্টনার"
-                          : "Institutional B2B Partner"
+                        ? tr("ইনস্টিটিউশনাল বিটুবি পার্টনার", "Institutional B2B Partner", "提携機関パートナー")
                         : agentState.agentType === "CAMPUS_AMBASSADOR"
-                          ? language === "bn"
-                            ? "ক্যাম্পাস অ্যাম্বাসেডর"
-                            : "Campus Ambassador"
-                          : language === "bn"
-                            ? "লোকাল বিটুবি সাব-এজেন্ট"
-                            : "Local B2B Sub-Agent"}
+                          ? tr("ক্যাম্পাস অ্যাম্বাসেডর", "Campus Ambassador", "キャンパスアンバサダー")
+                          : tr("লোকাল বিটুবি সাব-এজেন্ট", "Local B2B Sub-Agent", "地域サブエージェント")}
                   </span>
                   <span aria-hidden="true">·</span>
                   <span className="inline-flex items-center gap-1 font-medium text-slate-700">
@@ -781,7 +781,7 @@ export default function PartnerProfileModal({
                   <span aria-hidden="true">·</span>
                   <span className="font-medium text-emerald-700">
                     {verifiedDocsCount}/{currentDocs.length}{" "}
-                    {language === "bn" ? "ডকুমেন্ট যুক্ত" : "Docs Ready"}
+                    {tr("ডকুমেন্ট যুক্ত", "Docs Ready", "登録書類")}
                   </span>
                 </div>
 
@@ -1440,7 +1440,7 @@ export default function PartnerProfileModal({
                               >
                                 {
                                   INTAKE_LABELS[m][
-                                    language === "bn" ? "bn" : "en"
+                                    language === "ja" ? "ja" : language === "en" ? "en" : "bn"
                                   ]
                                 }
                               </button>
@@ -2203,12 +2203,12 @@ export default function PartnerProfileModal({
                       <table className="w-full text-left text-xs">
                         <thead className="bg-slate-50/70 border-b border-slate-100 font-semibold text-slate-500">
                           <tr>
-                            <th className="px-4 py-3">শিক্ষার্থীর নাম ও ফোন</th>
-                            <th className="px-4 py-3">শহর ও প্রোগ্রাম</th>
-                            <th className="px-4 py-3">ভিসা পাইপলাইন ধাপ</th>
-                            <th className="px-4 py-3">COE স্ট্যাটাস</th>
+                            <th className="px-4 py-3">{tr("শিক্ষার্থীর নাম ও ফোন", "Student Name & Phone", "受講生氏名・電話")}</th>
+                            <th className="px-4 py-3">{tr("শহর ও প্রোগ্রাম", "City & Program", "居住地・プログラム")}</th>
+                            <th className="px-4 py-3">{tr("ভিসা পাইপলাইন ধাপ", "Visa Pipeline Stage", "ビザ進捗段階")}</th>
+                            <th className="px-4 py-3">{tr("COE স্ট্যাটাস", "COE Status", "COE交付状況")}</th>
                             <th className="px-4 py-3 text-right">
-                              জমা বনাম বকেয়া (BDT)
+                              {tr("জমা বনাম বকেয়া (BDT)", "Paid vs Due (BDT)", "納入済 / 未納残額 (BDT)")}
                             </th>
                           </tr>
                         </thead>
@@ -2236,8 +2236,8 @@ export default function PartnerProfileModal({
                               </td>
                               <td className="px-4 py-3 font-semibold text-slate-800">
                                 {st.visaStage
-                                  ? `Stage ${st.visaStage} / 10`
-                                  : "CRM Counseling"}
+                                  ? `${tr("ধাপ", "Stage", "段階")} ${st.visaStage} / 10`
+                                  : tr("কাউন্সেলিং", "CRM Counseling", "カウンセリング中")}
                               </td>
                               <td className="px-4 py-3">
                                 <span
@@ -2252,10 +2252,10 @@ export default function PartnerProfileModal({
                               </td>
                               <td className="px-4 py-3 text-right tabular-nums">
                                 <span className="font-semibold text-emerald-700 block">
-                                  জমা: ৳{st.paidBdt.toLocaleString()}
+                                  {tr("জমা", "Paid", "納入済")}: ৳{st.paidBdt.toLocaleString()}
                                 </span>
                                 <span className="text-[11px] text-amber-700 block">
-                                  বকেয়া: ৳{st.dueBdt.toLocaleString()}
+                                  {tr("বকেয়া", "Due", "未納")}: ৳{st.dueBdt.toLocaleString()}
                                 </span>
                               </td>
                             </tr>

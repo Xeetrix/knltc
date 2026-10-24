@@ -312,6 +312,13 @@ export default function DashboardPage() {
 
   const t: DashboardDictionary = useMemo(() => getDashboardDictionary(language), [language]);
 
+  // Trilingual localization helper for Dashboard
+  const tr = (bn: string, en: string, ja?: string): string => {
+    if (language === "ja") return ja || en;
+    if (language === "en") return en;
+    return bn;
+  };
+
   // Sleek Animated Toast Notification State
   const [toastState, setToastState] = useState<{
     id: number;
@@ -1358,7 +1365,7 @@ export default function DashboardPage() {
                             onClick={() => openPartnerSchoolModal()}
                             className="text-[11px] font-semibold text-[#b91c1c] hover:underline"
                           >
-                            {language === "bn" ? "+ নতুন স্কুল যোগ করুন" : "+ Add School"}
+                            {tr("+ নতুন স্কুল যোগ করুন", "+ Add School", "+ 提携校を追加")}
                           </button>
                         </div>
 
@@ -1372,7 +1379,7 @@ export default function DashboardPage() {
                                   <div className="flex items-center justify-between">
                                     <h3 className="text-xs font-bold text-slate-900 truncate">{sch.name}</h3>
                                     <span className="text-[11px] font-bold text-slate-700 tabular-nums">
-                                      {sch.activeStudentsCount}/{quota} সিট
+                                      {sch.activeStudentsCount}/{quota} {tr("সিট", "Seats", "席")}
                                     </span>
                                   </div>
                                   <div className="mt-1.5 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
@@ -1382,7 +1389,7 @@ export default function DashboardPage() {
                                     />
                                   </div>
                                   <p className="text-[10px] text-slate-400 mt-1">
-                                    {sch.location} • কমিশন ¥{sch.commissionPerStudentYen.toLocaleString()}/স্টুডেন্ট
+                                    {sch.location} • {tr("কমিশন", "Comm.", "手数料")} ¥{sch.commissionPerStudentYen.toLocaleString()}{tr("/স্টুডেন্ট", "/Student", "/名")}
                                   </p>
                                 </div>
                               );
@@ -1403,7 +1410,7 @@ export default function DashboardPage() {
                               className="mt-2.5 inline-flex items-center gap-1 rounded-lg bg-slate-900 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-slate-800 transition"
                             >
                               <Plus className="h-3 w-3" />
-                              <span>{language === "bn" ? "প্রতিষ্ঠান যোগ করুন" : "Add Institution"}</span>
+                              <span>{tr("প্রতিষ্ঠান যোগ করুন", "Add Institution", "教育機関を追加")}</span>
                             </button>
                           </div>
                         )}
@@ -1450,39 +1457,39 @@ export default function DashboardPage() {
 
                     const funnelSteps = [
                       {
-                        label: language === "bn" ? "মোট লিড (CRM)" : "Total Leads",
+                        label: tr("মোট লিড (CRM)", "Total Leads", "総リード数"),
                         count: totalLeadsCount,
-                        sub: language === "bn" ? "ইনকোয়ারি" : "Inquiries",
+                        sub: tr("ইনকোয়ারি", "Inquiries", "問合せ"),
                         tab: "crm" as DashboardTabId,
                       },
                       {
-                        label: language === "bn" ? "কাউন্সেলিং সম্পন্ন" : "Counseled",
+                        label: tr("কাউন্সেলিং সম্পন্ন", "Counseled", "カウンセリング済"),
                         count: counseledCount,
-                        sub: language === "bn" ? "ভিজিট / কল" : "Assessed",
+                        sub: tr("ভিজিট / কল", "Assessed", "面談・評価"),
                         tab: "crm" as DashboardTabId,
                       },
                       {
-                        label: language === "bn" ? "ভর্তি ও LMS ব্যাচ" : "Enrolled / LMS",
+                        label: tr("ভর্তি ও LMS ব্যাচ", "Enrolled / LMS", "受講生 / LMS"),
                         count: enrolledCount || store.lmsBridges.length,
-                        sub: language === "bn" ? "ভাষা ও ফাইল" : "Active Students",
+                        sub: tr("ভাষা ও ফাইল", "Active Students", "在籍生徒"),
                         tab: "lms" as DashboardTabId,
                       },
                       {
-                        label: language === "bn" ? "ভিসা প্রসেসিং ফাইল" : "Visa Pipeline",
+                        label: tr("ভিসা প্রসেসিং ফাইল", "Visa Pipeline", "ビザ申請中"),
                         count: visaPipelineCount,
-                        sub: language === "bn" ? "ডকুমেন্টেশন" : "In Process",
+                        sub: tr("ডকুমেন্টেশন", "In Process", "書類手続き中"),
                         tab: "visa" as DashboardTabId,
                       },
                       {
-                        label: language === "bn" ? "COE অনুমোদিত" : "COE Approved",
+                        label: tr("COE অনুমোদিত", "COE Approved", "COE交付済"),
                         count: coeApprovedCount,
-                        sub: language === "bn" ? "জাপান ইমিগ্রেশন" : "Stage 6+",
+                        sub: tr("জাপান ইমিগ্রেশন", "Stage 6+", "入管交付"),
                         tab: "visa" as DashboardTabId,
                       },
                       {
-                        label: language === "bn" ? "ভিসা স্ট্যাম্প ও ফ্লাই" : "Visa & Fly",
+                        label: tr("ভিসা স্ট্যাম্প ও ফ্লাই", "Visa & Fly", "ビザ取得・渡航"),
                         count: visaFlyCount,
-                        sub: language === "bn" ? "চূড়ান্ত সফলতা" : "Stage 9-10",
+                        sub: tr("চূড়ান্ত সফলতা", "Stage 9-10", "渡航成功"),
                         tab: "visa" as DashboardTabId,
                       },
                     ];
@@ -1494,18 +1501,22 @@ export default function DashboardPage() {
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-4 border-b border-slate-100">
                             <div>
                               <h2 className="text-sm font-bold text-slate-900">
-                                {language === "bn"
-                                  ? "এন্ড-টু-এন্ড স্টুডেন্ট কনভার্সন ফানেল (CRM ➔ LMS ➔ Visa ➔ COE ➔ Fly)"
-                                  : "End-to-End Student Conversion Funnel (CRM to COE & Fly)"}
+                                {tr(
+                                  "এন্ড-টু-এন্ড স্টুডেন্ট কনভার্সন ফানেল (CRM ➔ LMS ➔ Visa ➔ COE ➔ Fly)",
+                                  "End-to-End Student Conversion Funnel (CRM to COE & Fly)",
+                                  "学生コンバージョンファネル (CRM ➔ LMS ➔ ビザ ➔ COE ➔ 渡航)",
+                                )}
                               </h2>
                               <p className="text-xs text-slate-400 mt-0.5">
-                                {language === "bn"
-                                  ? "প্রাথমিক লিড থেকে শুরু করে জাপানে ফ্লাইট পর্যন্ত প্রতিটি ধাপের লাইভ সিঙ্ক ট্র্যাকার"
-                                  : "Live relational synchronization from initial inquiry to visa stamping"}
+                                {tr(
+                                  "প্রাথমিক লিড থেকে শুরু করে জাপানে ফ্লাইট পর্যন্ত প্রতিটি ধাপের লাইভ সিঙ্ক ট্র্যাকার",
+                                  "Live relational synchronization from initial inquiry to visa stamping",
+                                  "初回問合せからCOE交付・日本渡航までのリアルタイム追跡",
+                                )}
                               </p>
                             </div>
                             <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200/60">
-                              {language === "bn" ? "অটো-সিঙ্ক সক্রিয়" : "Auto-Sync Active"}
+                              {tr("অটো-সিঙ্ক সক্রিয়", "Auto-Sync Active", "自動同期稼働中")}
                             </span>
                           </div>
 
@@ -1541,14 +1552,18 @@ export default function DashboardPage() {
                               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                                 <div>
                                   <h3 className="text-sm font-bold text-slate-900">
-                                    {language === "bn"
-                                      ? "বকেয়া ফি ও প্রদেয় এজেন্ট কমিশন অ্যালার্ট"
-                                      : "Pending Student Dues & Payable B2B Commissions"}
+                                    {tr(
+                                      "বকেয়া ফি ও প্রদেয় এজেন্ট কমিশন অ্যালার্ট",
+                                      "Pending Student Dues & Payable B2B Commissions",
+                                      "未収金およびB2B代理店手数料アラート",
+                                    )}
                                   </h3>
                                   <p className="text-[11px] text-slate-400 mt-0.5">
-                                    {language === "bn"
-                                      ? "১-ক্লিকে বকেয়া আদায় অথবা সাব-এজেন্ট কমিশন পরিশোধ করুন"
-                                      : "Collect due installments or settle B2B commissions in 1 click"}
+                                    {tr(
+                                      "১-ক্লিকে বকেয়া আদায় অথবা সাব-এজেন্ট কমিশন পরিশোধ করুন",
+                                      "Collect due installments or settle B2B commissions in 1 click",
+                                      "1クリックで未収金回収またはエージェント手数料を精算",
+                                    )}
                                   </p>
                                 </div>
                                 <button
@@ -1559,32 +1574,32 @@ export default function DashboardPage() {
                                   }}
                                   className="text-xs font-semibold text-[#b91c1c] hover:underline"
                                 >
-                                  {language === "bn" ? "সব বকেয়া দেখুন" : "View All"}
+                                  {tr("সব বকেয়া দেখুন", "View All", "すべて表示")}
                                 </button>
                               </div>
 
                               <div className="mt-3 grid grid-cols-2 gap-3">
                                 <div className="rounded-xl border border-amber-200/70 bg-amber-50/40 p-3">
                                   <span className="text-[11px] font-semibold text-amber-800">
-                                    {language === "bn" ? "শিক্ষার্থীদের মোট বকেয়া" : "Student Receivable Dues"}
+                                    {tr("শিক্ষার্থীদের মোট বকেয়া", "Student Receivable Dues", "生徒未収金総額")}
                                   </span>
                                   <p className="text-lg font-bold text-slate-900 mt-0.5 tabular-nums">
                                     ৳{totalStudentDuesBdt.toLocaleString()}
                                   </p>
                                   <p className="text-[10px] text-amber-700 mt-0.5 tabular-nums">
-                                    {studentsWithDues.length} {language === "bn" ? "জন শিক্ষার্থীর কিস্তি বাকি" : "students with balance"}
+                                    {studentsWithDues.length} {tr("জন শিক্ষার্থীর কিস্তি বাকি", "students with balance", "名の残金あり")}
                                   </p>
                                 </div>
 
                                 <div className="rounded-xl border border-slate-200/80 bg-slate-50/60 p-3">
                                   <span className="text-[11px] font-semibold text-slate-600">
-                                    {language === "bn" ? "বিটুবি এজেন্ট কমিশন প্রদেয়" : "Payable B2B Commission"}
+                                    {tr("বিটুবি এজেন্ট কমিশন প্রদেয়", "Payable B2B Commission", "未払B2B手数料")}
                                   </span>
                                   <p className="text-lg font-bold text-slate-900 mt-0.5 tabular-nums">
                                     ৳{totalPendingAgentBdt.toLocaleString()}
                                   </p>
                                   <p className="text-[10px] text-slate-500 mt-0.5 tabular-nums">
-                                    {agentsWithPending.length} {language === "bn" ? "টি এজেন্সির COE কমিশন" : "agencies pending"}
+                                    {agentsWithPending.length} {tr("টি এজেন্সির COE কমিশন", "agencies pending", "社の手数料未払")}
                                   </p>
                                 </div>
                               </div>
@@ -1602,7 +1617,7 @@ export default function DashboardPage() {
                                       <div>
                                         <p className="font-bold text-slate-900">{stu.name}</p>
                                         <p className="text-[11px] text-slate-500 tabular-nums">
-                                          {language === "bn" ? "বকেয়া:" : "Due:"}{" "}
+                                          {tr("বকেয়া:", "Due:", "残金:")}{" "}
                                           <span className="font-semibold text-[#b91c1c]">
                                             ৳{due.toLocaleString()}
                                           </span>{" "}
@@ -1614,7 +1629,7 @@ export default function DashboardPage() {
                                         onClick={() => openStudentPaymentModal(stu)}
                                         className="rounded-lg bg-emerald-700 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-emerald-800 transition"
                                       >
-                                        {language === "bn" ? "ফি গ্রহণ" : "Collect Fee"}
+                                        {tr("ফি গ্রহণ", "Collect Fee", "入金受領")}
                                       </button>
                                     </div>
                                   );
@@ -1628,7 +1643,7 @@ export default function DashboardPage() {
                                     <div>
                                       <p className="font-bold text-slate-900">{ag.organizationName}</p>
                                       <p className="text-[11px] text-amber-800 tabular-nums">
-                                        {language === "bn" ? "প্রদেয় কমিশন:" : "Payable:"}{" "}
+                                        {tr("প্রদেয় কমিশন:", "Payable:", "未払手数料:")}{" "}
                                         <span className="font-bold">৳{ag.pendingCommissionBdt.toLocaleString()}</span>
                                       </p>
                                     </div>
@@ -1638,21 +1653,23 @@ export default function DashboardPage() {
                                         const tx = settleB2bAgentCommission(ag.id);
                                         if (tx) {
                                           setStore({ ...getCmsStore() });
-                                          showToast(`${ag.organizationName}: ৳${tx.amountBdt.toLocaleString()} কমিশন পরিশোধিত`);
+                                          showToast(`${ag.organizationName}: ৳${tx.amountBdt.toLocaleString()} ${tr("কমিশন পরিশোধিত", "commission settled", "手数料精算完了")}`);
                                         }
                                       }}
                                       className="rounded-lg bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-slate-800 transition"
                                     >
-                                      {language === "bn" ? "পরিশোধ করুন" : "Settle Now"}
+                                      {tr("পরিশোধ করুন", "Settle Now", "今すぐ精算")}
                                     </button>
                                   </div>
                                 ))}
 
                                 {studentsWithDues.length === 0 && agentsWithPending.length === 0 && (
                                   <div className="rounded-xl border border-dashed border-slate-200 py-5 text-center text-xs text-slate-400">
-                                    {language === "bn"
-                                      ? "কোনো বকেয়া ফি বা অমীমাংসিত এজেন্ট কমিশন নেই"
-                                      : "No pending student dues or unsettled agent commissions"}
+                                    {tr(
+                                      "কোনো বকেয়া ফি বা অমীমাংসিত এজেন্ট কমিশন নেই",
+                                      "No pending student dues or unsettled agent commissions",
+                                      "未収金や未精算の手数料はありません",
+                                    )}
                                   </div>
                                 )}
                               </div>
@@ -1664,14 +1681,18 @@ export default function DashboardPage() {
                             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                               <div>
                                 <h3 className="text-sm font-bold text-slate-900">
-                                  {language === "bn"
-                                    ? "টপ পারফর্মিং কাউন্সেলর ও বিটুবি এজেন্ট লিডারবোর্ড"
-                                    : "Top Performing Counselors & B2B Partners"}
+                                  {tr(
+                                    "টপ পারফর্মিং কাউন্সেলর ও বিটুবি এজেন্ট লিডারবোর্ড",
+                                    "Top Performing Counselors & B2B Partners",
+                                    "トップ実績カウンセラー＆B2Bパートナー",
+                                  )}
                                 </h3>
                                 <p className="text-[11px] text-slate-400 mt-0.5">
-                                  {language === "bn"
-                                    ? "ভর্তি ও সফল ভিসা প্রাপ্তির ভিত্তিতে সেরা পারফর্মার তালিকা"
-                                    : "Ranked by confirmed student admissions and successful COE/Visas"}
+                                  {tr(
+                                    "ভর্তি ও সফল ভিসা প্রাপ্তির ভিত্তিতে সেরা পারফর্মার তালিকা",
+                                    "Ranked by confirmed student admissions and successful COE/Visas",
+                                    "入学者数およびビザ・COE取得実績ランキング",
+                                  )}
                                 </p>
                               </div>
                               <button
@@ -1679,14 +1700,14 @@ export default function DashboardPage() {
                                 onClick={() => setActiveTab("hr")}
                                 className="text-xs font-semibold text-slate-600 hover:text-slate-900"
                               >
-                                {language === "bn" ? "HR প্যানেল" : "HR Panel"}
+                                {tr("HR প্যানেল", "HR Panel", "人事パネル")}
                               </button>
                             </div>
 
                             <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
                               <div>
                                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                  {language === "bn" ? "সেরা এডমিশন কাউন্সেলর" : "Top Counselors"}
+                                  {tr("সেরা এডমিশন কাউন্সেলর", "Top Counselors", "トップカウンセラー")}
                                 </span>
                                 <div className="mt-2 space-y-2">
                                   {topCounselors.length > 0 ? (
@@ -1700,17 +1721,17 @@ export default function DashboardPage() {
                                             {i + 1}. {c.name}
                                           </p>
                                           <p className="text-[10px] text-slate-400 tabular-nums">
-                                            {c.callsCompleted || 0} কল • বোনাস ৳{(c.performanceBonusBdt || 0).toLocaleString()}
+                                            {c.callsCompleted || 0} {tr("কল", "calls", "件架電")} • {tr("বোনাস", "Bonus", "ボーナス")} ৳{(c.performanceBonusBdt || 0).toLocaleString()}
                                           </p>
                                         </div>
                                         <span className="rounded-lg bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-200/60 tabular-nums shrink-0">
-                                          {c.admissionsAchieved} ভর্তি
+                                          {c.admissionsAchieved} {tr("ভর্তি", "Admissions", "名入学")}
                                         </span>
                                       </div>
                                     ))
                                   ) : (
                                     <p className="text-xs text-slate-400 py-3">
-                                      {language === "bn" ? "কোনো কাউন্সেলর তথ্য নেই" : "No counselors added"}
+                                      {tr("কোনো কাউন্সেলর তথ্য নেই", "No counselors added", "カウンセラー情報なし")}
                                     </p>
                                   )}
                                 </div>
@@ -1718,7 +1739,7 @@ export default function DashboardPage() {
 
                               <div>
                                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                                  {language === "bn" ? "সেরা বিটুবি সাব-এজেন্ট" : "Top B2B Agents"}
+                                  {tr("সেরা বিটুবি সাব-এজেন্ট", "Top B2B Agents", "トップB2Bパートナー")}
                                 </span>
                                 <div className="mt-2 space-y-2">
                                   {topAgents.length > 0 ? (
@@ -1732,17 +1753,17 @@ export default function DashboardPage() {
                                             {i + 1}. {ag.organizationName}
                                           </p>
                                           <p className="text-[10px] text-slate-400 tabular-nums">
-                                            রেফার্ড: {ag.referredStudentsCount} জন • {ag.city}
+                                            {tr("রেফার্ড:", "Referred:", "紹介数:")} {ag.referredStudentsCount} {tr("জন", "students", "名")} • {ag.city}
                                           </p>
                                         </div>
                                         <span className="rounded-lg bg-slate-900 px-2 py-0.5 text-[11px] font-bold text-white tabular-nums shrink-0">
-                                          {ag.successfulVisasCount} ভিসা
+                                          {ag.successfulVisasCount} {tr("ভিসা", "Visas", "件ビザ")}
                                         </span>
                                       </div>
                                     ))
                                   ) : (
                                     <p className="text-xs text-slate-400 py-3">
-                                      {language === "bn" ? "কোনো বিটুবি এজেন্ট যুক্ত নেই" : "No B2B agents added"}
+                                      {tr("কোনো বিটুবি এজেন্ট যুক্ত নেই", "No B2B agents added", "B2Bエージェント情報なし")}
                                     </p>
                                   )}
                                 </div>
@@ -1788,7 +1809,7 @@ export default function DashboardPage() {
                             <th className="px-4 py-3">{t.crm.colCandidate}</th>
                             <th className="px-4 py-3">{t.crm.colSource}</th>
                             <th className="px-4 py-3">
-                              {language === "bn" ? "চুক্তি ও বকেয়া হিসাব (Finance)" : "Contract & Dues"}
+                              {tr("চুক্তি ও বকেয়া হিসাব (Finance)", "Contract & Dues", "契約・未収金管理")}
                             </th>
                             <th className="px-4 py-3">{t.crm.colCounselor}</th>
                             <th className="px-4 py-3">{t.crm.colStatus}</th>
@@ -1852,11 +1873,11 @@ export default function DashboardPage() {
                                             : "text-slate-600 font-semibold"
                                       }
                                     >
-                                      যোগ্যতা: {elig.totalScore}%
+                                      {tr("যোগ্যতা:", "Eligibility:", "適格性:")} {elig.totalScore}%
                                     </span>
                                     <span aria-hidden="true">·</span>
                                     <span>
-                                      ডকুমেন্ট: {elig.verifiedDocsCount}/{elig.totalDocsCount}
+                                      {tr("ডকুমেন্ট:", "Documents:", "提出書類:")} {elig.verifiedDocsCount}/{elig.totalDocsCount}
                                     </span>
                                     {(lead.targetSchoolName || lead.targetSchool) && (
                                       <>
@@ -1871,7 +1892,7 @@ export default function DashboardPage() {
                                 <td className="px-4 py-3.5">
                                   <span className="text-[11px] font-medium text-slate-500 block">
                                     {lead.referredByAgentName || lead.b2bAgentName
-                                      ? `এজেন্ট: ${lead.referredByAgentName || lead.b2bAgentName}`
+                                      ? `${tr("এজেন্ট:", "Agent:", "代理店:")} ${lead.referredByAgentName || lead.b2bAgentName}`
                                       : lead.source}
                                   </span>
                                   <span className="font-semibold text-slate-800 mt-0.5 block">
@@ -1885,18 +1906,18 @@ export default function DashboardPage() {
                                 <td className="px-4 py-3.5 tabular-nums">
                                   <div className="space-y-0.5">
                                     <p className="text-[11px] text-slate-500">
-                                      চুক্তি: <span className="font-semibold text-slate-800">৳{contractBdt.toLocaleString()}</span>
+                                      {tr("চুক্তি:", "Contract:", "契約額:")} <span className="font-semibold text-slate-800">৳{contractBdt.toLocaleString()}</span>
                                     </p>
                                     <p className="text-[11px] text-emerald-700 font-semibold">
-                                      জমা: ৳{paidBdt.toLocaleString()}
+                                      {tr("জমা:", "Paid:", "入金額:")} ৳{paidBdt.toLocaleString()}
                                     </p>
                                     {dueBdt > 0 ? (
                                       <p className="text-[11px] text-[#b91c1c] font-bold">
-                                        বকেয়া: ৳{dueBdt.toLocaleString()}
+                                        {tr("বকেয়া:", "Due:", "残金:")} ৳{dueBdt.toLocaleString()}
                                       </p>
                                     ) : (
                                       <span className="inline-block rounded bg-emerald-50 px-1.5 py-0.2 text-[10px] font-bold text-emerald-700">
-                                        পরিশোধিত
+                                        {tr("পরিশোধিত", "Paid in full", "完納")}
                                       </span>
                                     )}
                                   </div>
@@ -1916,7 +1937,7 @@ export default function DashboardPage() {
                                       setStore({ ...getCmsStore() });
                                       showToast(
                                         nextStatus === "ADMITTED"
-                                          ? `${lead.name} — ভর্তি সম্পন্ন ও ভিসা পাইপলাইনে সিঙ্ক হয়েছে`
+                                          ? `${lead.name} — ${tr("ভর্তি সম্পন্ন ও ভিসা পাইপলাইনে সিঙ্ক হয়েছে", "Admitted & synced to visa pipeline", "入学手続完了・ビザパイプライン連携済")}`
                                           : `${lead.name} — ${nextStatus}`,
                                       );
                                     }}
@@ -1938,7 +1959,7 @@ export default function DashboardPage() {
                                       className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
                                     >
                                       <UserCheck className="h-3.5 w-3.5 text-[#b91c1c]" />
-                                      <span>{language === "bn" ? "প্রোফাইল ও ভর্তি" : "360° Profile"}</span>
+                                      <span>{tr("প্রোফাইল ও ভর্তি", "360° Profile", "360°プロファイル")}</span>
                                     </button>
                                     <button
                                       type="button"
@@ -1947,7 +1968,7 @@ export default function DashboardPage() {
                                       title="Collect Fee Installment"
                                     >
                                       <DollarSign className="h-3 w-3 text-emerald-700" />
-                                      <span>{language === "bn" ? "ফি জমা" : "Fee"}</span>
+                                      <span>{tr("ফি জমা", "Fee", "入金")}</span>
                                     </button>
                                     {!lead.isFileOpened && (
                                       <button
@@ -1955,13 +1976,13 @@ export default function DashboardPage() {
                                         onClick={() => {
                                           promoteLeadToVisaPipeline({ leadId: lead.id });
                                           setStore({ ...getCmsStore() });
-                                          showToast(`${lead.name} ভিসা পাইপলাইনে যুক্ত হয়েছে`);
+                                          showToast(`${lead.name} ${tr("ভিসা পাইপলাইনে যুক্ত হয়েছে", "promoted to visa pipeline", "ビザパイプラインに追加されました")}`);
                                         }}
                                         className="inline-flex items-center gap-1 rounded-lg bg-slate-900 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 transition"
                                         title="Promote to 10-Step Visa Pipeline"
                                       >
                                         <FileCheck2 className="h-3 w-3" />
-                                        <span>{language === "bn" ? "পাইপলাইন" : "Pipeline"}</span>
+                                        <span>{tr("পাইপলাইন", "Pipeline", "パイプライン")}</span>
                                       </button>
                                     )}
                                     <a
@@ -1981,9 +2002,11 @@ export default function DashboardPage() {
                             <tr>
                               <td colSpan={6} className="py-12 text-center">
                                 <p className="text-sm font-semibold text-slate-600">
-                                  {language === "bn"
-                                    ? "এখনো কোনো CRM লিড যুক্ত করা হয়নি"
-                                    : "No CRM leads recorded yet"}
+                                  {tr(
+                                    "এখনো কোনো CRM লিড যুক্ত করা হয়নি",
+                                    "No CRM leads recorded yet",
+                                    "CRMリードがまだ登録されていません",
+                                  )}
                                 </p>
                                 <button
                                   type="button"
@@ -2145,21 +2168,21 @@ export default function DashboardPage() {
                                     </p>
                                     {linkedAgent && (
                                       <p className="text-[10px] text-amber-700 font-medium mt-0.5 truncate">
-                                        এজেন্ট: {linkedAgent.organizationName}
+                                        {tr("এজেন্ট:", "Agent:", "代理店:")} {linkedAgent.organizationName}
                                       </p>
                                     )}
                                     {linkedOfficer && (
                                       <p className="text-[10px] text-slate-400 mt-0.5 truncate">
-                                        অফিসার: {linkedOfficer.name}
+                                        {tr("অফিসার:", "Officer:", "担当官:")} {linkedOfficer.name}
                                       </p>
                                     )}
                                     <div className="mt-1.5 flex items-center justify-between text-[10px] tabular-nums">
                                       <span className="text-emerald-700 font-semibold">
-                                        জমা: ৳{(app.paidAmountBdt || 0).toLocaleString()}
+                                        {tr("জমা:", "Paid:", "入金:")} ৳{(app.paidAmountBdt || 0).toLocaleString()}
                                       </span>
                                       {dueAmt > 0 && (
                                         <span className="text-[#b91c1c] font-semibold">
-                                          বকেয়া: ৳{dueAmt.toLocaleString()}
+                                          {tr("বকেয়া:", "Due:", "残金:")} ৳{dueAmt.toLocaleString()}
                                         </span>
                                       )}
                                     </div>
@@ -2261,7 +2284,7 @@ export default function DashboardPage() {
                     <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
                       <h3 className="font-bold text-sm text-slate-900">{t.lms.tableHeading}</h3>
                       <span className="text-xs text-slate-400 tabular-nums">
-                        {store.lmsBridges.length} {language === "bn" ? "জন শিক্ষার্থী" : "students"}
+                        {store.lmsBridges.length} {tr("জন শিক্ষার্থী", "students", "名の生徒")}
                       </span>
                     </div>
                     <div className="overflow-x-auto">
@@ -2330,9 +2353,7 @@ export default function DashboardPage() {
                           {store.lmsBridges.length === 0 && (
                             <tr>
                               <td colSpan={6} className="py-10 text-center text-slate-400">
-                                {language === "bn"
-                                  ? "কোনো LMS অ্যাকাউন্ট ইস্যু করা হয়নি।"
-                                  : "No LMS accounts issued yet."}
+                                {tr("কোনো LMS অ্যাকাউন্ট ইস্যু করা হয়নি।", "No LMS accounts issued yet.", "LMSアカウントはまだ発行されていません。")}
                               </td>
                             </tr>
                           )}
@@ -2365,11 +2386,7 @@ export default function DashboardPage() {
                       >
                         <Building2 className="h-4 w-4 text-[#b91c1c]" />
                         <span>
-                          {language === "ja"
-                            ? "+ 提携日本語学校を追加"
-                            : language === "en"
-                              ? "+ Add Partner School"
-                              : "+ জাপানি পার্টনার স্কুল যোগ করুন"}
+                          {tr("+ জাপানি পার্টনার স্কুল যোগ করুন", "+ Add Partner School", "+ 提携日本語学校を追加")}
                         </span>
                       </button>
                       <button
@@ -2379,11 +2396,7 @@ export default function DashboardPage() {
                       >
                         <Plus className="h-4 w-4" />
                         <span>
-                          {language === "ja"
-                            ? "+ B2Bエージェントを追加"
-                            : language === "en"
-                              ? "+ Add B2B Agent"
-                              : "+ নতুন বিটুবি এজেন্ট যোগ করুন"}
+                          {tr("+ নতুন বিটুবি এজেন্ট যোগ করুন", "+ Add B2B Agent", "+ B2Bエージェントを追加")}
                         </span>
                       </button>
                     </div>
@@ -2393,15 +2406,15 @@ export default function DashboardPage() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-bold text-slate-900">
-                        {language === "ja"
-                          ? "提携日本語学校・大学・教育機関"
-                          : language === "en"
-                            ? "Partner Japanese Language Schools, Universities & Colleges"
-                            : "জাপানি পার্টনার ভাষা স্কুল, ইউনিভার্সিটি ও কলেজ তালিকা"}
+                        {tr(
+                          "জাপানি পার্টনার ভাষা স্কুল, ইউনিভার্সিটি ও কলেজ তালিকা",
+                          "Partner Japanese Language Schools, Universities & Colleges",
+                          "提携日本語学校・大学・教育機関",
+                        )}
                       </h3>
                       <span className="text-xs text-slate-400 tabular-nums">
                         {store.partnerSchools.length}{" "}
-                        {language === "bn" ? "টি প্রতিষ্ঠান" : "institutions"}
+                        {tr("টি প্রতিষ্ঠান", "institutions", "校・機関")}
                       </span>
                     </div>
 
@@ -2453,18 +2466,12 @@ export default function DashboardPage() {
                                     <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
                                       <span className="font-semibold text-[#b91c1c]">
                                         {sch.institutionType === "UNIVERSITY"
-                                          ? language === "bn"
-                                            ? "ইউনিভার্সিটি"
-                                            : "University"
+                                          ? tr("ইউনিভার্সিটি", "University", "大学")
                                           : sch.institutionType === "VOCATIONAL_COLLEGE"
-                                            ? language === "bn"
-                                              ? "ভোকেশনাল কলেজ"
-                                              : "Vocational College"
+                                            ? tr("ভোকেশনাল কলেজ", "Vocational College", "専門学校")
                                             : sch.institutionType === "SSW_EMPLOYER"
-                                              ? "SSW Employer"
-                                              : language === "bn"
-                                                ? "ভাষা স্কুল"
-                                                : "Language School"}
+                                              ? tr("SSW নিয়োগদাতা", "SSW Employer", "特定技能受入企業")
+                                              : tr("ভাষা স্কুল", "Language School", "日本語学校")}
                                       </span>
                                       <span aria-hidden="true">·</span>
                                       <span className="font-medium text-slate-700">
@@ -2473,7 +2480,7 @@ export default function DashboardPage() {
                                       <span aria-hidden="true">·</span>
                                       <span className="font-medium text-emerald-700">
                                         {readySchoolDocs}/{schoolDocs.length}{" "}
-                                        {language === "bn" ? "ব্রশিউর/MOU" : "Docs"}
+                                        {tr("ব্রশিউর/MOU", "Docs", "提出書類")}
                                       </span>
                                     </div>
                                     <button
@@ -2499,7 +2506,7 @@ export default function DashboardPage() {
                                   >
                                     <FileText className="h-3 w-3" />
                                     <span>
-                                      {language === "bn" ? "৩৬০° প্রোফাইল" : "360° Profile"}
+                                      {tr("৩৬০° প্রোফাইল", "360° Profile", "360°プロファイル")}
                                     </span>
                                   </button>
                                   <button
@@ -2516,9 +2523,11 @@ export default function DashboardPage() {
                                       deletePartnerSchool(sch.id);
                                       setStore({ ...getCmsStore() });
                                       showToast(
-                                        language === "bn"
-                                          ? `${sch.name} মুছে ফেলা হয়েছে`
-                                          : `${sch.name} removed`,
+                                        tr(
+                                          `${sch.name} মুছে ফেলা হয়েছে`,
+                                          `${sch.name} removed`,
+                                          `${sch.name}を削除しました`,
+                                        ),
                                       );
                                     }}
                                     className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-[#b91c1c] transition"
@@ -2533,9 +2542,7 @@ export default function DashboardPage() {
                               <div className="mt-3.5 rounded-xl bg-slate-50/80 border border-slate-100 p-3">
                                 <div className="flex items-center justify-between text-xs">
                                   <span className="font-semibold text-slate-600">
-                                    {language === "bn"
-                                      ? "সিট কোটা ও ভর্তি অগ্রগতি"
-                                      : "Intake Seat Quota"}
+                                    {tr("সিট কোটা ও ভর্তি অগ্রগতি", "Intake Seat Quota", "入学定員・進捗")}
                                   </span>
                                   <span className="font-bold text-slate-900 tabular-nums">
                                     {sch.activeStudentsCount} / {quota} {t.b2b.studentsSuffix} (
@@ -2553,7 +2560,7 @@ export default function DashboardPage() {
                               <div className="mt-3.5 grid grid-cols-2 sm:grid-cols-4 gap-3 border-t border-slate-100 pt-3.5 text-xs">
                                 <div>
                                   <span className="text-slate-400 block text-[11px]">
-                                    {language === "bn" ? "১ম বর্ষ টিউশন ফি" : "1st Yr Tuition"}
+                                    {tr("১ম বর্ষ টিউশন ফি", "1st Yr Tuition", "初年度学費")}
                                   </span>
                                   <p className="font-semibold text-slate-800 mt-0.5 tabular-nums">
                                     {sch.firstYearTuitionYen
@@ -2571,7 +2578,7 @@ export default function DashboardPage() {
                                 </div>
                                 <div>
                                   <span className="text-slate-400 block text-[11px]">
-                                    {language === "bn" ? "COE অনুমোদিত" : "COE Approved"}
+                                    {tr("COE অনুমোদিত", "COE Approved", "COE交付済")}
                                   </span>
                                   <p className="font-bold text-slate-900 mt-0.5 tabular-nums">
                                     {coeStudentsForSchool} {t.b2b.studentsSuffix}
@@ -2594,9 +2601,11 @@ export default function DashboardPage() {
                                   onClick={() => setSelectedSchoolForProfile(sch)}
                                   className="text-[11px] font-semibold text-slate-600 hover:text-slate-900 underline underline-offset-2"
                                 >
-                                  {language === "bn"
-                                    ? "ব্রশিউর, প্রসপেক্টাস, লোগো ও চুক্তিপত্র ভল্ট দেখুন →"
-                                    : "Open Brochure, Logo & MOU Vault →"}
+                                  {tr(
+                                    "ব্রশিউর, প্রসপেক্টাস, লোগো ও চুক্তিপত্র ভল্ট দেখুন →",
+                                    "Open Brochure, Logo & MOU Vault →",
+                                    "パンフレット・募集要項・協定書Vaultを見る →",
+                                  )}
                                 </button>
                                 <button
                                   type="button"
@@ -2609,7 +2618,11 @@ export default function DashboardPage() {
                                     if (tx) {
                                       setStore({ ...getCmsStore() });
                                       showToast(
-                                        `${sch.name}: ¥${sch.commissionPerStudentYen.toLocaleString()} (৳${tx.amountBdt.toLocaleString()}) কমিশন ফাইন্যান্স লেজারে যুক্ত হয়েছে`,
+                                        tr(
+                                          `${sch.name}: ¥${sch.commissionPerStudentYen.toLocaleString()} (৳${tx.amountBdt.toLocaleString()}) কমিশন ফাইন্যান্স লেজারে যুক্ত হয়েছে`,
+                                          `${sch.name}: ¥${sch.commissionPerStudentYen.toLocaleString()} (৳${tx.amountBdt.toLocaleString()}) commission added to Finance ledger`,
+                                          `${sch.name}: 手数料¥${sch.commissionPerStudentYen.toLocaleString()}（৳${tx.amountBdt.toLocaleString()}）を出納帳に記録しました`,
+                                        ),
                                       );
                                     }
                                   }}
@@ -2617,9 +2630,11 @@ export default function DashboardPage() {
                                 >
                                   <Coins className="h-3.5 w-3.5" />
                                   <span>
-                                    {language === "bn"
-                                      ? "+ ১ স্টুডেন্ট কমিশন ক্লেইম (JPY➔BDT)"
-                                      : "+ Claim 1 Student Commission"}
+                                    {tr(
+                                      "+ ১ স্টুডেন্ট কমিশন ক্লেইম (JPY➔BDT)",
+                                      "+ Claim 1 Student Commission",
+                                      "+ 生徒1名分の手数料申請 (JPY➔BDT)",
+                                    )}
                                   </span>
                                 </button>
                               </div>
@@ -2631,14 +2646,18 @@ export default function DashboardPage() {
                       <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center">
                         <Building2 className="h-8 w-8 text-slate-300 mx-auto mb-2.5" />
                         <p className="mx-auto text-sm font-semibold text-slate-700">
-                          {language === "bn"
-                            ? "এখনো কোনো জাপানি পার্টনার স্কুল বা ইউনিভার্সিটি যোগ করা হয়নি"
-                            : "No Japanese partner schools added yet"}
+                          {tr(
+                            "এখনো কোনো জাপানি পার্টনার স্কুল বা ইউনিভার্সিটি যোগ করা হয়নি",
+                            "No Japanese partner schools added yet",
+                            "提携教育機関はまだ登録されていません",
+                          )}
                         </p>
                         <p className="mx-auto text-xs text-slate-400 mt-1">
-                          {language === "bn"
-                            ? "আপনার চুক্তিবদ্ধ জাপানি ভাষা স্কুল, ইউনিভার্সিটি, ব্রশিউর ও কমিশনের তথ্য যোগ করুন।"
-                            : "Add your partnered Japanese schools to track students, brochures, and yen commissions."}
+                          {tr(
+                            "আপনার চুক্তিবদ্ধ জাপানি ভাষা স্কুল, ইউনিভার্সিটি, ব্রশিউর ও কমিশনের তথ্য যোগ করুন।",
+                            "Add your partnered Japanese schools to track students, brochures, and yen commissions.",
+                            "提携日本語学校、大学、パンフレットおよび手数料情報を登録してください。",
+                          )}
                         </p>
                         <button
                           type="button"
@@ -2647,9 +2666,11 @@ export default function DashboardPage() {
                         >
                           <Plus className="h-3.5 w-3.5" />
                           <span>
-                            {language === "bn"
-                              ? "প্রথম পার্টনার স্কুল যোগ করুন"
-                              : "Add First Partner School"}
+                            {tr(
+                              "প্রথম পার্টনার স্কুল যোগ করুন",
+                              "Add First Partner School",
+                              "提携校を登録する",
+                            )}
                           </span>
                         </button>
                       </div>
@@ -2662,9 +2683,11 @@ export default function DashboardPage() {
                       <div>
                         <h3 className="font-bold text-sm text-slate-900">{t.b2b.ledgerTitle}</h3>
                         <p className="text-[11px] text-slate-400 mt-0.5">
-                          {language === "bn"
-                            ? "বিটুবি এজেন্টের ট্রেড লাইসেন্স, চুক্তিপত্র (MOU), রেফার্ড স্টুডেন্ট ও স্বয়ংক্রিয় COE কমিশন লেজার"
-                            : "Manage your B2B agencies, trade licenses, MOUs, and auto-accrued COE commissions"}
+                          {tr(
+                            "বিটুবি এজেন্টের ট্রেড লাইসেন্স, চুক্তিপত্র (MOU), রেফার্ড স্টুডেন্ট ও স্বয়ংক্রিয় COE কমিশন লেজার",
+                            "Manage your B2B agencies, trade licenses, MOUs, and auto-accrued COE commissions",
+                            "B2B代理店のライセンス、協定書(MOU)、紹介生徒およびCOE手数料台帳",
+                          )}
                         </p>
                       </div>
                       <button
@@ -2673,7 +2696,7 @@ export default function DashboardPage() {
                         className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition"
                       >
                         <Plus className="h-3.5 w-3.5" />
-                        <span>{language === "bn" ? "এজেন্ট যোগ করুন" : "Add Agent"}</span>
+                        <span>{tr("এজেন্ট যোগ করুন", "Add Agent", "代理店を追加")}</span>
                       </button>
                     </div>
 
@@ -2688,7 +2711,7 @@ export default function DashboardPage() {
                             <th className="px-4 py-3">{t.b2b.colAgreedCommission}</th>
                             <th className="px-4 py-3">{t.b2b.colPaidVsPending}</th>
                             <th className="px-4 py-3 text-right">
-                              {language === "bn" ? "৩৬০° প্রোফাইল ও অ্যাকশন" : "360° Profile & Actions"}
+                              {tr("৩৬০° প্রোফাইল ও অ্যাকশন", "360° Profile & Actions", "360°プロファイル＆操作")}
                             </th>
                           </tr>
                         </thead>
@@ -2733,7 +2756,7 @@ export default function DashboardPage() {
                                         {" · "}
                                         <span className="text-emerald-700 font-semibold">
                                           {readyAgentDocs}/{agentDocs.length}{" "}
-                                          {language === "bn" ? "ডকুমেন্ট" : "Docs"}
+                                          {tr("ডকুমেন্ট", "Docs", "提出書類")}
                                         </span>
                                       </p>
                                     </div>
@@ -2777,9 +2800,11 @@ export default function DashboardPage() {
                                     >
                                       <FileText className="h-3 w-3" />
                                       <span>
-                                        {language === "bn"
-                                          ? "৩৬০° প্রোফাইল ও লাইসেন্স"
-                                          : "360° Profile"}
+                                        {tr(
+                                          "৩৬০° প্রোফাইল ও লাইসেন্স",
+                                          "360° Profile",
+                                          "360°プロファイル＆ライセンス",
+                                        )}
                                       </span>
                                     </button>
                                     {agent.pendingCommissionBdt > 0 && (
@@ -2790,7 +2815,11 @@ export default function DashboardPage() {
                                           if (tx) {
                                             setStore({ ...getCmsStore() });
                                             showToast(
-                                              `${agent.organizationName}: ৳${tx.amountBdt.toLocaleString()} কমিশন পরিশোধ ও লেজারে রেকর্ড হয়েছে`,
+                                              tr(
+                                                `${agent.organizationName}: ৳${tx.amountBdt.toLocaleString()} কমিশন পরিশোধ ও লেজারে রেকর্ড হয়েছে`,
+                                                `${agent.organizationName}: ৳${tx.amountBdt.toLocaleString()} commission settled`,
+                                                `${agent.organizationName}: 手数料৳${tx.amountBdt.toLocaleString()}の精算を完了しました`,
+                                              ),
                                             );
                                           }
                                         }}
@@ -2798,7 +2827,7 @@ export default function DashboardPage() {
                                         title="Settle Pending Commission & Record Expense"
                                       >
                                         <CheckCircle2 className="h-3 w-3" />
-                                        <span>{language === "bn" ? "কমিশন দিন" : "Pay Due"}</span>
+                                        <span>{tr("কমিশন দিন", "Pay Due", "手数料精算")}</span>
                                       </button>
                                     )}
                                     <button
@@ -2815,9 +2844,11 @@ export default function DashboardPage() {
                                         deleteB2bAgent(agent.id);
                                         setStore({ ...getCmsStore() });
                                         showToast(
-                                          language === "bn"
-                                            ? `${agent.organizationName} মুছে ফেলা হয়েছে`
-                                            : `${agent.organizationName} removed`,
+                                          tr(
+                                            `${agent.organizationName} মুছে ফেলা হয়েছে`,
+                                            `${agent.organizationName} removed`,
+                                            `${agent.organizationName}を削除しました`,
+                                          ),
                                         );
                                       }}
                                       className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-[#b91c1c] transition"
@@ -2836,14 +2867,18 @@ export default function DashboardPage() {
                                 <div className="flex flex-col items-center justify-center text-center">
                                   <Briefcase className="h-8 w-8 text-slate-300 mx-auto mb-2.5" />
                                   <p className="mx-auto text-sm font-semibold text-slate-700">
-                                    {language === "bn"
-                                      ? "কোনো বিটুবি এজেন্ট বা সাব-এজেন্টের তথ্য নেই"
-                                      : "No B2B agents or sub-agents added yet"}
+                                    {tr(
+                                      "কোনো বিটুবি এজেন্ট বা সাব-এজেন্টের তথ্য নেই",
+                                      "No B2B agents or sub-agents added yet",
+                                      "B2B代理店はまだ登録されていません",
+                                    )}
                                   </p>
                                   <p className="mx-auto text-xs text-slate-400 mt-1">
-                                    {language === "bn"
-                                      ? "আপনার প্রতিষ্ঠানের বিটুবি এজেন্ট, ট্রেড লাইসেন্স ও কমিশন হিসাব রাখতে নতুন এজেন্ট যুক্ত করুন।"
-                                      : "Click below to add your B2B partner agencies, licenses, and commission details."}
+                                    {tr(
+                                      "আপনার প্রতিষ্ঠানের বিটুবি এজেন্ট, ট্রেড লাইসেন্স ও কমিশন হিসাব রাখতে নতুন এজেন্ট যুক্ত করুন।",
+                                      "Click below to add your B2B partner agencies, licenses, and commission details.",
+                                      "提携代理店、事業ライセンス、手数料管理のため新規代理店を登録してください。",
+                                    )}
                                   </p>
                                   <button
                                     type="button"
@@ -2852,9 +2887,11 @@ export default function DashboardPage() {
                                   >
                                     <Plus className="h-3.5 w-3.5" />
                                     <span>
-                                      {language === "bn"
-                                        ? "নতুন বিটুবি এজেন্ট যোগ করুন"
-                                        : "Add New B2B Agent"}
+                                      {tr(
+                                        "নতুন বিটুবি এজেন্ট যোগ করুন",
+                                        "Add New B2B Agent",
+                                        "新規B2B代理店を追加",
+                                      )}
                                     </span>
                                   </button>
                                 </div>
@@ -2879,20 +2916,22 @@ export default function DashboardPage() {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="rounded-lg bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200/60 uppercase tracking-wider">
-                          {language === "bn" ? "অডিট ভেরিফাইড" : "Audit Verified"}
+                          {tr("অডিট ভেরিফাইড", "Audit Verified", "監査認証済")}
                         </span>
                         <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-                          {language === "bn"
-                            ? "ফাইন্যান্সিয়াল ম্যানেজমেন্ট ও ক্যাশফ্লো হাব"
-                            : language === "ja"
-                              ? "財務・キャッシュフロー管理ハブ"
-                              : "Financial Management & Cashflow Hub"}
+                          {tr(
+                            "ফাইন্যান্সিয়াল ম্যানেজমেন্ট ও ক্যাশফ্লো হাব",
+                            "Financial Management & Cashflow Hub",
+                            "財務・キャッシュフロー管理ハブ",
+                          )}
                         </h2>
                       </div>
                       <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                        {language === "bn"
-                          ? "কোর্স ফি, প্রি-ভিসা COE সার্ভিস চার্জ (৳১.২ লক্ষ), অল-ইন-ওয়ান প্যাকেজ ও প্রাতিষ্ঠানিক ব্যয়ের পূর্ণাঙ্গ খতিয়ান।"
-                          : "Tuition fees, COE service charges (৳1.2L), all-in-one packages, and operational expenditure ledger."}
+                        {tr(
+                          "কোর্স ফি, প্রি-ভিসা COE সার্ভিস চার্জ (৳১.২ লক্ষ), অল-ইন-ওয়ান প্যাকেজ ও প্রাতিষ্ঠানিক ব্যয়ের পূর্ণাঙ্গ খতিয়ান।",
+                          "Tuition fees, COE service charges (৳1.2L), all-in-one packages, and operational expenditure ledger.",
+                          "授業料、COE申請手数料（12万BDT）、パッケージ費用および運営経費の完全な出納帳。",
+                        )}
                       </p>
                     </div>
 
@@ -2903,7 +2942,7 @@ export default function DashboardPage() {
                         className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-semibold text-white hover:bg-emerald-800 transition shadow-2xs"
                       >
                         <Plus className="h-4 w-4" />
-                        <span>{language === "bn" ? "+ আয় গ্রহণ (Student Fee)" : "+ Record Income"}</span>
+                        <span>{tr("+ আয় গ্রহণ (Student Fee)", "+ Record Income", "+ 収入を記録（学費等）")}</span>
                       </button>
                       <button
                         type="button"
@@ -2911,7 +2950,7 @@ export default function DashboardPage() {
                         className="inline-flex items-center gap-1.5 rounded-xl bg-[#b91c1c] px-4 py-2.5 text-xs font-semibold text-white hover:bg-red-800 transition shadow-2xs"
                       >
                         <ArrowDownRight className="h-4 w-4" />
-                        <span>{language === "bn" ? "+ ব্যয় রেকর্ড (Expense)" : "+ Record Expense"}</span>
+                        <span>{tr("+ ব্যয় রেকর্ড (Expense)", "+ Record Expense", "+ 経費・支出を記録")}</span>
                       </button>
                       <button
                         type="button"
@@ -2938,13 +2977,13 @@ export default function DashboardPage() {
                           a.download = `KNLTC_Finance_Ledger_${new Date().toISOString().slice(0, 10)}.csv`;
                           a.click();
                           URL.revokeObjectURL(url);
-                          showToast(language === "bn" ? "লেজার CSV ফাইল ডাউনলোড হয়েছে" : "Ledger exported to CSV");
+                          showToast(tr("লেজার CSV ফাইল ডাউনলোড হয়েছে", "Ledger exported to CSV", "出納帳をCSVエクスポートしました"));
                         }}
                         className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
                         title="Export CSV"
                       >
                         <Download className="h-4 w-4 text-slate-500" />
-                        <span className="hidden sm:inline">{language === "bn" ? "CSV এক্সপোর্ট" : "Export CSV"}</span>
+                        <span className="hidden sm:inline">{tr("CSV এক্সপোর্ট", "Export CSV", "CSV出力")}</span>
                       </button>
                     </div>
                   </div>
@@ -2960,7 +2999,7 @@ export default function DashboardPage() {
                           : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                       }`}
                     >
-                      {language === "bn" ? "সারসংক্ষেপ ও নগদ প্রবাহ (Overview)" : "Overview & P&L"}
+                      {tr("সারসংক্ষেপ ও নগদ প্রবাহ (Overview)", "Overview & P&L", "概要・損益計算書")}
                     </button>
                     <button
                       type="button"
@@ -2971,7 +3010,7 @@ export default function DashboardPage() {
                           : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                       }`}
                     >
-                      <span>{language === "bn" ? "জেনারেল লেজার ও ট্রানজেকশন" : "General Ledger"}</span>
+                      <span>{tr("জেনারেল লেজার ও ট্রানজেকশন", "General Ledger", "総勘定元帳・取引履歴")}</span>
                       <span className="rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-700">
                         {store.transactions.length}
                       </span>
@@ -2985,7 +3024,7 @@ export default function DashboardPage() {
                           : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                       }`}
                     >
-                      <span>{language === "bn" ? "শিক্ষার্থীদের বকেয়া ও কিস্তি (Student Dues)" : "Student Dues & Contracts"}</span>
+                      <span>{tr("শিক্ষার্থীদের বকেয়া ও কিস্তি (Student Dues)", "Student Dues & Contracts", "未収金・分割払管理")}</span>
                       <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
                         {store.crmLeads.filter((l) => (l.dueAmountBdt ?? ((l.contractAmountBdt || 0) - (l.paidAmountBdt || 0))) > 0).length}
                       </span>
@@ -2999,7 +3038,7 @@ export default function DashboardPage() {
                           : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                       }`}
                     >
-                      {language === "bn" ? "ইনভেস্টর ওপেন-বুক পোর্টাল (১০ লক্ষ টাকা)" : "Investor Open-Book"}
+                      {tr("ইনভেস্টর ওপেন-বুক পোর্টাল (১০ লক্ষ টাকা)", "Investor Open-Book", "投資家オープンブック（100万BDT）")}
                     </button>
                   </div>
 
@@ -3025,7 +3064,7 @@ export default function DashboardPage() {
                             <div className="hover-spotlight rounded-2xl border border-emerald-100 bg-white p-5">
                               <div className="flex items-center justify-between text-emerald-600">
                                 <span className="text-xs font-semibold text-slate-500">
-                                  {language === "bn" ? "মোট সংগৃহীত আয় (Inflow)" : "Total Gross Income"}
+                                  {tr("মোট সংগৃহীত আয় (Inflow)", "Total Gross Income", "総収入（インフロー）")}
                                 </span>
                                 <TrendingUp className="h-4 w-4 text-emerald-600" />
                               </div>
@@ -3033,14 +3072,14 @@ export default function DashboardPage() {
                                 ৳{totalInflow.toLocaleString()}
                               </p>
                               <p className="mt-1 text-[11px] text-emerald-700 font-medium">
-                                {language === "bn" ? "কোর্স ফি, সার্ভিস চার্জ ও অন্যান্য" : "Tuition & Service fees"}
+                                {tr("কোর্স ফি, সার্ভিস চার্জ ও অন্যান্য", "Tuition & Service fees", "学費・手続料・その他")}
                               </p>
                             </div>
 
                             <div className="hover-spotlight rounded-2xl border border-red-100 bg-white p-5">
                               <div className="flex items-center justify-between text-red-500">
                                 <span className="text-xs font-semibold text-slate-500">
-                                  {language === "bn" ? "মোট অপারেশনাল ব্যয় (Outflow)" : "Total Expenditures"}
+                                  {tr("মোট অপারেশনাল ব্যয় (Outflow)", "Total Expenditures", "総支出・運営経費")}
                                 </span>
                                 <TrendingDown className="h-4 w-4 text-[#b91c1c]" />
                               </div>
@@ -3048,14 +3087,14 @@ export default function DashboardPage() {
                                 ৳{totalOutflow.toLocaleString()}
                               </p>
                               <p className="mt-1 text-[11px] text-red-600 font-medium">
-                                {language === "bn" ? "অফিস ভাড়া, সেন্সি পে-রোল ও মার্কেটিং" : "Rent, payroll & marketing"}
+                                {tr("অফিস ভাড়া, সেন্সি পে-রোল ও মার্কেটিং", "Rent, payroll & marketing", "賃料・講師給与・広告費")}
                               </p>
                             </div>
 
                             <div className="hover-spotlight rounded-2xl border border-slate-200/80 bg-white p-5">
                               <div className="flex items-center justify-between text-slate-400">
                                 <span className="text-xs font-semibold text-slate-500">
-                                  {language === "bn" ? "নিট অপারেটিং মার্জিন" : "Net Operating Margin"}
+                                  {tr("নিট অপারেটিং মার্জিন", "Net Operating Margin", "営業純利益（マージン）")}
                                 </span>
                                 <DollarSign className={`h-4 w-4 ${netMargin >= 0 ? "text-emerald-600" : "text-amber-600"}`} />
                               </div>
@@ -3064,15 +3103,15 @@ export default function DashboardPage() {
                               </p>
                               <p className="mt-1 text-[11px] text-slate-400">
                                 {netMargin >= 0
-                                  ? (language === "bn" ? "✓ ইতিবাচক নগদ উদ্বৃত্ত" : "Positive Cash Surplus")
-                                  : (language === "bn" ? "প্রাথমিক সেটআপ ইনভেস্টমেন্ট পর্যায়" : "Initial Capital Phase")}
+                                  ? tr("✓ ইতিবাচক নগদ উদ্বৃত্ত", "Positive Cash Surplus", "✓ 黒字キャッシュフロー")
+                                  : tr("প্রাথমিক সেটআপ ইনভেস্টমেন্ট পর্যায়", "Initial Capital Phase", "初期投資・設立フェーズ")}
                               </p>
                             </div>
 
                             <div className="hover-spotlight rounded-2xl border border-amber-100 bg-white p-5">
                               <div className="flex items-center justify-between text-amber-500">
                                 <span className="text-xs font-semibold text-slate-500">
-                                  {language === "bn" ? "বিটুবি কমিশন বকেয়া" : "Pending B2B Commission"}
+                                  {tr("বিটুবি কমিশন বকেয়া", "Pending B2B Commission", "B2B未払手数料")}
                                 </span>
                                 <Briefcase className="h-4 w-4 text-amber-600" />
                               </div>
@@ -3080,7 +3119,7 @@ export default function DashboardPage() {
                                 ৳{pendingB2bCommission.toLocaleString()}
                               </p>
                               <p className="mt-1 text-[11px] text-amber-700 font-medium">
-                                {language === "bn" ? "সাব-এজেন্ট প্রদেয় দায়" : "Payable to verified sub-agents"}
+                                {tr("সাব-এজেন্ট প্রদেয় দায়", "Payable to verified sub-agents", "認証済代理店への支払予定")}
                               </p>
                             </div>
                           </div>
@@ -3094,15 +3133,19 @@ export default function DashboardPage() {
                             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                               <Coins className="h-4 w-4 text-amber-600" />
                               <span>
-                                {language === "bn"
-                                  ? "জাপান স্টাডি মাল্টি-কারেন্সি ক্যালকুলেটর (BDT ৳ ⇄ JPY ¥)"
-                                  : "Japan Study Currency Conversion Assistant"}
+                                {tr(
+                                  "জাপান স্টাডি মাল্টি-কারেন্সি ক্যালকুলেটর (BDT ৳ ⇄ JPY ¥)",
+                                  "Japan Study Currency Conversion Assistant",
+                                  "日本留学マルチ通貨計算アシスタント（BDT ৳ ⇄ JPY ¥）",
+                                )}
                               </span>
                             </h3>
                             <p className="text-xs text-slate-400 mt-0.5">
-                              {language === "bn"
-                                ? "১ম বছরের টিউশন ফি, হোস্টেল ফি ও স্কুল কমিশন দ্রুত রূপান্তর করুন (১ JPY ≈ ৳ ০.৮০ BDT)"
-                                : "Quickly convert tuition, dormitory fees and school commission (1 JPY ≈ 0.80 BDT)"}
+                              {tr(
+                                "১ম বছরের টিউশন ফি, হোস্টেল ফি ও স্কুল কমিশন দ্রুত রূপান্তর করুন (১ JPY ≈ ৳ ০.৮০ BDT)",
+                                "Quickly convert tuition, dormitory fees and school commission (1 JPY ≈ 0.80 BDT)",
+                                "初年度学費、寮費および提携校手数料のリアルタイム換算（1 JPY ≈ 0.80 BDT）",
+                              )}
                             </p>
                           </div>
                           <span className="text-xs font-semibold text-slate-500 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100 tabular-nums">
@@ -3113,7 +3156,7 @@ export default function DashboardPage() {
                         <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
                           <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
                             <span className="font-semibold text-slate-600">
-                              {language === "bn" ? "জাপানি স্কুল কমিশন (প্রতিষ্ঠানভেদে)" : "School Commission (By Institution)"}
+                              {tr("জাপানি স্কুল কমিশন (প্রতিষ্ঠানভেদে)", "School Commission (By Institution)", "提携校手数料（学校別）")}
                             </span>
                             {(() => {
                               const validRates = store.partnerSchools
@@ -3123,10 +3166,10 @@ export default function DashboardPage() {
                                 return (
                                   <>
                                     <p className="text-base font-bold text-slate-900 mt-1">
-                                      {language === "bn" ? "প্রতিষ্ঠানভেদে ভিন্ন" : "Varies by Institution"}
+                                      {tr("প্রতিষ্ঠানভেদে ভিন্ন", "Varies by Institution", "提携校により異なる")}
                                     </p>
                                     <p className="text-xs text-emerald-700 font-semibold mt-0.5">
-                                      {language === "bn" ? "চুক্তিবদ্ধ হার অনুযায়ী নির্ধারিত" : "Based on school agreement"}
+                                      {tr("চুক্তিবদ্ধ হার অনুযায়ী নির্ধারিত", "Based on school agreement", "提携協定に基づく規定")}
                                     </p>
                                   </>
                                 );
@@ -3152,7 +3195,7 @@ export default function DashboardPage() {
 
                           <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
                             <span className="font-semibold text-slate-600">
-                              {language === "bn" ? "১ বছরের টিউশন ফি (গড়পড়তা)" : "1st Year Tuition Fee (Average)"}
+                              {tr("১ বছরের টিউশন ফি (গড়পড়তা)", "1st Year Tuition Fee (Average)", "初年度学費（平均目安）")}
                             </span>
                             <p className="text-lg font-bold text-slate-900 mt-1 tabular-nums">¥750,000 – ¥850,000 JPY</p>
                             <p className="text-xs text-slate-500 font-medium mt-0.5 tabular-nums">
@@ -3162,11 +3205,15 @@ export default function DashboardPage() {
 
                           <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
                             <span className="font-semibold text-slate-600">
-                              {language === "bn" ? "KNLTC রেগুলার প্যাকেজ ফি" : "KNLTC Regular Service Charge"}
+                              {tr("KNLTC রেগুলার প্যাকেজ ফি", "KNLTC Regular Service Charge", "KNLTC レギュラー手続手数料")}
                             </span>
                             <p className="text-lg font-bold text-slate-900 mt-1 tabular-nums">৳ 1,20,000 BDT</p>
                             <p className="text-xs text-emerald-700 font-semibold mt-0.5 tabular-nums">
-                              ≈ ¥150,000 JPY (COE অনুমোদনের পর প্রযোজ্য)
+                              {tr(
+                                "≈ ¥১৫০,০০০ JPY (COE অনুমোদনের পর প্রযোজ্য)",
+                                "≈ ¥150,000 JPY (Strictly after COE Approval)",
+                                "≈ ¥150,000 JPY（COE交付後のみ請求）",
+                              )}
                             </p>
                           </div>
                         </div>
@@ -3189,7 +3236,7 @@ export default function DashboardPage() {
                                 : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                             }`}
                           >
-                            {language === "bn" ? "সব ট্রানজেকশন" : "All Entries"}
+                            {tr("সব ট্রানজেকশন", "All Entries", "全取引")}
                           </button>
                           <button
                             type="button"
@@ -3201,7 +3248,7 @@ export default function DashboardPage() {
                             }`}
                           >
                             <TrendingUp className="h-3 w-3" />
-                            <span>{language === "bn" ? "কেবল আয় (Inflow)" : "Income Only"}</span>
+                            <span>{tr("কেবল আয় (Inflow)", "Income Only", "収入のみ")}</span>
                           </button>
                           <button
                             type="button"
@@ -3213,7 +3260,7 @@ export default function DashboardPage() {
                             }`}
                           >
                             <TrendingDown className="h-3 w-3" />
-                            <span>{language === "bn" ? "কেবল ব্যয় (Expense)" : "Expenses Only"}</span>
+                            <span>{tr("কেবল ব্যয় (Expense)", "Expenses Only", "支出のみ")}</span>
                           </button>
                         </div>
 
@@ -3223,7 +3270,7 @@ export default function DashboardPage() {
                             type="text"
                             value={financeSearchQuery}
                             onChange={(e) => setFinanceSearchQuery(e.target.value)}
-                            placeholder={language === "bn" ? "রসিদ নং, শিক্ষার্থী বা খাত খুঁজুন..." : "Search ledger entries..."}
+                            placeholder={tr("রসিদ নং, শিক্ষার্থী বা খাত খুঁজুন...", "Search ledger entries...", "領収書番号、生徒名、項目で検索...")}
                             className="w-full rounded-xl border border-slate-200 pl-8 pr-3 py-1.5 text-xs font-medium focus:border-slate-400 focus:outline-hidden"
                           />
                         </div>
@@ -3234,13 +3281,13 @@ export default function DashboardPage() {
                         <table className="w-full text-left text-xs">
                           <thead className="bg-slate-50/70 border-b border-slate-100 font-semibold text-slate-500">
                             <tr>
-                              <th className="px-4 py-3">{language === "bn" ? "রসিদ নং ও তারিখ" : "Receipt / Date"}</th>
-                              <th className="px-4 py-3">{language === "bn" ? "শিক্ষার্থী / বিবরণ" : "Student / Payee"}</th>
-                              <th className="px-4 py-3">{language === "bn" ? "খাত / টাইপ" : "Account Head"}</th>
-                              <th className="px-4 py-3">{language === "bn" ? "পেমেন্ট মাধ্যম" : "Payment Method"}</th>
-                              <th className="px-4 py-3">{language === "bn" ? "ব্রাঞ্চ" : "Branch"}</th>
-                              <th className="px-4 py-3 text-right">{language === "bn" ? "পরিমাণ (BDT)" : "Amount (BDT)"}</th>
-                              <th className="px-4 py-3 text-right">{language === "bn" ? "অ্যাকশন" : "Actions"}</th>
+                              <th className="px-4 py-3">{tr("রসিদ নং ও তারিখ", "Receipt / Date", "領収書番号・日付")}</th>
+                              <th className="px-4 py-3">{tr("শিক্ষার্থী / বিবরণ", "Student / Payee", "生徒名・支払先")}</th>
+                              <th className="px-4 py-3">{tr("খাত / টাইপ", "Account Head", "勘定科目・区分")}</th>
+                              <th className="px-4 py-3">{tr("পেমেন্ট মাধ্যম", "Payment Method", "決済手段")}</th>
+                              <th className="px-4 py-3">{tr("ব্রাঞ্চ", "Branch", "支店・拠点")}</th>
+                              <th className="px-4 py-3 text-right">{tr("পরিমাণ (BDT)", "Amount (BDT)", "金額 (BDT)")}</th>
+                              <th className="px-4 py-3 text-right">{tr("অ্যাকশন", "Actions", "操作")}</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
@@ -3286,30 +3333,32 @@ export default function DashboardPage() {
                                         {isExpense ? <TrendingDown className="h-2.5 w-2.5" /> : <TrendingUp className="h-2.5 w-2.5" />}
                                         <span>
                                           {tx.type === "COURSE_FEE"
-                                            ? "ভাষা কোর্স ফি"
+                                            ? tr("ভাষা কোর্স ফি", "Course Fee", "語学コース受講料")
                                             : tx.type === "SERVICE_CHARGE_COE"
-                                              ? "COE সার্ভিস চার্জ"
+                                              ? tr("COE সার্ভিস চার্জ", "COE Service Charge", "COE申請手数料")
                                               : tx.type === "REGULAR_SERVICE_CHARGE"
-                                                ? "রেগুলার সার্ভিস চার্জ"
+                                                ? tr("রেগুলার সার্ভিস চার্জ", "Regular Service Charge", "レギュラー手続手数料")
                                                 : tx.type === "PREMIUM_PACKAGE" || tx.type === "PREMIUM_PACKAGE_ADVANCE"
-                                                  ? "প্রিমিয়াম প্যাকেজ ফি"
+                                                  ? tr("প্রিমিয়াম প্যাকেজ ফি", "Premium Package Fee", "プレミアムパッケージ料")
                                                   : tx.type === "BOOK_STORE_SALE"
-                                                    ? "মিন্না নো নিহোঙ্গো বই সেল"
+                                                    ? tr("মিন্না নো নিহোঙ্গো বই সেল", "Bookstore Sale", "教材・テキスト売上")
                                                     : tx.type === "SCHOOL_COMMISSION_JPY"
-                                                      ? "জাপানি স্কুল কমিশন (JPY➔BDT)"
+                                                      ? tr("জাপানি স্কুল কমিশন (JPY➔BDT)", "School Commission (JPY➔BDT)", "提携校手数料 (JPY➔BDT)")
                                                       : tx.type === "EXPENSE_RENT"
-                                                        ? "অফিস ভাড়া ও ইউটিলিটি"
+                                                        ? tr("অফিস ভাড়া ও ইউটিলিটি", "Office Rent & Utilities", "オフィス賃料・光熱費")
                                                         : tx.type === "EXPENSE_PAYROLL"
-                                                          ? "শিক্ষক/স্টাফ সম্মানী"
+                                                          ? tr("শিক্ষক/স্টাফ সম্মানী", "Sensei & Staff Salary", "講師・スタッフ給与")
                                                           : tx.type === "EXPENSE_MARKETING"
-                                                            ? "মেটা অ্যাডস খরচ"
+                                                            ? tr("মেটা অ্যাডস খরচ", "Meta Digital Ads", "Meta広告宣伝費")
                                                             : tx.type === "EXPENSE_EMBASSY_NOTARY"
-                                                              ? "নোটারি ও পররাষ্ট্র মন্ত্রণালয়"
+                                                              ? tr("নোটারি ও পররাষ্ট্র মন্ত্রণালয়", "Notary & MOFA Attestation", "公証・外務省認証・郵送費")
                                                               : tx.type === "EXPENSE_EXAM_FEE"
-                                                                ? "JLPT / NAT-TEST ফি"
+                                                                ? tr("JLPT / NAT-TEST ফি", "JLPT / NAT Exam Fee", "JLPT・NAT-TEST受験料")
                                                                 : tx.type === "EXPENSE_B2B_COMMISSION"
-                                                                  ? "এজেন্ট কমিশন প্রদান"
-                                                                  : tx.type}
+                                                                  ? tr("এজেন্ট কমিশন প্রদান", "B2B Agent Commission", "B2B代理店手数料支払")
+                                                                  : tx.type === "EXPENSE_MISC"
+                                                                    ? tr("বিবিধ অফিস খরচ", "Office Misc & Refreshments", "雑費・消耗品・接待費")
+                                                                    : tx.type}
                                         </span>
                                       </span>
                                     </td>
@@ -3338,7 +3387,7 @@ export default function DashboardPage() {
                                             title="View Official Money Receipt"
                                           >
                                             <Receipt className="h-3 w-3 text-slate-500" />
-                                            <span>{language === "bn" ? "রসিদ" : "Receipt"}</span>
+                                            <span>{tr("রসিদ", "Receipt", "領収書")}</span>
                                           </button>
                                         )}
                                         <button
@@ -3346,7 +3395,7 @@ export default function DashboardPage() {
                                           onClick={() => {
                                             deleteFinancialTransaction(tx.id);
                                             setStore({ ...getCmsStore() });
-                                            showToast(language === "bn" ? "ট্রানজেকশন মুছে ফেলা হয়েছে" : "Transaction deleted");
+                                            showToast(tr("ট্রানজেকশন মুছে ফেলা হয়েছে", "Transaction deleted", "取引を削除しました"));
                                           }}
                                           className="rounded-lg p-1 text-slate-400 hover:bg-red-50 hover:text-[#b91c1c] transition"
                                           title="Delete entry"
@@ -3364,12 +3413,14 @@ export default function DashboardPage() {
                                 <td colSpan={7} className="py-12 text-center text-slate-400">
                                   <Receipt className="h-7 w-7 text-slate-300 mx-auto mb-2" />
                                   <p className="text-sm font-semibold text-slate-700">
-                                    {language === "bn" ? "এখনো কোনো ট্রানজেকশন বা পেমেন্ট রেকর্ড নেই" : "No financial transactions recorded yet"}
+                                    {tr("এখনো কোনো ট্রানজেকশন বা পেমেন্ট রেকর্ড নেই", "No financial transactions recorded yet", "取引履歴はまだありません")}
                                   </p>
                                   <p className="text-xs text-slate-400 mt-0.5">
-                                    {language === "bn"
-                                      ? "শিক্ষার্থীদের ফি গ্রহণ বা অফিস খরচ রেকর্ড করতে উপরের বাটনে ক্লিক করুন।"
-                                      : "Click Record Income or Record Expense above to start tracking."}
+                                    {tr(
+                                      "শিক্ষার্থীদের ফি গ্রহণ বা অফিস খরচ রেকর্ড করতে উপরের বাটনে ক্লিক করুন।",
+                                      "Click Record Income or Record Expense above to start tracking.",
+                                      "上のボタンから生徒の学費受領または経費を記録してください。",
+                                    )}
                                   </p>
                                 </td>
                               </tr>
@@ -3386,19 +3437,23 @@ export default function DashboardPage() {
                       <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                         <div>
                           <h3 className="text-sm font-bold text-slate-900">
-                            {language === "bn"
-                              ? "শিক্ষার্থীদের চুক্তিমূল্য, পরিশোধিত ফি ও বকেয়া খতিয়ান"
-                              : "Student Contract Value, Paid Installments & Due Balance"}
+                            {tr(
+                              "শিক্ষার্থীদের চুক্তিমূল্য, পরিশোধিত ফি ও বকেয়া খতিয়ান",
+                              "Student Contract Value, Paid Installments & Due Balance",
+                              "生徒契約額・納入済額・未収金台帳",
+                            )}
                           </h3>
                           <p className="text-xs text-slate-500 mt-0.5">
-                            {language === "bn"
-                              ? "CRM ও Visa Pipeline-এর সাথে সরাসরি সংযুক্ত — রসিদ ইস্যু করলেই বকেয়া স্বয়ংক্রিয়ভাবে কমে যাবে।"
-                              : "Directly synced with CRM & Visa Pipeline — issuing a receipt automatically updates student dues."}
+                            {tr(
+                              "CRM ও Visa Pipeline-এর সাথে সরাসরি সংযুক্ত — রসিদ ইস্যু করলেই বকেয়া স্বয়ংক্রিয়ভাবে কমে যাবে।",
+                              "Directly synced with CRM & Visa Pipeline — issuing a receipt automatically updates student dues.",
+                              "CRMおよびビザ進行状況とリアルタイム連携 — 領収書発行で未収金が即時減額されます。",
+                            )}
                           </p>
                         </div>
                         <div className="flex items-center gap-3 text-xs tabular-nums">
                           <span className="rounded-lg bg-amber-50 border border-amber-200/60 px-3 py-1.5 font-bold text-amber-900">
-                            {language === "bn" ? "মোট বকেয়া: " : "Total Receivable: "}
+                            {tr("মোট বকেয়া: ", "Total Receivable: ", "総未収金: ")}
                             ৳
                             {store.crmLeads
                               .reduce(
@@ -3415,12 +3470,12 @@ export default function DashboardPage() {
                         <table className="w-full text-left text-xs">
                           <thead className="bg-slate-50/70 border-b border-slate-100 font-semibold text-slate-500">
                             <tr>
-                              <th className="px-4 py-3">{language === "bn" ? "শিক্ষার্থীর নাম ও ফোন" : "Student"}</th>
-                              <th className="px-4 py-3">{language === "bn" ? "টার্গেট স্কুল ও এজেন্ট" : "School & Agent"}</th>
-                              <th className="px-4 py-3 text-right">{language === "bn" ? "মোট চুক্তি (Contract)" : "Contract (BDT)"}</th>
-                              <th className="px-4 py-3 text-right">{language === "bn" ? "জমা (Paid)" : "Paid (BDT)"}</th>
-                              <th className="px-4 py-3 text-right">{language === "bn" ? "বকেয়া (Due)" : "Due (BDT)"}</th>
-                              <th className="px-4 py-3 text-right">{language === "bn" ? "অ্যাকশন" : "Action"}</th>
+                              <th className="px-4 py-3">{tr("শিক্ষার্থীর নাম ও ফোন", "Student", "生徒氏名・連絡先")}</th>
+                              <th className="px-4 py-3">{tr("টার্গেট স্কুল ও এজেন্ট", "School & Agent", "志望校・紹介代理店")}</th>
+                              <th className="px-4 py-3 text-right">{tr("মোট চুক্তি (Contract)", "Contract (BDT)", "契約総額 (BDT)")}</th>
+                              <th className="px-4 py-3 text-right">{tr("জমা (Paid)", "Paid (BDT)", "納入済 (BDT)")}</th>
+                              <th className="px-4 py-3 text-right">{tr("বকেয়া (Due)", "Due (BDT)", "残金・未収 (BDT)")}</th>
+                              <th className="px-4 py-3 text-right">{tr("অ্যাকশন", "Action", "操作")}</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
@@ -3438,11 +3493,11 @@ export default function DashboardPage() {
                                   </td>
                                   <td className="px-4 py-3.5">
                                     <p className="font-medium text-slate-800">
-                                      {school?.schoolName || lead.targetSchoolName || "নির্ধারিত নয়"}
+                                      {school?.name || (school as any)?.schoolName || lead.targetSchoolName || tr("নির্ধারিত নয়", "Not Assigned", "未定")}
                                     </p>
                                     {agent && (
                                       <p className="text-[10px] text-amber-700 font-medium">
-                                        এজেন্ট: {agent.agencyName}
+                                        {tr("এজেন্ট:", "Agent:", "代理店:")} {agent.organizationName || (agent as any)?.agencyName}
                                       </p>
                                     )}
                                   </td>
@@ -3465,12 +3520,12 @@ export default function DashboardPage() {
                                         className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-emerald-700 transition"
                                       >
                                         <Plus className="h-3 w-3" />
-                                        <span>{language === "bn" ? "বকেয়া আদায়" : "Collect Due"}</span>
+                                        <span>{tr("বকেয়া আদায়", "Collect Due", "未収金回収")}</span>
                                       </button>
                                     ) : (
                                       <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
                                         <CheckCircle2 className="h-3 w-3" />
-                                        <span>পরিশোধিত</span>
+                                        <span>{tr("পরিশোধিত", "Paid in full", "完納")}</span>
                                       </span>
                                     )}
                                   </td>
@@ -3532,19 +3587,23 @@ export default function DashboardPage() {
                             <ShieldCheck className="h-5 w-5 text-emerald-600 shrink-0" />
                             <div>
                               <p className="font-bold">
-                                {language === "bn"
-                                  ? "৩০০ টাকার সরকারি নন-জুডিশিয়াল স্ট্যাম্প ও ব্যাংক গ্যারান্টি চেক সংরক্ষিত"
-                                  : "300 BDT Govt Non-Judicial Stamp & Bank Security Cheques Held"}
+                                {tr(
+                                  "৩০০ টাকার সরকারি নন-জুডিশিয়াল স্ট্যাম্প ও ব্যাংক গ্যারান্টি চেক সংরক্ষিত",
+                                  "300 BDT Govt Non-Judicial Stamp & Bank Security Cheques Held",
+                                  "公証印紙協定書および銀行保証小切手を保管管理",
+                                )}
                               </p>
                               <p className="text-[11px] text-emerald-800 mt-0.5">
-                                {language === "bn"
-                                  ? "নিরাপদ বিনিয়োগ নিশ্চয়তা ও শরীয়াহ সম্মত ১০% নিট লভ্যাংশ অংশীদারিত্ব।"
-                                  : "100% principal safety protection with 10% audited dividend distribution."}
+                                {tr(
+                                  "নিরাপদ বিনিয়োগ নিশ্চয়তা ও শরীয়াহ সম্মত ১০% নিট লভ্যাংশ অংশীদারিত্ব।",
+                                  "100% principal safety protection with 10% audited dividend distribution.",
+                                  "元本保全および監査済純利益10%の配当分配スキーム。",
+                                )}
                               </p>
                             </div>
                           </div>
                           <span className="rounded-lg bg-emerald-700 px-3 py-1.5 font-bold text-white shrink-0 text-center">
-                            {language === "bn" ? "চুক্তি সক্রিয়" : "Active Syndicate"}
+                            {tr("চুক্তি সক্রিয়", "Active Syndicate", "契約有効")}
                           </span>
                         </div>
                       </div>
@@ -3564,9 +3623,11 @@ export default function DashboardPage() {
                         {t.hr.title}
                       </h2>
                       <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                        {language === "bn"
-                          ? "টেলি-কাউন্সেলর, জাপানি শিক্ষক (সেন্সি), ভিসা প্রসেসিং ও অফিস কর্মকর্তাদের টার্গেট ও পে-রোল।"
-                          : t.hr.subtitle}
+                        {tr(
+                          "টেলি-কাউন্সেলর, জাপানি শিক্ষক (সেন্সি), ভিসা প্রসেসিং ও অফিস কর্মকর্তাদের টার্গেট ও পে-রোল।",
+                          "Manage tele-counselors, senseis, visa officers, and office payroll/KPIs.",
+                          "テレカウンセラー、日本語教師、ビザ担当官、管理スタッフのKPIと給与管理。",
+                        )}
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -3577,15 +3638,19 @@ export default function DashboardPage() {
                           setStore({ ...getCmsStore() });
                           if (res.count > 0) {
                             showToast(
-                              language === "bn"
-                                ? `${res.count} জন স্টাফের বেতন (মোট ৳${res.totalBdt.toLocaleString()}) পরিশোধ ও লেজারে যুক্ত হয়েছে!`
-                                : `Disbursed payroll for ${res.count} staff (৳${res.totalBdt.toLocaleString()})`,
+                              tr(
+                                `${res.count} জন স্টাফের বেতন (মোট ৳${res.totalBdt.toLocaleString()}) পরিশোধ ও লেজারে যুক্ত হয়েছে!`,
+                                `Disbursed payroll for ${res.count} staff (৳${res.totalBdt.toLocaleString()})`,
+                                `スタッフ${res.count}名の給与（計৳${res.totalBdt.toLocaleString()}）を出納帳に記録しました`,
+                              ),
                             );
                           } else {
                             showToast(
-                              language === "bn"
-                                ? "চলতি মাসের সকল সক্রিয় স্টাফের বেতন ইতিমধ্যে পরিশোধ করা হয়েছে।"
-                                : "All active staff have already been paid for this month.",
+                              tr(
+                                "চলতি মাসের সকল সক্রিয় স্টাফের বেতন ইতিমধ্যে পরিশোধ করা হয়েছে।",
+                                "All active staff have already been paid for this month.",
+                                "今月分の給与は全員支払い済みです。",
+                              ),
                             );
                           }
                         }}
@@ -3593,9 +3658,11 @@ export default function DashboardPage() {
                       >
                         <DollarSign className="h-4 w-4" />
                         <span>
-                          {language === "bn"
-                            ? "সকল বেতন পরিশোধ (Run Monthly Payroll)"
-                            : "Run Monthly Payroll"}
+                          {tr(
+                            "সকল বেতন পরিশোধ (Run Monthly Payroll)",
+                            "Run Monthly Payroll",
+                            "一括給与支払い実行",
+                          )}
                         </span>
                       </button>
                       <button
@@ -3605,11 +3672,11 @@ export default function DashboardPage() {
                       >
                         <UserPlus className="h-4 w-4" />
                         <span>
-                          {language === "ja"
-                            ? "+ 新規チームメンバー追加"
-                            : language === "en"
-                              ? "+ Add Team Member"
-                              : "+ নতুন টিম মেম্বার যোগ করুন"}
+                          {tr(
+                            "+ নতুন টিম মেম্বার যোগ করুন",
+                            "+ Add Team Member",
+                            "+ 新規チームメンバー追加",
+                          )}
                         </span>
                       </button>
                     </div>
@@ -3623,16 +3690,16 @@ export default function DashboardPage() {
                             <th className="px-4 py-3">{t.hr.colNameRole}</th>
                             <th className="px-4 py-3">{t.hr.colLocation}</th>
                             <th className="px-4 py-3">
-                              {language === "bn" ? "টার্গেট ও পারফরম্যান্স (KPI)" : "Role KPI Target"}
+                              {tr("টার্গেট ও পারফরম্যান্স (KPI)", "Role KPI Target", "職務KPI目標・進捗")}
                             </th>
                             <th className="px-4 py-3">
-                              {language === "bn" ? "ফলাফল / অর্জন" : "Deliverables"}
+                              {tr("ফলাফল / অর্জন", "Deliverables", "達成成果・実績")}
                             </th>
                             <th className="px-4 py-3">{t.hr.colBaseSalary}</th>
                             <th className="px-4 py-3">{t.hr.colBonus}</th>
                             <th className="px-4 py-3 text-right">{t.hr.colTotalPay}</th>
                             <th className="px-4 py-3 text-right">
-                              {language === "bn" ? "অ্যাকশন" : "Actions"}
+                              {tr("অ্যাকশন", "Actions", "操作")}
                             </th>
                           </tr>
                         </thead>
@@ -3651,17 +3718,17 @@ export default function DashboardPage() {
                                   <div className="flex items-center gap-1.5 mt-0.5">
                                     <span className="rounded bg-slate-100 px-1.5 py-0.2 text-[10px] font-semibold text-slate-700">
                                       {stf.role === "TELE_COUNSELOR"
-                                        ? "টেলি-কাউন্সেলর"
+                                        ? tr("টেলি-কাউন্সেলর", "Tele-Counselor", "テレカウンセラー")
                                         : stf.role === "COUNSELOR"
-                                          ? "এডমিশন কাউন্সেলর"
+                                          ? tr("এডমিশন কাউন্সেলর", "Admission Counselor", "入学カウンセラー")
                                           : stf.role === "SENIOR_SENSEI"
-                                            ? "জাপানি শিক্ষক (Sensei)"
+                                            ? tr("জাপানি শিক্ষক (Sensei)", "Japanese Sensei", "日本語教師 (Sensei)")
                                             : stf.role === "VISA_OFFICER"
-                                              ? "ভিসা প্রসেসিং অফিসার"
+                                              ? tr("ভিসা প্রসেসিং অফিসার", "Visa Processing Officer", "ビザ申請担当官")
                                               : stf.role === "BRANCH_MANAGER"
-                                                ? "ব্রাঞ্চ ম্যানেজার"
+                                                ? tr("ব্রাঞ্চ ম্যানেজার", "Branch Manager", "支店長")
                                                 : stf.role === "ACCOUNTANT_ADMIN"
-                                                  ? "একাউন্টস ও অ্যাডমিন"
+                                                  ? tr("একাউন্টস ও অ্যাডমিন", "Accounts & Admin", "総務・経理担当")
                                                   : stf.role}
                                     </span>
                                     {stf.phone && <span className="text-[11px] text-slate-400 font-mono">{stf.phone}</span>}
@@ -3672,7 +3739,7 @@ export default function DashboardPage() {
                                     ? t.dhakaHq
                                     : stf.location === "KHULNA_OFFICE"
                                       ? t.khulnaBranch
-                                      : "রিমোট / অনলাইন"}
+                                      : tr("রিমোট / অনলাইন", "Remote / Online", "リモート・在宅勤務")}
                                 </td>
 
                                 {/* Role-specific KPI Column */}
@@ -3681,7 +3748,7 @@ export default function DashboardPage() {
                                     <div>
                                       <div className="flex items-center gap-2">
                                         <span className="font-semibold text-slate-800">
-                                          {stf.callsCompleted || stf.kpiAchieved || 0} / {stf.callsTargetMonthly || stf.kpiTarget || 500} কল
+                                          {stf.callsCompleted || stf.kpiAchieved || 0} / {stf.callsTargetMonthly || stf.kpiTarget || 500} {tr("কল", "calls", "件")}
                                         </span>
                                         <button
                                           type="button"
@@ -3718,7 +3785,7 @@ export default function DashboardPage() {
                                     <div>
                                       <div className="flex items-center gap-2">
                                         <span className="font-semibold text-slate-800">
-                                          {stf.kpiAchieved || 0} / {stf.kpiTarget || 24} ক্লাসেস
+                                          {stf.kpiAchieved || 0} / {stf.kpiTarget || 24} {tr("ক্লাসেস", "classes", "コマ")}
                                         </span>
                                         <button
                                           type="button"
@@ -3726,15 +3793,15 @@ export default function DashboardPage() {
                                             const updated = (stf.kpiAchieved || 0) + 1;
                                             updateStaffMember(stf.id, { kpiAchieved: updated });
                                             setStore({ ...getCmsStore() });
-                                            showToast(`${stf.name}: +1 ক্লাস সম্পন্ন`);
+                                            showToast(tr(`${stf.name}: +১ ক্লাস সম্পন্ন`, `${stf.name}: +1 class conducted`, `${stf.name}: +1 コマ授業実施`));
                                           }}
                                           className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-100"
                                           title="Add 1 class conducted"
                                         >
-                                          +1 ক্লাস
+                                          {tr("+১ ক্লাস", "+1 Class", "+1 コマ")}
                                         </button>
                                       </div>
-                                      <p className="text-[10px] text-slate-400 mt-0.5">মিন্না নো নিহোঙ্গো / কাইওয়া</p>
+                                      <p className="text-[10px] text-slate-400 mt-0.5">{tr("মিন্না নো নিহোঙ্গো / কাইওয়া", "Minna no Nihongo / Kaiwa", "みんなの日本語・会話")}</p>
                                     </div>
                                   )}
 
@@ -3742,7 +3809,7 @@ export default function DashboardPage() {
                                     <div>
                                       <div className="flex items-center gap-2">
                                         <span className="font-semibold text-slate-800">
-                                          {stf.kpiAchieved || 0} / {stf.kpiTarget || 15} ফাইল
+                                          {stf.kpiAchieved || 0} / {stf.kpiTarget || 15} {tr("ফাইল", "files", "件")}
                                         </span>
                                         <button
                                           type="button"
@@ -3750,22 +3817,22 @@ export default function DashboardPage() {
                                             const updated = (stf.kpiAchieved || 0) + 1;
                                             updateStaffMember(stf.id, { kpiAchieved: updated });
                                             setStore({ ...getCmsStore() });
-                                            showToast(`${stf.name}: +1 ফাইল প্রসেসড`);
+                                            showToast(tr(`${stf.name}: +১ ফাইল প্রসেসড`, `${stf.name}: +1 file processed`, `${stf.name}: +1 件処理完了`));
                                           }}
                                           className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700 hover:bg-blue-100"
                                           title="Add 1 file processed"
                                         >
-                                          +1 ফাইল
+                                          {tr("+১ ফাইল", "+1 File", "+1 件")}
                                         </button>
                                       </div>
-                                      <p className="text-[10px] text-slate-400 mt-0.5">COE আবেদন ও ডকুমেন্টেশন</p>
+                                      <p className="text-[10px] text-slate-400 mt-0.5">{tr("COE আবেদন ও ডকুমেন্টেশন", "COE Application & Docs", "COE申請・書類作成")}</p>
                                     </div>
                                   )}
 
                                   {isSalariedFixed && (
                                     <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 bg-emerald-50/80 px-2 py-0.5 rounded-md border border-emerald-200/50">
                                       <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                                      <span>অফিস অপারেশনস ডিউটি</span>
+                                      <span>{tr("অফিস অপারেশনস ডিউটি", "Office Operations Duty", "総務・拠点運営業務")}</span>
                                     </span>
                                   )}
                                 </td>
@@ -3775,7 +3842,7 @@ export default function DashboardPage() {
                                   {isCaller ? (
                                     <div className="flex items-center gap-2">
                                       <span className="font-bold text-emerald-700">
-                                        {stf.admissionsAchieved} ভর্তি
+                                        {stf.admissionsAchieved} {tr("ভর্তি", "Admissions", "名入学")}
                                       </span>
                                       <button
                                         type="button"
@@ -3794,15 +3861,15 @@ export default function DashboardPage() {
                                     </div>
                                   ) : isSensei ? (
                                     <span className="text-[11px] font-medium text-slate-600">
-                                      JLPT N5/N4 মেন্টরিং ব্যাচ
+                                      {tr("JLPT N5/N4 মেন্টরিং ব্যাচ", "JLPT N5/N4 Mentoring", "JLPT N5/N4 指導担当")}
                                     </span>
                                   ) : isVisaOfficer ? (
                                     <span className="text-[11px] font-medium text-slate-600">
-                                      ইমিগ্রেশন COE স্পেশালিস্ট
+                                      {tr("ইমিগ্রেশন COE স্পেশালিস্ট", "Immigration COE Specialist", "出入国在留管理局COE担当")}
                                     </span>
                                   ) : (
                                     <span className="text-[11px] font-medium text-slate-500">
-                                      রেগুলার অ্যাডমিনিস্ট্রেশন
+                                      {tr("রেগুলার অ্যাডমিনিস্ট্রেশন", "General Administration", "一般総務管理")}
                                     </span>
                                   )}
                                 </td>
@@ -3831,9 +3898,11 @@ export default function DashboardPage() {
                                           if (tx) {
                                             setStore({ ...getCmsStore() });
                                             showToast(
-                                              language === "bn"
-                                                ? `${stf.name}-এর বেতন (৳${tx.amountBdt.toLocaleString()}) পরিশোধ ও ফিন্যান্স লেজারে যুক্ত হয়েছে`
-                                                : `Salary ৳${tx.amountBdt.toLocaleString()} disbursed to ${stf.name}`,
+                                              tr(
+                                                `${stf.name}-এর বেতন (৳${tx.amountBdt.toLocaleString()}) পরিশোধ ও ফিন্যান্স লেজারে যুক্ত হয়েছে`,
+                                                `Salary ৳${tx.amountBdt.toLocaleString()} disbursed to ${stf.name}`,
+                                                `${stf.name}の給与（৳${tx.amountBdt.toLocaleString()}）の支払いを完了しました`,
+                                              ),
                                             );
                                           }
                                         }}
@@ -3841,7 +3910,7 @@ export default function DashboardPage() {
                                         title="Disburse Monthly Salary & Sync to Finance Ledger"
                                       >
                                         <DollarSign className="h-3 w-3" />
-                                        <span>{language === "bn" ? "বেতন দিন" : "Pay Salary"}</span>
+                                        <span>{tr("বেতন দিন", "Pay Salary", "給与支払")}</span>
                                       </button>
                                     )}
                                     <button
@@ -3858,9 +3927,11 @@ export default function DashboardPage() {
                                         deleteStaffMember(stf.id);
                                         setStore({ ...getCmsStore() });
                                         showToast(
-                                          language === "bn"
-                                            ? `${stf.name} মুছে ফেলা হয়েছে`
-                                            : `${stf.name} removed`,
+                                          tr(
+                                            `${stf.name} মুছে ফেলা হয়েছে`,
+                                            `${stf.name} removed`,
+                                            `${stf.name}を削除しました`,
+                                          ),
                                         );
                                       }}
                                       className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-[#b91c1c] transition"
@@ -3879,14 +3950,18 @@ export default function DashboardPage() {
                               <td colSpan={8} className="py-12 text-center">
                                 <Users className="h-7 w-7 text-slate-300 mx-auto mb-2" />
                                 <p className="text-sm font-semibold text-slate-700">
-                                  {language === "bn"
-                                    ? "এখনো কোনো টিম মেম্বার বা স্টাফ যোগ করা হয়নি"
-                                    : "No team members or staff added yet"}
+                                  {tr(
+                                    "এখনো কোনো টিম মেম্বার বা স্টাফ যোগ করা হয়নি",
+                                    "No team members or staff added yet",
+                                    "チームメンバーはまだ登録されていません",
+                                  )}
                                 </p>
                                 <p className="text-xs text-slate-400 mt-1">
-                                  {language === "bn"
-                                    ? "টেলি-কাউন্সেলর, সেন্সি বা ব্রাঞ্চ কর্মকর্তাদের পে-রোল ও টার্গেট ট্র্যাক করতে যুক্ত করুন।"
-                                    : "Add your counselors, teachers, and branch team members to manage payroll and KPIs."}
+                                  {tr(
+                                    "টেলি-কাউন্সেলর, সেন্সি বা ব্রাঞ্চ কর্মকর্তাদের পে-রোল ও টার্গেট ট্র্যাক করতে যুক্ত করুন।",
+                                    "Add your counselors, teachers, and branch team members to manage payroll and KPIs.",
+                                    "カウンセラー、日本語教師、支店スタッフを登録して給与とKPIを管理してください。",
+                                  )}
                                 </p>
                                 <button
                                   type="button"
@@ -3895,9 +3970,11 @@ export default function DashboardPage() {
                                 >
                                   <UserPlus className="h-3.5 w-3.5" />
                                   <span>
-                                    {language === "bn"
-                                      ? "প্রথম টিম মেম্বার যোগ করুন"
-                                      : "Add First Team Member"}
+                                    {tr(
+                                      "প্রথম টিম মেম্বার যোগ করুন",
+                                      "Add First Team Member",
+                                      "最初のメンバーを追加",
+                                    )}
                                   </span>
                                 </button>
                               </td>
@@ -4130,16 +4207,18 @@ export default function DashboardPage() {
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div>
                         <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-                          {language === "ja"
-                            ? "ブックストア・注文・ブログ管理"
-                            : language === "en"
-                              ? "Bookstore, Orders, Blog & Media"
-                              : "বুক স্টোর, অর্ডার, ব্লগ ও মিডিয়া প্যানেল"}
+                          {tr(
+                            "বুক স্টোর, অর্ডার, ব্লগ ও মিডিয়া প্যানেল",
+                            "Bookstore, Orders, Blog & Media",
+                            "ブックストア・注文・ブログ管理",
+                          )}
                         </h2>
                         <p className="text-xs text-slate-500 mt-0.5">
-                          {language === "bn"
-                            ? "বই যোগ/এডিট, অর্ডার ট্র্যাকিং, ব্লগ পোস্ট এবং ক্লাউড স্টোরেজ পরিচালনা করুন।"
-                            : "Manage bookstore inventory, customer orders, blog articles, and media."}
+                          {tr(
+                            "বই যোগ/এডিট, অর্ডার ট্র্যাকিং, ব্লগ পোস্ট এবং ক্লাউড স্টোরেজ পরিচালনা করুন।",
+                            "Manage bookstore inventory, customer orders, blog articles, and media.",
+                            "教材在庫、注文状況、ブログ記事およびクラウドアセットの管理。",
+                          )}
                         </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
@@ -4166,42 +4245,42 @@ export default function DashboardPage() {
                       {[
                         {
                           id: "summary",
-                          label: language === "bn" ? "সামগ্রিক চিত্র" : "Overview",
+                          label: tr("সামগ্রিক চিত্র", "Overview", "概要"),
                           icon: Sparkles,
                         },
                         {
                           id: "products",
-                          label: language === "bn" ? "বই ও পণ্য" : "Products",
+                          label: tr("বই ও পণ্য", "Products", "商品・書籍"),
                           icon: BookOpen,
                           count: adminBundle.products.length,
                         },
                         {
                           id: "orders",
-                          label: language === "bn" ? "বুক অর্ডার" : "Orders",
+                          label: tr("বুক অর্ডার", "Orders", "注文管理"),
                           icon: ShoppingBag,
                           count: adminBundle.orders.length,
                         },
                         {
                           id: "blog",
-                          label: language === "bn" ? "ব্লগ পোস্ট" : "Blog",
+                          label: tr("ব্লগ পোস্ট", "Blog", "ブログ記事"),
                           icon: FileText,
                           count: adminBundle.posts.length,
                         },
                         {
                           id: "categories",
-                          label: language === "bn" ? "ক্যাটেগরি" : "Categories",
+                          label: tr("ক্যাটেগরি", "Categories", "カテゴリ"),
                           icon: Layers,
                           count: adminBundle.categories.length,
                         },
                         {
                           id: "reviews",
-                          label: language === "bn" ? "রিভিউ" : "Reviews",
+                          label: tr("রিভিউ", "Reviews", "レビュー"),
                           icon: Award,
                           count: adminBundle.reviews.length,
                         },
                         {
                           id: "uploads",
-                          label: language === "bn" ? "ক্লাউড ফাইল" : "Cloud Media",
+                          label: tr("ক্লাউড ফাইল", "Cloud Media", "クラウドアセット"),
                           icon: Database,
                         },
                       ].map((sub) => {
@@ -4573,12 +4652,8 @@ export default function DashboardPage() {
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                     <h3 className="text-base font-bold text-slate-900">
                       {editingB2bAgent
-                        ? language === "bn"
-                          ? "বিটুবি এজেন্ট তথ্য সম্পাদনা"
-                          : "Edit B2B Agent"
-                        : language === "bn"
-                          ? "নতুন বিটুবি এজেন্ট / সাব-এজেন্ট যোগ করুন"
-                          : "Add B2B Agent / Sub-Agent"}
+                        ? tr("বিটুবি এজেন্ট তথ্য সম্পাদনা", "Edit B2B Agent", "B2B代理店情報の編集")
+                        : tr("নতুন বিটুবি এজেন্ট / সাব-এজেন্ট যোগ করুন", "Add B2B Agent / Sub-Agent", "新規B2B代理店の追加")}
                     </h3>
                     <button
                       type="button"
@@ -4592,21 +4667,21 @@ export default function DashboardPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
                     <div className="sm:col-span-2">
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "প্রতিষ্ঠান বা এজেন্সির নাম *" : "Organization / Agency Name *"}
+                        {tr("প্রতিষ্ঠান বা এজেন্সির নাম *", "Organization / Agency Name *", "機関・代理店名 *")}
                       </label>
                       <input
                         type="text"
                         required
                         value={b2bForm.organizationName}
                         onChange={(e) => setB2bForm({ ...b2bForm, organizationName: e.target.value })}
-                        placeholder={language === "bn" ? "এজেন্সি বা পার্টনারের নাম লিখুন" : "Enter agency name"}
+                        placeholder={tr("এজেন্সি বা পার্টনারের নাম লিখুন", "Enter agency name", "代理店・機関名を入力")}
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-medium"
                       />
                     </div>
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "এজেন্টের ধরন" : "Agent Type"}
+                        {tr("এজেন্টের ধরন", "Agent Type", "代理店区分")}
                       </label>
                       <select
                         value={b2bForm.agentType}
@@ -4615,15 +4690,15 @@ export default function DashboardPage() {
                         }
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
                       >
-                        <option value="INSTITUTIONAL">Institutional Partner</option>
-                        <option value="LOCAL_SUB_AGENT">Local Sub-Agent</option>
-                        <option value="CAMPUS_AMBASSADOR">Campus Ambassador</option>
+                        <option value="INSTITUTIONAL">{tr("প্রাতিষ্ঠানিক পার্টনার", "Institutional Partner", "提携教育機関・法人パートナー")}</option>
+                        <option value="LOCAL_SUB_AGENT">{tr("লোকাল সাব-এজেন্ট", "Local Sub-Agent", "地域サブエージェント")}</option>
+                        <option value="CAMPUS_AMBASSADOR">{tr("ক্যাম্পাস অ্যাম্বাসেডর", "Campus Ambassador", "学生アンバサダー")}</option>
                       </select>
                     </div>
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "শহর / জেলা" : "City"}
+                        {tr("শহর / জেলা", "City", "都市・所在地")}
                       </label>
                       <input
                         type="text"
@@ -4635,7 +4710,7 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "যোগাযোগকারীর নাম *" : "Contact Person *"}
+                        {tr("যোগাযোগকারীর নাম *", "Contact Person *", "担当者名 *")}
                       </label>
                       <input
                         type="text"
@@ -4648,7 +4723,7 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "ফোন নম্বর *" : "Phone Number *"}
+                        {tr("ফোন নম্বর *", "Phone Number *", "電話番号 *")}
                       </label>
                       <input
                         type="text"
@@ -4661,7 +4736,7 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "ট্রেড লাইসেন্স নম্বর" : "Trade License No."}
+                        {tr("ট্রেড লাইসেন্স নম্বর", "Trade License No.", "事業ライセンス番号")}
                       </label>
                       <input
                         type="text"
@@ -4674,7 +4749,7 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "NID / পাসপোর্ট নম্বর" : "NID / Passport No."}
+                        {tr("NID / পাসপোর্ট নম্বর", "NID / Passport No.", "身分証明書・パスポート番号")}
                       </label>
                       <input
                         type="text"
@@ -4687,20 +4762,20 @@ export default function DashboardPage() {
 
                     <div className="sm:col-span-2">
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "এজেন্সির লোগো URL (ঐচ্ছিক)" : "Agency Logo URL (Optional)"}
+                        {tr("এজেন্সির লোগো URL (ঐচ্ছিক)", "Agency Logo URL (Optional)", "ロゴ画像URL（任意）")}
                       </label>
                       <input
                         type="text"
                         value={b2bForm.logoUrl}
                         onChange={(e) => setB2bForm({ ...b2bForm, logoUrl: e.target.value })}
-                        placeholder={language === "bn" ? "লোগো ইমেজ লিংক দিন (অথবা ৩৬০° প্রোফাইলে ফাইল আপলোড করুন)" : "https://... (or upload in 360° profile)"}
+                        placeholder={tr("লোগো ইমেজ লিংক দিন (অথবা ৩৬০° প্রোফাইলে ফাইল আপলোড করুন)", "https://... (or upload in 360° profile)", "https://... (または360°プロファイルでアップロード)")}
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
                       />
                     </div>
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "রেফার্ড শিক্ষার্থী সংখ্যা" : "Referred Students"}
+                        {tr("রেফার্ড শিক্ষার্থী সংখ্যা", "Referred Students", "紹介生徒数")}
                       </label>
                       <input
                         type="number"
@@ -4714,7 +4789,7 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "সফল ভিসা সংখ্যা" : "Successful Visas"}
+                        {tr("সফল ভিসা সংখ্যা", "Successful Visas", "ビザ取得実績数")}
                       </label>
                       <input
                         type="number"
@@ -4728,7 +4803,7 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "চুক্তিভিত্তিক কমিশন (BDT)" : "Agreed Commission (BDT)"}
+                        {tr("চুক্তিভিত্তিক কমিশন (BDT)", "Agreed Commission (BDT)", "契約手数料 (BDT)")}
                       </label>
                       <input
                         type="number"
@@ -4742,7 +4817,7 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "বকেয়া কমিশন (BDT)" : "Pending Commission (BDT)"}
+                        {tr("বকেয়া কমিশন (BDT)", "Pending Commission (BDT)", "未払手数料 (BDT)")}
                       </label>
                       <input
                         type="number"
@@ -4761,7 +4836,7 @@ export default function DashboardPage() {
                       onClick={() => setActiveModal(null)}
                       className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
                     >
-                      {language === "bn" ? "বাতিল" : "Cancel"}
+                      {tr("বাতিল", "Cancel", "キャンセル")}
                     </button>
                     <button
                       type="button"
@@ -4781,13 +4856,13 @@ export default function DashboardPage() {
                       }}
                       className="rounded-xl border border-slate-900 bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition"
                     >
-                      {language === "bn" ? "সেভ ও ৩৬০° প্রোফাইল খুলুন" : "Save & Open 360° Profile"}
+                      {tr("সেভ ও ৩৬০° প্রোফাইল খুলুন", "Save & Open 360° Profile", "保存して360°プロファイルを開く")}
                     </button>
                     <button
                       type="submit"
                       className="rounded-xl bg-[#b91c1c] px-5 py-2 text-xs font-semibold text-white hover:bg-red-800 transition"
                     >
-                      {language === "bn" ? "সেভ করুন" : "Save Agent"}
+                      {tr("সেভ করুন", "Save Agent", "保存")}
                     </button>
                   </div>
                 </form>
@@ -4801,10 +4876,10 @@ export default function DashboardPage() {
                     if (!schoolForm.name.trim()) return;
                     if (editingPartnerSchool) {
                       updatePartnerSchool(editingPartnerSchool.id, schoolForm);
-                      showToast(`${schoolForm.name} updated`);
+                      showToast(tr(`${schoolForm.name} আপডেট করা হয়েছে`, `${schoolForm.name} updated`, `${schoolForm.name}を更新しました`));
                     } else {
                       addPartnerSchool(schoolForm);
-                      showToast(`${schoolForm.name} added`);
+                      showToast(tr(`${schoolForm.name} যোগ করা হয়েছে`, `${schoolForm.name} added`, `${schoolForm.name}を追加しました`));
                     }
                     setStore({ ...getCmsStore() });
                     setActiveModal(null);
@@ -4814,12 +4889,8 @@ export default function DashboardPage() {
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                     <h3 className="text-base font-bold text-slate-900">
                       {editingPartnerSchool
-                        ? language === "bn"
-                          ? "পার্টনার স্কুল / ভার্সিটি সম্পাদনা"
-                          : "Edit Partner School / University"
-                        : language === "bn"
-                          ? "নতুন জাপানি পার্টনার স্কুল / ভার্সিটি যোগ করুন"
-                          : "Add Japanese Partner School / University"}
+                        ? tr("পার্টনার স্কুল / ভার্সিটি সম্পাদনা", "Edit Partner School / University", "提携教育機関情報の編集")
+                        : tr("নতুন জাপানি পার্টনার স্কুল / ভার্সিটি যোগ করুন", "Add Japanese Partner School / University", "新規提携教育機関の追加")}
                     </h3>
                     <button
                       type="button"
@@ -4833,7 +4904,7 @@ export default function DashboardPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
                     <div className="sm:col-span-2">
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "প্রতিষ্ঠানের নাম (English / বাংলা) *" : "Institution Name *"}
+                        {tr("প্রতিষ্ঠানের নাম (English / বাংলা) *", "Institution Name *", "教育機関名 *")}
                       </label>
                       <input
                         type="text"
@@ -4847,7 +4918,7 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "প্রতিষ্ঠানের ক্যাটাগরি" : "Institution Category"}
+                        {tr("প্রতিষ্ঠানের ক্যাটাগরি", "Institution Category", "機関区分")}
                       </label>
                       <select
                         value={schoolForm.institutionType}
@@ -4860,23 +4931,23 @@ export default function DashboardPage() {
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold"
                       >
                         <option value="LANGUAGE_SCHOOL">
-                          {language === "bn" ? "জাপানি ভাষা স্কুল (Language School)" : "Japanese Language School"}
+                          {tr("জাপানি ভাষা স্কুল (Language School)", "Japanese Language School", "日本語教育機関（日本語学校）")}
                         </option>
                         <option value="UNIVERSITY">
-                          {language === "bn" ? "বিশ্ববিদ্যালয় (University)" : "University (Daigaku)"}
+                          {tr("বিশ্ববিদ্যালয় (University)", "University (Daigaku)", "大学・大学院")}
                         </option>
                         <option value="VOCATIONAL_COLLEGE">
-                          {language === "bn" ? "ভোকেশনাল কলেজ (Senmon Gakko)" : "Vocational College"}
+                          {tr("ভোকেশনাল কলেজ (Senmon Gakko)", "Vocational College", "専門学校")}
                         </option>
                         <option value="SSW_EMPLOYER">
-                          {language === "bn" ? "SSW নিয়োগদাতা কোম্পানি" : "SSW Employer Company"}
+                          {tr("SSW নিয়োগদাতা কোম্পানি", "SSW Employer Company", "特定技能受入企業・監理団体")}
                         </option>
                       </select>
                     </div>
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "জাপানি নাম (ঐচ্ছিক)" : "Japanese Name"}
+                        {tr("জাপানি নাম (ঐচ্ছিক)", "Japanese Name", "日本語名称（任意）")}
                       </label>
                       <input
                         type="text"
@@ -4889,7 +4960,7 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "জাপানে অবস্থান (শহর) *" : "Location in Japan *"}
+                        {tr("জাপানে অবস্থান (শহর) *", "Location in Japan *", "日本国内の所在地（都市） *")}
                       </label>
                       <input
                         type="text"
@@ -4903,7 +4974,7 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "দায়িত্বশীল ব্যক্তি / প্রিন্সিপাল" : "Contact Person"}
+                        {tr("দায়িত্বশীল ব্যক্তি / প্রিন্সিপাল", "Contact Person", "担当者・校長名")}
                       </label>
                       <input
                         type="text"
@@ -4917,7 +4988,7 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "ইমেইল" : "Email"}
+                        {tr("ইমেইল", "Email", "メールアドレス")}
                       </label>
                       <input
                         type="email"
@@ -4929,7 +5000,7 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "১ম বর্ষের টিউশন ফি (Yen)" : "1st Year Tuition (Yen)"}
+                        {tr("১ম বর্ষের টিউশন ফি (Yen)", "1st Year Tuition (Yen)", "初年度学費 (Yen)")}
                       </label>
                       <input
                         type="number"
@@ -4946,7 +5017,7 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "স্টুডেন্ট পিছু কমিশন (Yen)" : "Commission / Student (Yen)"}
+                        {tr("স্টুডেন্ট পিছু কমিশন (Yen)", "Commission / Student (Yen)", "生徒1名あたり手数料 (Yen)")}
                       </label>
                       <input
                         type="number"
@@ -4963,7 +5034,7 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "স্টুডেন্ট পিছু কমিশন (BDT - ঐচ্ছিক)" : "Commission / Student (BDT)"}
+                        {tr("স্টুডেন্ট পিছু কমিশন (BDT - ঐচ্ছিক)", "Commission / Student (BDT)", "生徒1名あたり手数料 (BDT)")}
                       </label>
                       <input
                         type="number"
@@ -4980,7 +5051,7 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "ইনটেক সিট কোটা (Seat Quota)" : "Intake Seat Quota"}
+                        {tr("ইনটেক সিট কোটা (Seat Quota)", "Intake Seat Quota", "募集定員（名）")}
                       </label>
                       <input
                         type="number"
@@ -4997,7 +5068,7 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "লোগো URL (ঐচ্ছিক)" : "Logo URL (Optional)"}
+                        {tr("লোগো URL (ঐচ্ছিক)", "Logo URL (Optional)", "ロゴ画像URL（任意）")}
                       </label>
                       <input
                         type="text"
@@ -5015,7 +5086,7 @@ export default function DashboardPage() {
                       onClick={() => setActiveModal(null)}
                       className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
                     >
-                      {language === "bn" ? "বাতিল" : "Cancel"}
+                      {tr("বাতিল", "Cancel", "キャンセル")}
                     </button>
                     <button
                       type="button"
@@ -5035,13 +5106,13 @@ export default function DashboardPage() {
                       }}
                       className="rounded-xl border border-[#b91c1c] bg-red-50 px-4 py-2 text-xs font-semibold text-[#b91c1c] hover:bg-red-100 transition"
                     >
-                      {language === "bn" ? "সেভ ও ৩৬০° প্রোফাইল খুলুন" : "Save & Open 360° Profile"}
+                      {tr("সেভ ও ৩৬০° প্রোফাইল খুলুন", "Save & Open 360° Profile", "保存して360°プロファイルを開く")}
                     </button>
                     <button
                       type="submit"
                       className="rounded-xl bg-slate-900 px-5 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition"
                     >
-                      {language === "bn" ? "সেভ করুন" : "Save Partner School"}
+                      {tr("সেভ করুন", "Save Partner School", "提携校を保存")}
                     </button>
                   </div>
                 </form>
@@ -5076,12 +5147,8 @@ export default function DashboardPage() {
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                     <h3 className="text-base font-bold text-slate-900">
                       {editingStaff
-                        ? language === "bn"
-                          ? "টিম মেম্বার তথ্য সম্পাদনা"
-                          : "Edit Team Member"
-                        : language === "bn"
-                          ? "নতুন টিম মেম্বার / স্টাফ যোগ করুন"
-                          : "Add New Team Member"}
+                        ? tr("টিম মেম্বার তথ্য সম্পাদনা", "Edit Team Member", "チームメンバー情報編集")
+                        : tr("নতুন টিম মেম্বার / স্টাফ যোগ করুন", "Add New Team Member", "新規スタッフ登録")}
                     </h3>
                     <button
                       type="button"
@@ -5095,21 +5162,21 @@ export default function DashboardPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
                     <div className="sm:col-span-2">
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "কর্মকর্তা / স্টাফের পূর্ণ নাম *" : "Full Name *"}
+                        {tr("কর্মকর্তা / স্টাফের পূর্ণ নাম *", "Full Name *", "氏名（フルネーム）*")}
                       </label>
                       <input
                         type="text"
                         required
                         value={staffForm.name}
                         onChange={(e) => setStaffForm({ ...staffForm, name: e.target.value })}
-                        placeholder={language === "bn" ? "যেমন: সুমাইয়া সুলতানা" : "e.g. Sumaiya Sultana"}
+                        placeholder={tr("যেমন: সুমাইয়া সুলতানা", "e.g. Sumaiya Sultana", "例：スマイヤ・スルタナ")}
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-medium"
                       />
                     </div>
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "পদবী / ভূমিকা *" : "Role *"}
+                        {tr("পদবী / ভূমিকা *", "Role *", "役職・職種 *")}
                       </label>
                       <select
                         value={staffForm.role}
@@ -5139,18 +5206,18 @@ export default function DashboardPage() {
                         }}
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
                       >
-                        <option value="TELE_COUNSELOR">টেলি-কাউন্সেলর (Tele-Counselor & Outreach)</option>
-                        <option value="COUNSELOR">এডমিশন কাউন্সেলর (Admission Counselor)</option>
-                        <option value="SENIOR_SENSEI">জাপানি শিক্ষক / সেন্সি (Japanese Sensei)</option>
-                        <option value="VISA_OFFICER">ভিসা প্রসেসিং অফিসার (Visa Specialist)</option>
-                        <option value="BRANCH_MANAGER">ব্রাঞ্চ ম্যানেজার (Branch Manager)</option>
-                        <option value="ACCOUNTANT_ADMIN">একাউন্টস ও অ্যাডমিন (Accounts & Admin)</option>
+                        <option value="TELE_COUNSELOR">{tr("টেলি-কাউন্সেলর (Tele-Counselor & Outreach)", "Tele-Counselor & Outreach", "テレカウンセラー・広報")}</option>
+                        <option value="COUNSELOR">{tr("এডমিশন কাউন্সেলর (Admission Counselor)", "Admission Counselor", "入学相談カウンセラー")}</option>
+                        <option value="SENIOR_SENSEI">{tr("জাপানি শিক্ষক / সেন্সি (Japanese Sensei)", "Japanese Sensei", "専任日本語教師 (Sensei)")}</option>
+                        <option value="VISA_OFFICER">{tr("ভিসা প্রসেসিং অফিসার (Visa Specialist)", "Visa Specialist", "ビザ・COE申請専門官")}</option>
+                        <option value="BRANCH_MANAGER">{tr("ব্রাঞ্চ ম্যানেজার (Branch Manager)", "Branch Manager", "支店長・拠点統括")}</option>
+                        <option value="ACCOUNTANT_ADMIN">{tr("একাউন্টস ও অ্যাডমিন (Accounts & Admin)", "Accounts & Admin", "経理・総務管理")}</option>
                       </select>
                     </div>
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "কর্মস্থল / লোকেশন" : "Work Location"}
+                        {tr("কর্মস্থল / লোকেশন", "Work Location", "勤務地・オフィス")}
                       </label>
                       <select
                         value={staffForm.location}
@@ -5162,15 +5229,15 @@ export default function DashboardPage() {
                         }
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
                       >
-                        <option value="DHAKA_OFFICE">Dhaka Office (HQ)</option>
-                        <option value="KHULNA_OFFICE">Khulna Branch Office</option>
-                        <option value="REMOTE">Remote / Home Office</option>
+                        <option value="DHAKA_OFFICE">{tr("ঢাকা প্রধান কার্যালয় (HQ)", "Dhaka Office (HQ)", "ダッカ本社 (HQ)")}</option>
+                        <option value="KHULNA_OFFICE">{tr("খুলনা শাখা কার্যালয়", "Khulna Branch Office", "クルナ支店")}</option>
+                        <option value="REMOTE">{tr("রিমোট / হোম অফিস", "Remote / Home Office", "リモート・在宅")}</option>
                       </select>
                     </div>
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "ফোন নম্বর" : "Phone Number"}
+                        {tr("ফোন নম্বর", "Phone Number", "電話番号")}
                       </label>
                       <input
                         type="text"
@@ -5182,7 +5249,7 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "ইমেইল" : "Email"}
+                        {tr("ইমেইল", "Email", "メールアドレス")}
                       </label>
                       <input
                         type="email"
@@ -5194,7 +5261,7 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "মাসিক মূল বেতন (BDT)" : "Monthly Base Salary (BDT)"}
+                        {tr("মাসিক মূল বেতন (BDT)", "Monthly Base Salary (BDT)", "月次基本給 (BDT)")}
                       </label>
                       <input
                         type="number"
@@ -5208,7 +5275,7 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "পারফরম্যান্স বোনাস (BDT)" : "Performance Bonus (BDT)"}
+                        {tr("পারফরম্যান্স বোনাস (BDT)", "Performance Bonus (BDT)", "業績賞与・ボーナス (BDT)")}
                       </label>
                       <input
                         type="number"
@@ -5227,7 +5294,7 @@ export default function DashboardPage() {
                       <>
                         <div>
                           <label className="font-semibold text-slate-700">
-                            {language === "bn" ? "মাসিক কল টার্গেট" : "Monthly Call Target"}
+                            {tr("মাসিক কল টার্গেট", "Monthly Call Target", "月間架電目標数")}
                           </label>
                           <input
                             type="number"
@@ -5245,7 +5312,7 @@ export default function DashboardPage() {
 
                         <div>
                           <label className="font-semibold text-slate-700">
-                            {language === "bn" ? "সম্পন্ন কল সংখ্যা" : "Calls Completed"}
+                            {tr("সম্পন্ন কল সংখ্যা", "Calls Completed", "達成架電数")}
                           </label>
                           <input
                             type="number"
@@ -5267,7 +5334,7 @@ export default function DashboardPage() {
                       <>
                         <div>
                           <label className="font-semibold text-slate-700">
-                            {language === "bn" ? "মাসিক ক্লাস / লেকচার টার্গেট" : "Monthly Class Target"}
+                            {tr("মাসিক ক্লাস / লেকচার টার্গেট", "Monthly Class Target", "月間担当講義数")}
                           </label>
                           <input
                             type="number"
@@ -5281,7 +5348,7 @@ export default function DashboardPage() {
 
                         <div>
                           <label className="font-semibold text-slate-700">
-                            {language === "bn" ? "সম্পন্ন ক্লাস সংখ্যা" : "Classes Conducted"}
+                            {tr("সম্পন্ন ক্লাস সংখ্যা", "Classes Conducted", "実施済講義数")}
                           </label>
                           <input
                             type="number"
@@ -5299,7 +5366,7 @@ export default function DashboardPage() {
                       <>
                         <div>
                           <label className="font-semibold text-slate-700">
-                            {language === "bn" ? "টার্গেট ভিসা ও COE ফাইল প্রসেসিং" : "Target Visa / COE Files"}
+                            {tr("টার্গেট ভিসা ও COE ফাইল প্রসেসিং", "Target Visa / COE Files", "目標申請ファイル数")}
                           </label>
                           <input
                             type="number"
@@ -5313,7 +5380,7 @@ export default function DashboardPage() {
 
                         <div>
                           <label className="font-semibold text-slate-700">
-                            {language === "bn" ? "সম্পন্ন ফাইল সংখ্যা" : "Files Processed"}
+                            {tr("সম্পন্ন ফাইল সংখ্যা", "Files Processed", "処理済ファイル数")}
                           </label>
                           <input
                             type="number"
@@ -5331,12 +5398,14 @@ export default function DashboardPage() {
                       <div className="sm:col-span-2 rounded-xl bg-slate-50 border border-slate-200/80 p-3 text-slate-600">
                         <p className="font-semibold text-xs text-slate-800 flex items-center gap-1.5">
                           <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                          <span>{language === "bn" ? "ফিক্সড পে-রোল ও অফিস অপারেশনস" : "Fixed Salaried Role"}</span>
+                          <span>{tr("ফিক্সড পে-রোল ও অফিস অপারেশনস", "Fixed Salaried Role", "固定給・管理統括職")}</span>
                         </p>
                         <p className="text-[11px] text-slate-500 mt-0.5">
-                          {language === "bn"
-                            ? "এই পদের জন্য কোনো টেলি-কলিং বা আউটরিচ টার্গেটের প্রয়োজন নেই। বেতন ও অ্যাডমিন কার্যক্রম নিয়মিত ট্র্যাক হবে।"
-                            : "No tele-calling or outreach KPIs are required for this management role."}
+                          {tr(
+                            "এই পদের জন্য কোনো টেলি-কলিং বা আউটরিচ টার্গেটের প্রয়োজন নেই। বেতন ও অ্যাডমিন কার্যক্রম নিয়মিত ট্র্যাক হবে।",
+                            "No tele-calling or outreach KPIs are required for this management role.",
+                            "この役職にはテレコール目標はありません。月次固定給および総務業務として管理されます。"
+                          )}
                         </p>
                       </div>
                     )}
@@ -5348,13 +5417,13 @@ export default function DashboardPage() {
                       onClick={() => setActiveModal(null)}
                       className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
                     >
-                      {language === "bn" ? "বাতিল" : "Cancel"}
+                      {tr("বাতিল", "Cancel", "キャンセル")}
                     </button>
                     <button
                       type="submit"
                       className="rounded-xl bg-[#b91c1c] px-5 py-2 text-xs font-semibold text-white hover:bg-red-800 transition"
                     >
-                      {language === "bn" ? "সেভ করুন" : "Save Team Member"}
+                      {tr("সেভ করুন", "Save Team Member", "保存する")}
                     </button>
                   </div>
                 </form>
@@ -5411,7 +5480,7 @@ export default function DashboardPage() {
                 >
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                     <h3 className="text-base font-bold text-slate-900">
-                      {language === "bn" ? "নতুন প্রার্থী / CRM লিড যোগ করুন" : "Add New CRM Lead"}
+                      {tr("নতুন প্রার্থী / CRM লিড যোগ করুন", "Add New CRM Lead", "新規CRM見込み客登録")}
                     </h3>
                     <button
                       type="button"
@@ -5425,7 +5494,7 @@ export default function DashboardPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "প্রার্থীর নাম *" : "Candidate Name *"}
+                        {tr("প্রার্থীর নাম *", "Candidate Name *", "候補者氏名 *")}
                       </label>
                       <input
                         type="text"
@@ -5437,7 +5506,7 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "ফোন / WhatsApp *" : "Phone / WhatsApp *"}
+                        {tr("ফোন / WhatsApp *", "Phone / WhatsApp *", "電話番号・WhatsApp *")}
                       </label>
                       <input
                         type="text"
@@ -5450,7 +5519,7 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "শহর" : "City"}
+                        {tr("শহর", "City", "居住都市")}
                       </label>
                       <input
                         type="text"
@@ -5461,7 +5530,7 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "আগ্রহের প্রোগ্রাম" : "Program Interest"}
+                        {tr("আগ্রহের প্রোগ্রাম", "Program Interest", "希望プログラム")}
                       </label>
                       <select
                         value={leadForm.interest}
@@ -5470,17 +5539,17 @@ export default function DashboardPage() {
                         }
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
                       >
-                        <option value="STUDENT_VISA_REGULAR">Student Visa (Regular)</option>
-                        <option value="STUDENT_VISA_PREMIUM">Student Visa (Premium)</option>
-                        <option value="SSW_CONSTRUCTION_SPECIAL">SSW Construction</option>
-                        <option value="SSW_CAREGIVER">SSW Caregiver</option>
-                        <option value="JAPANESE_N5">Japanese N5 Course</option>
-                        <option value="JAPANESE_N4">Japanese N4 Course</option>
+                        <option value="STUDENT_VISA_REGULAR">{tr("স্টুডেন্ট ভিসা (রেগুলার)", "Student Visa (Regular)", "留学ビザ（レギュラー）")}</option>
+                        <option value="STUDENT_VISA_PREMIUM">{tr("স্টুডেন্ট ভিসা (প্রিমিয়াম প্যাকেজ)", "Student Visa (Premium)", "留学ビザ（プレミアム包括）")}</option>
+                        <option value="SSW_CONSTRUCTION_SPECIAL">{tr("এসএসডব্লিউ কনস্ট্রাকশন", "SSW Construction", "特定技能（建設）")}</option>
+                        <option value="SSW_CAREGIVER">{tr("এসএসডব্লিউ কেয়ারগিভার", "SSW Caregiver", "特定技能（介護）")}</option>
+                        <option value="JAPANESE_N5">{tr("জাপানি ভাষা N5 কোর্স", "Japanese N5 Course", "日本語N5講習コース")}</option>
+                        <option value="JAPANESE_N4">{tr("জাপানি ভাষা N4 কোর্স", "Japanese N4 Course", "日本語N4講習コース")}</option>
                       </select>
                     </div>
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "শিক্ষাগত যোগ্যতা" : "Education"}
+                        {tr("শিক্ষাগত যোগ্যতা", "Education", "最終学歴")}
                       </label>
                       <input
                         type="text"
@@ -5491,7 +5560,7 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "জাপানি ভাষার স্তর" : "Japanese Level"}
+                        {tr("জাপানি ভাষার স্তর", "Japanese Level", "日本語レベル")}
                       </label>
                       <select
                         value={leadForm.japaneseProficiency}
@@ -5503,15 +5572,15 @@ export default function DashboardPage() {
                         }
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
                       >
-                        <option value="NONE">Beginner / None</option>
-                        <option value="LEARNING_N5">Learning N5</option>
-                        <option value="PASSED_N5">Passed N5</option>
-                        <option value="PASSED_N4">Passed N4</option>
+                        <option value="NONE">{tr("শুরুর স্তর / জানা নেই", "Beginner / None", "初級・未学習")}</option>
+                        <option value="LEARNING_N5">{tr("N5 অধ্যায়নরত", "Learning N5", "N5学習中")}</option>
+                        <option value="PASSED_N5">{tr("N5 উত্তীর্ণ", "Passed N5", "N5合格")}</option>
+                        <option value="PASSED_N4">{tr("N4 উত্তীর্ণ", "Passed N4", "N4合格")}</option>
                       </select>
                     </div>
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "দায়িত্বপ্রাপ্ত কাউন্সেলর (HR)" : "Assigned Counselor"}
+                        {tr("দায়িত্বপ্রাপ্ত কাউন্সেলর (HR)", "Assigned Counselor", "担当カウンセラー")}
                       </label>
                       <select
                         value={leadForm.assignedCounselorId}
@@ -5520,7 +5589,7 @@ export default function DashboardPage() {
                         }
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
                       >
-                        <option value="">-- স্বয়ংক্রিয় / নির্বাচন করুন --</option>
+                        <option value="">{tr("-- স্বয়ংক্রিয় / নির্বাচন করুন --", "-- Auto / Select Counselor --", "-- 自動割当 / カウンセラー選択 --")}</option>
                         {store.staffList
                           .filter((s) => s.role === "COUNSELOR" || s.role === "TELE_COUNSELOR" || s.role === "BRANCH_MANAGER")
                           .map((s) => (
@@ -5532,7 +5601,7 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "রেফারকারী বিটুবি এজেন্ট (যদি থাকে)" : "Referring B2B Agent"}
+                        {tr("রেফারকারী বিটুবি এজেন্ট (যদি থাকে)", "Referring B2B Agent", "紹介B2Bエージェント")}
                       </label>
                       <select
                         value={leadForm.referredByAgentId}
@@ -5541,7 +5610,7 @@ export default function DashboardPage() {
                         }
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
                       >
-                        <option value="">-- সরাসরি অফিস (Direct Lead) --</option>
+                        <option value="">{tr("-- সরাসরি অফিস (Direct Lead) --", "-- Direct Office Lead --", "-- 直通来館（Direct Lead）--")}</option>
                         {store.b2bAgents.map((ag) => (
                           <option key={ag.id} value={ag.id}>
                             {ag.agencyName} ({ag.contactPerson})
@@ -5551,7 +5620,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="sm:col-span-2">
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "পছন্দের জাপানি পার্টনার স্কুল (ঐচ্ছিক)" : "Target Partner School"}
+                        {tr("পছন্দের জাপানি পার্টনার স্কুল (ঐচ্ছিক)", "Target Partner School", "志望提携教育機関")}
                       </label>
                       <select
                         value={leadForm.targetSchoolId}
@@ -5560,17 +5629,17 @@ export default function DashboardPage() {
                         }
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
                       >
-                        <option value="">-- পরবর্তীতে নির্ধারণ করা হবে --</option>
+                        <option value="">{tr("-- পরবর্তীতে নির্ধারণ করা হবে --", "-- To be determined later --", "-- 後ほど決定 --")}</option>
                         {store.partnerSchools.map((sc) => (
                           <option key={sc.id} value={sc.id}>
-                            {sc.schoolName} ({sc.city}) — কোটা: {sc.activeStudentsCount}/{sc.intakeQuota || 20}
+                            {sc.schoolName} ({sc.city}) — {tr("কোটা", "Quota", "受入枠")}: {sc.activeStudentsCount}/{sc.intakeQuota || 20}
                           </option>
                         ))}
                       </select>
                     </div>
                     <div className="sm:col-span-2">
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "কাউন্সেলিং নোট" : "Notes"}
+                        {tr("কাউন্সেলিং নোট", "Counseling Notes", "カウンセリング記録・備考")}
                       </label>
                       <input
                         type="text"
@@ -5585,15 +5654,15 @@ export default function DashboardPage() {
                     <button
                       type="button"
                       onClick={() => setActiveModal(null)}
-                      className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600"
+                      className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
                     >
-                      {language === "bn" ? "বাতিল" : "Cancel"}
+                      {tr("বাতিল", "Cancel", "キャンセル")}
                     </button>
                     <button
                       type="submit"
                       className="rounded-xl bg-[#b91c1c] px-5 py-2 text-xs font-semibold text-white hover:bg-red-800 transition"
                     >
-                      {language === "bn" ? "লিড সেভ করুন" : "Save Lead"}
+                      {tr("লিড সেভ করুন", "Save Lead", "リードを保存")}
                     </button>
                   </div>
                 </form>
@@ -5638,7 +5707,7 @@ export default function DashboardPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
                     <div className="sm:col-span-2">
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "CRM থেকে শিক্ষার্থী নির্বাচন করুন (ঐচ্ছিক)" : "Link CRM Student (Optional)"}
+                        {tr("CRM থেকে শিক্ষার্থী নির্বাচন করুন (ঐচ্ছিক)", "Link CRM Student (Optional)", "CRM受講生と連携（任意）")}
                       </label>
                       <select
                         value={lmsForm.linkedLeadId}
@@ -5657,7 +5726,7 @@ export default function DashboardPage() {
                         }}
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
                       >
-                        <option value="">-- ম্যানুয়ালি নাম লিখুন অথবা তালিকা থেকে বাছুন --</option>
+                        <option value="">{tr("-- ম্যানুয়ালি নাম লিখুন অথবা তালিকা থেকে বাছুন --", "-- Enter manually or pick from CRM --", "-- 手動入力 または CRMから選択 --")}</option>
                         {store.crmLeads.map((l) => (
                           <option key={l.id} value={l.id}>
                             {l.name} ({l.phone}) — {l.status}
@@ -5666,7 +5735,7 @@ export default function DashboardPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="font-semibold text-slate-700">Student Name *</label>
+                      <label className="font-semibold text-slate-700">{tr("শিক্ষার্থীর নাম *", "Student Name *", "受講生氏名 *")}</label>
                       <input
                         type="text"
                         required
@@ -5676,7 +5745,7 @@ export default function DashboardPage() {
                       />
                     </div>
                     <div>
-                      <label className="font-semibold text-slate-700">Phone *</label>
+                      <label className="font-semibold text-slate-700">{tr("ফোন নম্বর *", "Phone *", "電話番号 *")}</label>
                       <input
                         type="text"
                         required
@@ -5686,7 +5755,7 @@ export default function DashboardPage() {
                       />
                     </div>
                     <div>
-                      <label className="font-semibold text-slate-700">Course Level</label>
+                      <label className="font-semibold text-slate-700">{tr("কোর্স লেভেল", "Course Level", "受講コースレベル")}</label>
                       <select
                         value={lmsForm.courseLevel}
                         onChange={(e) =>
@@ -5696,11 +5765,11 @@ export default function DashboardPage() {
                       >
                         <option value="N5">JLPT N5</option>
                         <option value="N4">JLPT N4</option>
-                        <option value="IRODORI">Irodori Spoken</option>
+                        <option value="IRODORI">{tr("ইরোডোরি স্পোকেন", "Irodori Spoken", "いろどり会話")}</option>
                       </select>
                     </div>
                     <div>
-                      <label className="font-semibold text-slate-700">Batch</label>
+                      <label className="font-semibold text-slate-700">{tr("ব্যাচ", "Batch", "クラス・期")}</label>
                       <input
                         type="text"
                         value={lmsForm.activeBatch}
@@ -5710,14 +5779,14 @@ export default function DashboardPage() {
                     </div>
                     <div className="sm:col-span-2">
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "দায়িত্বপ্রাপ্ত জাপানি শিক্ষক / সেন্সি (HR)" : "Assigned Sensei (HR)"}
+                        {tr("দায়িত্বপ্রাপ্ত জাপানি শিক্ষক / সেন্সি (HR)", "Assigned Sensei (HR)", "専任日本語講師（Sensei）")}
                       </label>
                       <select
                         value={lmsForm.assignedSenseiId}
                         onChange={(e) => setLmsForm({ ...lmsForm, assignedSenseiId: e.target.value })}
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
                       >
-                        <option value="">-- সেন্সি নির্বাচন করুন --</option>
+                        <option value="">{tr("-- সেন্সি নির্বাচন করুন --", "-- Select Sensei --", "-- 講師を選択 --")}</option>
                         {store.staffList
                           .filter((s) => s.role === "SENIOR_SENSEI")
                           .map((s) => (
@@ -5733,15 +5802,15 @@ export default function DashboardPage() {
                     <button
                       type="button"
                       onClick={() => setActiveModal(null)}
-                      className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600"
+                      className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
                     >
-                      Cancel
+                      {tr("বাতিল", "Cancel", "キャンセル")}
                     </button>
                     <button
                       type="submit"
                       className="rounded-xl bg-slate-900 px-5 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition"
                     >
-                      Issue Account
+                      {tr("একাউন্ট ইস্যু করুন", "Issue Account", "アカウント発行")}
                     </button>
                   </div>
                 </form>
@@ -5772,9 +5841,11 @@ export default function DashboardPage() {
                     setStore({ ...getCmsStore() });
                     setActiveModal(null);
                     showToast(
-                      language === "bn"
-                        ? `৳${Number(paymentForm.amountBdt).toLocaleString()} টাকা জমা নেওয়া হয়েছে ও বকেয়া হালনাগাদ হয়েছে`
-                        : `Payment recorded & student dues updated`,
+                      tr(
+                        `৳${Number(paymentForm.amountBdt).toLocaleString()} টাকা জমা নেওয়া হয়েছে ও বকেয়া হালনাগাদ হয়েছে`,
+                        `Payment recorded & student dues updated`,
+                        `学費受領を記録し未納額を更新しました`
+                      )
                     );
                     setSelectedTxForReceipt(newTx);
                     setActiveModal("VIEW_RECEIPT");
@@ -5787,7 +5858,7 @@ export default function DashboardPage() {
                         <TrendingUp className="h-4 w-4" />
                       </span>
                       <h3 className="text-base font-bold text-slate-900">
-                        {language === "bn" ? "শিক্ষার্থীর ফি জমা ও মানি রসিদ ইস্যু" : "Record Student Fee Payment"}
+                        {tr("শিক্ষার্থীর ফি জমা ও মানি রসিদ ইস্যু", "Record Student Fee Payment", "学費受領登録・領収証発行")}
                       </h3>
                     </div>
                     <button
@@ -5802,9 +5873,11 @@ export default function DashboardPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
                     <div className="sm:col-span-2">
                       <label className="font-semibold text-slate-700">
-                        {language === "bn"
-                          ? "CRM শিক্ষার্থী নির্বাচন করুন (স্বয়ংক্রিয় বকেয়া সমন্বয়)"
-                          : "Select CRM Student (Auto-sync Dues)"}
+                        {tr(
+                          "CRM শিক্ষার্থী নির্বাচন করুন (স্বয়ংক্রিয় বকেয়া সমন্বয়)",
+                          "Select CRM Student (Auto-sync Dues)",
+                          "CRM受講生選択（未納額自動照合）"
+                        )}
                       </label>
                       <select
                         value={paymentForm.linkedLeadId}
@@ -5828,14 +5901,14 @@ export default function DashboardPage() {
                         }}
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
                       >
-                        <option value="">-- তালিকা থেকে শিক্ষার্থী বাছুন অথবা নিচে নাম লিখুন --</option>
+                        <option value="">{tr("-- তালিকা থেকে শিক্ষার্থী বাছুন অথবা নিচে নাম লিখুন --", "-- Select student from list or type below --", "-- 受講生を一覧から選択 または 下記に入力 --")}</option>
                         {store.crmLeads.map((l) => {
                           const due =
                             l.dueAmountBdt ??
                             Math.max(0, (l.contractAmountBdt || 0) - (l.paidAmountBdt || 0));
                           return (
                             <option key={l.id} value={l.id}>
-                              {l.name} ({l.phone}) — বকেয়া: ৳{due.toLocaleString()}
+                              {l.name} ({l.phone}) — {tr("বকেয়া", "Dues", "未納残額")}: ৳{due.toLocaleString()}
                             </option>
                           );
                         })}
@@ -5844,7 +5917,7 @@ export default function DashboardPage() {
 
                     <div className="sm:col-span-2">
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "শিক্ষার্থীর পূর্ণ নাম *" : "Student Name *"}
+                        {tr("শিক্ষার্থীর পূর্ণ নাম *", "Student Name *", "受講生氏名 *")}
                       </label>
                       <input
                         type="text"
@@ -5853,14 +5926,14 @@ export default function DashboardPage() {
                         onChange={(e) =>
                           setPaymentForm({ ...paymentForm, studentName: e.target.value })
                         }
-                        placeholder={language === "bn" ? "শিক্ষার্থীর নাম লিখুন" : "Enter student name"}
+                        placeholder={tr("শিক্ষার্থীর নাম লিখুন", "Enter student name", "受講生氏名を入力")}
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-medium"
                       />
                     </div>
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "মোবাইল / হোয়াটসঅ্যাপ নম্বর" : "Student Phone"}
+                        {tr("মোবাইল / হোয়াটসঅ্যাপ নম্বর", "Student Phone", "電話番号・WhatsApp")}
                       </label>
                       <input
                         type="text"
@@ -5875,7 +5948,7 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "আয়ের খাত / সার্ভিস ধরন *" : "Payment Type *"}
+                        {tr("আয়ের খাত / সার্ভিস ধরন *", "Payment Type *", "受領項目・サービス種別 *")}
                       </label>
                       <select
                         value={paymentForm.type}
@@ -5885,26 +5958,26 @@ export default function DashboardPage() {
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
                       >
                         <option value="SERVICE_CHARGE_COE">
-                          প্রি-ভিসা / COE সার্ভিস চার্জ (৳ ১,২০,০০০)
+                          {tr("প্রি-ভিসা / COE সার্ভিস চার্জ (৳ ১,২০,০০০)", "Pre-Visa / COE Service Charge (৳ 120,000)", "COE交付後申請代行費（৳ 120,000）")}
                         </option>
                         <option value="COURSE_FEE">
-                          ভাষা প্রশিক্ষণ কোর্স ফি (N5 / N4 - ৳ ১২,০০০)
+                          {tr("ভাষা প্রশিক্ষণ কোর্স ফি (N5 / N4 - ৳ ১২,০০০)", "Language Course Fee (N5 / N4 - ৳ 12,000)", "日本語講習受講料（N5/N4 - ৳ 12,000）")}
                         </option>
                         <option value="PREMIUM_PACKAGE">
-                          অল-ইন-ওয়ান প্রিমিয়াম প্যাকেজ কিস্তি (৳ ১১,০০,০০০)
+                          {tr("অল-ইন-ওয়ান প্রিমিয়াম প্যাকেজ কিস্তি (৳ ১১,০০,০০০)", "All-in-One Premium Package Installment (৳ 1,100,000)", "オールインワン包括パッケージ分割（৳ 1,100,000）")}
                         </option>
                         <option value="REGULAR_SERVICE_CHARGE">
-                          রেগুলার ভিসা প্রসেসিং অগ্রিম
+                          {tr("রেগুলার ভিসা প্রসেসিং অগ্রিম", "Regular Visa Processing Advance", "通常ビザ手続前受金")}
                         </option>
                         <option value="BOOK_STORE_SALE">
-                          মিন্না নো নিহোঙ্গো বই ও ম্যাটেরিয়াল সেল
+                          {tr("মিন্না নো নিহোঙ্গো বই ও ম্যাটেরিয়াল সেল", "Minna no Nihongo Book & Material Sale", "みんなの日本語教材・テキスト売上")}
                         </option>
                       </select>
                     </div>
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "পরিশোধিত টাকার পরিমাণ (BDT) *" : "Amount (BDT) *"}
+                        {tr("পরিশোধিত টাকার পরিমাণ (BDT) *", "Amount (BDT) *", "受領金額 (BDT) *")}
                       </label>
                       <input
                         type="number"
@@ -5919,7 +5992,7 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "পেমেন্ট মাধ্যম" : "Payment Method"}
+                        {tr("পেমেন্ট মাধ্যম", "Payment Method", "決済手段")}
                       </label>
                       <select
                         value={paymentForm.paymentMethod}
@@ -5931,7 +6004,7 @@ export default function DashboardPage() {
                         <option value="BKASH">bKash Merchant / Personal</option>
                         <option value="NAGAD">Nagad</option>
                         <option value="BANK_TRANSFER">Bank Transfer (IBBL / Pubali)</option>
-                        <option value="CASH_OFFICE">Cash at Office Desk</option>
+                        <option value="CASH_OFFICE">{tr("অফিস ডেস্কে নগদ", "Cash at Office Desk", "事務所窓口現金")}</option>
                         <option value="AAMARPAY">AamarPay Gateway</option>
                         <option value="SSLCOMMERZ">SSLCOMMERZ Gateway</option>
                       </select>
@@ -5939,7 +6012,7 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "Trx ID / ব্যাংক রেফারেন্স" : "Trx ID / Ref"}
+                        {tr("Trx ID / ব্যাংক রেফারেন্স", "Trx ID / Ref", "取引番号 / 銀行参照番号")}
                       </label>
                       <input
                         type="text"
@@ -5954,7 +6027,7 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "ব্রাঞ্চ / অফিস" : "Branch"}
+                        {tr("ব্রাঞ্চ / অফিস", "Branch", "拠点・支店")}
                       </label>
                       <select
                         value={paymentForm.branch}
@@ -5963,20 +6036,20 @@ export default function DashboardPage() {
                         }
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
                       >
-                        <option value="DHK-HQ">Dhaka HQ (ধানমন্ডি/ফার্মগেট)</option>
-                        <option value="KHULNA-01">Khulna Branch Office</option>
+                        <option value="DHK-HQ">{tr("ঢাকা প্রধান কার্যালয় (HQ)", "Dhaka Office (HQ)", "ダッカ本社 (HQ)")}</option>
+                        <option value="KHULNA-01">{tr("খুলনা শাখা কার্যালয়", "Khulna Branch Office", "クルナ支店")}</option>
                       </select>
                     </div>
 
                     <div className="sm:col-span-2">
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "মন্তব্য / বিবরণ" : "Notes"}
+                        {tr("মন্তব্য / বিবরণ", "Notes", "備考・詳細")}
                       </label>
                       <input
                         type="text"
                         value={paymentForm.notes}
                         onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })}
-                        placeholder={language === "bn" ? "ইনটেক সেশন, ব্যাচ বা বিশেষ নোট..." : "Intake session or note"}
+                        placeholder={tr("ইনটেক সেশন, ব্যাচ বা বিশেষ নোট...", "Intake session, batch, or special notes...", "入学時期・クラス・特記事項...")}
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-medium"
                       />
                     </div>
@@ -5988,13 +6061,13 @@ export default function DashboardPage() {
                       onClick={() => setActiveModal(null)}
                       className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
                     >
-                      {language === "bn" ? "বাতিল" : "Cancel"}
+                      {tr("বাতিল", "Cancel", "キャンセル")}
                     </button>
                     <button
                       type="submit"
                       className="rounded-xl bg-emerald-700 px-5 py-2 text-xs font-semibold text-white hover:bg-emerald-800 transition"
                     >
-                      {language === "bn" ? "জমা গ্রহণ ও রসিদ তৈরি করুন" : "Save & Generate Receipt"}
+                      {tr("জমা গ্রহণ ও রসিদ তৈরি করুন", "Save & Generate Receipt", "領収登録・受領書発行")}
                     </button>
                   </div>
                 </form>
@@ -6023,9 +6096,11 @@ export default function DashboardPage() {
                     setStore({ ...getCmsStore() });
                     setActiveModal(null);
                     showToast(
-                      language === "bn"
-                        ? `৳${Number(expenseForm.amountBdt).toLocaleString()} টাকা ব্যয় রেকর্ড হয়েছে`
-                        : `Expense recorded successfully`,
+                      tr(
+                        `৳${Number(expenseForm.amountBdt).toLocaleString()} টাকা ব্যয় রেকর্ড হয়েছে`,
+                        `Expense recorded successfully`,
+                        `経費支出を記録しました`
+                      )
                     );
                   }}
                   className="space-y-4"
@@ -6036,7 +6111,7 @@ export default function DashboardPage() {
                         <ArrowDownRight className="h-4 w-4" />
                       </span>
                       <h3 className="text-base font-bold text-slate-900">
-                        {language === "bn" ? "অফিস অপারেশনাল ব্যয় ও খরচ রেকর্ড" : "Record Operational Expense"}
+                        {tr("অফিস অপারেশনাল ব্যয় ও খরচ রেকর্ড", "Record Operational Expense", "運営経費支出登録")}
                       </h3>
                     </div>
                     <button
@@ -6051,21 +6126,21 @@ export default function DashboardPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
                     <div className="sm:col-span-2">
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "ব্যয়ের বিবরণ / প্রাপক *" : "Expense Title / Payee *"}
+                        {tr("ব্যয়ের বিবরণ / প্রাপক *", "Expense Title / Payee *", "経費項目・支払先 *")}
                       </label>
                       <input
                         type="text"
                         required
                         value={expenseForm.title}
                         onChange={(e) => setExpenseForm({ ...expenseForm, title: e.target.value })}
-                        placeholder={language === "bn" ? "যেমন: ঢাকা অফিস ভাড়া ও বিদ্যুৎ বিল" : "e.g. Dhaka Office Rent"}
+                        placeholder={tr("যেমন: ঢাকা অফিস ভাড়া ও বিদ্যুৎ বিল", "e.g. Dhaka Office Rent & Electricity", "例：ダッカ事務所賃料・光熱費")}
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-medium"
                       />
                     </div>
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "ব্যয়ের খাত / ক্যাটাগরি *" : "Expense Category *"}
+                        {tr("ব্যয়ের খাত / ক্যাটাগরি *", "Expense Category *", "支出科目・カテゴリー *")}
                       </label>
                       <select
                         value={expenseForm.type}
@@ -6074,19 +6149,19 @@ export default function DashboardPage() {
                         }
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
                       >
-                        <option value="EXPENSE_RENT">অফিস ভাড়া ও ইউটিলিটি বিল</option>
-                        <option value="EXPENSE_PAYROLL">শিক্ষক (Sensei) ও স্টাফ বেতন</option>
-                        <option value="EXPENSE_MARKETING">ফেসবুক / মেটা ডিজিটাল বিজ্ঞাপন</option>
-                        <option value="EXPENSE_EMBASSY_NOTARY">নোটারি, পরারাষ্ট্র মন্ত্রণালয় সত্যায়ন ও কোরিয়ার</option>
-                        <option value="EXPENSE_EXAM_FEE">NAT-TEST / JLPT ভেন্যু ও এক্সাম ফি</option>
-                        <option value="EXPENSE_B2B_COMMISSION">বিটুবি সাব-এজেন্ট কমিশন বিতরণ</option>
-                        <option value="EXPENSE_MISC">বিবিধ অফিস স্টেশনারি ও আপ্যায়ন</option>
+                        <option value="EXPENSE_RENT">{tr("অফিস ভাড়া ও ইউটিলিটি বিল", "Office Rent & Utilities", "事務所家賃・水道光熱費")}</option>
+                        <option value="EXPENSE_PAYROLL">{tr("শিক্ষক (Sensei) ও স্টাফ বেতন", "Sensei & Staff Payroll", "講師・スタッフ人件費")}</option>
+                        <option value="EXPENSE_MARKETING">{tr("ফেসবুক / মেটা ডিজিটাল বিজ্ঞাপন", "Meta / Facebook Digital Marketing", "SNS・Web広告宣伝費")}</option>
+                        <option value="EXPENSE_EMBASSY_NOTARY">{tr("নোটারি, পরারাষ্ট্র মন্ত্রণালয় সত্যায়ন ও কোরিয়ার", "Notary, MOFA Attestation & Courier", "公証・外務省認証・国際配送代")}</option>
+                        <option value="EXPENSE_EXAM_FEE">{tr("NAT-TEST / JLPT ভেন্যু ও এক্সাম ফি", "NAT-TEST / JLPT Exam Fees", "NAT-TEST/JLPT受験料代行")}</option>
+                        <option value="EXPENSE_B2B_COMMISSION">{tr("বিটুবি সাব-এজেন্ট কমিশন বিতরণ", "B2B Sub-Agent Commission Payout", "提携取次店コミッション支払")}</option>
+                        <option value="EXPENSE_MISC">{tr("বিবিধ অফিস স্টেশনারি ও আপ্যায়ন", "Misc Office Supplies & Hospitality", "消耗品・事務用品・交際費")}</option>
                       </select>
                     </div>
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "খরচের পরিমাণ (BDT) *" : "Amount (BDT) *"}
+                        {tr("খরচের পরিমাণ (BDT) *", "Amount (BDT) *", "支出金額 (BDT) *")}
                       </label>
                       <input
                         type="number"
@@ -6101,7 +6176,7 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "পরিশোধের মাধ্যম" : "Payment Method"}
+                        {tr("পরিশোধের মাধ্যম", "Payment Method", "支払方法")}
                       </label>
                       <select
                         value={expenseForm.paymentMethod}
@@ -6110,8 +6185,8 @@ export default function DashboardPage() {
                         }
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
                       >
-                        <option value="BANK_TRANSFER">Bank Cheque / Transfer</option>
-                        <option value="CASH_OFFICE">Cash from Office Petty Cash</option>
+                        <option value="BANK_TRANSFER">{tr("ব্যাংক চেক / ট্রান্সফার", "Bank Cheque / Transfer", "銀行振込・小切手")}</option>
+                        <option value="CASH_OFFICE">{tr("অফিস পেটি ক্যাশ", "Cash from Office Petty Cash", "小口現金・デスク支払")}</option>
                         <option value="BKASH">bKash Payment</option>
                         <option value="NAGAD">Nagad</option>
                       </select>
@@ -6119,7 +6194,7 @@ export default function DashboardPage() {
 
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "ব্রাঞ্চ" : "Branch"}
+                        {tr("ব্রাঞ্চ", "Branch", "拠点・支店")}
                       </label>
                       <select
                         value={expenseForm.branch}
@@ -6128,14 +6203,14 @@ export default function DashboardPage() {
                         }
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
                       >
-                        <option value="DHK-HQ">Dhaka HQ (ধানমন্ডি)</option>
-                        <option value="KHULNA-01">Khulna Branch Office</option>
+                        <option value="DHK-HQ">{tr("ঢাকা প্রধান কার্যালয় (HQ)", "Dhaka Office (HQ)", "ダッカ本社 (HQ)")}</option>
+                        <option value="KHULNA-01">{tr("খুলনা শাখা কার্যালয়", "Khulna Branch Office", "クルナ支店")}</option>
                       </select>
                     </div>
 
                     <div className="sm:col-span-2">
                       <label className="font-semibold text-slate-700">
-                        {language === "bn" ? "ভাউচার নং / রেফারেন্স নোট" : "Voucher / Reference"}
+                        {tr("ভাউচার নং / রেফারেন্স নোট", "Voucher / Reference", "伝票番号・証憑参照")}
                       </label>
                       <input
                         type="text"
@@ -6143,7 +6218,7 @@ export default function DashboardPage() {
                         onChange={(e) =>
                           setExpenseForm({ ...expenseForm, referenceOrTrx: e.target.value })
                         }
-                        placeholder="Voucher # or memo details"
+                        placeholder={tr("ভাউচার নং বা মেমো বিবরণ", "Voucher # or memo details", "伝票番号・メモ詳細")}
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
                       />
                     </div>
@@ -6155,13 +6230,13 @@ export default function DashboardPage() {
                       onClick={() => setActiveModal(null)}
                       className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
                     >
-                      {language === "bn" ? "বাতিল" : "Cancel"}
+                      {tr("বাতিল", "Cancel", "キャンセル")}
                     </button>
                     <button
                       type="submit"
                       className="rounded-xl bg-[#b91c1c] px-5 py-2 text-xs font-semibold text-white hover:bg-red-800 transition"
                     >
-                      {language === "bn" ? "ব্যয় সেভ করুন" : "Save Expense"}
+                      {tr("ব্যয় সেভ করুন", "Save Expense", "経費を保存")}
                     </button>
                   </div>
                 </form>
@@ -6174,7 +6249,7 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-2">
                       <Receipt className="h-5 w-5 text-emerald-700" />
                       <h3 className="text-base font-bold text-slate-900">
-                        {language === "bn" ? "অফিসিয়াল পেমেন্ট ভাউচার ও মানি রসিদ" : "Official Money Receipt"}
+                        {tr("অফিসিয়াল পেমেন্ট ভাউচার ও মানি রসিদ", "Official Money Receipt", "公式領収証・受領書")}
                       </h3>
                     </div>
                     <div className="flex items-center gap-2">
@@ -6184,7 +6259,7 @@ export default function DashboardPage() {
                         className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 transition"
                       >
                         <Printer className="h-3.5 w-3.5" />
-                        <span>{language === "bn" ? "প্রিন্ট রসিদ" : "Print Voucher"}</span>
+                        <span>{tr("প্রিন্ট রসিদ", "Print Voucher", "領収書印刷")}</span>
                       </button>
                       <button
                         type="button"
@@ -6210,20 +6285,24 @@ export default function DashboardPage() {
                               Kamrul Nippon Language & Training Center (KNLTC)
                             </h2>
                             <p className="text-[11px] text-slate-500 font-medium">
-                              Govt Reg & Trade License No: 177926 • Japan Study & SSW Gateway
+                              {tr(
+                                "সরকারি অনুমোদন ও ট্রেড লাইসেন্স নং: ১৭৭৯২৬ • জাপান স্টাডি ও এসএসডব্লিউ গেটওয়ে",
+                                "Govt Reg & Trade License No: 177926 • Japan Study & SSW Gateway",
+                                "政府公認・貿易ライセンス番号: 177926 • 日本留学・特定技能ゲートウェイ"
+                              )}
                             </p>
                           </div>
                         </div>
                       </div>
                       <div className="text-right">
                         <span className="rounded bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-white uppercase tracking-wider">
-                          Money Receipt
+                          {tr("মানি রসিদ", "Money Receipt", "領収証")}
                         </span>
                         <p className="font-mono text-xs font-bold text-slate-900 mt-1">
                           {selectedTxForReceipt.receiptNo}
                         </p>
                         <p className="text-[11px] text-slate-500 font-medium">
-                          Date: {selectedTxForReceipt.date}
+                          {tr("তারিখ", "Date", "発行日")}: {selectedTxForReceipt.date}
                         </p>
                       </div>
                     </div>
@@ -6231,21 +6310,29 @@ export default function DashboardPage() {
                     {/* Student & Payment Details */}
                     <div className="mt-5 grid grid-cols-2 gap-4 text-xs">
                       <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3.5 space-y-1">
-                        <span className="text-[10px] uppercase font-bold text-slate-400">Received From (Student / Client)</span>
+                        <span className="text-[10px] uppercase font-bold text-slate-400">
+                          {tr("অর্থ প্রদানকারী (শিক্ষার্থী / ক্লায়েন্ট)", "Received From (Student / Client)", "支払者（受講生・申請者）")}
+                        </span>
                         <p className="text-sm font-bold text-slate-900">{selectedTxForReceipt.studentName}</p>
                         {selectedTxForReceipt.studentPhone && (
-                          <p className="text-slate-600 font-mono">Mobile: {selectedTxForReceipt.studentPhone}</p>
+                          <p className="text-slate-600 font-mono">{tr("মোবাইল", "Mobile", "連絡先")}: {selectedTxForReceipt.studentPhone}</p>
                         )}
                         <p className="text-slate-500">
-                          Branch: {selectedTxForReceipt.branch === "DHK-HQ" ? "Dhaka HQ (Dhanmondi)" : "Khulna Branch"}
+                          {tr("ব্রাঞ্চ", "Branch", "支店")}: {selectedTxForReceipt.branch === "DHK-HQ" ? tr("ঢাকা প্রধান কার্যালয় (ধানমন্ডি)", "Dhaka HQ (Dhanmondi)", "ダッカ本社（Dhanmondi）") : tr("খুলনা শাখা", "Khulna Branch", "クルナ支店")}
                         </p>
                       </div>
 
                       <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3.5 space-y-1">
-                        <span className="text-[10px] uppercase font-bold text-slate-400">Payment Gateway / Account</span>
+                        <span className="text-[10px] uppercase font-bold text-slate-400">
+                          {tr("পেমেন্ট মাধ্যম / একাউন্ট", "Payment Gateway / Account", "受取口座・決済手段")}
+                        </span>
                         <p className="text-sm font-bold text-slate-900">{selectedTxForReceipt.paymentMethod}</p>
-                        <p className="font-mono text-slate-600">Trx / Ref: {selectedTxForReceipt.referenceOrTrx || "Verified Cash"}</p>
-                        <p className="text-emerald-700 font-semibold">Status: 100% Verified Paid</p>
+                        <p className="font-mono text-slate-600">
+                          {tr("রেফারেন্স / Trx", "Trx / Ref", "取引番号 / 照会")}: {selectedTxForReceipt.referenceOrTrx || tr("যাচাইকৃত নগদ", "Verified Cash", "現金受領済")}
+                        </p>
+                        <p className="text-emerald-700 font-semibold">
+                          {tr("স্ট্যাটাস: ১০০% নিরীক্ষিত ও পরিশোধিত", "Status: 100% Verified Paid", "ステータス: 100% 監査照合済・納入完了")}
+                        </p>
                       </div>
                     </div>
 
@@ -6254,8 +6341,8 @@ export default function DashboardPage() {
                       <table className="w-full text-xs text-left">
                         <thead className="bg-slate-100 font-bold text-slate-700">
                           <tr>
-                            <th className="px-4 py-2.5">Item / Service Particulars</th>
-                            <th className="px-4 py-2.5 text-right">Amount (BDT)</th>
+                            <th className="px-4 py-2.5">{tr("সেবা / ফি বিবরণ", "Item / Service Particulars", "受領項目・明細")}</th>
+                            <th className="px-4 py-2.5 text-right">{tr("পরিমাণ (BDT)", "Amount (BDT)", "金額 (BDT)")}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -6263,11 +6350,23 @@ export default function DashboardPage() {
                             <td className="px-4 py-3">
                               <p className="font-bold text-slate-900">
                                 {selectedTxForReceipt.type === "SERVICE_CHARGE_COE"
-                                  ? "Japan Student Visa Service Charge (Payable strictly AFTER COE Approval)"
+                                  ? tr(
+                                      "জাপান স্টুডেন্ট ভিসা সার্ভিস চার্জ (COE অনুমোদনের পর প্রযোজ্য)",
+                                      "Japan Student Visa Service Charge (Payable strictly AFTER COE Approval)",
+                                      "日本留学ビザ申請手数料（COE交付後のみ請求）"
+                                    )
                                   : selectedTxForReceipt.type === "COURSE_FEE"
-                                    ? "3-Month Intensive Japanese Language Course (N5/N4)"
+                                    ? tr(
+                                        "৩ মাসের নিবিড় জাপানি ভাষা প্রশিক্ষণ কোর্স (N5/N4)",
+                                        "3-Month Intensive Japanese Language Course (N5/N4)",
+                                        "3ヶ月集中日本語講習コース（N5/N4）"
+                                      )
                                     : selectedTxForReceipt.type === "PREMIUM_PACKAGE"
-                                      ? "All-in-One Comprehensive Japan Study Package Installment"
+                                      ? tr(
+                                          "অল-ইন-ওয়ান জাপান স্টাডি সমন্বিত প্যাকেজ কিস্তি",
+                                          "All-in-One Comprehensive Japan Study Package Installment",
+                                          "日本留学オールインワン包括パッケージ分割納入"
+                                        )
                                       : selectedTxForReceipt.type}
                               </p>
                               {selectedTxForReceipt.notes && (
@@ -6281,7 +6380,7 @@ export default function DashboardPage() {
                         </tbody>
                         <tfoot className="bg-slate-50 font-bold border-t border-slate-200">
                           <tr>
-                            <td className="px-4 py-2.5 text-slate-700">Total Received Amount</td>
+                            <td className="px-4 py-2.5 text-slate-700">{tr("মোট গৃহীত অর্থ", "Total Received Amount", "合計受領金額")}</td>
                             <td className="px-4 py-2.5 text-right text-emerald-800 text-sm tabular-nums">
                               ৳{selectedTxForReceipt.amountBdt.toLocaleString()} BDT
                             </td>
@@ -6295,15 +6394,15 @@ export default function DashboardPage() {
                       <div>
                         <div className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-emerald-800 font-bold">
                           <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                          <span>KNLTC ACCOUNTS VERIFIED</span>
+                          <span>{tr("KNLTC অ্যাকাউন্টস ভেরিফাইড", "KNLTC ACCOUNTS VERIFIED", "KNLTC会計監査認証済")}</span>
                         </div>
-                        <p className="text-[10px] text-slate-400 mt-1">Computer-generated official audit receipt.</p>
+                        <p className="text-[10px] text-slate-400 mt-1">{tr("কম্পিউটার জেনারেটেড অফিসিয়াল অডিট রসিদ", "Computer-generated official audit receipt.", "システム自動発行・公式監査証憑")}</p>
                       </div>
                       <div className="text-right">
                         <div className="w-36 border-b border-slate-400 pb-1 font-semibold text-slate-800">
                           {selectedTxForReceipt.verifiedBy || "Sheikh Baset (MD)"}
                         </div>
-                        <p className="text-[10px] text-slate-400 mt-0.5">Authorized Signatory</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">{tr("অনুমোদিত স্বাক্ষরকারী", "Authorized Signatory", "代表署名・認印")}</p>
                       </div>
                     </div>
                   </div>
@@ -6358,18 +6457,18 @@ export default function DashboardPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
                     <div className="sm:col-span-2">
-                      <label className="font-semibold text-slate-700">Job Title *</label>
+                      <label className="font-semibold text-slate-700">{tr("পদের নাম *", "Job Title *", "職種・求人タイトル *")}</label>
                       <input
                         type="text"
                         required
                         value={circularForm.title}
                         onChange={(e) => setCircularForm({ ...circularForm, title: e.target.value })}
-                        placeholder="e.g. SSW Food Service Specialist (Tokyo)"
+                        placeholder={tr("যেমন: এসএসডব্লিউ ফুড সার্ভিস স্পেশালিস্ট (টোকিও)", "e.g. SSW Food Service Specialist (Tokyo)", "例：特定技能 外食業スタッフ（東京）")}
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-medium"
                       />
                     </div>
                     <div>
-                      <label className="font-semibold text-slate-700">Category</label>
+                      <label className="font-semibold text-slate-700">{tr("ক্যাটাগরি", "Category", "募集区分・業種")}</label>
                       <select
                         value={circularForm.category}
                         onChange={(e) =>
@@ -6377,43 +6476,46 @@ export default function DashboardPage() {
                         }
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
                       >
-                        <option value="SSW_CONSTRUCTION">SSW Construction</option>
-                        <option value="SSW_CAREGIVER">SSW Caregiver</option>
-                        <option value="SSW_AGRICULTURE">SSW Agriculture</option>
-                        <option value="SSW_FOOD_SERVICE">SSW Food Service</option>
-                        <option value="TITP_TECHNICAL">TITP Technical</option>
+                        <option value="SSW_CONSTRUCTION">{tr("এসএসডব্লিউ কনস্ট্রাকশন", "SSW Construction", "特定技能（建設）")}</option>
+                        <option value="SSW_CAREGIVER">{tr("এসএসডব্লিউ কেয়ারগিভার", "SSW Caregiver", "特定技能（介護）")}</option>
+                        <option value="SSW_AGRICULTURE">{tr("এসএসডব্লিউ কৃষি", "SSW Agriculture", "特定技能（農業）")}</option>
+                        <option value="SSW_FOOD_SERVICE">{tr("এসএসডব্লিউ ফুড সার্ভিস", "SSW Food Service", "特定技能（外食業）")}</option>
+                        <option value="TITP_TECHNICAL">{tr("টিআইটিপি টেকনিক্যাল", "TITP Technical", "技能実習（TITP）")}</option>
                       </select>
                     </div>
                     <div>
-                      <label className="font-semibold text-slate-700">Location in Japan</label>
+                      <label className="font-semibold text-slate-700">{tr("জাপানের লোকেশন / শহর", "Location in Japan", "日本勤務地・都市")}</label>
                       <input
                         type="text"
                         value={circularForm.locationJapan}
                         onChange={(e) =>
                           setCircularForm({ ...circularForm, locationJapan: e.target.value })
                         }
+                        placeholder="Tokyo / Osaka"
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-medium"
                       />
                     </div>
                     <div>
-                      <label className="font-semibold text-slate-700">Salary (Yen)</label>
+                      <label className="font-semibold text-slate-700">{tr("মাসিক বেতন (ইয়েন)", "Salary (Yen)", "月給（日本円）")}</label>
                       <input
                         type="text"
                         value={circularForm.salaryYen}
                         onChange={(e) =>
                           setCircularForm({ ...circularForm, salaryYen: e.target.value })
                         }
+                        placeholder="¥210,000 / month"
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-medium"
                       />
                     </div>
                     <div>
-                      <label className="font-semibold text-slate-700">Salary (BDT)</label>
+                      <label className="font-semibold text-slate-700">{tr("সমপরিমাণ টাকা (BDT)", "Salary (BDT)", "想定月給（BDT換算）")}</label>
                       <input
                         type="text"
                         value={circularForm.salaryBdtEquivalent}
                         onChange={(e) =>
                           setCircularForm({ ...circularForm, salaryBdtEquivalent: e.target.value })
                         }
+                        placeholder="৳1,65,000 / মাস"
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-medium"
                       />
                     </div>
@@ -6423,15 +6525,15 @@ export default function DashboardPage() {
                     <button
                       type="button"
                       onClick={() => setActiveModal(null)}
-                      className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600"
+                      className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
                     >
-                      Cancel
+                      {tr("বাতিল", "Cancel", "キャンセル")}
                     </button>
                     <button
                       type="submit"
                       className="rounded-xl bg-slate-900 px-5 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition"
                     >
-                      Publish Circular
+                      {tr("সার্কুলার প্রকাশ করুন", "Publish Circular", "求人を公開する")}
                     </button>
                   </div>
                 </form>
