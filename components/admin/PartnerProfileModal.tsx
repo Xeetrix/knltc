@@ -29,7 +29,9 @@ import {
   Sparkles,
   Copy,
   Check,
+  Loader2,
 } from "lucide-react";
+import { uploadMediaImage, uploadDocumentFile } from "@/lib/media-upload";
 import {
   type JapanesePartnerSchool,
   type B2bAgent,
@@ -214,6 +216,8 @@ export default function PartnerProfileModal({
   );
   const [portalPassword, setPortalPassword] = useState("B2B@knltc2026");
   const [copiedCredentials, setCopiedCredentials] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [uploadingDocId, setUploadingDocId] = useState<string | null>(null);
 
   const existingPortalAccount = useMemo<SystemUserAccount | undefined>(() => {
     if (mode !== "AGENT") return undefined;
@@ -387,41 +391,54 @@ export default function PartnerProfileModal({
   };
 
   // Handle Logo File Upload
-  const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = String(reader.result || "");
+    setIsUploadingLogo(true);
+    try {
+      const result = await uploadMediaImage(file, { bucket: "knltc-media", maxDimension: 600 });
+      const finalUrl = result.url;
       if (mode === "SCHOOL") {
-        const next = { ...schoolState, logoUrl: dataUrl };
+        const next = { ...schoolState, logoUrl: finalUrl };
         setSchoolState(next);
-        updatePartnerSchool(schoolState.id, { logoUrl: dataUrl });
+        updatePartnerSchool(schoolState.id, { logoUrl: finalUrl });
       } else {
-        const next = { ...agentState, logoUrl: dataUrl };
+        const next = { ...agentState, logoUrl: finalUrl };
         setAgentState(next);
-        updateB2bAgent(agentState.id, { logoUrl: dataUrl });
+        updateB2bAgent(agentState.id, { logoUrl: finalUrl });
       }
       onRefreshStore();
       onShowToast(
         language === "bn"
-          ? "প্রতিষ্ঠানের লোগো আপলোড ও সেভ হয়েছে"
-          : "Logo uploaded & saved",
+          ? "প্রতিষ্ঠানের লোগো স্থায়ীভাবে ক্লাউড ও সিস্টেমে সংরক্ষিত হয়েছে"
+          : "Logo uploaded & permanently saved",
       );
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error("Logo upload error:", err);
+      onShowToast(
+        language === "bn" ? "লোগো আপলোড সমস্যা হয়েছে" : "Logo upload failed",
+      );
+    } finally {
+      setIsUploadingLogo(false);
+      e.target.value = "";
+    }
   };
 
   // Handle Document File Upload
-  const handleDocFileUpload = (
+  const handleDocFileUpload = async (
     docId: string,
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = String(reader.result || "");
+    setUploadingDocId(docId);
+    try {
+      const result = await uploadDocumentFile(file, {
+        bucket: "knltc-documents",
+        trackingNo: mode === "SCHOOL" ? schoolState.id : agentState.id,
+        docType: docId,
+      });
+      const finalUrl = result.url;
       const now = new Date().toISOString().slice(0, 10);
       if (mode === "SCHOOL") {
         const nextDocs = (schoolState.documents || []).map((d) =>
@@ -429,8 +446,8 @@ export default function PartnerProfileModal({
             ? {
                 ...d,
                 status: "VERIFIED" as const,
-                fileUrl: dataUrl,
-                fileName: file.name,
+                fileUrl: finalUrl,
+                fileName: result.fileName || file.name,
                 uploadedAt: now,
               }
             : d,
@@ -443,8 +460,8 @@ export default function PartnerProfileModal({
             ? {
                 ...d,
                 status: "VERIFIED" as const,
-                fileUrl: dataUrl,
-                fileName: file.name,
+                fileUrl: finalUrl,
+                fileName: result.fileName || file.name,
                 uploadedAt: now,
               }
             : d,
@@ -455,11 +472,15 @@ export default function PartnerProfileModal({
       onRefreshStore();
       onShowToast(
         language === "bn"
-          ? `${file.name} ডকুমেন্ট ভল্টে সংরক্ষিত হয়েছে`
-          : `${file.name} uploaded to vault`,
+          ? `${file.name} ভল্টে সংরক্ষিত হয়েছে`
+          : `${file.name} saved to vault`,
       );
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error("Doc upload error:", err);
+    } finally {
+      setUploadingDocId(null);
+      e.target.value = "";
+    }
   };
 
   // Toggle document status
@@ -690,7 +711,12 @@ export default function PartnerProfileModal({
             <div className="flex items-start sm:items-center gap-4">
               <div className="relative group shrink-0">
                 <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xs">
-                  {currentLogo ? (
+                  {isUploadingLogo ? (
+                    <div className="flex flex-col items-center justify-center gap-1 text-[10px] text-slate-500 font-medium">
+                      <Loader2 className="h-5 w-5 animate-spin text-[#b91c1c]" />
+                      <span>Saving...</span>
+                    </div>
+                  ) : currentLogo ? (
                     <img
                       src={currentLogo}
                       alt={titleName}
@@ -709,12 +735,19 @@ export default function PartnerProfileModal({
                       ? "লোগো পরিবর্তন বা আপলোড করুন"
                       : "Upload Logo"
                   }
-                  className="absolute -bottom-1.5 -right-1.5 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-slate-900 text-white shadow-md hover:bg-[#b91c1c] transition"
+                  className={`absolute -bottom-1.5 -right-1.5 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-slate-900 text-white shadow-md hover:bg-[#b91c1c] transition ${
+                    isUploadingLogo ? "opacity-50 pointer-events-none" : ""
+                  }`}
                 >
-                  <Upload className="h-3 w-3" />
+                  {isUploadingLogo ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Upload className="h-3 w-3" />
+                  )}
                   <input
                     type="file"
                     accept="image/*"
+                    disabled={isUploadingLogo}
                     onChange={handleLogoFileUpload}
                     className="hidden"
                   />
@@ -1971,15 +2004,26 @@ export default function PartnerProfileModal({
                                   className="w-44 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-mono"
                                 />
 
-                                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition">
-                                  <Upload className="h-3.5 w-3.5 text-[#b91c1c]" />
+                                <label className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition ${
+                                  uploadingDocId === doc.id ? "opacity-50 pointer-events-none" : ""
+                                }`}>
+                                  {uploadingDocId === doc.id ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-[#b91c1c]" />
+                                  ) : (
+                                    <Upload className="h-3.5 w-3.5 text-[#b91c1c]" />
+                                  )}
                                   <span>
-                                    {language === "bn"
-                                      ? "ফাইল আপলোড"
-                                      : "Upload File"}
+                                    {uploadingDocId === doc.id
+                                      ? language === "bn"
+                                        ? "আপলোড হচ্ছে..."
+                                        : "Uploading..."
+                                      : language === "bn"
+                                        ? "ফাইল আপলোড"
+                                        : "Upload File"}
                                   </span>
                                   <input
                                     type="file"
+                                    disabled={uploadingDocId === doc.id}
                                     accept="image/*,.pdf,.doc,.docx"
                                     onChange={(e) =>
                                       handleDocFileUpload(doc.id, e)

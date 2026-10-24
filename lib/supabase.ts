@@ -196,12 +196,34 @@ export async function deleteRow(table: string, id: string, admin = true) {
   });
 }
 
+export async function ensureBucketExists(bucket: string): Promise<boolean> {
+  if (!isSupabaseConfigured() || !serviceKey) return false;
+  try {
+    const res = await fetch(`${getBaseUrl()}/storage/v1/bucket`, {
+      method: "POST",
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        id: bucket,
+        name: bucket,
+        public: true,
+      }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function uploadToStorage(fileName: string, data: ArrayBuffer, contentType: string, bucket: string) {
   if (!isSupabaseConfigured() || !serviceKey) {
     throw new Error("Supabase Storage is not configured.");
   }
 
-  const res = await fetch(`${getBaseUrl()}/storage/v1/object/${bucket}/${fileName}`, {
+  let res = await fetch(`${getBaseUrl()}/storage/v1/object/${bucket}/${fileName}`, {
     method: "POST",
     headers: {
       apikey: serviceKey,
@@ -214,6 +236,23 @@ export async function uploadToStorage(fileName: string, data: ArrayBuffer, conte
 
   if (!res.ok) {
     const raw = await res.text();
+    // If bucket does not exist, auto-create public bucket and retry upload
+    if (res.status === 404 || res.status === 400 || raw.toLowerCase().includes("bucket")) {
+      await ensureBucketExists(bucket);
+      res = await fetch(`${getBaseUrl()}/storage/v1/object/${bucket}/${fileName}`, {
+        method: "POST",
+        headers: {
+          apikey: serviceKey,
+          Authorization: `Bearer ${serviceKey}`,
+          "Content-Type": contentType,
+          "x-upsert": "true",
+        },
+        body: data,
+      });
+      if (res.ok) {
+        return `${getBaseUrl()}/storage/v1/object/public/${bucket}/${fileName}`;
+      }
+    }
     throw new Error(`Storage upload failed: ${raw}`);
   }
 

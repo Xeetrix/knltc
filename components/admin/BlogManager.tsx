@@ -7,6 +7,8 @@ import { notify } from "@/lib/notify";
 import type { BlogPost, Category } from "@/lib/cms";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
+import { uploadMediaImage } from "@/lib/media-upload";
+import { Upload, Loader2 } from "lucide-react";
 
 type BlogInput = {
   id?: string;
@@ -32,6 +34,7 @@ export default function BlogManager({ initialPosts, categories }: { initialPosts
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploadingCover, setUploadingCover] = useState(false);
   const mode = useMemo(() => (form.id ? "Update" : "Create"), [form.id]);
 
   useEffect(() => {
@@ -66,7 +69,37 @@ export default function BlogManager({ initialPosts, categories }: { initialPosts
           <div><label className="mb-1 block text-xs font-bold text-slate-600">Tags</label><input className={inputClass} placeholder="visa, japan, language" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} /></div>
           <div><label className="mb-1 block text-xs font-bold text-slate-600">Publish date</label><input type="date" className={inputClass} value={form.publish_date} onChange={(e) => setForm({ ...form, publish_date: e.target.value })} /></div>
           <div><label className="mb-1 block text-xs font-bold text-slate-600">Status</label><select className={inputClass} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as "draft" | "published" })}><option value="draft">Draft</option><option value="published">Published</option></select></div>
-          <div className="md:col-span-2"><label className="mb-1 block text-xs font-bold text-slate-600">Cover image URL</label><input className={inputClass} placeholder="https://..." value={form.cover_image} onChange={(e) => setForm({ ...form, cover_image: e.target.value })} /></div>
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-xs font-bold text-slate-600">Cover image</label>
+            <div className="flex gap-2">
+              <input className={inputClass} placeholder="https://..." value={form.cover_image} onChange={(e) => setForm({ ...form, cover_image: e.target.value })} />
+              <label className={`shrink-0 inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 transition ${uploadingCover ? "opacity-50 pointer-events-none" : ""}`}>
+                {uploadingCover ? <Loader2 className="h-3.5 w-3.5 animate-spin text-[#133e29]" /> : <Upload className="h-3.5 w-3.5 text-[#133e29]" />}
+                <span>{uploadingCover ? "Uploading..." : "Upload File"}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  disabled={uploadingCover}
+                  className="hidden"
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    setUploadingCover(true);
+                    try {
+                      const res = await uploadMediaImage(f, { bucket: "knltc-media", maxDimension: 1200 });
+                      setForm((prev) => ({ ...prev, cover_image: res.url }));
+                      notify("success", "Cover image uploaded");
+                    } catch (err: any) {
+                      notify("error", "Cover image upload failed", err?.message);
+                    } finally {
+                      setUploadingCover(false);
+                      e.target.value = "";
+                    }
+                  }}
+                />
+              </label>
+            </div>
+          </div>
           <div className="md:col-span-2"><label className="mb-1 block text-xs font-bold text-slate-600">{translate({ en: "Excerpt (Short Summary)", bn: "Excerpt (সংক্ষিপ্ত সারাংশ)", ja: "抜粋（短い要約）" }, language)}</label><input className={inputClass} placeholder="Short summary for listing pages" value={form.excerpt} onChange={(e) => setForm({ ...form, excerpt: e.target.value })} /></div>
         </div>
       </section>

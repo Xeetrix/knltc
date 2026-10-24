@@ -5,6 +5,7 @@ import ConfirmDialog from "@/components/ui/confirm-dialog";
 import { notify } from "@/lib/notify";
 import type { Category, Product } from "@/lib/cms";
 import { useLanguage } from "@/components/layout/LanguageProvider";
+import { uploadMediaImage } from "@/lib/media-upload";
 
 type ProductInput = {
   id?: string;
@@ -104,18 +105,8 @@ export default function ProductManager({ initialProducts, categories }: { initia
 
     setIsUploadingImage(true);
     try {
-      const formData = new FormData();
-      formData.append("file", selectedImage);
-      formData.append("bucket", "knltc-media");
-
-      const uploadRes = await fetch("/api/admin/upload", { method: "POST", body: formData });
-      const uploadData = await uploadRes.json();
-
-      if (!uploadRes.ok) {
-        throw new Error(uploadData.error || "Failed to upload product image");
-      }
-
-      return uploadData.url as string;
+      const res = await uploadMediaImage(selectedImage, { bucket: "knltc-media", maxDimension: 1000 });
+      return res.url;
     } finally {
       setIsUploadingImage(false);
     }

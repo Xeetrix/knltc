@@ -68,6 +68,8 @@ export interface LeadDocumentItem {
   titleEn: string;
   category: "IDENTITY" | "ACADEMIC" | "LANGUAGE" | "SPONSOR_FINANCIAL";
   status: "MISSING" | "SUBMITTED" | "VERIFIED";
+  fileUrl?: string;
+  fileName?: string;
   updatedAt?: string;
 }
 
@@ -324,6 +326,9 @@ export interface B2bAgent {
     branchName?: string;
     mobileWalletNo?: string;
   };
+  bankName?: string;
+  bankAccountNo?: string;
+  bkashOrNagadNo?: string;
   referredStudentsCount: number;
   successfulVisasCount: number;
   agreedCommissionBdt: number;
@@ -567,6 +572,8 @@ export interface WebsiteCmsContent {
   testimonials: { studentName: string; courseOrVisa: string; quote: MultilingualText; city: string; avatarUrl: string }[];
   systemAccounts?: SystemUserAccount[];
   leadExtendedProfiles?: Record<string, Partial<CrmLead>>;
+  schoolExtendedProfiles?: Record<string, Partial<JapanesePartnerSchool>>;
+  b2bAgentExtendedProfiles?: Record<string, Partial<B2bAgent>>;
 }
 
 export interface MasterKnlTcStore {
@@ -1209,36 +1216,71 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
     }
 
     if (Array.isArray(data.partnerSchools)) {
-      store.partnerSchools = data.partnerSchools.map((s: any) => ({
-        id: s.id,
-        name: s.name,
-        japaneseName: s.japanese_name || "",
-        location: s.location || "",
-        contactPerson: s.contact_person || "",
-        email: s.email || "",
-        commissionPerStudentYen: Number(s.commission_per_student_yen) || 80000,
-        commissionPerStudentBdt: Number(s.commission_per_student_bdt) || 64000,
-        activeStudentsCount: Number(s.active_students_count) || 0,
-        totalCommissionReceivedYen: Number(s.total_commission_received_yen) || 0,
-        status: s.status || "ACTIVE_PARTNER",
-      }));
+      const existingSchoolsMap = new Map(store.partnerSchools.map((s) => [s.id, s]));
+      store.partnerSchools = data.partnerSchools.map((s: any) => {
+        const local = existingSchoolsMap.get(s.id);
+        const commYen = s.commission_per_student_yen !== undefined && s.commission_per_student_yen !== null
+          ? Number(s.commission_per_student_yen)
+          : (local?.commissionPerStudentYen ?? 0);
+        const commBdt = s.commission_per_student_bdt !== undefined && s.commission_per_student_bdt !== null
+          ? Number(s.commission_per_student_bdt)
+          : (local?.commissionPerStudentBdt ?? 0);
+
+        return {
+          ...local,
+          id: s.id,
+          name: s.name,
+          japaneseName: s.japanese_name || local?.japaneseName || "",
+          location: s.location || local?.location || "",
+          contactPerson: s.contact_person || local?.contactPerson || "",
+          email: s.email || local?.email || "",
+          commissionPerStudentYen: isNaN(commYen) ? 0 : commYen,
+          commissionPerStudentBdt: isNaN(commBdt) ? 0 : commBdt,
+          activeStudentsCount: Number(s.active_students_count) || local?.activeStudentsCount || 0,
+          totalCommissionReceivedYen: Number(s.total_commission_received_yen) || local?.totalCommissionReceivedYen || 0,
+          status: s.status || local?.status || "ACTIVE_PARTNER",
+          logoUrl: s.logo_url || local?.logoUrl,
+          institutionType: local?.institutionType || "LANGUAGE_SCHOOL",
+          websiteUrl: local?.websiteUrl,
+          firstYearTuitionYen: local?.firstYearTuitionYen ?? 760000,
+          admissionFeeYen: local?.admissionFeeYen ?? 50000,
+          hostelFeeMonthlyYen: local?.hostelFeeMonthlyYen ?? 35000,
+          intakeMonths: local?.intakeMonths || ["APRIL", "OCTOBER"],
+          intakeQuota: local?.intakeQuota || 20,
+          documents: local?.documents || [],
+          notes: local?.notes || "",
+        };
+      });
       hasChanges = true;
     }
 
     if (Array.isArray(data.b2bAgents)) {
-      store.b2bAgents = data.b2bAgents.map((a: any) => ({
-        id: a.id,
-        organizationName: a.organization_name,
-        agentType: a.agent_type || "INSTITUTIONAL",
-        contactPerson: a.contact_person,
-        phone: a.phone,
-        city: a.city || "",
-        referredStudentsCount: Number(a.referred_students_count) || 0,
-        successfulVisasCount: Number(a.successful_visas_count) || 0,
-        agreedCommissionBdt: Number(a.agreed_commission_bdt) || 30000,
-        pendingCommissionBdt: Number(a.pending_commission_bdt) || 0,
-        paidCommissionBdt: Number(a.paid_commission_bdt) || 0,
-      }));
+      const existingAgentsMap = new Map(store.b2bAgents.map((a) => [a.id, a]));
+      store.b2bAgents = data.b2bAgents.map((a: any) => {
+        const local = existingAgentsMap.get(a.id);
+        return {
+          ...local,
+          id: a.id,
+          organizationName: a.organization_name,
+          agentType: a.agent_type || local?.agentType || "LOCAL_SUB_AGENT",
+          contactPerson: a.contact_person,
+          phone: a.phone,
+          city: a.city || local?.city || "",
+          referredStudentsCount: Number(a.referred_students_count) || local?.referredStudentsCount || 0,
+          successfulVisasCount: Number(a.successful_visas_count) || local?.successfulVisasCount || 0,
+          agreedCommissionBdt: a.agreed_commission_bdt != null ? Number(a.agreed_commission_bdt) : (local?.agreedCommissionBdt ?? 30000),
+          pendingCommissionBdt: Number(a.pending_commission_bdt) || local?.pendingCommissionBdt || 0,
+          paidCommissionBdt: Number(a.paid_commission_bdt) || local?.paidCommissionBdt || 0,
+          logoUrl: a.logo_url || local?.logoUrl,
+          tradeLicenseNo: a.trade_license_no || local?.tradeLicenseNo,
+          nidOrPassportNo: a.nid_or_passport_no || local?.nidOrPassportNo,
+          bankName: a.bank_name || local?.bankName,
+          bankAccountNo: a.bank_account_no || local?.bankAccountNo,
+          bkashOrNagadNo: a.bkash_or_nagad_no || local?.bkashOrNagadNo,
+          documents: local?.documents || [],
+          notes: local?.notes || "",
+        };
+      });
       hasChanges = true;
     }
 
@@ -1292,6 +1334,33 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
           return ext ? { ...lead, ...ext } : lead;
         });
       }
+
+      // Merge extended partner school profiles (logos, documents, fee structures, quotas)
+      if (serverCms.schoolExtendedProfiles) {
+        store.partnerSchools = store.partnerSchools.map((sch) => {
+          const ext = serverCms.schoolExtendedProfiles?.[sch.id];
+          return ext ? { ...sch, ...ext } : sch;
+        });
+        Object.entries(serverCms.schoolExtendedProfiles).forEach(([schId, ext]) => {
+          if (!store.partnerSchools.some((s) => s.id === schId) && ext.name) {
+            store.partnerSchools.push(ext as JapanesePartnerSchool);
+          }
+        });
+      }
+
+      // Merge extended B2B agent profiles (logos, trade licenses, MOUs, banking details)
+      if (serverCms.b2bAgentExtendedProfiles) {
+        store.b2bAgents = store.b2bAgents.map((agent) => {
+          const ext = serverCms.b2bAgentExtendedProfiles?.[agent.id];
+          return ext ? { ...agent, ...ext } : agent;
+        });
+        Object.entries(serverCms.b2bAgentExtendedProfiles).forEach(([agentId, ext]) => {
+          if (!store.b2bAgents.some((a) => a.id === agentId) && ext.organizationName) {
+            store.b2bAgents.push(ext as B2bAgent);
+          }
+        });
+      }
+
       hasChanges = true;
     }
 
@@ -1580,7 +1649,7 @@ export function provisionLeadLoginAndEnrollment(
 
   // If Visa File is opened, ensure a VisaApplicant card exists in pipeline and sync school seats
   if (config.isFileOpened) {
-    let existingVisa = store.visaApplicants.find(
+    const existingVisa = store.visaApplicants.find(
       (v) => v.leadId === existingLead!.id || v.phone === existingLead!.phone || v.trackingNo === trackingNo,
     );
     if (!existingVisa) {
@@ -2406,6 +2475,12 @@ export function addPartnerSchool(school: Omit<JapanesePartnerSchool, "id">): Jap
     id: `sch-${Date.now()}`,
   };
   store.partnerSchools.unshift(newSchool);
+
+  // Persist extended fields (logoUrl, documents, tuition, quotas) in websiteCms
+  const cms = store.websiteCms?.[0] || DEFAULT_WEBSITE_CMS;
+  if (!cms.schoolExtendedProfiles) cms.schoolExtendedProfiles = {};
+  cms.schoolExtendedProfiles[newSchool.id] = { ...newSchool };
+
   saveCmsStore(store);
 
   syncToServer("INSERT", "knltc_partner_schools", {
@@ -2422,6 +2497,8 @@ export function addPartnerSchool(school: Omit<JapanesePartnerSchool, "id">): Jap
     status: newSchool.status,
   });
 
+  syncToServer("CMS_UPDATE", undefined, cms);
+
   return newSchool;
 }
 
@@ -2431,6 +2508,15 @@ export function updatePartnerSchool(id: string, updates: Partial<JapanesePartner
   if (idx === -1) return null;
   store.partnerSchools[idx] = { ...store.partnerSchools[idx], ...updates };
   const s = store.partnerSchools[idx];
+
+  // Persist extended fields (logoUrl, documents, tuition, quotas) in websiteCms
+  const cms = store.websiteCms?.[0] || DEFAULT_WEBSITE_CMS;
+  if (!cms.schoolExtendedProfiles) cms.schoolExtendedProfiles = {};
+  cms.schoolExtendedProfiles[s.id] = {
+    ...(cms.schoolExtendedProfiles[s.id] || {}),
+    ...s,
+  };
+
   saveCmsStore(store);
 
   syncToServer("UPSERT", "knltc_partner_schools", {
@@ -2447,12 +2533,21 @@ export function updatePartnerSchool(id: string, updates: Partial<JapanesePartner
     status: s.status,
   });
 
+  syncToServer("CMS_UPDATE", undefined, cms);
+
   return s;
 }
 
 export function deletePartnerSchool(id: string) {
   const store = getCmsStore();
   store.partnerSchools = store.partnerSchools.filter((s) => s.id !== id);
+
+  const cms = store.websiteCms?.[0];
+  if (cms?.schoolExtendedProfiles?.[id]) {
+    delete cms.schoolExtendedProfiles[id];
+    syncToServer("CMS_UPDATE", undefined, cms);
+  }
+
   saveCmsStore(store);
   syncToServer("DELETE", "knltc_partner_schools", { id });
 }
@@ -2464,6 +2559,12 @@ export function addB2bAgent(agent: Omit<B2bAgent, "id">): B2bAgent {
     id: `agent-${Date.now()}`,
   };
   store.b2bAgents.unshift(newAgent);
+
+  // Persist extended fields (logoUrl, documents, license, nid, banking) in websiteCms
+  const cms = store.websiteCms?.[0] || DEFAULT_WEBSITE_CMS;
+  if (!cms.b2bAgentExtendedProfiles) cms.b2bAgentExtendedProfiles = {};
+  cms.b2bAgentExtendedProfiles[newAgent.id] = { ...newAgent };
+
   saveCmsStore(store);
 
   syncToServer("INSERT", "knltc_b2b_agents", {
@@ -2480,6 +2581,8 @@ export function addB2bAgent(agent: Omit<B2bAgent, "id">): B2bAgent {
     paid_commission_bdt: newAgent.paidCommissionBdt,
   });
 
+  syncToServer("CMS_UPDATE", undefined, cms);
+
   return newAgent;
 }
 
@@ -2489,6 +2592,15 @@ export function updateB2bAgent(id: string, updates: Partial<B2bAgent>): B2bAgent
   if (idx === -1) return null;
   store.b2bAgents[idx] = { ...store.b2bAgents[idx], ...updates };
   const a = store.b2bAgents[idx];
+
+  // Persist extended fields (logoUrl, documents, license, nid, banking) in websiteCms
+  const cms = store.websiteCms?.[0] || DEFAULT_WEBSITE_CMS;
+  if (!cms.b2bAgentExtendedProfiles) cms.b2bAgentExtendedProfiles = {};
+  cms.b2bAgentExtendedProfiles[a.id] = {
+    ...(cms.b2bAgentExtendedProfiles[a.id] || {}),
+    ...a,
+  };
+
   saveCmsStore(store);
 
   syncToServer("UPSERT", "knltc_b2b_agents", {
@@ -2505,12 +2617,21 @@ export function updateB2bAgent(id: string, updates: Partial<B2bAgent>): B2bAgent
     paid_commission_bdt: a.paidCommissionBdt,
   });
 
+  syncToServer("CMS_UPDATE", undefined, cms);
+
   return a;
 }
 
 export function deleteB2bAgent(id: string) {
   const store = getCmsStore();
   store.b2bAgents = store.b2bAgents.filter((a) => a.id !== id);
+
+  const cms = store.websiteCms?.[0];
+  if (cms?.b2bAgentExtendedProfiles?.[id]) {
+    delete cms.b2bAgentExtendedProfiles[id];
+    syncToServer("CMS_UPDATE", undefined, cms);
+  }
+
   saveCmsStore(store);
   syncToServer("DELETE", "knltc_b2b_agents", { id });
 }

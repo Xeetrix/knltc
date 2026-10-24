@@ -2558,7 +2558,7 @@ export default function DashboardPage() {
                                   <p className="font-semibold text-slate-800 mt-0.5 tabular-nums">
                                     {sch.firstYearTuitionYen
                                       ? `¥${sch.firstYearTuitionYen.toLocaleString()}`
-                                      : sch.contactPerson || "N/A"}
+                                      : "¥760,000"}
                                   </p>
                                 </div>
                                 <div>

@@ -21,11 +21,14 @@ import {
   Clock,
   AlertCircle,
   Plus,
-  Sparkles,
   Building2,
   Receipt,
   BookOpen,
+  Upload,
+  Loader2,
+  Paperclip,
 } from "lucide-react";
+import { uploadDocumentFile } from "@/lib/media-upload";
 import {
   getCmsStore,
   updateCrmLeadProfile,
@@ -448,6 +451,39 @@ export default function LeadProfileModal({
         ? `সকল ডকুমেন্ট "${targetStatus}" হিসেবে চিহ্নিত করা হয়েছে`
         : `All documents marked as ${targetStatus}`,
     );
+  };
+
+  const [uploadingDocId, setUploadingDocId] = useState<string | null>(null);
+
+  const handleStudentDocUpload = async (docId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingDocId(docId);
+    try {
+      const res = await uploadDocumentFile(file, { trackingNo: lead.id, docType: docId });
+      const nextList = documentChecklist.map((item) => {
+        if (item.id !== docId) return item;
+        return {
+          ...item,
+          status: "VERIFIED" as const,
+          fileUrl: res.url,
+          fileName: res.fileName || file.name,
+          updatedAt: new Date().toISOString().slice(0, 10),
+        };
+      });
+      setDocumentChecklist(nextList);
+      updateCrmLeadProfile(lead.id, { documentChecklist: nextList });
+      onSaved(
+        isBn
+          ? `${file.name} ভল্টে সংরক্ষিত হয়েছে`
+          : `${file.name} saved to student vault`,
+      );
+    } catch (err) {
+      console.error("Student doc upload error:", err);
+    } finally {
+      setUploadingDocId(null);
+      e.target.value = "";
+    }
   };
 
   const handleAddActivityEntry = (
@@ -1395,34 +1431,71 @@ export default function LeadProfileModal({
                           <p className="text-xs font-semibold text-slate-900 truncate">
                             {isBn ? doc.titleBn : doc.titleEn}
                           </p>
-                          <p className="text-[11px] text-slate-400">
-                            {doc.category} {doc.updatedAt ? `· Updated ${doc.updatedAt}` : ""}
-                          </p>
+                          <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-400">
+                            <span>{doc.category}</span>
+                            {doc.fileName && (
+                              <span className="text-emerald-700 font-semibold truncate max-w-[120px]">
+                                · 📎 {doc.fileName}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        className={`shrink-0 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
-                          doc.status === "VERIFIED"
-                            ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                            : doc.status === "SUBMITTED"
-                              ? "bg-amber-50 text-amber-800 border border-amber-200"
-                              : "bg-red-50 text-red-700 border border-red-200"
-                        }`}
-                      >
-                        {doc.status === "VERIFIED"
-                          ? isBn
-                            ? "✓ ভেরিফাইড (Verified)"
-                            : "✓ Verified"
-                          : doc.status === "SUBMITTED"
+                      <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        {doc.fileUrl && (
+                          <a
+                            href={doc.fileUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition"
+                            title="View / Download"
+                          >
+                            <Paperclip className="h-3.5 w-3.5 text-blue-600" />
+                          </a>
+                        )}
+
+                        <label className={`cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition ${
+                          uploadingDocId === doc.id ? "opacity-50 pointer-events-none" : ""
+                        }`} title={isBn ? "ফাইল আপলোড করুন" : "Upload File"}>
+                          {uploadingDocId === doc.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin text-[#b91c1c]" />
+                          ) : (
+                            <Upload className="h-3.5 w-3.5" />
+                          )}
+                          <input
+                            type="file"
+                            disabled={uploadingDocId === doc.id}
+                            accept="image/*,.pdf,.doc,.docx"
+                            onChange={(e) => handleStudentDocUpload(doc.id, e)}
+                            className="hidden"
+                          />
+                        </label>
+
+                        <button
+                          type="button"
+                          onClick={() => cycleDocStatus(doc.id)}
+                          className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
+                            doc.status === "VERIFIED"
+                              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                              : doc.status === "SUBMITTED"
+                                ? "bg-amber-50 text-amber-800 border border-amber-200"
+                                : "bg-red-50 text-red-700 border border-red-200"
+                          }`}
+                        >
+                          {doc.status === "VERIFIED"
                             ? isBn
-                              ? "জমা দিয়েছে (Submitted)"
-                              : "Submitted"
-                            : isBn
-                              ? "বাকি আছে (Missing)"
-                              : "Missing"}
-                      </button>
+                              ? "✓ ভেরিফাইড"
+                              : "✓ Verified"
+                            : doc.status === "SUBMITTED"
+                              ? isBn
+                                ? "জমা দিয়েছে"
+                                : "Submitted"
+                              : isBn
+                                ? "বাকি আছে"
+                                : "Missing"}
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
