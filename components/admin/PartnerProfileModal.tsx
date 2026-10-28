@@ -232,8 +232,11 @@ export default function PartnerProfileModal({
       (a) =>
         (agentState.portalAccountId && a.id === agentState.portalAccountId) ||
         (agentState.email &&
+          a.email &&
           a.email.toLowerCase() === agentState.email.toLowerCase()) ||
-        a.name.toLowerCase() === agentState.organizationName.toLowerCase(),
+        (a.name &&
+          agentState.organizationName &&
+          a.name.toLowerCase() === agentState.organizationName.toLowerCase()),
     );
   }, [mode, agentState]);
 
@@ -254,13 +257,16 @@ export default function PartnerProfileModal({
       }
     >();
 
+    const schoolTargetName = (schoolState.name || "").toLowerCase();
+    const agentOrgName = (agentState.organizationName || "").toLowerCase();
+
     if (mode === "SCHOOL") {
       allLeads.forEach((l) => {
-        if (
-          l.targetSchoolId === schoolState.id ||
-          (l.targetSchoolName &&
-            l.targetSchoolName.toLowerCase() === schoolState.name.toLowerCase())
-        ) {
+        const matchesId = l.targetSchoolId === schoolState.id;
+        const matchesName =
+          Boolean(l.targetSchoolName && schoolTargetName &&
+            l.targetSchoolName.toLowerCase() === schoolTargetName);
+        if (matchesId || matchesName) {
           map.set(l.phone || l.id, {
             id: l.id,
             name: l.name,
@@ -273,11 +279,11 @@ export default function PartnerProfileModal({
         }
       });
       allVisaApplicants.forEach((v) => {
-        if (
-          v.targetSchoolId === schoolState.id ||
-          (v.targetSchool &&
-            v.targetSchool.toLowerCase() === schoolState.name.toLowerCase())
-        ) {
+        const matchesId = v.targetSchoolId === schoolState.id;
+        const matchesName =
+          Boolean(v.targetSchool && schoolTargetName &&
+            v.targetSchool.toLowerCase() === schoolTargetName);
+        if (matchesId || matchesName) {
           const existing = map.get(v.phone || v.id);
           map.set(v.phone || v.id, {
             id: existing?.id || v.id,
@@ -294,12 +300,11 @@ export default function PartnerProfileModal({
       });
     } else {
       allLeads.forEach((l) => {
-        if (
-          l.referredByAgentId === agentState.id ||
-          (l.referredByAgentName &&
-            l.referredByAgentName.toLowerCase() ===
-              agentState.organizationName.toLowerCase())
-        ) {
+        const matchesId = l.referredByAgentId === agentState.id;
+        const matchesName =
+          Boolean(l.referredByAgentName && agentOrgName &&
+            l.referredByAgentName.toLowerCase() === agentOrgName);
+        if (matchesId || matchesName) {
           map.set(l.phone || l.id, {
             id: l.id,
             name: l.name,
@@ -312,13 +317,12 @@ export default function PartnerProfileModal({
         }
       });
       allVisaApplicants.forEach((v) => {
-        if (
-          v.b2bAgentId === agentState.id ||
-          v.referredByAgentId === agentState.id ||
-          (v.b2bAgentName &&
-            v.b2bAgentName.toLowerCase() ===
-              agentState.organizationName.toLowerCase())
-        ) {
+        const matchesId =
+          v.b2bAgentId === agentState.id || v.referredByAgentId === agentState.id;
+        const matchesName =
+          Boolean(v.b2bAgentName && agentOrgName &&
+            v.b2bAgentName.toLowerCase() === agentOrgName);
+        if (matchesId || matchesName) {
           const existing = map.get(v.phone || v.id);
           map.set(v.phone || v.id, {
             id: existing?.id || v.id,
@@ -340,23 +344,28 @@ export default function PartnerProfileModal({
 
   // Linked financial transactions
   const linkedTransactions = useMemo(() => {
+    const schoolTargetName = (schoolState.name || "").toLowerCase();
+    const agentOrgName = (agentState.organizationName || "").toLowerCase();
+
     if (mode === "SCHOOL") {
       return allTransactions.filter(
         (tx) =>
           tx.linkedSchoolId === schoolState.id ||
           (tx.type === "SCHOOL_COMMISSION_JPY" &&
-            tx.studentName
+            schoolTargetName &&
+            String(tx.studentName || "")
               .toLowerCase()
-              .includes(schoolState.name.toLowerCase())),
+              .includes(schoolTargetName)),
       );
     }
     return allTransactions.filter(
       (tx) =>
         tx.linkedAgentId === agentState.id ||
         (tx.type === "EXPENSE_B2B_COMMISSION" &&
-          tx.studentName
+          agentOrgName &&
+          String(tx.studentName || "")
             .toLowerCase()
-            .includes(agentState.organizationName.toLowerCase())),
+            .includes(agentOrgName)),
     );
   }, [mode, schoolState, agentState, allTransactions]);
 

@@ -87,6 +87,8 @@ import {
   calculateLeadEligibility,
   getSchoolDocumentVault,
   getB2bAgentDocumentVault,
+  DEFAULT_WEBSITE_CMS,
+  type WebsiteCmsContent,
   type MasterKnlTcStore,
   type UserRole,
   type BranchCode,
@@ -686,7 +688,47 @@ export default function DashboardPage() {
     );
   }
 
-  const cms = store.websiteCms[0];
+  const rawCms = store.websiteCms?.[0] || DEFAULT_WEBSITE_CMS;
+  const cms: WebsiteCmsContent = {
+    ...DEFAULT_WEBSITE_CMS,
+    ...rawCms,
+    topAnnouncementBar: {
+      ...DEFAULT_WEBSITE_CMS.topAnnouncementBar,
+      ...(rawCms.topAnnouncementBar || {}),
+      text: {
+        ...DEFAULT_WEBSITE_CMS.topAnnouncementBar.text,
+        ...(rawCms.topAnnouncementBar?.text || {}),
+      },
+    },
+    popupBanner: {
+      ...DEFAULT_WEBSITE_CMS.popupBanner,
+      ...(rawCms.popupBanner || {}),
+      headline: {
+        ...DEFAULT_WEBSITE_CMS.popupBanner.headline,
+        ...(rawCms.popupBanner?.headline || {}),
+      },
+    },
+    heroSection: {
+      ...DEFAULT_WEBSITE_CMS.heroSection,
+      ...(rawCms.heroSection || {}),
+      headline: {
+        ...DEFAULT_WEBSITE_CMS.heroSection.headline,
+        ...(rawCms.heroSection?.headline || {}),
+      },
+    },
+    languageCoursePage: {
+      ...DEFAULT_WEBSITE_CMS.languageCoursePage,
+      ...(rawCms.languageCoursePage || {}),
+    },
+    studyInJapanPage: {
+      ...DEFAULT_WEBSITE_CMS.studyInJapanPage,
+      ...(rawCms.studyInJapanPage || {}),
+    },
+    jobCirculars:
+      Array.isArray(rawCms.jobCirculars) && rawCms.jobCirculars.length > 0
+        ? rawCms.jobCirculars
+        : DEFAULT_WEBSITE_CMS.jobCirculars,
+  };
 
   const allNavItems = [
     {
@@ -2443,10 +2485,12 @@ export default function DashboardPage() {
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                           {filteredLeads.map((lead) => {
+                            const candidateName = lead.name || "Candidate";
                             const waText = encodeURIComponent(
-                              `Hello ${lead.name}, greetings from KNLTC. We would like to follow up on your Japan study & visa inquiry.`,
+                              `Hello ${candidateName}, greetings from KNLTC. We would like to follow up on your Japan study & visa inquiry.`,
                             );
-                            const waLink = `https://wa.me/${(lead.whatsapp || lead.phone).replace(/[^0-9]/g, "")}?text=${waText}`;
+                            const rawPhone = String(lead.whatsapp || lead.phone || "");
+                            const waLink = `https://wa.me/${rawPhone.replace(/[^0-9]/g, "")}?text=${waText}`;
                             const contractBdt =
                               lead.contractAmountBdt ||
                               (lead.interest === "STUDENT_VISA_PREMIUM"
@@ -2460,6 +2504,11 @@ export default function DashboardPage() {
                             const leadPriority =
                               lead.priority || (lead.status === "ADMITTED" ? "HOT" : "WARM");
                             const isSelected = selectedCrmLeadIds.includes(lead.id);
+                            const safeTags: string[] = Array.isArray(lead.customTags)
+                              ? lead.customTags
+                              : typeof lead.customTags === "string"
+                                ? (lead.customTags as string).split(",").map((t) => t.trim()).filter(Boolean)
+                                : [];
 
                             return (
                               <tr
@@ -2494,11 +2543,11 @@ export default function DashboardPage() {
                                       {lead.avatarUrl ? (
                                         <img
                                           src={lead.avatarUrl}
-                                          alt={lead.name}
+                                          alt={candidateName}
                                           className="h-full w-full object-cover"
                                         />
                                       ) : (
-                                        <span>{(lead.name || "ST").slice(0, 2).toUpperCase()}</span>
+                                        <span>{(candidateName || "ST").slice(0, 2).toUpperCase()}</span>
                                       )}
                                     </button>
                                     <div>
@@ -2509,7 +2558,7 @@ export default function DashboardPage() {
                                           className="text-left group"
                                         >
                                           <p className="font-bold text-slate-900 text-xs sm:text-sm group-hover:text-[#b91c1c] transition-colors">
-                                            {lead.name}
+                                            {candidateName}
                                           </p>
                                         </button>
                                         <span
@@ -2530,7 +2579,7 @@ export default function DashboardPage() {
                                         )}
                                       </div>
                                       <p className="text-slate-400 font-mono text-[11px] tabular-nums mt-0.5">
-                                        {lead.phone} · {lead.city}
+                                        {lead.phone || "No phone"} · {lead.city || "Dhaka"}
                                         {lead.followUpDate ? ` · Follow-up: ${lead.followUpDate}` : ""}
                                       </p>
                                       <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500 font-mono tabular-nums">
@@ -2558,9 +2607,9 @@ export default function DashboardPage() {
                                           </>
                                         )}
                                       </div>
-                                      {lead.customTags && lead.customTags.length > 0 && (
+                                      {safeTags.length > 0 && (
                                         <div className="mt-1 flex flex-wrap gap-1">
-                                          {lead.customTags.slice(0, 3).map((tag) => (
+                                          {safeTags.slice(0, 3).map((tag) => (
                                             <span
                                               key={tag}
                                               className="rounded bg-slate-100 px-1.5 py-0.2 text-[10px] font-medium text-slate-600"
@@ -3001,16 +3050,17 @@ export default function DashboardPage() {
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                           {store.lmsBridges.map((lms) => {
+                            const rawLmsPhone = String(lms.phone || "");
                             const msg = encodeURIComponent(
                               `Congratulations ${lms.studentName}!\nYour KNLTC Course ID: ${lms.enrollmentNo}.\nPortal: https://npw.bd/knltc\nUsername: ${lms.portalUsername}\nPassword: ${lms.portalPasswordMasked}`,
                             );
-                            const waUrl = `https://wa.me/${lms.phone.replace(/[^0-9]/g, "")}?text=${msg}`;
+                            const waUrl = `https://wa.me/${rawLmsPhone.replace(/[^0-9]/g, "")}?text=${msg}`;
 
                             return (
                               <tr key={lms.id} className="hover:bg-slate-50/70">
                                 <td className="px-4 py-3.5">
                                   <p className="font-bold text-slate-900">{lms.studentName}</p>
-                                  <p className="text-[11px] font-mono text-slate-400">{lms.phone}</p>
+                                  <p className="text-[11px] font-mono text-slate-400">{rawLmsPhone}</p>
                                 </td>
                                 <td className="px-4 py-3.5">
                                   <span className="font-semibold text-slate-900">{lms.courseLevel}</span>
@@ -3022,7 +3072,7 @@ export default function DashboardPage() {
                                 </td>
                                 <td className="px-4 py-3.5 tabular-nums">
                                   <p className="font-semibold text-emerald-700">
-                                    ৳{lms.netKnlTcMarginBdt.toLocaleString()}
+                                    ৳{(lms.netKnlTcMarginBdt || 0).toLocaleString()}
                                   </p>
                                 </td>
                                 <td className="px-4 py-3.5">
@@ -3124,12 +3174,15 @@ export default function DashboardPage() {
                           const quota = sch.intakeQuota || 20;
                           const quotaPct = Math.min(
                             100,
-                            Math.round((sch.activeStudentsCount / quota) * 100),
+                            Math.round(((sch.activeStudentsCount || 0) / quota) * 100),
                           );
-                          const coeStudentsForSchool = store.visaApplicants.filter(
+                          const schName = sch.name || (sch as any).schoolName || "Partner School";
+                          const coeStudentsForSchool = (store.visaApplicants || []).filter(
                             (v) =>
                               (v.targetSchoolId === sch.id ||
-                                v.targetSchool.toLowerCase() === sch.name.toLowerCase()) &&
+                                (v.targetSchool &&
+                                  String(v.targetSchool).toLowerCase() ===
+                                    schName.toLowerCase())) &&
                               v.stage >= 6,
                           ).length;
                           const schoolDocs = getSchoolDocumentVault(sch);
@@ -3421,6 +3474,14 @@ export default function DashboardPage() {
                             const readyAgentDocs = agentDocs.filter(
                               (d) => d.status === "VERIFIED" || d.status === "UPLOADED",
                             ).length;
+                            const orgName =
+                              agent.organizationName ||
+                              (agent as any).agencyName ||
+                              "B2B Partner";
+                            const contactPerson = agent.contactPerson || "Contact Person";
+                            const agreedBdt = agent.agreedCommissionBdt || 0;
+                            const paidBdt = agent.paidCommissionBdt || 0;
+                            const pendingBdt = agent.pendingCommissionBdt || 0;
 
                             return (
                               <tr key={agent.id} className="hover:bg-slate-50/70 transition-colors">
@@ -3434,7 +3495,7 @@ export default function DashboardPage() {
                                       {agent.logoUrl ? (
                                         <img
                                           src={agent.logoUrl}
-                                          alt={agent.organizationName}
+                                          alt={orgName}
                                           referrerPolicy="no-referrer"
                                           className="h-full w-full object-contain p-0.5"
                                         />
@@ -3448,11 +3509,11 @@ export default function DashboardPage() {
                                         onClick={() => setSelectedAgentForProfile(agent)}
                                         className="font-bold text-slate-900 hover:text-[#b91c1c] transition text-left"
                                       >
-                                        {agent.organizationName}
+                                        {orgName}
                                       </button>
                                       <p className="text-slate-400 text-[11px]">
-                                        {agent.contactPerson} ·{" "}
-                                        <span className="font-mono">{agent.phone}</span>
+                                        {contactPerson} ·{" "}
+                                        <span className="font-mono">{agent.phone || "No phone"}</span>
                                         {" · "}
                                         <span className="text-emerald-700 font-semibold">
                                           {readyAgentDocs}/{agentDocs.length}{" "}
@@ -3464,31 +3525,31 @@ export default function DashboardPage() {
                                 </td>
                                 <td className="px-4 py-3.5">
                                   <span className="text-[11px] font-medium text-slate-700 block">
-                                    {agent.agentType}
+                                    {agent.agentType || "LOCAL_SUB_AGENT"}
                                   </span>
                                   <span className="text-[11px] text-slate-400">
-                                    {agent.city}
+                                    {agent.city || "Dhaka"}
                                     {agent.tradeLicenseNo
                                       ? ` · TL: ${agent.tradeLicenseNo}`
                                       : ""}
                                   </span>
                                 </td>
                                 <td className="px-4 py-3.5 font-semibold text-slate-800 tabular-nums">
-                                  {agent.referredStudentsCount} {t.b2b.studentsSuffix}
+                                  {agent.referredStudentsCount || 0} {t.b2b.studentsSuffix}
                                 </td>
                                 <td className="px-4 py-3.5 font-bold text-emerald-700 tabular-nums">
-                                  {agent.successfulVisasCount} {t.b2b.studentsSuffix}
+                                  {agent.successfulVisasCount || 0} {t.b2b.studentsSuffix}
                                 </td>
                                 <td className="px-4 py-3.5 font-semibold text-slate-900 tabular-nums">
-                                  ৳{agent.agreedCommissionBdt.toLocaleString()}
+                                  ৳{agreedBdt.toLocaleString()}
                                 </td>
                                 <td className="px-4 py-3.5 tabular-nums">
                                   <span className="text-emerald-700 font-semibold block">
-                                    {t.b2b.paidPrefix} ৳{agent.paidCommissionBdt.toLocaleString()}
+                                    {t.b2b.paidPrefix} ৳{paidBdt.toLocaleString()}
                                   </span>
                                   <span className="text-amber-600 text-[11px] font-medium block">
                                     {t.b2b.pendingPrefix} ৳
-                                    {agent.pendingCommissionBdt.toLocaleString()}
+                                    {pendingBdt.toLocaleString()}
                                   </span>
                                 </td>
                                 <td className="px-4 py-3.5 text-right">
@@ -3507,7 +3568,7 @@ export default function DashboardPage() {
                                         )}
                                       </span>
                                     </button>
-                                    {agent.pendingCommissionBdt > 0 && (
+                                    {pendingBdt > 0 && (
                                       <button
                                         type="button"
                                         onClick={() => {
@@ -4720,9 +4781,12 @@ export default function DashboardPage() {
                         <label className="font-semibold text-slate-600">{t.cms.topBarLabel}</label>
                         <input
                           type="text"
-                          defaultValue={cms.topAnnouncementBar.text[language] || cms.topAnnouncementBar.text.bn}
+                          defaultValue={cms.topAnnouncementBar?.text?.[language] || cms.topAnnouncementBar?.text?.bn || ""}
                           onChange={(e) => {
+                            if (!cms.topAnnouncementBar) cms.topAnnouncementBar = { ...DEFAULT_WEBSITE_CMS.topAnnouncementBar };
+                            if (!cms.topAnnouncementBar.text) cms.topAnnouncementBar.text = { ...DEFAULT_WEBSITE_CMS.topAnnouncementBar.text };
                             cms.topAnnouncementBar.text[language] = e.target.value;
+                            store.websiteCms[0] = cms;
                             setStore({ ...store });
                           }}
                           className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 font-medium"
@@ -4732,9 +4796,12 @@ export default function DashboardPage() {
                         <label className="font-semibold text-slate-600">{t.cms.popupLabel}</label>
                         <input
                           type="text"
-                          defaultValue={cms.popupBanner.headline[language] || cms.popupBanner.headline.bn}
+                          defaultValue={cms.popupBanner?.headline?.[language] || cms.popupBanner?.headline?.bn || ""}
                           onChange={(e) => {
+                            if (!cms.popupBanner) cms.popupBanner = { ...DEFAULT_WEBSITE_CMS.popupBanner };
+                            if (!cms.popupBanner.headline) cms.popupBanner.headline = { ...DEFAULT_WEBSITE_CMS.popupBanner.headline };
                             cms.popupBanner.headline[language] = e.target.value;
+                            store.websiteCms[0] = cms;
                             setStore({ ...store });
                           }}
                           className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 font-medium"
@@ -4744,9 +4811,12 @@ export default function DashboardPage() {
                         <label className="font-semibold text-slate-600">{t.cms.heroLabel}</label>
                         <input
                           type="text"
-                          defaultValue={cms.heroSection.headline[language] || cms.heroSection.headline.bn}
+                          defaultValue={cms.heroSection?.headline?.[language] || cms.heroSection?.headline?.bn || ""}
                           onChange={(e) => {
+                            if (!cms.heroSection) cms.heroSection = { ...DEFAULT_WEBSITE_CMS.heroSection };
+                            if (!cms.heroSection.headline) cms.heroSection.headline = { ...DEFAULT_WEBSITE_CMS.heroSection.headline };
                             cms.heroSection.headline[language] = e.target.value;
+                            store.websiteCms[0] = cms;
                             setStore({ ...store });
                           }}
                           className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 font-medium"
@@ -4756,9 +4826,10 @@ export default function DashboardPage() {
                         <label className="font-semibold text-slate-600">{t.cms.pixelLabel}</label>
                         <input
                           type="text"
-                          defaultValue={cms.metaPixelId}
+                          defaultValue={cms.metaPixelId || ""}
                           onChange={(e) => {
                             cms.metaPixelId = e.target.value;
+                            store.websiteCms[0] = cms;
                             setStore({ ...store });
                           }}
                           className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 font-mono font-semibold"
@@ -4776,9 +4847,11 @@ export default function DashboardPage() {
                           <label className="font-semibold text-slate-600">N5 (BDT)</label>
                           <input
                             type="number"
-                            defaultValue={cms.languageCoursePage.n5PriceBdt}
+                            defaultValue={cms.languageCoursePage?.n5PriceBdt ?? 12000}
                             onChange={(e) => {
+                              if (!cms.languageCoursePage) cms.languageCoursePage = { ...DEFAULT_WEBSITE_CMS.languageCoursePage };
                               cms.languageCoursePage.n5PriceBdt = Number(e.target.value);
+                              store.websiteCms[0] = cms;
                               setStore({ ...store });
                             }}
                             className="mt-1 w-full rounded-xl border border-slate-200 p-2 font-bold tabular-nums"
@@ -4788,9 +4861,11 @@ export default function DashboardPage() {
                           <label className="font-semibold text-slate-600">N4 (BDT)</label>
                           <input
                             type="number"
-                            defaultValue={cms.languageCoursePage.n4PriceBdt}
+                            defaultValue={cms.languageCoursePage?.n4PriceBdt ?? 12000}
                             onChange={(e) => {
+                              if (!cms.languageCoursePage) cms.languageCoursePage = { ...DEFAULT_WEBSITE_CMS.languageCoursePage };
                               cms.languageCoursePage.n4PriceBdt = Number(e.target.value);
+                              store.websiteCms[0] = cms;
                               setStore({ ...store });
                             }}
                             className="mt-1 w-full rounded-xl border border-slate-200 p-2 font-bold tabular-nums"
@@ -4800,9 +4875,11 @@ export default function DashboardPage() {
                           <label className="font-semibold text-slate-600">Combo (BDT)</label>
                           <input
                             type="number"
-                            defaultValue={cms.languageCoursePage.comboPriceBdt}
+                            defaultValue={cms.languageCoursePage?.comboPriceBdt ?? 21500}
                             onChange={(e) => {
+                              if (!cms.languageCoursePage) cms.languageCoursePage = { ...DEFAULT_WEBSITE_CMS.languageCoursePage };
                               cms.languageCoursePage.comboPriceBdt = Number(e.target.value);
+                              store.websiteCms[0] = cms;
                               setStore({ ...store });
                             }}
                             className="mt-1 w-full rounded-xl border border-slate-200 p-2 font-bold tabular-nums"
@@ -4818,9 +4895,11 @@ export default function DashboardPage() {
                           <label className="font-semibold text-slate-600">{t.cms.regularTitle}</label>
                           <input
                             type="number"
-                            defaultValue={cms.studyInJapanPage.regularPackageFeeBdt}
+                            defaultValue={cms.studyInJapanPage?.regularPackageFeeBdt ?? 120000}
                             onChange={(e) => {
+                              if (!cms.studyInJapanPage) cms.studyInJapanPage = { ...DEFAULT_WEBSITE_CMS.studyInJapanPage };
                               cms.studyInJapanPage.regularPackageFeeBdt = Number(e.target.value);
+                              store.websiteCms[0] = cms;
                               setStore({ ...store });
                             }}
                             className="mt-1 w-full rounded-xl border border-slate-200 p-2 font-bold tabular-nums"
@@ -4830,9 +4909,11 @@ export default function DashboardPage() {
                           <label className="font-semibold text-slate-600">{t.cms.premiumTitle}</label>
                           <input
                             type="number"
-                            defaultValue={cms.studyInJapanPage.premiumPackageFeeBdt}
+                            defaultValue={cms.studyInJapanPage?.premiumPackageFeeBdt ?? 1100000}
                             onChange={(e) => {
+                              if (!cms.studyInJapanPage) cms.studyInJapanPage = { ...DEFAULT_WEBSITE_CMS.studyInJapanPage };
                               cms.studyInJapanPage.premiumPackageFeeBdt = Number(e.target.value);
+                              store.websiteCms[0] = cms;
                               setStore({ ...store });
                             }}
                             className="mt-1 w-full rounded-xl border border-slate-200 p-2 font-bold tabular-nums"
@@ -4857,42 +4938,50 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="space-y-2.5">
-                      {cms.jobCirculars.map((circ) => (
-                        <div
-                          key={circ.id}
-                          className="flex flex-col sm:flex-row sm:items-center justify-between rounded-xl border border-slate-200/70 p-3.5 gap-3"
-                        >
-                          <div>
-                            <div className="flex items-center gap-2 text-[11px] text-slate-400">
-                              <span className="font-semibold text-emerald-700">{circ.category}</span>
-                              <span>•</span>
-                              <span>{circ.locationJapan}</span>
-                            </div>
-                            <p className="font-bold text-xs sm:text-sm text-slate-900 mt-0.5">
-                              {circ.title[language] || circ.title.bn || circ.title.en}
-                            </p>
-                            <p className="text-xs text-slate-500 mt-0.5">
-                              {circ.salaryYen} ({circ.salaryBdtEquivalent})
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              circ.isPublished = !circ.isPublished;
-                              saveCmsStore(store);
-                              setStore({ ...store });
-                              showToast(circ.isPublished ? t.cms.liveActive : t.cms.draft);
-                            }}
-                            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition shrink-0 ${
-                              circ.isPublished
-                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                : "bg-slate-100 text-slate-600"
-                            }`}
+                      {(cms.jobCirculars || []).map((circ) => {
+                        const circTitle =
+                          typeof circ.title === "object" && circ.title
+                            ? circ.title[language] || circ.title.bn || circ.title.en || "SSW Position"
+                            : String(circ.title || "SSW Position");
+
+                        return (
+                          <div
+                            key={circ.id}
+                            className="flex flex-col sm:flex-row sm:items-center justify-between rounded-xl border border-slate-200/70 p-3.5 gap-3"
                           >
-                            {circ.isPublished ? t.cms.liveActive : t.cms.draft}
-                          </button>
-                        </div>
-                      ))}
+                            <div>
+                              <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                                <span className="font-semibold text-emerald-700">{circ.category}</span>
+                                <span>•</span>
+                                <span>{circ.locationJapan}</span>
+                              </div>
+                              <p className="font-bold text-xs sm:text-sm text-slate-900 mt-0.5">
+                                {circTitle}
+                              </p>
+                              <p className="text-xs text-slate-500 mt-0.5">
+                                {circ.salaryYen} ({circ.salaryBdtEquivalent})
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                circ.isPublished = !circ.isPublished;
+                                store.websiteCms[0] = cms;
+                                saveCmsStore(store);
+                                setStore({ ...store });
+                                showToast(circ.isPublished ? t.cms.liveActive : t.cms.draft);
+                              }}
+                              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition shrink-0 ${
+                                circ.isPublished
+                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                  : "bg-slate-100 text-slate-600"
+                              }`}
+                            >
+                                {circ.isPublished ? t.cms.liveActive : t.cms.draft}
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>

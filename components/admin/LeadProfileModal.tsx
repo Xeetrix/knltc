@@ -184,7 +184,11 @@ export default function LeadProfileModal({
           !tx.type.startsWith("EXPENSE") &&
           (tx.linkedLeadId === lead.id ||
             (tx.studentPhone && tx.studentPhone === lead.phone) ||
-            tx.studentName.toLowerCase() === lead.name.toLowerCase()),
+            Boolean(
+              tx.studentName &&
+                lead.name &&
+                String(tx.studentName).toLowerCase() === String(lead.name).toLowerCase(),
+            )),
       ),
     [liveStore.transactions, lead.id, lead.phone, lead.name],
   );

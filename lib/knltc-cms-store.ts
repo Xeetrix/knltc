@@ -619,7 +619,7 @@ export interface MasterKnlTcStore {
 // ------------------------------------------------------------------------------
 // INITIAL SEED DATA (Authentic KNLTC Business Model)
 // ------------------------------------------------------------------------------
-const DEFAULT_WEBSITE_CMS: WebsiteCmsContent = {
+export const DEFAULT_WEBSITE_CMS: WebsiteCmsContent = {
   topAnnouncementBar: {
     enabled: true,
     text: {
@@ -1350,10 +1350,51 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
 
     if (Array.isArray(data.websiteCms) && data.websiteCms.length > 0) {
       const serverCms = data.websiteCms[0] as WebsiteCmsContent;
-      if (!serverCms.systemAccounts || serverCms.systemAccounts.length === 0) {
-        serverCms.systemAccounts = JSON.parse(JSON.stringify(DEFAULT_SYSTEM_ACCOUNTS));
-      }
-      store.websiteCms = [serverCms];
+      const mergedCms: WebsiteCmsContent = {
+        ...JSON.parse(JSON.stringify(DEFAULT_WEBSITE_CMS)),
+        ...serverCms,
+        topAnnouncementBar: {
+          ...DEFAULT_WEBSITE_CMS.topAnnouncementBar,
+          ...(serverCms.topAnnouncementBar || {}),
+          text: {
+            ...DEFAULT_WEBSITE_CMS.topAnnouncementBar.text,
+            ...(serverCms.topAnnouncementBar?.text || {}),
+          },
+        },
+        popupBanner: {
+          ...DEFAULT_WEBSITE_CMS.popupBanner,
+          ...(serverCms.popupBanner || {}),
+          headline: {
+            ...DEFAULT_WEBSITE_CMS.popupBanner.headline,
+            ...(serverCms.popupBanner?.headline || {}),
+          },
+        },
+        heroSection: {
+          ...DEFAULT_WEBSITE_CMS.heroSection,
+          ...(serverCms.heroSection || {}),
+          headline: {
+            ...DEFAULT_WEBSITE_CMS.heroSection.headline,
+            ...(serverCms.heroSection?.headline || {}),
+          },
+        },
+        languageCoursePage: {
+          ...DEFAULT_WEBSITE_CMS.languageCoursePage,
+          ...(serverCms.languageCoursePage || {}),
+        },
+        studyInJapanPage: {
+          ...DEFAULT_WEBSITE_CMS.studyInJapanPage,
+          ...(serverCms.studyInJapanPage || {}),
+        },
+        jobCirculars:
+          Array.isArray(serverCms.jobCirculars) && serverCms.jobCirculars.length > 0
+            ? serverCms.jobCirculars
+            : DEFAULT_WEBSITE_CMS.jobCirculars,
+        systemAccounts:
+          Array.isArray(serverCms.systemAccounts) && serverCms.systemAccounts.length > 0
+            ? serverCms.systemAccounts
+            : JSON.parse(JSON.stringify(DEFAULT_SYSTEM_ACCOUNTS)),
+      };
+      store.websiteCms = [mergedCms];
 
       // Merge extended lead profile fields stored in websiteCms.leadExtendedProfiles
       if (serverCms.leadExtendedProfiles) {
@@ -2823,7 +2864,8 @@ export function getLeadDocumentChecklist(lead: Partial<CrmLead>): LeadDocumentIt
   if (lead.documentChecklist && lead.documentChecklist.length > 0) {
     return lead.documentChecklist;
   }
-  const hasPassport = Boolean(lead.passportNo && lead.passportNo.trim().length > 3);
+  const passportStr = String(lead.passportNo || "").trim();
+  const hasPassport = Boolean(passportStr.length > 3);
   const hasPassedJp =
     lead.japaneseProficiency === "PASSED_N5" ||
     lead.japaneseProficiency === "PASSED_N4" ||
@@ -3123,8 +3165,10 @@ export function getB2bAgentDocumentVault(agent: Partial<B2bAgent>): PartnerDocum
   if (agent.documents && agent.documents.length > 0) {
     return agent.documents;
   }
-  const hasLicense = Boolean(agent.tradeLicenseNo && agent.tradeLicenseNo.trim().length > 2);
-  const hasNid = Boolean(agent.nidOrPassportNo && agent.nidOrPassportNo.trim().length > 4);
+  const licenseStr = String(agent.tradeLicenseNo || "").trim();
+  const nidStr = String(agent.nidOrPassportNo || "").trim();
+  const hasLicense = Boolean(licenseStr.length > 2);
+  const hasNid = Boolean(nidStr.length > 4);
   return DEFAULT_B2B_AGENT_DOCUMENTS.map((d) => {
     if (d.id === "b2b-doc-trade-license" && hasLicense) {
       return { ...d, status: "VERIFIED" as const };
