@@ -24,54 +24,18 @@ import {
   ShieldCheck,
   Sparkles,
   ChevronDown,
-  Calculator,
 } from "lucide-react";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useKnlTcCms } from "@/hooks/use-knltc-cms";
 
 export default function StudyInJapanClient() {
   const { language } = useLanguage();
-  const { cms } = useKnlTcCms();
   const [activeTab, setActiveTab] = useState<"student" | "sponsor">("student");
   const [selectedIntake, setSelectedIntake] = useState<number>(1); // 1 = July / April
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
-
-  // Interactive Eligibility & Bank Solvency Calculator State
-  const [calcGpa, setCalcGpa] = useState<number>(3.5);
-  const [calcAge, setCalcAge] = useState<number>(22);
-  const [calcGap, setCalcGap] = useState<number>(2);
-  const [calcJapanese, setCalcJapanese] = useState<"NONE" | "N5" | "N4">("N5");
-  const [calcNeedLoan, setCalcNeedLoan] = useState<boolean>(false);
-
-  const regularFeeBdt = cms.studyInJapanPage?.regularPackageFeeBdt || 120000;
-  const premiumFeeBdt = cms.studyInJapanPage?.premiumPackageFeeBdt || 1100000;
-  const loanBanks = ["Agrani Bank PLC", "Social Islami Bank PLC", "Pubali Bank PLC"];
-
-  const regFormattedBn =
-    regularFeeBdt === 120000
-      ? "৳ ১,২০,০০০"
-      : `৳ ${regularFeeBdt.toLocaleString("bn-BD")}`;
-  const regWordsBn =
-    regularFeeBdt === 120000
-      ? "এক লক্ষ বিশ হাজার টাকা • ফাইল ওপেনিং ৳০"
-      : `${regularFeeBdt.toLocaleString("bn-BD")} টাকা`;
-  const regFormattedEn = `BDT ${regularFeeBdt.toLocaleString("en-US")}`;
-  const regWordsEn =
-    regularFeeBdt === 120000
-      ? "One Lakh Twenty Thousand BDT • File Opening BDT 0"
-      : `${regularFeeBdt.toLocaleString("en-US")} BDT`;
-
-  const premFormattedBn =
-    premiumFeeBdt === 1100000
-      ? "৳ ১১,০০,০০০"
-      : `৳ ${premiumFeeBdt.toLocaleString("bn-BD")}`;
-  const premFormattedEn = `BDT ${premiumFeeBdt.toLocaleString("en-US")}`;
-
-  const isEligible = calcGpa >= 2.5 && calcAge <= 30 && calcGap <= 6;
 
   const t = translate(
     {
@@ -169,14 +133,14 @@ export default function StudyInJapanClient() {
         packagesSubtitle: "অফিশিয়াল ব্রোশিওরের পেজ ১০ অনুযায়ী সম্পূর্ণ স্বচ্ছ খরচ বিবরণী। কোনো গোপন ফি নেই।",
         packagesRegularBadge: "বাজেট-বান্ধব স্বনির্ভর প্যাকেজ",
         packagesRegularLabel: "রেগুলার প্যাকেজ",
-        packagesRegularPrice: regFormattedBn,
-        packagesRegularInWords: regWordsBn,
+        packagesRegularPrice: "৳ ১,৫০,০০০",
+        packagesRegularInWords: "এক লক্ষ পঞ্চাশ হাজার টাকা",
         packagesRegularDesc: "যারা বাজেট-বান্ধব এবং ধাপে ধাপে নিজের প্রক্রিয়ায় এগোতে চান, তাদের জন্য আদর্শ।",
-        packagesRegularPayment: "সার্ভিস ফি: ফাইল ওপেনিং ৳০ • ভিসা/COE নিশ্চিত হওয়ার পর পরিশোধযোগ্য",
-        packagesRegularHighlight: "ভিসা/COE পাওয়ার পূর্বে অগ্রিম কোনো সার্ভিস চার্জ নেই",
+        packagesRegularPayment: "সার্ভিস ফি: ভিসা হওয়ার পর পরিশোধযোগ্য",
+        packagesRegularHighlight: "ভিসা পাওয়ার পূর্বে অগ্রিম কোনো সার্ভিস চার্জ নেই",
         packagesRegularFeaturesTitle: "প্যাকেজে যা যা পাচ্ছেন:",
         packagesRegularFeatures: [
-          "সম্পূর্ণ ফ্রি ফাইল ওপেনিং (৳০) ও ডকুমেন্ট ভেরিফিকেশন",
+          "সম্পূর্ণ ফ্রি ফাইল ওপেনিং ও ডকুমেন্ট ভেরিফিকেশন",
           "জাপানি শিক্ষা প্রতিষ্ঠানে আবেদন ও ইন্টারভিউ প্রস্তুতি",
           "N5 শেষে ৩টি প্রিমিয়াম প্রস্তুতি কোর্স সম্পূর্ণ ফ্রি (১৫ দিন এম্বাসি ইন্টারভিউ, ১০ দিন সিভি রাইটিং, ১০ দিন জব প্রস্তুতি)",
           "COE অপেক্ষাকালে ৩ মাস ফ্রি জাপানিজ N4 কোর্স",
@@ -188,8 +152,8 @@ export default function StudyInJapanClient() {
         packagesPremiumBadge: "সর্বোচ্চ জনপ্রিয় • নো-ভিসা নো-লস",
         packagesPremiumTag: "অল-ইন-ওয়ান প্রিমিয়াম",
         packagesPremiumLabel: "প্রিমিয়াম প্যাকেজ",
-        packagesPremiumPrice: premFormattedBn,
-        packagesPremiumInWords: "এগারো লক্ষ টাকা (১১–১২ লক্ষ টাকা কন্ট্রাক্ট)",
+        packagesPremiumPrice: "৳ ১১,০০,০০০",
+        packagesPremiumInWords: "এগারো লক্ষ টাকা",
         packagesPremiumDesc: "সম্পূর্ণ হ্যাসেল-ফ্রি অভিজ্ঞতা। যাবতীয় দায়-দায়িত্ব KNLTC বহন করে, যাতে যাত্রা হয় নিশ্চিন্ত।",
         packagesPremiumPayment: "চুক্তির সময় ১০% (ভিসা না হলে সম্পূর্ণ রিফান্ডযোগ্য)",
         packagesPremiumHighlight: "ভিসা না হলে নিজের কোনো আর্থিক ক্ষতি নেই (১০০% মানিব্যাক গ্যারান্টি)",
@@ -209,8 +173,8 @@ export default function StudyInJapanClient() {
         tableBadge: "Brochure Verified",
         colService: "সেবার বিবরণ",
         colBudget: "বাজেট / আনুমানিক খরচ",
-        colRegular: `রেগুলার প্যাকেজ (${regFormattedBn})`,
-        colPremium: `প্রিমিয়াম প্যাকেজ (${premFormattedBn})`,
+        colRegular: "রেগুলার প্যাকেজ (৳ ১,৫০,০০০)",
+        colPremium: "প্রিমিয়াম প্যাকেজ (৳ ১১,০০,০০০)",
         notesTitle: "প্যাকেজ ও জাপান যাত্রা সংক্রান্ত জরুরি নোট (ব্রোশিওর অনুযায়ী)",
         notePersonalTitle: "ব্যক্তিগত হাতখরচ:",
         notePersonalDesc:
@@ -323,14 +287,14 @@ export default function StudyInJapanClient() {
         packagesSubtitle: "Direct, transparent breakdown from brochure page 10. No hidden charges.",
         packagesRegularBadge: "Budget-Friendly Self-Reliant Package",
         packagesRegularLabel: "Regular Package",
-        packagesRegularPrice: regFormattedEn,
-        packagesRegularInWords: regWordsEn,
+        packagesRegularPrice: "BDT 150,000",
+        packagesRegularInWords: "One Lakh Fifty Thousand BDT",
         packagesRegularDesc: "Ideal for budget-conscious students seeking self-managed, step-by-step processing.",
-        packagesRegularPayment: "Service Fee: BDT 0 File Opening • Payable after Visa/COE issuance",
+        packagesRegularPayment: "Service Fee: Payable after Visa/COE issuance",
         packagesRegularHighlight: "No advance service charge before visa/COE issuance",
         packagesRegularFeaturesTitle: "Included in Regular Package:",
         packagesRegularFeatures: [
-          "Free file opening (BDT 0) and application preparation",
+          "Free file opening and application preparation",
           "Japanese school selection & interview coaching",
           "3 Free Premium courses post N5 (Embassy interview, CV writing, part-time job prep)",
           "Free N4 Japanese course during the 3-month COE waiting period",
@@ -342,8 +306,8 @@ export default function StudyInJapanClient() {
         packagesPremiumBadge: "Most Popular • Zero Risk Guarantee",
         packagesPremiumTag: "All-in-One Premium",
         packagesPremiumLabel: "Premium Package",
-        packagesPremiumPrice: premFormattedEn,
-        packagesPremiumInWords: "Eleven to Twelve Lakh BDT All-Inclusive",
+        packagesPremiumPrice: "BDT 1,100,000",
+        packagesPremiumInWords: "Eleven Lakh BDT All-Inclusive",
         packagesPremiumDesc: "Complete hassle-free experience. KNLTC covers all major expenses so your journey is worry-free.",
         packagesPremiumPayment: "Only 10% at agreement (100% refundable if visa is refused)",
         packagesPremiumHighlight: "Zero financial loss if visa is not granted (100% money-back guarantee)",
@@ -363,8 +327,8 @@ export default function StudyInJapanClient() {
         tableBadge: "Brochure Verified",
         colService: "Service Description",
         colBudget: "Budget / Estimated Cost",
-        colRegular: `Regular Package (${regFormattedEn})`,
-        colPremium: `Premium Package (${premFormattedEn})`,
+        colRegular: "Regular Package (BDT 150,000)",
+        colPremium: "Premium Package (BDT 1,100,000)",
         notesTitle: "Important Brochure Guidelines & Travel Notes",
         notePersonalTitle: "Personal Pocket Money:",
         notePersonalDesc:
@@ -477,14 +441,14 @@ export default function StudyInJapanClient() {
         packagesSubtitle: "公式パンフレット10ページ記載の明朗会計。隠れた費用はありません。",
         packagesRegularBadge: "予算重視・自己管理型プラン",
         packagesRegularLabel: "レギュラープラン",
-        packagesRegularPrice: `${regularFeeBdt.toLocaleString("en-US")} BDT`,
-        packagesRegularInWords: "着手金0タカ • ビザ/COE交付後払い",
+        packagesRegularPrice: "150,000 BDT",
+        packagesRegularInWords: "15万バングラデシュタカ",
         packagesRegularDesc: "予算を抑えて段階的に自分主導で進めたい留学生に最適なプランです。",
-        packagesRegularPayment: "サービス料：着手金0タカ・在留資格認定証明書（COE）交付後のお支払い",
+        packagesRegularPayment: "サービス料：在留資格認定証明書（COE）交付後のお支払い",
         packagesRegularHighlight: "COE交付前にはサービス料不要",
         packagesRegularFeaturesTitle: "プランに含まれる内容：",
         packagesRegularFeatures: [
-          "ファイル開設料無料（0 BDT）・申請ファイル作成支援",
+          "ファイル開設料無料・申請ファイル作成支援",
           "提携日本語学校・大学の選考および面接指導",
           "N5修了後の3大無料特講（大使館面接15日、履歴書10日、アルバイト面接指導）",
           "COE待機中の無料N4コース受講（3ヶ月間）",
@@ -496,8 +460,8 @@ export default function StudyInJapanClient() {
         packagesPremiumBadge: "一番人気 • 安心返金保証付き",
         packagesPremiumTag: "完全ワンストップ・プレミアム",
         packagesPremiumLabel: "プレミアムプラン",
-        packagesPremiumPrice: `${premiumFeeBdt.toLocaleString("en-US")} BDT`,
-        packagesPremiumInWords: "110万〜120万タカ（フルパッケージ）",
+        packagesPremiumPrice: "1,100,000 BDT",
+        packagesPremiumInWords: "110万バングラデシュタカ",
         packagesPremiumDesc: "主要費用をKNLTCが負担する完全ワンストップ・ストレスフリーのフルパッケージ。",
         packagesPremiumPayment: "契約時わずか10%（不交付時は全額返金）",
         packagesPremiumHighlight: "万一ビザ不交付の場合でも自己負担金ゼロ（100%返金保証）",
@@ -517,8 +481,8 @@ export default function StudyInJapanClient() {
         tableBadge: "Brochure Verified",
         colService: "サービス内容",
         colBudget: "目安予算 / 費用",
-        colRegular: `レギュラープラン（${regularFeeBdt.toLocaleString("en-US")} BDT）`,
-        colPremium: `プレミアムプラン（${premiumFeeBdt.toLocaleString("en-US")} BDT）`,
+        colRegular: "レギュラープラン（150,000 BDT）",
+        colPremium: "プレミアムプラン（1,100,000 BDT）",
         notesTitle: "パンフレット記載の重要注意事項および渡日案内",
         notePersonalTitle: "当面の個人生活費：",
         notePersonalDesc: "渡日時は現地当面の生活費として、必ず10万日本円（約80,000タカ）を各自現金でご持参ください。",
@@ -959,12 +923,12 @@ export default function StudyInJapanClient() {
         },
         language,
       ),
-      budget: translate({ bn: regFormattedBn, en: regFormattedEn, ja: `${regularFeeBdt.toLocaleString("en-US")} BDT` }, language),
+      budget: translate({ bn: "৳ ১,৫০,০০০", en: "BDT 150,000", ja: "150,000 BDT" }, language),
       regular: translate(
         {
-          bn: "ফাইল ওপেনিং ৳০ • ভিসা/COE আসার পর পরিশোধযোগ্য",
-          en: "BDT 0 File Opening • Payable after COE/Visa",
-          ja: "着手金0 BDT • COE交付後に支払い",
+          bn: "COE আসার পর পরিশোধযোগ্য",
+          en: "Payable after COE issuance",
+          ja: "COE交付後に支払い",
         },
         language,
       ),
@@ -1367,201 +1331,6 @@ export default function StudyInJapanClient() {
                 </div>
               </div>
             )}
-          </Card>
-
-          {/* Interactive Eligibility & 18 Lakh Bank Loan / Solvency Calculator */}
-          <Card className="mt-6 rounded-3xl border-2 border-stone-200 bg-white p-6 sm:p-8 shadow-xs">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-stone-100">
-              <div className="flex items-center gap-2.5">
-                <div className="h-10 w-10 rounded-xl bg-red-50 text-[#b91c1c] flex items-center justify-center">
-                  <Calculator className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-black text-slate-900 text-base sm:text-lg">
-                    {language === "bn"
-                      ? "ইন্টারেক্টিভ স্টুডেন্ট ভিসা যোগ্যতা ও ১৮ লক্ষ টাকা ব্যাংক সলভেন্সি ক্যালকুলেটর"
-                      : language === "ja"
-                        ? "日本留学ビザ適性＆180万タカ銀行残高・教育ローン診断"
-                        : "Interactive Student Visa Eligibility & 18L Bank Solvency Calculator"}
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    {language === "bn"
-                      ? "আপনার GPA, বয়স ও স্টাডি গ্যাপ দিয়ে তাৎক্ষণিক যাচাই করুন (GPA >= 2.5, Age <= 30, Gap <= 5-6 yrs)"
-                      : language === "ja"
-                        ? "成績（GPA 2.5以上）、年齢（30歳以下）、ブランク（5〜6年以内）を即時判定"
-                        : "Check your eligibility instantly (GPA >= 2.5, Age <= 30, Study Gap <= 5-6 years)"}
-                  </p>
-                </div>
-              </div>
-              <span
-                className={`text-xs font-bold px-3 py-1.5 rounded-full border w-fit ${
-                  isEligible
-                    ? "bg-emerald-50 text-[#15803d] border-emerald-200"
-                    : "bg-amber-50 text-amber-800 border-amber-200"
-                }`}
-              >
-                {isEligible
-                  ? language === "bn"
-                    ? "✓ আপনি আবেদনের জন্য যোগ্য (Eligible)"
-                    : language === "ja"
-                      ? "✓ 申請適格（Eligible）"
-                      : "✓ Eligible for Japan Student Visa"
-                  : language === "bn"
-                    ? "⚠ বিশেষ কাউন্সেলিং প্রয়োজন (Review Required)"
-                    : language === "ja"
-                      ? "⚠ 個別審査が必要"
-                      : "⚠ Requires Special Case Assessment"}
-              </span>
-            </div>
-
-            <div className="grid gap-6 lg:grid-cols-12 pt-5 items-start">
-              <div className="lg:col-span-7 grid gap-4 sm:grid-cols-2">
-                <div className="rounded-xl border border-stone-200 bg-[#faf8f5] p-3.5">
-                  <div className="flex justify-between text-xs font-bold text-slate-800 mb-1.5">
-                    <span>{language === "bn" ? "সর্বনিম্ন GPA (SSC/HSC)" : "Minimum GPA (SSC/HSC)"}</span>
-                    <span className="font-mono text-[#b91c1c]">{calcGpa.toFixed(2)} / 5.00</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="2.0"
-                    max="5.0"
-                    step="0.1"
-                    value={calcGpa}
-                    onChange={(e) => setCalcGpa(parseFloat(e.target.value))}
-                    className="w-full accent-[#b91c1c] cursor-pointer"
-                  />
-                  <p className="text-[11px] text-slate-500 mt-1">
-                    {language === "bn" ? "ন্যূনতম প্রয়োজন: GPA ২.৫০+" : "Minimum required: GPA 2.50+"}
-                  </p>
-                </div>
-
-                <div className="rounded-xl border border-stone-200 bg-[#faf8f5] p-3.5">
-                  <div className="flex justify-between text-xs font-bold text-slate-800 mb-1.5">
-                    <span>{language === "bn" ? "বর্তমান বয়স (Age)" : "Current Age"}</span>
-                    <span className="font-mono text-[#b91c1c]">{calcAge} yrs</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="17"
-                    max="35"
-                    step="1"
-                    value={calcAge}
-                    onChange={(e) => setCalcAge(parseInt(e.target.value, 10))}
-                    className="w-full accent-[#b91c1c] cursor-pointer"
-                  />
-                  <p className="text-[11px] text-slate-500 mt-1">
-                    {language === "bn" ? "অনুমোদিত বয়সসীমা: ১৮ – ৩০ বছর" : "Standard age limit: 18 – 30 years"}
-                  </p>
-                </div>
-
-                <div className="rounded-xl border border-stone-200 bg-[#faf8f5] p-3.5">
-                  <div className="flex justify-between text-xs font-bold text-slate-800 mb-1.5">
-                    <span>{language === "bn" ? "স্টাডি গ্যাপ (Study Gap)" : "Study Gap (Years)"}</span>
-                    <span className="font-mono text-[#b91c1c]">{calcGap} yrs</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="10"
-                    step="1"
-                    value={calcGap}
-                    onChange={(e) => setCalcGap(parseInt(e.target.value, 10))}
-                    className="w-full accent-[#b91c1c] cursor-pointer"
-                  />
-                  <p className="text-[11px] text-slate-500 mt-1">
-                    {language === "bn" ? "সর্বোচ্চ গ্রহণযোগ্য: ৫–৬ বছর" : "Acceptable up to 5–6 years"}
-                  </p>
-                </div>
-
-                <div className="rounded-xl border border-stone-200 bg-[#faf8f5] p-3.5 flex flex-col justify-between">
-                  <span className="text-xs font-bold text-slate-800">
-                    {language === "bn"
-                      ? "১৮ লক্ষ টাকা স্পন্সর / ব্যাংক লোন সহায়তা"
-                      : "18 Lakh BDT Sponsor / Bank Loan"}
-                  </span>
-                  <div className="flex gap-2 mt-2">
-                    <button
-                      type="button"
-                      onClick={() => setCalcNeedLoan(false)}
-                      className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] font-bold border transition ${
-                        !calcNeedLoan
-                          ? "bg-slate-900 text-white border-slate-900"
-                          : "bg-white text-slate-600 border-stone-200"
-                      }`}
-                    >
-                      {language === "bn" ? "নিজস্ব ফান্ড আছে" : "Own Sponsor"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCalcNeedLoan(true)}
-                      className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] font-bold border transition ${
-                        calcNeedLoan
-                          ? "bg-[#b91c1c] text-white border-[#b91c1c]"
-                          : "bg-white text-slate-600 border-stone-200"
-                      }`}
-                    >
-                      {language === "bn" ? "ব্যাংক লোন প্রয়োজন" : "Need Bank Loan"}
-                    </button>
-                  </div>
-                  <p className="text-[10px] text-slate-500 mt-1.5">
-                    {calcJapanese === "NONE" ? "" : ""}
-                    {language === "bn"
-                      ? "অনুমোদিত লোন ব্যাংক: অগ্রণী, সোশ্যাল ইসলামী ও পূবালী ব্যাংক"
-                      : "Partner loan guidance: Agrani, Social Islami & Pubali Bank"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="lg:col-span-5 rounded-2xl border border-stone-200 bg-[#faf8f5] p-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                    {language === "bn" ? "মূল্যায়ন ফলাফল" : "Assessment Summary"}
-                  </span>
-                  <span className="text-xs font-bold text-[#15803d]">
-                    {language === "bn" ? "স্পন্সর প্রয়োজন: ৳ ১৮,০০,০০০" : "Sponsor Required: BDT 1,800,000"}
-                  </span>
-                </div>
-                <p className="text-xs sm:text-sm font-semibold text-slate-800 leading-relaxed">
-                  {isEligible
-                    ? language === "bn"
-                      ? "অভিনন্দন! আপনার প্রোফাইল জাপানের স্টুডেন্ট ভিসার (জুলাই ও অক্টোবর ২০২৭ সেশন) জন্য শতভাগ উপযুক্ত। আপনি ৳০ ফাইল ওপেনিংয়ে রেগুলার প্যাকেজ (ভিসা পর ৳ ১,২০,০০০) অথবা প্রিমিয়াম প্যাকেজে ফাইল ওপেন করতে পারবেন।"
-                      : "Great news! Your profile meets Japan Immigration requirements for upcoming intakes. You can start with BDT 0 file opening under our Regular Package (BDT 120,000 post-visa) or All-in-One Premium Package."
-                    : language === "bn"
-                      ? "আপনার GPA, বয়স বা স্টাডি গ্যাপ স্ট্যান্ডার্ড সীমার বাইরে থাকায় আমাদের এক্সপার্ট ভিসা কাউন্সেলরের সাথে স্পেশাল SOP ও জব এক্সপেরিয়েন্স ডকুমেন্টেশন নিয়ে পরামর্শ করুন।"
-                      : "Since one of your parameters is outside the standard range, please book a free 1-on-1 evaluation with our senior visa officer for special SOP & career justification."}
-                </p>
-
-                <div className="rounded-xl bg-white border border-stone-200 p-3 text-xs space-y-1.5">
-                  <p className="font-bold text-slate-900">
-                    {language === "bn"
-                      ? "১৮ লক্ষ টাকা ব্যাংক সলভেন্সি ও এডুকেশন লোন গাইডলাইন:"
-                      : "18 Lakh BDT Solvency & Education Loan Guidance:"}
-                  </p>
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    {loanBanks.map((bank) => (
-                      <span
-                        key={bank}
-                        className="inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[11px] font-bold text-[#15803d]"
-                      >
-                        <Landmark className="h-3 w-3" />
-                        {bank}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <Button asChild className="w-full bg-[#15803d] hover:bg-emerald-700 text-white rounded-xl font-bold text-xs py-4">
-                  <Link href="/contact" className="flex items-center justify-center gap-1.5">
-                    <span>
-                      {language === "bn"
-                        ? "ফ্রি প্রোফাইল অ্যাসেসমেন্ট বুক করুন"
-                        : "Book Free Profile Assessment"}
-                    </span>
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </Link>
-                </Button>
-              </div>
-            </div>
           </Card>
         </section>
 

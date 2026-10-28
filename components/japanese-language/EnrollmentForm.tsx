@@ -20,8 +20,6 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
 import { trackLead } from "@/lib/meta-pixel";
-import { useKnlTcCms } from "@/hooks/use-knltc-cms";
-import { submitPublicCourseEnrollment } from "@/lib/knltc-cms-store";
 
 type CourseOption = "N5_COURSE" | "N4_COURSE" | "IRODORI_JAPANESE" | "ADVANCED_LEVELS";
 type ClassModeOption = "ONLINE_LIVE" | "OFFLINE_PALTAN" | "OFFLINE_DHANMONDI";
@@ -29,15 +27,6 @@ type VisaPurposeOption = "STUDENT_VISA" | "SSW_JOB" | "TITP_INTERN" | "CAREER_SK
 
 export default function EnrollmentForm() {
   const { language } = useLanguage();
-  const { cms } = useKnlTcCms();
-
-  const n5FeeEn = `৳${(cms.languageCoursePage?.n5PriceBdt || 12000).toLocaleString("en-US")}`;
-  const n4FeeEn = `৳${(cms.languageCoursePage?.n4PriceBdt || 12000).toLocaleString("en-US")}`;
-  const n5FeeBn = `৳${(cms.languageCoursePage?.n5PriceBdt || 12000).toLocaleString("bn-BD")}`;
-  const n4FeeBn = `৳${(cms.languageCoursePage?.n4PriceBdt || 12000).toLocaleString("bn-BD")}`;
-  const lmsUrl = cms.languageCoursePage?.externalLmsUrl || "https://npw.bd/knltc";
-  const waDigits = (cms?.contactWhatsApp || "+8801805013633").replace(/\D/g, "");
-
   const t = translate(
     {
       en: {
@@ -65,12 +54,12 @@ export default function EnrollmentForm() {
           {
             id: "N5_COURSE" as CourseOption,
             name: "Japanese N5 Level Course",
-            details: `3 Months • ${n5FeeEn} (3 Free Bonus Courses Included)`,
+            details: "3 Months • ৳12,000 (3 Free Bonus Courses Included)",
           },
           {
             id: "N4_COURSE" as CourseOption,
             name: "Japanese N4 Level Course",
-            details: `3 Months • ${n4FeeEn} (SSW Job Visa & University Preparation)`,
+            details: "3 Months • ৳14,500 (SSW Job Visa & University Preparation)",
           },
           {
             id: "IRODORI_JAPANESE" as CourseOption,
@@ -132,12 +121,12 @@ export default function EnrollmentForm() {
           {
             id: "N5_COURSE" as CourseOption,
             name: "Japanese N5 Level Course",
-            details: `৩ মাস মেয়াদি • ফি: ${n5FeeBn} (৩টি স্পেশাল ফ্রি বোনাস কোর্সসহ)`,
+            details: "৩ মাস মেয়াদি • ফি: ৳১২,০০০ (৩টি স্পেশাল ফ্রি বোনাস কোর্সসহ)",
           },
           {
             id: "N4_COURSE" as CourseOption,
             name: "Japanese N4 Level Course",
-            details: `৩ মাস মেয়াদি • ফি: ${n4FeeBn} (SSW জব ভিসা ও বিশ্ববিদ্যালয় প্রস্তুতি)`,
+            details: "৩ মাস মেয়াদি • ফি: ৳১৪,৫০০ (SSW জব ভিসা ও বিশ্ববিদ্যালয় প্রস্তুতি)",
           },
           {
             id: "IRODORI_JAPANESE" as CourseOption,
@@ -199,12 +188,12 @@ export default function EnrollmentForm() {
           {
             id: "N5_COURSE" as CourseOption,
             name: "日本語N5集中講座",
-            details: `3ヶ月 • ${n5FeeEn} (大使館面接・履歴書3大特典付帯)`,
+            details: "3ヶ月 • ৳12,000 (大使館面接・履歴書3大特典付帯)",
           },
           {
             id: "N4_COURSE" as CourseOption,
             name: "日本語N4中級講座",
-            details: `3ヶ月 • ${n4FeeEn} (特定技能就労・進学対策)`,
+            details: "3ヶ月 • ৳14,500 (特定技能就労・進学対策)",
           },
           {
             id: "IRODORI_JAPANESE" as CourseOption,
@@ -326,20 +315,6 @@ export default function EnrollmentForm() {
         : t.purposeCareer;
 
     setTimeout(() => {
-      try {
-        submitPublicCourseEnrollment({
-          name: cleanName,
-          phone: cleanPhone,
-          whatsapp: cleanWa,
-          courseId: course,
-          classMode,
-          purpose,
-          referenceId,
-        });
-      } catch {
-        // Safe fallback
-      }
-
       setSubmittedData({
         id: referenceId,
         name: cleanName,
@@ -370,14 +345,14 @@ export default function EnrollmentForm() {
   };
 
   const buildWhatsAppExpediteLink = () => {
-    if (!submittedData) return `https://wa.me/${waDigits}`;
+    if (!submittedData) return "https://wa.me/8801805013633";
     const message =
       language === "bn"
         ? `আসসালামু আলাইকুম KNLTC,\nআমি ${submittedData.name}।\nআমি ${submittedData.courseLabel} কোর্সে ভর্তির আবেদন করেছি।\nরেফারেন্স আইডি: ${submittedData.id}\nমোবাইল: ${submittedData.phone}\nহোয়াটসঅ্যাপ: ${submittedData.whatsapp}\nক্লাস মোড: ${submittedData.classModeLabel}\n\nআমার ডিজিটাল ক্লাসরুমের LMS আইডি ও পাসওয়ার্ড পাওয়ার জন্য যোগাযোগ করছি। ধন্যবাদ!`
         : language === "ja"
         ? `こんにちは KNLTC事務局様、\n${submittedData.name}と申します。\nコース「${submittedData.courseLabel}」への受講申請を完了しました。\n受付ID: ${submittedData.id}\n電話番号: ${submittedData.phone}\nWhatsApp: ${submittedData.whatsapp}\n受講形式: ${submittedData.classModeLabel}\n\n公式LMSのログイン情報のご案内をお願いいたします。`
         : `Hello KNLTC Admissions,\nMy name is ${submittedData.name}.\nI submitted an application for: ${submittedData.courseLabel}.\nReference ID: ${submittedData.id}\nPhone: ${submittedData.phone}\nWhatsApp: ${submittedData.whatsapp}\nClass Mode: ${submittedData.classModeLabel}\n\nI am contacting you to verify my admission and receive my student LMS classroom login credentials. Thank you!`;
-    return `https://wa.me/${waDigits}?text=${encodeURIComponent(message)}`;
+    return `https://wa.me/8801805013633?text=${encodeURIComponent(message)}`;
   };
 
   const currentCourseObj = t.courses.find((c) => c.id === course);
@@ -676,7 +651,7 @@ export default function EnrollmentForm() {
                   className="w-full border-red-200 text-[#b91c1c] hover:bg-red-50 font-bold text-xs sm:text-sm py-4 rounded-xl active:scale-[0.98] transition-transform"
                 >
                   <a
-                    href={lmsUrl}
+                    href="https://npw.bd/knltc"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-1.5"

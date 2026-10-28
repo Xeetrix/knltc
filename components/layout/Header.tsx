@@ -25,7 +25,6 @@ import { useLanguage } from "@/components/layout/LanguageProvider";
 import { defaultLanguage, languageOptions, translate, type Language } from "@/lib/i18n";
 import { siteConfig } from "@/lib/site";
 import StoreNavbar from "@/components/store/StoreNavbar";
-import { useKnlTcCms } from "@/hooks/use-knltc-cms";
 
 function StoreHeader() {
   return <StoreNavbar />;
@@ -37,12 +36,6 @@ function MainHeader({ pathname }: { pathname: string }) {
   const menuPanelRef = useRef<HTMLDivElement | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
   const { language, setLanguage } = useLanguage();
-  const { cms } = useKnlTcCms();
-
-  const livePhoneDisplay = cms?.contactHotline || siteConfig.phoneDisplay;
-  const livePhoneHref = `tel:${livePhoneDisplay.replace(/\s+/g, "")}`;
-  const liveWaNumber = (cms?.contactWhatsApp || "8801805013633").replace(/\D/g, "");
-  const liveWaHref = `https://wa.me/${liveWaNumber}`;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -159,44 +152,25 @@ function MainHeader({ pathname }: { pathname: string }) {
     };
   }, [mobileOpen]);
 
-  const announcement = cms?.topAnnouncementBar;
-
   return (
     <>
-      {/* Dynamic CMS Top Announcement Bar */}
-      {announcement?.enabled && announcement.text?.[language] && (
-        <div className="bg-slate-900 text-slate-100 text-[11px] sm:text-xs py-1.5 px-3 border-b border-slate-800 relative z-40">
-          <div className="container-narrow flex flex-wrap items-center justify-between gap-2">
-            <p className="font-medium leading-snug">{announcement.text[language]}</p>
-            {announcement.actionLinkText?.[language] && (
-              <Link
-                href={announcement.actionUrl || "/contact"}
-                className="inline-flex items-center gap-1 font-bold text-amber-300 hover:text-amber-200 underline underline-offset-2 shrink-0"
-              >
-                <span>{announcement.actionLinkText[language]}</span>
-              </Link>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* Top Utility Bar - Clean, Slim & Professional */}
       <div className="bg-[#b91c1c] text-white text-[11px] sm:text-xs font-medium py-1.5 border-b border-red-800/40 relative z-40">
         <div className="container-narrow flex items-center justify-between gap-3">
           {/* Left contact info */}
           <div className="flex items-center gap-3.5">
             <a
-              href={livePhoneHref}
+              href={siteConfig.phoneHref}
               className="flex items-center gap-1.5 opacity-90 hover:opacity-100 transition-opacity"
             >
               <Phone className="h-3 w-3 text-red-200" />
-              <span>{livePhoneDisplay}</span>
+              <span>{siteConfig.phoneDisplay}</span>
             </a>
 
             <span className="text-white/40">|</span>
 
             <a
-              href={liveWaHref}
+              href="https://wa.me/8801805013633"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 opacity-90 hover:opacity-100 transition-opacity font-semibold"

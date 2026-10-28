@@ -17,23 +17,18 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>("en");
 
   useEffect(() => {
-    const applyLang = (val: Language) => {
-      setLanguageState(val);
-      document.documentElement.lang = val;
-    };
-
     // Ensure default English migration once so old cached "bn" is reset to "en"
     const hasDefaultEnMigrated = window.localStorage.getItem("knltc-default-en-v2");
     if (!hasDefaultEnMigrated) {
       window.localStorage.setItem(languageStorageKey, "en");
       window.localStorage.setItem("knltc-default-en-v2", "true");
-      applyLang("en");
+      setLanguageState("en");
     } else {
       const stored = window.localStorage.getItem(languageStorageKey) as Language | null;
       if (stored === "en" || stored === "bn" || stored === "ja") {
-        applyLang(stored);
+        setLanguageState(stored);
       } else {
-        applyLang("en");
+        setLanguageState("en");
         window.localStorage.setItem(languageStorageKey, "en");
       }
     }
@@ -41,13 +36,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     const onCustomEvent = () => {
       const current = window.localStorage.getItem(languageStorageKey) as Language | null;
       if (current === "en" || current === "bn" || current === "ja") {
-        applyLang(current);
+        setLanguageState(current);
       }
     };
 
     const onStorage = (e: StorageEvent) => {
       if (e.key === languageStorageKey && (e.newValue === "en" || e.newValue === "bn" || e.newValue === "ja")) {
-        applyLang(e.newValue as Language);
+        setLanguageState(e.newValue as Language);
       }
     };
 
@@ -62,7 +57,6 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const setLanguage = (nextLanguage: Language) => {
     setLanguageState(nextLanguage);
     window.localStorage.setItem(languageStorageKey, nextLanguage);
-    document.documentElement.lang = nextLanguage;
     window.dispatchEvent(new Event("knltc-language-changed"));
   };
 

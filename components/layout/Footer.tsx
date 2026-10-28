@@ -16,27 +16,14 @@ import BrandLogo from "@/components/layout/BrandLogo";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
 import { siteConfig } from "@/lib/site";
-import { useKnlTcCms } from "@/hooks/use-knltc-cms";
 
 export default function Footer() {
   const pathname = usePathname();
   const { language } = useLanguage();
-  const { cms } = useKnlTcCms();
 
   if (pathname.startsWith("/dashboard") || pathname.startsWith("/admin/login")) {
     return null;
   }
-
-  const livePhoneDisplay = cms?.contactHotline || siteConfig.phoneDisplay;
-  const livePhoneHref = `tel:${livePhoneDisplay.replace(/\s+/g, "")}`;
-  const liveEmail = cms?.contactEmail || siteConfig.email;
-  const liveWaNumber = (cms?.contactWhatsApp || "8801805013633").replace(/\D/g, "");
-  const liveWaHref = `https://wa.me/${liveWaNumber}`;
-  const liveDhakaAddress =
-    cms?.dhakaOfficeAddress?.[language] ||
-    "Sky View Trade Valley (8th Floor), 66/1 VIP Road, Naya Paltan, Dhaka";
-  const liveKhulnaAddress = cms?.khulnaOfficeAddress?.[language];
-  const liveLmsUrl = cms?.languageCoursePage?.externalLmsUrl || "https://npw.bd/knltc";
 
   const t = translate(
     {
@@ -44,11 +31,11 @@ export default function Footer() {
         desc: "KNLTC (Japan Gateway) — Japan Education & Career Consultancy. Dedicated pathways for Higher Education, SSW & TITP employment, and professional Japanese language certification.",
         quick: "Quick Navigation",
         contact: "Official Office & Contact",
+        address: "Sky View Trade Valley (8th Floor), 66/1 VIP Road, Naya Paltan, Dhaka",
         rights: "All rights reserved.",
         lmsTitle: "Online LMS Portal",
         lmsDesc: "Current students can access live classes and study materials directly on our digital learning management system.",
         lmsBtn: "Student LMS Login",
-        trustpilotLabel: "Review us on Trustpilot",
         links: [
           { label: "Study in Japan", href: "/study-in-japan" },
           { label: "Work in Japan (SSW & TITP)", href: "/work-in-japan" },
@@ -63,11 +50,11 @@ export default function Footer() {
         desc: "KNLTC (জাপান গেটওয়ে) — জাপান এডুকেশন অ্যান্ড ক্যারিয়ার কনসালটেন্সি। জাপানে উচ্চশিক্ষা, SSW ও TITP জব ভিসা এবং মানসম্মত জাপানি ভাষা শিক্ষার পূর্ণাঙ্গ নির্ভরযোগ্য প্রতিষ্ঠান।",
         quick: "প্রয়োজনীয় লিংক",
         contact: "অফিস ও সরাসরি যোগাযোগ",
+        address: "স্কাই ভিউ ট্রেড ভ্যালি (৯ম তলা), ৬৬/১ ভিআইপি রোড, নয়া পল্টন, ঢাকা",
         rights: "সর্বস্বত্ব সংরক্ষিত।",
         lmsTitle: "অনলাইন LMS ক্লাসরুম",
         lmsDesc: "ভর্তিকৃত শিক্ষার্থীরা সরাসরি KNLTC ডিজিটাল লার্নিং পোর্টালে লগইন করে লাইভ ক্লাস ও লেকচার শিট এক্সেস করতে পারবেন।",
         lmsBtn: "শিক্ষার্থী LMS লগইন",
-        trustpilotLabel: "Trustpilot-এ রিভিউ দেখুন",
         links: [
           { label: "জাপানে পড়াশোনা", href: "/study-in-japan" },
           { label: "জাপানে কাজ (SSW ও TITP)", href: "/work-in-japan" },
@@ -82,11 +69,11 @@ export default function Footer() {
         desc: "KNLTC（ジャパンゲートウェイ）— 日本留学・就労・在留資格総合支援センター。留学ビザ、特定技能就労、日本語教育のトータルサポート。",
         quick: "主なリンク",
         contact: "オフィス・お問い合わせ",
+        address: "Sky View Trade Valley (8th Floor), 66/1 VIP Road, Naya Paltan, Dhaka",
         rights: "無断転載を禁じます。",
         lmsTitle: "オンラインLMS教室",
         lmsDesc: "受講生は専用ポータルよりライブ講義や教材アーカイブをご利用いただけます。",
         lmsBtn: "受講生 LMSログイン",
-        trustpilotLabel: "Trustpilotで評価を見る",
         links: [
           { label: "日本留学", href: "/study-in-japan" },
           { label: "日本就労（特定技能・実習）", href: "/work-in-japan" },
@@ -131,24 +118,13 @@ export default function Footer() {
                 <Instagram className="h-4 w-4" />
               </a>
               <a
-                href={liveWaHref}
+                href="https://wa.me/8801805013633"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 border border-slate-800 text-emerald-400 hover:text-emerald-300 hover:border-slate-700 transition"
                 aria-label="WhatsApp"
               >
                 <MessageCircle className="h-4 w-4" />
-              </a>
-            </div>
-            <div className="pt-1">
-              <a
-                href="https://www.trustpilot.com/review/knltc.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition"
-              >
-                <span>★ {t.trustpilotLabel}</span>
-                <ExternalLink className="h-3 w-3" />
               </a>
             </div>
           </div>
@@ -181,44 +157,36 @@ export default function Footer() {
               <li className="flex items-start gap-2.5">
                 <MapPin className="h-4 w-4 text-[#b91c1c] shrink-0 mt-0.5" />
                 <span className="leading-snug text-slate-300">
-                  {liveDhakaAddress}
+                  {t.address}
                 </span>
               </li>
-              {liveKhulnaAddress && (
-                <li className="flex items-start gap-2.5">
-                  <MapPin className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
-                  <span className="leading-snug text-slate-400 text-xs">
-                    {liveKhulnaAddress}
-                  </span>
-                </li>
-              )}
               <li className="flex items-center gap-2.5">
                 <Phone className="h-4 w-4 text-[#b91c1c] shrink-0" />
                 <a
-                  href={livePhoneHref}
+                  href={siteConfig.phoneHref}
                   className="text-slate-300 hover:text-white font-medium transition"
                 >
-                  {livePhoneDisplay}
+                  {siteConfig.phoneDisplay}
                 </a>
               </li>
               <li className="flex items-center gap-2.5">
                 <Mail className="h-4 w-4 text-[#b91c1c] shrink-0" />
                 <a
-                  href={`mailto:${liveEmail}`}
+                  href={`mailto:${siteConfig.email}`}
                   className="text-slate-300 hover:text-white transition"
                 >
-                  {liveEmail}
+                  {siteConfig.email}
                 </a>
               </li>
               <li className="flex items-center gap-2.5">
                 <MessageCircle className="h-4 w-4 text-[#15803d] shrink-0" />
                 <a
-                  href={liveWaHref}
+                  href="https://wa.me/8801805013633"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-emerald-400 hover:underline font-semibold"
                 >
-                  WhatsApp: {livePhoneDisplay}
+                  WhatsApp: +880 1805 013633
                 </a>
               </li>
             </ul>
@@ -235,7 +203,7 @@ export default function Footer() {
             </p>
             <div className="pt-2">
               <a
-                href={liveLmsUrl}
+                href="https://npw.bd/knltc"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-1.5 w-full rounded-xl bg-[#b91c1c] hover:bg-red-800 text-white font-semibold text-xs py-2.5 px-3 transition shadow-xs"
@@ -252,16 +220,7 @@ export default function Footer() {
           <div>
             © {new Date().getFullYear()} KNLTC (Japan Gateway). {t.rights}
           </div>
-          <div className="flex flex-wrap items-center gap-4">
-            <a
-              href="https://www.trustpilot.com/review/knltc.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-emerald-400 hover:underline font-semibold"
-            >
-              Trustpilot Reviews
-            </a>
-            <span>•</span>
+          <div className="flex items-center gap-4">
             <Link href="/privacy-policy" className="hover:text-slate-400 transition">
               Privacy Policy
             </Link>
@@ -271,7 +230,7 @@ export default function Footer() {
             </Link>
             <span>•</span>
             <a
-              href={liveLmsUrl}
+              href="https://npw.bd/knltc"
               target="_blank"
               rel="noopener noreferrer"
               className="text-[#b91c1c] hover:underline font-semibold"
