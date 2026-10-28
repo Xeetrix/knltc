@@ -129,6 +129,17 @@ export async function POST(request: Request) {
       return NextResponse.json(syncResult);
     }
 
+    if (action === "PURGE_DUMMY_DATA" || action === "PURGE_ALL_DUMMY") {
+      const result = await mutateSheetTable({
+        action: "PURGE_DUMMY_DATA",
+      });
+      return NextResponse.json({
+        ok: true,
+        message: "All dummy data successfully purged from database and local fallback.",
+        data: result,
+      });
+    }
+
     if (
       action === "CREATE" ||
       action === "INSERT" ||

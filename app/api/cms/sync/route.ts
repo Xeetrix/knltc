@@ -156,6 +156,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, message: "Full store synced to Google Sheets" });
     }
 
+    if ((type as string) === "PURGE_ALL_DUMMY" || entity === "PURGE_ALL_DUMMY") {
+      snapshot.crmLeads = [];
+      snapshot.visaApplicants = [];
+      snapshot.lmsBridges = [];
+      snapshot.b2bAgents = [];
+      snapshot.transactions = [];
+      if (snapshot.websiteCms?.[0]) {
+        snapshot.websiteCms[0].customerOrders = [];
+      }
+      await writeServerSnapshot(snapshot);
+      return NextResponse.json({ ok: true, message: "Server snapshot purged of dummy data" });
+    }
+
     if (type === "CMS_UPDATE" && payload) {
       snapshot.websiteCms = [payload];
       await writeServerSnapshot(snapshot);

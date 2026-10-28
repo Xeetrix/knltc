@@ -318,12 +318,54 @@ function setupKNLTCDatabase() {
   // Ensure Google Drive upload root folder is ready
   getOrCreateDriveFolder(DRIVE_ROOT_FOLDER_NAME);
 
-  Logger.log("✅ KNLTC Master Database Setup Complete! All 15 tables created, styled, and seeded.");
+  Logger.log("✅ KNLTC Master Database Setup Complete! All 15 tables created, styled, and ready.");
   return {
     ok: true,
     tablesCreated: tableNames,
     timestamp: nowIso
   };
+}
+
+/**
+ * ============================================================================
+ * ONE-CLICK PURGE FUNCTION FOR GOOGLE APPS SCRIPT
+ * Run this function directly inside Apps Script editor to clear all dummy
+ * test data from your Google Sheet while keeping Row 1 headers intact!
+ * ============================================================================
+ */
+function purgeAllDummyDataFromSheets() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var dummyTables = [
+    "knltc_crm_leads",
+    "knltc_visa_applicants",
+    "knltc_lms_bridges",
+    "knltc_b2b_agents",
+    "knltc_finance_transactions",
+    "orders",
+    "order_items",
+    "product_reviews",
+    "wishlist_items"
+  ];
+
+  var purged = {};
+  for (var i = 0; i < dummyTables.length; i++) {
+    var tName = dummyTables[i];
+    var sheet = ss.getSheetByName(tName);
+    if (sheet) {
+      var lastRow = sheet.getLastRow();
+      if (lastRow > 1) {
+        var numRowsToDelete = lastRow - 1;
+        sheet.deleteRows(2, numRowsToDelete);
+        purged[tName] = numRowsToDelete + " rows deleted";
+      } else {
+        purged[tName] = "Already clean (0 rows)";
+      }
+    }
+  }
+
+  Logger.log("✅ All dummy test data successfully purged from Google Sheet!");
+  Logger.log(JSON.stringify(purged, null, 2));
+  return { ok: true, message: "All dummy data purged successfully", purged: purged };
 }
 
 /**
@@ -597,6 +639,11 @@ function doPost(e) {
         deleted: deleted,
         id: targetId
       });
+    }
+
+    if (action === "PURGE_DUMMY_DATA" || action === "PURGE_ALL_DUMMY") {
+      var purgeResult = purgeAllDummyDataFromSheets();
+      return jsonResponse(purgeResult);
     }
 
     return jsonResponse({
@@ -1069,390 +1116,31 @@ function getInitialSeedDataForTable(tableName, nowIso) {
       ];
 
     case "knltc_b2b_agents":
-      return [
-        {
-          id: "agent-khulna-01",
-          organization_name: "Sundarban Overseas & Language Point",
-          agent_type: "LOCAL_SUB_AGENT",
-          contact_person: "Md. Rafiqul Islam",
-          phone: "01712556677",
-          city: "Khulna",
-          referred_students_count: 9,
-          successful_visas_count: 4,
-          agreed_commission_bdt: 30000,
-          pending_commission_bdt: 30000,
-          paid_commission_bdt: 90000,
-          logo_url: "",
-          trade_license_no: "KCC-TL-2024-8821",
-          nid_or_passport_no: "1988271645001",
-          bank_name: "Islami Bank Bangladesh PLC",
-          bank_account_no: "205011702044556",
-          bkash_or_nagad_no: "01712556677",
-          created_at: nowIso
-        },
-        {
-          id: "agent-uttara-02",
-          organization_name: "Nihon Gateway Consultancy",
-          agent_type: "LANGUAGE_CENTER_PARTNER",
-          contact_person: "Kamrul Hasan",
-          phone: "01819334455",
-          city: "Gazipur / Uttara",
-          referred_students_count: 6,
-          successful_visas_count: 3,
-          agreed_commission_bdt: 35000,
-          pending_commission_bdt: 35000,
-          paid_commission_bdt: 70000,
-          logo_url: "",
-          trade_license_no: "DNCC-TL-2025-1109",
-          nid_or_passport_no: "1990441827332",
-          bank_name: "Dutch-Bangla Bank PLC",
-          bank_account_no: "1101050099881",
-          bkash_or_nagad_no: "01819334455",
-          created_at: nowIso
-        }
-      ];
+      return [];
 
     case "knltc_crm_leads":
-      return [
-        {
-          id: "lead-101",
-          name: "মোঃ তানভীর আহমেদ (Md. Tanvir Ahmed)",
-          phone: "01711223344",
-          whatsapp: "01711223344",
-          email: "tanvir.student@knltc.com",
-          city: "Dhaka",
-          source: "WEBSITE_FORM",
-          interest: "STUDENT_VISA_REGULAR",
-          status: "ADMITTED",
-          education: "HSC 2024 (GPA 4.83)",
-          japanese_proficiency: "PASSED_N5",
-          study_gap_years: 1,
-          assigned_to: "শেখ বাসেত (Sheikh Baset)",
-          branch: "DHK-HQ",
-          notes: "Regular Package (1,20,000 BDT) + N5 Course (12,000 BDT). Assigned to HLA Gakuin Hiroshima.",
-          follow_up_date: "2026-11-10",
-          last_contacted_at: nowIso,
-          created_at: nowIso
-        },
-        {
-          id: "lead-102",
-          name: "সাদিয়া ইসলাম (Sadia Islam)",
-          phone: "01815667788",
-          whatsapp: "01815667788",
-          email: "sadia.japan@knltc.com",
-          city: "Khulna",
-          source: "FACEBOOK_META",
-          interest: "STUDENT_VISA_PREMIUM",
-          status: "ADMITTED",
-          education: "HSC 2023 (GPA 5.00)",
-          japanese_proficiency: "LEARNING_N5",
-          study_gap_years: 2,
-          assigned_to: "মেহেদী হাসান (Mehedi Hasan)",
-          branch: "KHULNA-01",
-          notes: "Premium All-Inclusive Package (11,50,000 BDT — 1 Year Tuition + Hostel + COE included).",
-          follow_up_date: "2026-11-12",
-          last_contacted_at: nowIso,
-          created_at: nowIso
-        },
-        {
-          id: "lead-103",
-          name: "রাকিবুল হাসান (Rakibulul Hasan)",
-          phone: "01922334455",
-          whatsapp: "01922334455",
-          email: "rakibul.ssw@gmail.com",
-          city: "Narayanganj",
-          source: "WHATSAPP_DIRECT",
-          interest: "JAPANESE_N5",
-          status: "COUNSELED",
-          education: "Diploma in Civil Engineering (CGPA 3.65)",
-          japanese_proficiency: "LEARNING_N5",
-          study_gap_years: 1,
-          assigned_to: "শারমিন আক্তার (Sharmin Akter)",
-          branch: "DHK-HQ",
-          notes: "Enrolled in 12,000 BDT N5 Batch with https://npw.bd/knltc LMS portal access.",
-          follow_up_date: "2026-11-08",
-          last_contacted_at: nowIso,
-          created_at: nowIso
-        }
-      ];
+      return [];
 
     case "knltc_visa_applicants":
-      return [
-        {
-          id: "visa-201",
-          lead_id: "lead-101",
-          tracking_no: "KNLTC-VISA-2027-01",
-          name: "মোঃ তানভীর আহমেদ (Md. Tanvir Ahmed)",
-          phone: "01711223344",
-          branch: "DHK-HQ",
-          package_type: "REGULAR",
-          intake_session: "APRIL_2027",
-          stage: 6,
-          target_school: "HLA Gakuin Hiroshima (Hiroshima Language Academy)",
-          partner_school_id: "sch-hla-hiroshima",
-          b2b_agent_id: "",
-          b2b_agent_name: "Direct KNLTC Admission",
-          visa_officer_id: "stf-01",
-          visa_officer_name: "Sheikh Baset",
-          contract_amount_bdt: 120000,
-          paid_amount_bdt: 60000,
-          due_amount_bdt: 60000,
-          sponsor_name: "Md. Abdul Karim",
-          sponsor_relation: "FATHER",
-          sponsor_bank: "Agrani Bank PLC",
-          sponsor_balance_bdt: 1950000,
-          bank_loan_assistance: false,
-          bank_loan_bank: "",
-          coe_status: "APPROVED",
-          visa_status: "IN_PROCESS",
-          counselor_name: "শেখ বাসেত (Sheikh Baset)",
-          updated_at: nowIso,
-          created_at: nowIso
-        },
-        {
-          id: "visa-202",
-          lead_id: "lead-102",
-          tracking_no: "KNLTC-VISA-2027-02",
-          name: "সাদিয়া ইসলাম (Sadia Islam)",
-          phone: "01815667788",
-          branch: "KHULNA-01",
-          package_type: "PREMIUM",
-          intake_session: "APRIL_2027",
-          stage: 4,
-          target_school: "Tokyo International Japanese Academy (Shinjuku)",
-          partner_school_id: "sch-tokyo-central",
-          b2b_agent_id: "agent-khulna-01",
-          b2b_agent_name: "Sundarban Overseas & Language Point",
-          visa_officer_id: "stf-01",
-          visa_officer_name: "Sheikh Baset",
-          contract_amount_bdt: 1150000,
-          paid_amount_bdt: 250000,
-          due_amount_bdt: 900000,
-          sponsor_name: "Md. Nazrul Islam",
-          sponsor_relation: "FATHER",
-          sponsor_bank: "Sonali Bank PLC",
-          sponsor_balance_bdt: 2100000,
-          bank_loan_assistance: true,
-          bank_loan_bank: "BRAC Bank Study Loan Support",
-          coe_status: "SUBMITTED_TO_ISA",
-          visa_status: "IN_PROCESS",
-          counselor_name: "মেহেদী হাসান (Mehedi Hasan)",
-          updated_at: nowIso,
-          created_at: nowIso
-        }
-      ];
+      return [];
 
     case "knltc_lms_bridges":
-      return [
-        {
-          id: "lms-301",
-          lead_id: "lead-101",
-          student_name: "মোঃ তানভীর আহমেদ (Md. Tanvir Ahmed)",
-          phone: "01711223344",
-          course_level: "N5",
-          enrollment_no: "KNLTC-2026-N5-101",
-          portal_username: "tanvir.n5@npw.bd",
-          portal_password_masked: "N5@knltc2026",
-          portal_fee_deducted_bdt: 2000,
-          net_knltc_margin_bdt: 10000,
-          credentials_sent_via_wa: true,
-          credentials_sent_at: nowIso,
-          progress_percentage: 85,
-          active_batch: "N5 Intensive Batch (Dhaka Paltan HQ — https://npw.bd/knltc)",
-          assigned_sensei_id: "stf-02",
-          assigned_sensei_name: "আমির হোসেন (Amir Hossain — Senior Sensei)",
-          created_at: nowIso
-        },
-        {
-          id: "lms-302",
-          lead_id: "lead-102",
-          student_name: "সাদিয়া ইসলাম (Sadia Islam)",
-          phone: "01815667788",
-          course_level: "N4",
-          enrollment_no: "KNLTC-2026-N4-102",
-          portal_username: "sadia.n4@npw.bd",
-          portal_password_masked: "N4@knltc2026",
-          portal_fee_deducted_bdt: 2000,
-          net_knltc_margin_bdt: 12500,
-          credentials_sent_via_wa: true,
-          credentials_sent_at: nowIso,
-          progress_percentage: 60,
-          active_batch: "N4 SSW & University Batch (https://npw.bd/knltc)",
-          assigned_sensei_id: "stf-02",
-          assigned_sensei_name: "আমির হোসেন (Amir Hossain — Senior Sensei)",
-          created_at: nowIso
-        }
-      ];
+      return [];
 
     case "knltc_finance_transactions":
-      return [
-        {
-          id: "trx-401",
-          receipt_no: "KNLTC-INV-2026-0001",
-          date: "2026-10-01",
-          student_name: "Equity Partner Capital Injection (10L BDT Investor Open-Book Pool)",
-          student_phone: "01805013633",
-          category: "INCOME",
-          type: "INVESTOR_CAPITAL_INJECTION",
-          amount_bdt: 1000000,
-          due_amount_bdt: 0,
-          payment_method: "BANK_TRANSFER",
-          reference_or_trx: "INV-10L-OPENBOOK-2026",
-          branch: "DHK-HQ",
-          verified_by: "Sheikh Baset (MD)",
-          notes: "10,00,000 BDT Investor Open-Book Capital Pool (40% Equity / 60% Founder Split)",
-          linked_lead_id: "",
-          linked_visa_id: "",
-          linked_school_id: "",
-          linked_agent_id: "",
-          linked_staff_id: "",
-          created_at: nowIso
-        },
-        {
-          id: "trx-402",
-          receipt_no: "KNLTC-REC-2026-1011",
-          date: "2026-10-12",
-          student_name: "মোঃ তানভীর আহমেদ (Md. Tanvir Ahmed)",
-          student_phone: "01711223344",
-          category: "INCOME",
-          type: "COURSE_FEE",
-          amount_bdt: 12000,
-          due_amount_bdt: 0,
-          payment_method: "BKASH",
-          reference_or_trx: "BKX9827165",
-          branch: "DHK-HQ",
-          verified_by: "Sheikh Baset (MD)",
-          notes: "JLPT N5 3-Month Course Fee (৳12,000 BDT — includes ৳2,000 npw.bd/knltc LMS portal bridge)",
-          linked_lead_id: "lead-101",
-          linked_visa_id: "visa-201",
-          linked_school_id: "sch-hla-hiroshima",
-          linked_agent_id: "",
-          linked_staff_id: "",
-          created_at: nowIso
-        },
-        {
-          id: "trx-403",
-          receipt_no: "KNLTC-REC-2026-1012",
-          date: "2026-10-15",
-          student_name: "মোঃ তানভীর আহমেদ (Md. Tanvir Ahmed)",
-          student_phone: "01711223344",
-          category: "INCOME",
-          type: "SERVICE_CHARGE_COE",
-          amount_bdt: 60000,
-          due_amount_bdt: 60000,
-          payment_method: "BANK_TRANSFER",
-          reference_or_trx: "AGB-COE-60K",
-          branch: "DHK-HQ",
-          verified_by: "Sheikh Baset (MD)",
-          notes: "Regular Visa Package (1.2L BDT) — 50% COE Approval Installment Received",
-          linked_lead_id: "lead-101",
-          linked_visa_id: "visa-201",
-          linked_school_id: "sch-hla-hiroshima",
-          linked_agent_id: "",
-          linked_staff_id: "",
-          created_at: nowIso
-        },
-        {
-          id: "trx-404",
-          receipt_no: "KNLTC-REC-2026-1018",
-          date: "2026-10-18",
-          student_name: "সাদিয়া ইসলাম (Sadia Islam)",
-          student_phone: "01815667788",
-          category: "INCOME",
-          type: "PREMIUM_PACKAGE_ADVANCE",
-          amount_bdt: 250000,
-          due_amount_bdt: 900000,
-          payment_method: "BANK_TRANSFER",
-          reference_or_trx: "SONALI-PREM-250K",
-          branch: "KHULNA-01",
-          verified_by: "Sheikh Baset (MD)",
-          notes: "Premium Visa Package (11.5L BDT Total) — Initial File Opening & Documentation Advance",
-          linked_lead_id: "lead-102",
-          linked_visa_id: "visa-202",
-          linked_school_id: "sch-tokyo-central",
-          linked_agent_id: "agent-khulna-01",
-          linked_staff_id: "",
-          created_at: nowIso
-        },
-        {
-          id: "trx-405",
-          receipt_no: "JP-COM-2026-8801",
-          date: "2026-10-22",
-          student_name: "HLA Gakuin Hiroshima (80,000 JPY Partner School Commission)",
-          student_phone: "",
-          category: "INCOME",
-          type: "SCHOOL_COMMISSION_JPY",
-          amount_bdt: 64000,
-          due_amount_bdt: 0,
-          payment_method: "BANK_TRANSFER",
-          reference_or_trx: "JPY-80,000",
-          branch: "DHK-HQ",
-          verified_by: "Sheikh Baset (MD)",
-          notes: "Japanese Partner School Commission: ¥80,000 JPY @ 0.80 BDT rate",
-          linked_lead_id: "",
-          linked_visa_id: "",
-          linked_school_id: "sch-hla-hiroshima",
-          linked_agent_id: "",
-          linked_staff_id: "",
-          created_at: nowIso
-        }
-      ];
+      return [];
 
     case "orders":
-      return [
-        {
-          id: "ord-501",
-          customer_name: "Md. Tanvir Ahmed",
-          phone: "01711223344",
-          email: "tanvir.student@knltc.com",
-          address: "65/2/E Box Culvert Road, Purana Paltan",
-          city: "Dhaka",
-          payment_method: "bKash",
-          payment_status: "paid",
-          order_status: "delivered",
-          total_amount: 1250,
-          notes: "Minna No Nihongo N5 4-Book Bangla Bundle",
-          created_at: nowIso
-        }
-      ];
+      return [];
 
     case "order_items":
-      return [
-        {
-          id: "oi-501",
-          order_id: "ord-501",
-          product_id: "prod-minna-n5-bundle",
-          quantity: 1,
-          price: 1190,
-          created_at: nowIso
-        }
-      ];
+      return [];
 
     case "product_reviews":
-      return [
-        {
-          id: "rev-601",
-          product_id: "prod-minna-n5-bundle",
-          customer_name: "Md. Tanvir Ahmed",
-          rating: 5,
-          comment: "আলহামদুলিল্লাহ! বাংলা ব্যাকরণ নোট ও ভোকাবুলারি বইটির প্রিন্ট কোয়ালিটি অসাধারণ। KNLTC-এর N5 ক্লাসের সাথে এটি দারুণ কাজে দিচ্ছে।",
-          status: "approved",
-          created_at: nowIso
-        }
-      ];
+      return [];
 
     case "wishlist_items":
-      return [
-        {
-          id: "wish-701",
-          session_id: "knltc-demo-session",
-          product_id: "prod-minna-n4-bundle",
-          product_slug: "minna-no-nihongo-n4-complete-set",
-          product_title: "Minna No Nihongo Elementary II (N4) Complete Set (Lessons 26–50)",
-          customer_phone: "01711223344",
-          created_at: nowIso
-        }
-      ];
+      return [];
 
     case "knltc_website_cms":
       return [

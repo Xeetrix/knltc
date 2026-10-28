@@ -1150,6 +1150,20 @@ export function saveCmsStore(updated: MasterKnlTcStore) {
   }
 }
 
+export function purgeStoreOfDummyData(): MasterKnlTcStore {
+  const store = getCmsStore();
+  store.crmLeads = [];
+  store.visaApplicants = [];
+  store.lmsBridges = [];
+  store.b2bAgents = [];
+  store.transactions = [];
+  if (store.websiteCms?.[0]) {
+    store.websiteCms[0].customerOrders = [];
+  }
+  saveCmsStore(store);
+  return store;
+}
+
 async function syncToServer(type: "UPSERT" | "INSERT" | "DELETE" | "CMS_UPDATE", entity?: string, payload?: any) {
   if (typeof window === "undefined") return;
   try {

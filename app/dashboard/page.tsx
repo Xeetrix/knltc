@@ -88,6 +88,7 @@ import {
   getSchoolDocumentVault,
   getB2bAgentDocumentVault,
   DEFAULT_WEBSITE_CMS,
+  purgeStoreOfDummyData,
   type WebsiteCmsContent,
   type MasterKnlTcStore,
   type UserRole,
@@ -586,6 +587,54 @@ export default function DashboardPage() {
       );
     } finally {
       setIsPushingToSheets(false);
+    }
+  };
+
+  const handlePurgeDummyData = async () => {
+    if (
+      !window.confirm(
+        language === "ja"
+          ? "ダミーデータ（リード・ビザ申請・取引・注文）を完全に削除しますか？"
+          : language === "en"
+            ? "Are you sure you want to permanently purge all dummy/test data (leads, visas, transactions, orders)?"
+            : "আপনি কি নিশ্চিত যে সমস্ত ডামি ও টেস্ট ডাটা (লিড, ভিসা ট্র্যাকিং, লেনদেন, অর্ডার) স্থায়ীভাবে মুছে ফেলতে চান?"
+      )
+    ) {
+      return;
+    }
+
+    setIsSyncingWithDb(true);
+    showToast(tr("ডামি ডাটা মুছে ফেলা হচ্ছে...", "Purging dummy data...", "ダミーデータを削除中..."));
+    try {
+      // 1. Purge locally in browser
+      const cleanStore = purgeStoreOfDummyData();
+      setStore({ ...cleanStore });
+
+      // 2. Purge on Next.js server & Sheets backend
+      await Promise.allSettled([
+        fetch("/api/sheets", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "PURGE_DUMMY_DATA" }),
+        }),
+        fetch("/api/cms/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "PURGE_ALL_DUMMY", entity: "PURGE_ALL_DUMMY" }),
+        }),
+      ]);
+
+      showToast(
+        tr(
+          "সব ডামি ডাটা সফলভাবে মুছে ফেলা হয়েছে!",
+          "All dummy data purged successfully!",
+          "すべてのダミーデータが正常に削除されました"
+        )
+      );
+    } catch {
+      showToast(tr("লোকাল ডামি ডাটা মুছে ফেলা হয়েছে", "Local dummy data purged", "ローカルのダミーデータが削除されました"));
+    } finally {
+      setIsSyncingWithDb(false);
     }
   };
 
@@ -1418,6 +1467,17 @@ export default function DashboardPage() {
                     </span>
                     <ExternalLink className="h-3.5 w-3.5" />
                   </a>
+
+                  <button
+                    type="button"
+                    onClick={handlePurgeDummyData}
+                    disabled={isSyncingWithDb}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-red-400/40 bg-red-500/25 px-3 py-1.5 text-xs font-semibold text-red-100 hover:bg-red-500/40 transition disabled:opacity-60"
+                    title={tr("সমস্ত ডামি ডেটা মুছে ফেলুন", "Purge all dummy test data", "ダミーデータを削除")}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-red-200" />
+                    <span>{tr("ডামি ডাটা মুছুন", "Purge Dummy Data", "ダミー削除")}</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -2110,6 +2170,16 @@ export default function DashboardPage() {
                             `エクスポート (${filteredLeads.length})`
                           )}
                         </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handlePurgeDummyData}
+                        disabled={isSyncingWithDb}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50/70 px-3 py-2.5 text-xs font-semibold text-red-700 hover:bg-red-100 transition shrink-0"
+                        title={tr("সমস্ত ডামি ডেটা মুছে ফেলুন", "Purge all dummy test data", "ダミーデータを削除")}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-600" />
+                        <span>{tr("ডামি ডাটা মুছুন", "Purge Dummy", "ダミー削除")}</span>
                       </button>
                       <button
                         type="button"

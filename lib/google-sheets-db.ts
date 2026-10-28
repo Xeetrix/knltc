@@ -185,55 +185,10 @@ function buildInitialFallbackTables(): Record<GoogleSheetsTableName, Record<stri
         created_at: NOW_ISO,
       },
     ],
-    orders: [
-      {
-        id: "ord-501",
-        customer_name: "Md. Tanvir Ahmed",
-        phone: "01711223344",
-        email: "tanvir.student@knltc.com",
-        address: "65/2/E Box Culvert Road, Purana Paltan",
-        city: "Dhaka",
-        payment_method: "bKash",
-        payment_status: "paid",
-        order_status: "delivered",
-        total_amount: 1250,
-        notes: "Minna No Nihongo N5 4-Book Bangla Bundle",
-        created_at: NOW_ISO,
-      },
-    ],
-    order_items: [
-      {
-        id: "oi-501",
-        order_id: "ord-501",
-        product_id: "prod-minna-n5-bundle",
-        quantity: 1,
-        price: 1190,
-        created_at: NOW_ISO,
-      },
-    ],
-    product_reviews: [
-      {
-        id: "rev-601",
-        product_id: "prod-minna-n5-bundle",
-        customer_name: "Md. Tanvir Ahmed",
-        rating: 5,
-        comment:
-          "আলহামদুলিল্লাহ! বাংলা ব্যাকরণ নোট ও ভোকাবুলারি বইটির প্রিন্ট কোয়ালিটি অসাধারণ। KNLTC-এর N5 ক্লাসের সাথে এটি দারুণ কাজে দিচ্ছে।",
-        status: "approved",
-        created_at: NOW_ISO,
-      },
-    ],
-    wishlist_items: [
-      {
-        id: "wish-701",
-        session_id: "knltc-demo-session",
-        product_id: "prod-minna-n4-bundle",
-        product_slug: "minna-no-nihongo-n4-complete-set",
-        product_title: "Minna No Nihongo Elementary II (N4) Complete Set (Lessons 26–50)",
-        customer_phone: "01711223344",
-        created_at: NOW_ISO,
-      },
-    ],
+    orders: [],
+    order_items: [],
+    product_reviews: [],
+    wishlist_items: [],
     knltc_crm_leads: initialStore.crmLeads.map((l) => ({
       id: l.id,
       name: l.name,
@@ -412,6 +367,19 @@ function getFallbackTables(): Record<GoogleSheetsTableName, Record<string, any>[
     globalForSheetsFallback.knltcFallbackTables = buildInitialFallbackTables();
   }
   return globalForSheetsFallback.knltcFallbackTables;
+}
+
+export function purgeFallbackTables(): void {
+  const fallback = getFallbackTables();
+  fallback.knltc_crm_leads = [];
+  fallback.knltc_visa_applicants = [];
+  fallback.knltc_lms_bridges = [];
+  fallback.knltc_b2b_agents = [];
+  fallback.knltc_finance_transactions = [];
+  fallback.orders = [];
+  fallback.order_items = [];
+  fallback.product_reviews = [];
+  fallback.wishlist_items = [];
 }
 
 export function getUploadedMediaList() {
@@ -618,7 +586,7 @@ export async function querySheetTable<T = Record<string, any>>(
  * ============================================================================
  */
 export async function mutateSheetTable<T = Record<string, any>>(options: {
-  action: "CREATE" | "INSERT" | "UPDATE" | "UPSERT" | "DELETE" | "UPSERT_CMS" | "BULK_SYNC";
+  action: "CREATE" | "INSERT" | "UPDATE" | "UPSERT" | "DELETE" | "UPSERT_CMS" | "BULK_SYNC" | "PURGE_DUMMY_DATA";
   table?: string;
   payload?: any;
   id?: string;
@@ -632,7 +600,9 @@ export async function mutateSheetTable<T = Record<string, any>>(options: {
   const nowIso = new Date().toISOString();
 
   // 1. Update local fallback mirror immediately so reads are always instant & consistent
-  if (options.action === "BULK_SYNC" && options.tables) {
+  if (options.action === "PURGE_DUMMY_DATA") {
+    purgeFallbackTables();
+  } else if (options.action === "BULK_SYNC" && options.tables) {
     for (const [tbl, rows] of Object.entries(options.tables)) {
       if (Array.isArray(rows) && GOOGLE_SHEETS_TABLES.includes(tbl as GoogleSheetsTableName)) {
         fallback[tbl as GoogleSheetsTableName] = rows.map((r) => normalizeRowRecord(r));
