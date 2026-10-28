@@ -117,6 +117,7 @@ import CrmImportExportModal from "@/components/admin/CrmImportExportModal";
 import PartnerProfileModal from "@/components/admin/PartnerProfileModal";
 import UserAccessControlPanel from "@/components/admin/UserAccessControlPanel";
 import StudentProfileView from "@/components/admin/StudentProfileView";
+import DriveFileUploadButton from "@/components/admin/DriveFileUploadButton";
 import type {
   AdminSummary,
   BlogPost,
@@ -153,6 +154,17 @@ export default function DashboardPage() {
   const [activeRole, setActiveRole] = useState<UserRole>("MAIN_ADMIN");
   const [activeBranch, setActiveBranch] = useState<BranchCode>("ALL");
   const [isSyncingWithDb, setIsSyncingWithDb] = useState(false);
+  const [isPushingToSheets, setIsPushingToSheets] = useState(false);
+  const [sheetsStatus, setSheetsStatus] = useState<{
+    connected: boolean;
+    mode: string;
+    masterSheetUrl: string;
+  }>({
+    connected: false,
+    mode: "LOCAL_SEED_FALLBACK",
+    masterSheetUrl:
+      process.env.NEXT_PUBLIC_MASTER_SHEET_URL || "https://docs.google.com/spreadsheets",
+  });
   const [selectedLeadForProfile, setSelectedLeadForProfile] = useState<CrmLead | null>(null);
   const [selectedSchoolForProfile, setSelectedSchoolForProfile] =
     useState<JapanesePartnerSchool | null>(null);
@@ -464,6 +476,19 @@ export default function DashboardPage() {
       .catch(() => {});
 
     setIsSyncingWithDb(true);
+    fetch("/api/sheets?action=status")
+      .then((r) => r.json())
+      .then((st) => {
+        if (st?.ok) {
+          setSheetsStatus({
+            connected: Boolean(st.connected),
+            mode: st.mode || "LOCAL_SEED_FALLBACK",
+            masterSheetUrl: st.masterSheetUrl || "https://docs.google.com/spreadsheets",
+          });
+        }
+      })
+      .catch(() => {});
+
     Promise.all([fetchLiveStoreFromServer(), loadAdminBundle()])
       .then(([live]) => {
         if (live) {
@@ -486,20 +511,25 @@ export default function DashboardPage() {
     setIsSyncingWithDb(true);
     showToast(
       language === "ja"
-        ? "データベースと同期中..."
+        ? "Googleスプレッドシートのキャッシュを更新中..."
         : language === "en"
-          ? "Syncing with cloud database..."
-          : "ক্লাউড ডাটাবেজের সাথে সিঙ্ক হচ্ছে...",
+          ? "Refreshing Google Sheets cache..."
+          : "গুগল শিট ডাটাবেজ ক্যাশ রিফ্রেশ হচ্ছে...",
     );
     try {
+      await fetch("/api/sheets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "REFRESH_CACHE" }),
+      });
       const [live] = await Promise.all([fetchLiveStoreFromServer(), loadAdminBundle()]);
       if (live) setStore({ ...live });
       showToast(
         language === "ja"
-          ? "データベース同期が完了しました"
+          ? "Googleスプレッドシートとの同期が完了しました"
           : language === "en"
-            ? "Database synced successfully"
-            : "ডাটাবেজ সিঙ্ক সফল হয়েছে",
+            ? "Google Sheets cache refreshed & synced"
+            : "গুগল শিট ক্যাশ রিফ্রেশ ও সিঙ্ক সফল হয়েছে",
       );
     } catch {
       showToast(
@@ -511,6 +541,49 @@ export default function DashboardPage() {
       );
     } finally {
       setIsSyncingWithDb(false);
+    }
+  };
+
+  const handlePushInitialDataToSheets = async () => {
+    setIsPushingToSheets(true);
+    showToast(
+      language === "ja"
+        ? "全15テーブルをGoogleスプレッドシートへ一括送信中..."
+        : language === "en"
+          ? "Pushing all 15 tables to Master Google Sheet..."
+          : "১৫টি টেবিলের সব ডাটা মাস্টার গুগল শিটে পুশ হচ্ছে...",
+    );
+    try {
+      const currentStore = store || getCmsStore();
+      const res = await fetch("/api/sheets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "BULK_SYNC",
+          store: currentStore,
+          replaceAll: false,
+        }),
+      });
+      const json = await res.json();
+      if (json?.ok) {
+        showToast(
+          language === "ja"
+            ? "全15タブのデータをGoogleスプレッドシートへ同期しました！"
+            : language === "en"
+              ? "All 15 tables synced to Master Google Sheet!"
+              : "১৫টি ট্যাবের সব ডাটা মাস্টার গুগল শিটে সফলভাবে সিঙ্ক হয়েছে!",
+        );
+      }
+    } catch {
+      showToast(
+        language === "ja"
+          ? "同期エラーが発生しました"
+          : language === "en"
+            ? "Saved to local fallback store"
+            : "লোকাল স্টোরে সংরক্ষিত হয়েছে",
+      );
+    } finally {
+      setIsPushingToSheets(false);
     }
   };
 
@@ -1211,6 +1284,103 @@ export default function DashboardPage() {
 
         {/* Main Animated Workspace Viewport */}
         <main className="flex-1 mx-auto w-full max-w-7xl px-4 py-6 sm:px-6">
+          {/* =====================================================================
+              GOOGLE SHEETS + GOOGLE DRIVE 1-CLICK CONNECTION & SYNC BAR
+              ===================================================================== */}
+          {(!currentUser || activeRole !== "STUDENT") && (
+            <div className="mb-6 rounded-2xl border border-emerald-900/15 bg-gradient-to-r from-[#133e29] via-[#164a31] to-[#133e29] px-4 py-3 text-white shadow-sm">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                <div className="flex items-start sm:items-center gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 border border-white/15 text-emerald-300">
+                    <FileSpreadsheet className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs sm:text-sm font-bold tracking-tight text-white">
+                        {tr(
+                          "KNLTC মাস্টার গুগল শিট ও গুগল ড্রাইভ ব্যাকএন্ড (১৫টি টেবিল)",
+                          "KNLTC Master Google Sheet & Drive Backend (15 Tables)",
+                          "KNLTC マスターGoogleスプレッドシート＆ドライブ基盤（全15タブ）",
+                        )}
+                      </span>
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                          sheetsStatus.connected
+                            ? "bg-emerald-400/20 text-emerald-200 border border-emerald-400/30"
+                            : "bg-amber-400/20 text-amber-200 border border-amber-400/30"
+                        }`}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            sheetsStatus.connected ? "bg-emerald-400" : "bg-amber-300"
+                          }`}
+                        />
+                        {sheetsStatus.connected
+                          ? tr("লাইভ সংযুক্ত", "Connected Live", "ライブ接続中")
+                          : tr("রেডি (সিড ও লোকাল মিরর সক্রিয়)", "Ready (Seed & Mirror Active)", "準備完了（ローカルミラー有効）")}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-emerald-100/80 mt-0.5 leading-relaxed">
+                      {tr(
+                        "১০০% ফ্রি গুগল শিট ডাটাবেজ ও গুগল ড্রাইভ ফাইল স্টোরেজ (KNLTC_Uploads_And_Visa_Docs) — কোনো পেইড ডাটাবেজ ছাড়াই সম্পূর্ণ সচল।",
+                        "100% Free Google Sheets Database + Google Drive File Storage (KNLTC_Uploads_And_Visa_Docs) with 60s edge caching.",
+                        "完全無料のGoogleスプレッドシートDB＋Googleドライブ証憑保管（KNLTC_Uploads_And_Visa_Docs）連携。",
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handlePushInitialDataToSheets}
+                    disabled={isPushingToSheets}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-xs font-bold text-[#133e29] hover:bg-emerald-50 transition shadow-2xs disabled:opacity-60"
+                  >
+                    <Upload className={`h-3.5 w-3.5 ${isPushingToSheets ? "animate-bounce" : ""}`} />
+                    <span>
+                      {isPushingToSheets
+                        ? tr("পুশ হচ্ছে...", "Pushing...", "送信中...")
+                        : tr(
+                            "Push Initial Data to Google Sheet",
+                            "Push Initial Data to Google Sheet",
+                            "初期データをシートへ一括送信",
+                          )}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleManualSync}
+                    disabled={isSyncingWithDb}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/20 transition disabled:opacity-60"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${isSyncingWithDb ? "animate-spin" : ""}`} />
+                    <span>
+                      {tr("Refresh Cache", "Refresh Cache", "キャッシュ更新")}
+                    </span>
+                  </button>
+
+                  <a
+                    href={sheetsStatus.masterSheetUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-400/30 bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-100 hover:bg-emerald-500/30 transition"
+                  >
+                    <span>
+                      {tr(
+                        "Open Master Google Sheet",
+                        "Open Master Google Sheet",
+                        "マスターシートを開く",
+                      )}
+                    </span>
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
+
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
@@ -5331,14 +5501,22 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label className="font-semibold text-slate-700">
-                        {tr("এজেন্সির লোগো URL (ঐচ্ছিক)", "Agency Logo URL (Optional)", "ロゴ画像URL（任意）")}
-                      </label>
+                      <div className="flex items-center justify-between gap-2">
+                        <label className="font-semibold text-slate-700">
+                          {tr("এজেন্সির লোগো URL বা ফাইল আপলোড", "Agency Logo URL or Drive Upload", "ロゴ画像URLまたはドライブアップロード")}
+                        </label>
+                        <DriveFileUploadButton
+                          folderName="KNLTC_B2B_Agents"
+                          accept="image/*,application/pdf"
+                          label={tr("গুগল ড্রাইভে আপলোড", "Upload to Google Drive", "Driveへアップロード")}
+                          onUploaded={(url) => setB2bForm({ ...b2bForm, logoUrl: url })}
+                        />
+                      </div>
                       <input
                         type="text"
                         value={b2bForm.logoUrl}
                         onChange={(e) => setB2bForm({ ...b2bForm, logoUrl: e.target.value })}
-                        placeholder={tr("লোগো ইমেজ লিংক দিন (অথবা ৩৬০° প্রোফাইলে ফাইল আপলোড করুন)", "https://... (or upload in 360° profile)", "https://... (または360°プロファイルでアップロード)")}
+                        placeholder={tr("লোগো ইমেজ লিংক দিন অথবা ডানপাশের বাটনে আপলোড করুন", "https://... (or click Upload to Google Drive)", "https://... (またはDriveへアップロード)")}
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
                       />
                     </div>
@@ -5637,9 +5815,17 @@ export default function DashboardPage() {
                     </div>
 
                     <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("লোগো URL (ঐচ্ছিক)", "Logo URL (Optional)", "ロゴ画像URL（任意）")}
-                      </label>
+                      <div className="flex items-center justify-between gap-2">
+                        <label className="font-semibold text-slate-700">
+                          {tr("লোগো / প্রসপেক্টাস URL", "Logo / Brochure URL", "ロゴ画像URL")}
+                        </label>
+                        <DriveFileUploadButton
+                          folderName="KNLTC_Partner_Schools"
+                          accept="image/*,application/pdf"
+                          label={tr("ড্রাইভে আপলোড", "Upload to Drive", "Driveアップロード")}
+                          onUploaded={(url) => setSchoolForm({ ...schoolForm, logoUrl: url })}
+                        />
+                      </div>
                       <input
                         type="text"
                         value={schoolForm.logoUrl}
@@ -6585,16 +6771,26 @@ export default function DashboardPage() {
                     </div>
 
                     <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("Trx ID / ব্যাংক রেফারেন্স", "Trx ID / Ref", "取引番号 / 銀行参照番号")}
-                      </label>
+                      <div className="flex items-center justify-between gap-2">
+                        <label className="font-semibold text-slate-700">
+                          {tr("Trx ID / রসিদ স্ক্রিনশট", "Trx ID / Receipt Link", "取引番号 / 領収証URL")}
+                        </label>
+                        <DriveFileUploadButton
+                          folderName="KNLTC_Payment_Receipts"
+                          accept="image/*,application/pdf"
+                          label={tr("রসিদ আপলোড", "Upload Receipt", "証憑アップロード")}
+                          onUploaded={(url) =>
+                            setPaymentForm({ ...paymentForm, referenceOrTrx: url })
+                          }
+                        />
+                      </div>
                       <input
                         type="text"
                         value={paymentForm.referenceOrTrx}
                         onChange={(e) =>
                           setPaymentForm({ ...paymentForm, referenceOrTrx: e.target.value })
                         }
-                        placeholder="e.g. 9J28A00X or Cash Memo"
+                        placeholder="e.g. 9J28A00X or Drive Receipt URL"
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
                       />
                     </div>
@@ -6783,16 +6979,26 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label className="font-semibold text-slate-700">
-                        {tr("ভাউচার নং / রেফারেন্স নোট", "Voucher / Reference", "伝票番号・証憑参照")}
-                      </label>
+                      <div className="flex items-center justify-between gap-2">
+                        <label className="font-semibold text-slate-700">
+                          {tr("ভাউচার নং / গুগল ড্রাইভ ভাউচার আপলোড", "Voucher / Drive Upload", "伝票番号・証憑参照")}
+                        </label>
+                        <DriveFileUploadButton
+                          folderName="KNLTC_Expense_Vouchers"
+                          accept="image/*,application/pdf"
+                          label={tr("ভাউচার আপলোড", "Upload Voucher", "伝票アップロード")}
+                          onUploaded={(url) =>
+                            setExpenseForm({ ...expenseForm, referenceOrTrx: url })
+                          }
+                        />
+                      </div>
                       <input
                         type="text"
                         value={expenseForm.referenceOrTrx}
                         onChange={(e) =>
                           setExpenseForm({ ...expenseForm, referenceOrTrx: e.target.value })
                         }
-                        placeholder={tr("ভাউচার নং বা মেমো বিবরণ", "Voucher # or memo details", "伝票番号・メモ詳細")}
+                        placeholder={tr("ভাউচার নং বা মেমো বিবরণ", "Voucher # or Drive link", "伝票番号・メモ詳細")}
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
                       />
                     </div>

@@ -314,6 +314,23 @@ export default function EnrollmentForm() {
         ? t.purposeTITP
         : t.purposeCareer;
 
+    fetch("/api/enroll", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        applicantName: cleanName,
+        phone: cleanPhone,
+        whatsapp: cleanWa,
+        courseId: course,
+        deliveryMode: classMode,
+        visaCategory: purpose,
+        referenceId,
+        notes: `${courseLabel} | ${classModeLabel} | ${purposeLabel}`,
+      }),
+    }).catch(() => {
+      // Non-blocking sync to Google Sheets backend
+    });
+
     setTimeout(() => {
       setSubmittedData({
         id: referenceId,

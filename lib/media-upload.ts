@@ -1,15 +1,16 @@
 /**
  * Universal Media & Document Upload Helper for KNLTC ERP & Portal
- * 
+ *
  * Provides:
  * 1. Automatic client-side canvas compression for images (logos, avatars, brochures, covers)
- * 2. Upload to Supabase Storage via /api/admin/upload (media) or /api/cms/documents (docs)
- * 3. Graceful offline/fallback: if storage fails, returns an ultra-compact compressed data URL
- *    so user edits, logos, and documents are 100% preserved and never lost across reloads.
+ * 2. 100% Free Upload to Google Drive (`KNLTC_Uploads_And_Visa_Docs`) or Cloudinary via `/api/sheets`
+ * 3. Graceful offline/fallback: if remote upload is not configured yet, returns an ultra-compact
+ *    compressed data URL so user edits, logos, and documents are 100% preserved.
  */
 
 export interface UploadOptions {
   bucket?: string;
+  folderName?: string;
   maxDimension?: number;
   quality?: number;
   trackingNo?: string;
@@ -18,8 +19,18 @@ export interface UploadOptions {
 
 export interface UploadResult {
   url: string;
+  downloadUrl?: string;
   fileName?: string;
-  source: "supabase-storage" | "compressed-data-url";
+  source: "google-drive" | "cloudinary" | "supabase-storage" | "compressed-data-url";
+}
+
+function fileToBase64DataUrl(file: File | Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.readAsDataURL(file);
+  });
 }
 
 /**
@@ -84,7 +95,7 @@ export async function compressImageToDataUrl(
 }
 
 /**
- * Upload an image (logo, avatar, product photo, blog cover) with compression & storage upload.
+ * Upload an image (logo, avatar, product photo, blog cover) to Google Drive / Cloudinary via `/api/sheets`.
  */
 export async function uploadMediaImage(
   file: File,
@@ -92,7 +103,7 @@ export async function uploadMediaImage(
 ): Promise<UploadResult> {
   const maxDim = options?.maxDimension || 800;
   const quality = options?.quality || 0.85;
-  const bucket = options?.bucket || "knltc-media";
+  const folderName = options?.folderName || options?.bucket || "KNLTC_Images";
 
   let compressed: { dataUrl: string; blob: Blob } | null = null;
   try {
@@ -103,19 +114,20 @@ export async function uploadMediaImage(
     console.warn("[MediaUpload] Compression fallback triggered:", err);
   }
 
-  // Attempt upload to Supabase Storage endpoint
+  const base64Payload = compressed?.dataUrl || (await fileToBase64DataUrl(file));
+
+  // Upload to Google Drive / Cloudinary via `/api/sheets`
   try {
-    const formData = new FormData();
-    const fileToUpload = compressed?.blob
-      ? new File([compressed.blob], file.name, { type: compressed.blob.type || file.type })
-      : file;
-
-    formData.append("file", fileToUpload);
-    formData.append("bucket", bucket);
-
-    const res = await fetch("/api/admin/upload", {
+    const res = await fetch("/api/sheets", {
       method: "POST",
-      body: formData,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "UPLOAD_FILE_TO_DRIVE",
+        fileName: file.name,
+        mimeType: compressed?.blob?.type || file.type || "image/jpeg",
+        base64Data: base64Payload,
+        folderName,
+      }),
     });
 
     if (res.ok) {
@@ -123,62 +135,53 @@ export async function uploadMediaImage(
       if (data?.url) {
         return {
           url: data.url,
+          downloadUrl: data.downloadUrl || data.url,
           fileName: file.name,
-          source: "supabase-storage",
+          source: data.provider === "cloudinary" ? "cloudinary" : "google-drive",
         };
       }
     }
   } catch (err) {
-    console.warn("[MediaUpload] Remote storage upload failed, using local compressed store:", err);
+    console.warn("[MediaUpload] Google Drive / Cloudinary upload failed, using local compressed store:", err);
   }
 
-  // Resilient Fallback: return compressed data URL
-  if (compressed?.dataUrl) {
-    return {
-      url: compressed.dataUrl,
-      fileName: file.name,
-      source: "compressed-data-url",
-    };
-  }
-
-  // Last-mile fallback: raw FileReader
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      resolve({
-        url: String(reader.result || ""),
-        fileName: file.name,
-        source: "compressed-data-url",
-      });
-    };
-    reader.readAsDataURL(file);
-  });
+  return {
+    url: base64Payload,
+    downloadUrl: base64Payload,
+    fileName: file.name,
+    source: "compressed-data-url",
+  };
 }
 
 /**
- * Upload a document (PDF, Word, or image) for student files, brochures, licenses.
+ * Upload a document (PDF, Word, or image) for student visa files, passports, receipts, brochures.
  */
 export async function uploadDocumentFile(
   file: File,
   options?: UploadOptions,
 ): Promise<UploadResult> {
-  const trackingNo = options?.trackingNo || "knltc-partner";
-  const docType = options?.docType || "mou_brochure";
+  const trackingNo = options?.trackingNo || "knltc-doc";
+  const docType = options?.docType || "visa_document";
+  const folderName = options?.folderName || "KNLTC_Visa_And_Student_Docs";
 
-  // If it's an image, we can try compress first
   if (file.type.startsWith("image/")) {
-    return uploadMediaImage(file, { ...options, bucket: "knltc-documents" });
+    return uploadMediaImage(file, { ...options, folderName });
   }
 
   try {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("trackingNo", trackingNo);
-    formData.append("docType", docType);
+    const base64Data = await fileToBase64DataUrl(file);
+    const cleanFileName = `${trackingNo}_${docType}_${file.name}`;
 
-    const res = await fetch("/api/cms/documents", {
+    const res = await fetch("/api/sheets", {
       method: "POST",
-      body: formData,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "UPLOAD_FILE_TO_DRIVE",
+        fileName: cleanFileName,
+        mimeType: file.type || "application/pdf",
+        base64Data,
+        folderName,
+      }),
     });
 
     if (res.ok) {
@@ -186,25 +189,21 @@ export async function uploadDocumentFile(
       if (data?.url) {
         return {
           url: data.url,
-          fileName: data.fileName || file.name,
-          source: "supabase-storage",
+          downloadUrl: data.downloadUrl || data.url,
+          fileName: cleanFileName,
+          source: "google-drive",
         };
       }
     }
   } catch (err) {
-    console.warn("[DocUpload] Remote doc upload failed, using fallback:", err);
+    console.warn("[DocUpload] Google Drive doc upload failed, using fallback:", err);
   }
 
-  // Fallback to data URL for documents
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      resolve({
-        url: String(reader.result || ""),
-        fileName: file.name,
-        source: "compressed-data-url",
-      });
-    };
-    reader.readAsDataURL(file);
-  });
+  const fallbackUrl = await fileToBase64DataUrl(file);
+  return {
+    url: fallbackUrl,
+    downloadUrl: fallbackUrl,
+    fileName: file.name,
+    source: "compressed-data-url",
+  };
 }

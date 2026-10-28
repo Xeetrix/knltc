@@ -85,10 +85,41 @@ export function writeWishlist(items: WishlistItem[]) {
 export function toggleWishlist(item: WishlistItem) {
   const current = readWishlist();
   const exists = current.some((entry) => entry.productId === item.productId);
+  const wishRowId = `wish-${item.productId}`;
   if (exists) {
     writeWishlist(current.filter((entry) => entry.productId !== item.productId));
+    if (isBrowser()) {
+      fetch("/api/sheets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "DELETE",
+          table: "wishlist_items",
+          id: wishRowId,
+        }),
+      }).catch(() => {});
+    }
     return false;
   }
   writeWishlist([...current, item]);
+  if (isBrowser()) {
+    fetch("/api/sheets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "UPSERT",
+        table: "wishlist_items",
+        payload: {
+          id: wishRowId,
+          session_id: "browser-wishlist",
+          product_id: item.productId,
+          product_slug: item.slug,
+          product_title: item.name,
+          customer_phone: "",
+          created_at: new Date().toISOString(),
+        },
+      }),
+    }).catch(() => {});
+  }
   return true;
 }

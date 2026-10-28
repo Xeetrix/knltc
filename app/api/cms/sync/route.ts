@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
 import { selectRows, upsertRow, insertRow, deleteRow } from "@/lib/supabase";
+import { bulkSyncMasterStoreToSheets } from "@/lib/google-sheets-db";
 import { getCmsStore, type MasterKnlTcStore } from "@/lib/knltc-cms-store";
 
 export const dynamic = "force-dynamic";
@@ -54,27 +55,65 @@ export async function GET() {
       staffMembers,
       cmsRoot,
     ] = await Promise.allSettled([
-      selectRows("knltc_crm_leads", { order: "created_at.desc", limit: 300 }, true),
-      selectRows("knltc_visa_applicants", { order: "created_at.desc", limit: 200 }, true),
-      selectRows("knltc_lms_bridges", { order: "created_at.desc", limit: 200 }, true),
-      selectRows("knltc_b2b_agents", { order: "created_at.desc", limit: 100 }, true),
-      selectRows("knltc_partner_schools", { order: "created_at.desc", limit: 100 }, true),
-      selectRows("knltc_finance_transactions", { order: "created_at.desc", limit: 200 }, true),
-      selectRows("knltc_staff_members", { order: "created_at.desc", limit: 100 }, true),
-      selectRows("knltc_website_cms", { id: "eq.master-cms-root" }, true),
+      selectRows<any>("knltc_crm_leads", { order: "created_at.desc", limit: 300 }, true),
+      selectRows<any>("knltc_visa_applicants", { order: "created_at.desc", limit: 200 }, true),
+      selectRows<any>("knltc_lms_bridges", { order: "created_at.desc", limit: 200 }, true),
+      selectRows<any>("knltc_b2b_agents", { order: "created_at.desc", limit: 100 }, true),
+      selectRows<any>("knltc_partner_schools", { order: "created_at.desc", limit: 100 }, true),
+      selectRows<any>("knltc_finance_transactions", { order: "created_at.desc", limit: 200 }, true),
+      selectRows<any>("knltc_staff_members", { order: "created_at.desc", limit: 100 }, true),
+      selectRows<any>("knltc_website_cms", "", true),
     ]);
 
-    const dbLeads = leads.status === "fulfilled" && Array.isArray(leads.value) && leads.value.length > 0 ? leads.value : null;
-    const dbApplicants = applicants.status === "fulfilled" && Array.isArray(applicants.value) && applicants.value.length > 0 ? applicants.value : null;
-    const dbLms = lmsBridges.status === "fulfilled" && Array.isArray(lmsBridges.value) && lmsBridges.value.length > 0 ? lmsBridges.value : null;
-    const dbAgents = b2bAgents.status === "fulfilled" && Array.isArray(b2bAgents.value) && b2bAgents.value.length > 0 ? b2bAgents.value : null;
-    const dbSchools = partnerSchools.status === "fulfilled" && Array.isArray(partnerSchools.value) && partnerSchools.value.length > 0 ? partnerSchools.value : null;
-    const dbTransactions = transactions.status === "fulfilled" && Array.isArray(transactions.value) && transactions.value.length > 0 ? transactions.value : null;
-    const dbStaff = staffMembers.status === "fulfilled" && Array.isArray(staffMembers.value) && staffMembers.value.length > 0 ? staffMembers.value : null;
-    const dbCms =
-      cmsRoot.status === "fulfilled" && Array.isArray(cmsRoot.value) && cmsRoot.value[0]?.content
-        ? [cmsRoot.value[0].content]
+    const dbLeads =
+      leads.status === "fulfilled" && Array.isArray(leads.value) && leads.value.length > 0
+        ? leads.value
         : null;
+    const dbApplicants =
+      applicants.status === "fulfilled" &&
+      Array.isArray(applicants.value) &&
+      applicants.value.length > 0
+        ? applicants.value
+        : null;
+    const dbLms =
+      lmsBridges.status === "fulfilled" &&
+      Array.isArray(lmsBridges.value) &&
+      lmsBridges.value.length > 0
+        ? lmsBridges.value
+        : null;
+    const dbAgents =
+      b2bAgents.status === "fulfilled" &&
+      Array.isArray(b2bAgents.value) &&
+      b2bAgents.value.length > 0
+        ? b2bAgents.value
+        : null;
+    const dbSchools =
+      partnerSchools.status === "fulfilled" &&
+      Array.isArray(partnerSchools.value) &&
+      partnerSchools.value.length > 0
+        ? partnerSchools.value
+        : null;
+    const dbTransactions =
+      transactions.status === "fulfilled" &&
+      Array.isArray(transactions.value) &&
+      transactions.value.length > 0
+        ? transactions.value
+        : null;
+    const dbStaff =
+      staffMembers.status === "fulfilled" &&
+      Array.isArray(staffMembers.value) &&
+      staffMembers.value.length > 0
+        ? staffMembers.value
+        : null;
+
+    let dbCms = null;
+    if (cmsRoot.status === "fulfilled" && Array.isArray(cmsRoot.value) && cmsRoot.value.length > 0) {
+      const firstRow = cmsRoot.value[0];
+      const rawCms = firstRow?.data ?? firstRow?.content ?? null;
+      if (rawCms) {
+        dbCms = [typeof rawCms === "string" ? JSON.parse(rawCms) : rawCms];
+      }
+    }
 
     const result = {
       crmLeads: dbLeads,
@@ -113,50 +152,36 @@ export async function POST(request: Request) {
 
     if (type === "FULL_STORE_SYNC" && fullStore) {
       await writeServerSnapshot(fullStore);
-      if (fullStore.websiteCms?.[0]) {
-        try {
-          await upsertRow("knltc_website_cms", {
-            id: "master-cms-root",
-            content: fullStore.websiteCms[0],
-            updated_at: new Date().toISOString(),
-          });
-        } catch {
-          // Safe fallback when Supabase is not configured
-        }
-      }
-      return NextResponse.json({ ok: true, message: "Full store synced" });
+      await bulkSyncMasterStoreToSheets(fullStore, false);
+      return NextResponse.json({ ok: true, message: "Full store synced to Google Sheets" });
     }
 
     if (type === "CMS_UPDATE" && payload) {
       snapshot.websiteCms = [payload];
       await writeServerSnapshot(snapshot);
-      try {
-        await upsertRow("knltc_website_cms", {
-          id: "master-cms-root",
-          content: payload,
+      await upsertRow(
+        "knltc_website_cms",
+        {
+          id: "cms-master-01",
+          section_key: "master_cms",
+          data: payload,
           updated_at: new Date().toISOString(),
-        });
-      } catch {
-        // Safe fallback when Supabase is not configured
-      }
-      return NextResponse.json({ ok: true, message: "CMS updated" });
+        },
+        "section_key",
+      );
+      return NextResponse.json({ ok: true, message: "CMS updated in Google Sheets" });
     }
 
     if (entity && payload) {
-      try {
-        if (type === "DELETE" && payload.id) {
-          await deleteRow(entity, String(payload.id));
-          return NextResponse.json({ ok: true, deletedId: payload.id });
-        } else if (type === "UPSERT") {
-          const saved = await upsertRow(entity, payload);
-          return NextResponse.json({ ok: true, data: saved });
-        } else {
-          const saved = await insertRow(entity, payload);
-          return NextResponse.json({ ok: true, data: saved });
-        }
-      } catch {
-        // Return ok if local snapshot succeeded even when external Supabase is offline
-        return NextResponse.json({ ok: true, data: payload });
+      if (type === "DELETE" && payload.id) {
+        await deleteRow(entity, String(payload.id));
+        return NextResponse.json({ ok: true, deletedId: payload.id });
+      } else if (type === "UPSERT") {
+        const saved = await upsertRow(entity, payload);
+        return NextResponse.json({ ok: true, data: saved });
+      } else {
+        const saved = await insertRow(entity, payload);
+        return NextResponse.json({ ok: true, data: saved });
       }
     }
 
