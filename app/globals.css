@@ -1,13 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --font-sans: 'Plus Jakarta Sans', 'Noto Sans Bengali', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    --font-bangla: 'Noto Sans Bengali', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-sans: 'Plus Jakarta Sans', 'Noto Sans Bengali', 'Hind Siliguri', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-bangla: 'Noto Sans Bengali', 'Hind Siliguri', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-bangla-heading: 'Hind Siliguri', 'Noto Sans Bengali', 'Plus Jakarta Sans', sans-serif;
     --font-jp: 'Noto Sans JP', 'Plus Jakarta Sans', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
@@ -58,24 +57,29 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "kern" 1, "liga" 1, "clig" 1;
+    font-variant-ligatures: common-ligatures contextual;
   }
 
   body {
     @apply overflow-x-hidden bg-background text-foreground antialiased;
     font-family: var(--font-sans);
     font-size: 0.9375rem; /* 15px baseline */
-    line-height: 1.64;
-    letter-spacing: -0.008em;
+    line-height: 1.66;
+    letter-spacing: -0.006em;
+    font-feature-settings: "kern" 1, "liga" 1, "clig" 1;
   }
 
-  /* Bengali Typography: Crisp Noto Sans Bengali paired with Plus Jakarta Sans */
+  /* Bengali Typography: Crisp Noto Sans Bengali & Hind Siliguri with intact conjuncts (যুক্তবর্ণ) */
   [lang="bn"],
   .font-bangla,
   html[lang="bn"] body {
     font-family: var(--font-bangla);
-    line-height: 1.72;
+    line-height: 1.75;
     letter-spacing: 0em !important;
     word-spacing: 0.02em;
+    font-feature-settings: "kern" 1, "liga" 1, "clig" 1, "calt" 1;
+    font-variant-ligatures: common-ligatures contextual;
   }
 
   html[lang="bn"] h1,
@@ -84,10 +88,11 @@
   html[lang="bn"] h4,
   html[lang="bn"] h5,
   html[lang="bn"] h6 {
-    font-family: var(--font-bangla);
-    line-height: 1.38;
+    font-family: var(--font-bangla-heading);
+    line-height: 1.55 !important;
     letter-spacing: 0em !important;
     font-weight: 700;
+    font-feature-settings: "kern" 1, "liga" 1, "clig" 1, "calt" 1;
   }
 
   /* Prevent uppercase tracking classes from breaking Bengali matra and ligatures */
@@ -105,12 +110,15 @@
     font-weight: 700;
   }
 
-  /* Japanese Typography: Clean Noto Sans JP */
+  /* Japanese Typography: Clean Noto Sans JP with safe CJK particle wrapping */
   [lang="ja"],
   html[lang="ja"] body {
     font-family: var(--font-jp);
-    line-height: 1.72;
+    line-height: 1.75;
     letter-spacing: 0em;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    line-break: strict;
   }
 
   h1, h2, h3, h4, h5, h6 {

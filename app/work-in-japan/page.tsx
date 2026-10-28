@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { motion } from "motion/react";
-import { BadgeDollarSign, BriefcaseBusiness, CheckCircle2, ArrowRight } from "lucide-react";
+import { BadgeDollarSign, BriefcaseBusiness, CheckCircle2, ArrowRight, MapPin, Users, Calendar } from "lucide-react";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
+import { useKnlTcCms } from "@/hooks/use-knltc-cms";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -30,16 +31,19 @@ const itemVariants = {
 
 export default function WorkInJapanPage() {
   const { language } = useLanguage();
+  const { cms } = useKnlTcCms();
   const t = translate(
     {
       bn: {
         title: "জাপানে ক্যারিয়ার গড়ার প্রিমিয়াম পথ",
         subtitle: "SSW/TITP প্রস্তুতি, সেক্টর নির্বাচন, ডকুমেন্টেশন ও ভিসা সহ সম্পূর্ণ ক্যারিয়ার সাপোর্ট।",
         compare: "SSW বনাম TITP",
-        opportunities: "চলমান সুযোগ",
+        opportunities: "চলমান জব সার্কুলার ও নিয়োগ সুযোগ (Live CMS)",
         sectors: "চাহিদাসম্পন্ন সেক্টর",
         timeline: "ক্যারিয়ার প্রসেস টাইমলাইন",
         salaryLabel: "সম্ভাব্য বেতন",
+        openingsLabel: "শূন্যপদ",
+        deadlineLabel: "আবেদনের শেষ তারিখ",
         finalTitle: "জাপানে কাজের প্রস্তুতি শুরু করুন",
         apply: "এখন আবেদন করুন",
         consult: "ফ্রি কনসাল্টেশন নিন",
@@ -48,10 +52,12 @@ export default function WorkInJapanPage() {
         title: "Premium Career Pathway for Japan",
         subtitle: "Complete support for SSW/TITP preparation, sector selection, documentation, and visa processing.",
         compare: "SSW vs TITP",
-        opportunities: "Current Opportunities",
+        opportunities: "Current Job Circulars & Opportunities (Live CMS)",
         sectors: "High-demand sectors",
         timeline: "Career Process Timeline",
         salaryLabel: "Expected salary",
+        openingsLabel: "Openings",
+        deadlineLabel: "Deadline",
         finalTitle: "Start your work preparation",
         apply: "Apply now",
         consult: "Get consultation",
@@ -60,10 +66,12 @@ export default function WorkInJapanPage() {
         title: "日本就職のプレミアムキャリアパス",
         subtitle: "SSW/TITP準備、分野選定、書類準備、ビザ手続きまで一貫サポート。",
         compare: "SSWとTITP",
-        opportunities: "現在の募集",
+        opportunities: "現在の求人募集（リアルタイム更新）",
         sectors: "需要の高い分野",
         timeline: "キャリアプロセス",
         salaryLabel: "想定給与",
+        openingsLabel: "募集枠",
+        deadlineLabel: "応募締切",
         finalTitle: "就職準備を始めましょう",
         apply: "今すぐ応募",
         consult: "無料相談",
@@ -90,26 +98,42 @@ export default function WorkInJapanPage() {
     language,
   );
 
-  const opportunities = translate(
+  const activeCmsJobs = (cms.jobCirculars || []).filter((j) => j.isPublished);
+
+  const fallbackOpportunities = translate(
     {
       bn: [
-        { t: "SSW কেয়ারগিভার (Kaigo)", e: "N4/JFT + কেয়ারগিভিং স্কিল টেস্ট", s: "¥180,000 – ¥240,000" },
-        { t: "SSW এগ্রিকালচার (Nogyo)", e: "N4/JFT + এগ্রিকালচার স্কিল টেস্ট", s: "¥160,000 – ¥210,000" },
-        { t: "TITP কনস্ট্রাকশন ও টেকনিক্যাল", e: "বেসিক ভাষা + মেডিকেল ক্লিয়ারেন্স", s: "¥160,000 – ¥190,000" },
+        { t: "SSW কেয়ারগিভার (Kaigo)", e: "N4/JFT + কেয়ারগিভিং স্কিল টেস্ট", s: "¥180,000 – ¥240,000", loc: "Tokyo / Osaka", benefit: "ডরমেটরি ও প্র্যাকটিক্যাল ট্রেনিং সহায়তা", openings: 15, deadline: "2027-03-30" },
+        { t: "SSW এগ্রিকালচার (Nogyo)", e: "N4/JFT + এগ্রিকালচার স্কিল টেস্ট", s: "¥160,000 – ¥210,000", loc: "Ibaraki / Hokkaido", benefit: "ফ্রি আবাসন গাইড ও স্কিল কোচিং", openings: 12, deadline: "2027-04-15" },
+        { t: "TITP কনস্ট্রাকশন ও টেকনিক্যাল", e: "বেসিক ভাষা + মেডিকেল ক্লিয়ারেন্স", s: "¥160,000 – ¥190,000", loc: "Hiroshima / Nagoya", benefit: "থাকা-খাওয়া ফ্রি স্কিল ট্রেনিং সুবিধা", openings: 20, deadline: "2027-04-30" },
       ],
       en: [
-        { t: "SSW Caregiver (Kaigo)", e: "N4/JFT + Nursing Care Skill Test", s: "¥180,000 – ¥240,000" },
-        { t: "SSW Agriculture (Nogyo)", e: "N4/JFT + Farming Skill Test", s: "¥160,000 – ¥210,000" },
-        { t: "TITP Construction & Technical", e: "Basic Japanese + Medical Fitness", s: "¥160,000 – ¥190,000" },
+        { t: "SSW Caregiver (Kaigo)", e: "N4/JFT + Nursing Care Skill Test", s: "¥180,000 – ¥240,000", loc: "Tokyo / Osaka", benefit: "Dormitory & practical skill training support", openings: 15, deadline: "2027-03-30" },
+        { t: "SSW Agriculture (Nogyo)", e: "N4/JFT + Farming Skill Test", s: "¥160,000 – ¥210,000", loc: "Ibaraki / Hokkaido", benefit: "Housing guidance & skill test coaching", openings: 12, deadline: "2027-04-15" },
+        { t: "TITP Construction & Technical", e: "Basic Japanese + Medical Fitness", s: "¥160,000 – ¥190,000", loc: "Hiroshima / Nagoya", benefit: "Free residential skill training in Dhaka", openings: 20, deadline: "2027-04-30" },
       ],
       ja: [
-        { t: "特定技能 介護 (Kaigo)", e: "N4/JFT ＋ 介護技能評価試験", s: "180,000～240,000 円" },
-        { t: "特定技能 農業 (Nogyo)", e: "N4/JFT ＋ 農業技能測定試験", s: "160,000～210,000 円" },
-        { t: "技能実習 建設・製造", e: "基礎日本語 ＋ 健康状態良好", s: "160,000～190,000 円" },
+        { t: "特定技能 介護 (Kaigo)", e: "N4/JFT ＋ 介護技能評価試験", s: "180,000～240,000 円", loc: "東京・大阪", benefit: "寮手配・実技研修サポート付き", openings: 15, deadline: "2027-03-30" },
+        { t: "特定技能 農業 (Nogyo)", e: "N4/JFT ＋ 農業技能測定試験", s: "160,000～210,000 円", loc: "茨城・北海道", benefit: "住居案内・技能試験対策", openings: 12, deadline: "2027-04-15" },
+        { t: "技能実習 建設・製造", e: "基礎日本語 ＋ 健康状態良好", s: "160,000～190,000 円", loc: "広島・名古屋", benefit: "ダッカでの無料合宿・実技訓練", openings: 20, deadline: "2027-04-30" },
       ],
     },
     language,
   );
+
+  const opportunities =
+    activeCmsJobs.length > 0
+      ? activeCmsJobs.map((job) => ({
+          id: job.id,
+          t: job.title[language] || job.title.bn || job.title.en,
+          e: job.requirements[language] || job.requirements.bn || job.requirements.en,
+          s: `${job.salaryYen} (${job.salaryBdtEquivalent})`,
+          loc: job.locationJapan,
+          benefit: job.specialBenefitsBn,
+          openings: job.openings,
+          deadline: job.deadline,
+        }))
+      : fallbackOpportunities.map((item, idx) => ({ id: `fb-${idx}`, ...item }));
 
   const sectors = translate(
     {
@@ -204,7 +228,7 @@ export default function WorkInJapanPage() {
           >
             {opportunities.map((opportunity) => (
               <motion.div
-                key={opportunity.t}
+                key={opportunity.id}
                 variants={itemVariants}
                 whileHover={{ y: -5, transition: { duration: 0.2 } }}
                 className="flex flex-col justify-between rounded-2xl border border-stone-200 bg-white p-6 shadow-xs hover:shadow-md hover:border-stone-300 transition-all"
@@ -213,12 +237,31 @@ export default function WorkInJapanPage() {
                   <div className="flex items-center justify-between gap-2 pb-3 border-b border-stone-100">
                     <h3 className="font-bold text-slate-900 text-base leading-snug">{opportunity.t}</h3>
                   </div>
-                  <div className="mt-3">
+                  <div className="mt-3 flex flex-wrap gap-1.5">
                     <span className="inline-block rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-bold text-[#15803d] border border-emerald-200">
                       {t.salaryLabel}: {opportunity.s}
                     </span>
+                    <span className="inline-flex items-center gap-1 rounded-md bg-stone-100 px-2 py-1 text-[11px] font-semibold text-slate-700">
+                      <MapPin className="h-3 w-3 text-[#b91c1c]" />
+                      {opportunity.loc}
+                    </span>
                   </div>
                   <p className="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">{opportunity.e}</p>
+                  {opportunity.benefit && (
+                    <div className="mt-2.5 rounded-xl bg-amber-50/80 border border-amber-200 px-3 py-2 text-xs text-amber-900 font-medium">
+                      ★ {opportunity.benefit}
+                    </div>
+                  )}
+                  <div className="mt-3 flex items-center justify-between text-[11px] text-slate-500 font-medium pt-2 border-t border-stone-100">
+                    <span className="inline-flex items-center gap-1">
+                      <Users className="h-3.5 w-3.5 text-slate-400" />
+                      {t.openingsLabel}: <strong className="text-slate-800">{opportunity.openings}</strong>
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                      {t.deadlineLabel}: <strong className="text-slate-800">{opportunity.deadline}</strong>
+                    </span>
+                  </div>
                 </div>
 
                 <div className="mt-6 pt-4 border-t border-stone-100">

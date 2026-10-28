@@ -28,11 +28,20 @@ import {
   Upload,
   Loader2,
   Paperclip,
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  Check,
+  Trash2,
+  Tag,
+  Sparkles,
+  Camera,
 } from "lucide-react";
-import { uploadDocumentFile } from "@/lib/media-upload";
+import { uploadDocumentFile, uploadMediaImage } from "@/lib/media-upload";
 import {
   getCmsStore,
   updateCrmLeadProfile,
+  deleteCrmLead,
   provisionLeadLoginAndEnrollment,
   promoteLeadToVisaPipeline,
   updateVisaStage,
@@ -45,6 +54,7 @@ import {
   type DashboardTabId,
   type LeadStatus,
   type LeadPriority,
+  type LeadCallOutcome,
   type LeadDocumentItem,
   type LeadActivityItem,
   type ServiceInterest,
@@ -112,10 +122,16 @@ const VISA_STAGE_LABELS: Record<VisaStage, { bn: string; en: string; ja: string 
 
 export default function LeadProfileModal({
   lead,
+  allLeads = [],
+  onSelectLead,
+  onDeleted,
   onClose,
   onSaved,
 }: {
   lead: CrmLead;
+  allLeads?: CrmLead[];
+  onSelectLead?: (nextLead: CrmLead) => void;
+  onDeleted?: (deletedName: string) => void;
   onClose: () => void;
   onSaved: (message: string) => void;
 }) {
@@ -133,8 +149,8 @@ export default function LeadProfileModal({
     return getCmsStore();
   }, [storeTick]);
 
-  const partnerSchools = liveStore.partnerSchools || [];
-  const b2bAgents = liveStore.b2bAgents || [];
+  const partnerSchools = useMemo(() => liveStore.partnerSchools || [], [liveStore.partnerSchools]);
+  const b2bAgents = useMemo(() => liveStore.b2bAgents || [], [liveStore.b2bAgents]);
   const counselors = liveStore.staffList.filter(
     (s) => s.role === "TELE_COUNSELOR" || s.role === "COUNSELOR" || s.role === "BRANCH_MANAGER",
   );
@@ -182,12 +198,22 @@ export default function LeadProfileModal({
   const [email, setEmail] = useState(lead.email || "");
   const [city, setCity] = useState(lead.city || "Dhaka");
   const [address, setAddress] = useState(lead.address || "");
+  const [avatarUrl, setAvatarUrl] = useState(lead.avatarUrl || "");
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [dateOfBirth, setDateOfBirth] = useState(lead.dateOfBirth || "");
+  const [gender, setGender] = useState<NonNullable<CrmLead["gender"]>>(lead.gender || "MALE");
+  const [maritalStatus, setMaritalStatus] = useState<NonNullable<CrmLead["maritalStatus"]>>(
+    lead.maritalStatus || "SINGLE"
+  );
+  const [nidOrBirthRegNo, setNidOrBirthRegNo] = useState(lead.nidOrBirthRegNo || "");
   const [passportNo, setPassportNo] = useState(lead.passportNo || "");
+  const [passportExpiryDate, setPassportExpiryDate] = useState(lead.passportExpiryDate || "");
   const [guardianName, setGuardianName] = useState(lead.guardianName || "");
   const [guardianPhone, setGuardianPhone] = useState(lead.guardianPhone || "");
   const [education, setEducation] = useState(lead.education || "HSC");
   const [sscGpa, setSscGpa] = useState(lead.sscGpa || "4.50");
   const [hscGpa, setHscGpa] = useState(lead.hscGpa || "4.25");
+  const [honorsOrDiplomaCgpa, setHonorsOrDiplomaCgpa] = useState(lead.honorsOrDiplomaCgpa || "");
   const [graduationYear, setGraduationYear] = useState(lead.graduationYear || "2024");
   const [gpaDetails, setGpaDetails] = useState(lead.gpaDetails || "");
   const [studyGapYears, setStudyGapYears] = useState<number>(lead.studyGapYears ?? 0);
@@ -205,6 +231,21 @@ export default function LeadProfileModal({
   const [interest, setInterest] = useState<ServiceInterest>(
     lead.interest || "STUDENT_VISA_REGULAR",
   );
+  const [preferredIntake, setPreferredIntake] = useState<
+    NonNullable<CrmLead["preferredIntake"]>
+  >(lead.preferredIntake || "APRIL");
+  const [preferredJapanCity, setPreferredJapanCity] = useState(
+    lead.preferredJapanCity || "Tokyo",
+  );
+  const [callOutcome, setCallOutcome] = useState<LeadCallOutcome>(
+    lead.callOutcome || "INTERESTED",
+  );
+  const [customTags, setCustomTags] = useState<string[]>(lead.customTags || []);
+  const [newTagInput, setNewTagInput] = useState("");
+  const [newCustomDocTitle, setNewCustomDocTitle] = useState("");
+  const [copiedPhone, setCopiedPhone] = useState(false);
+  const [confirmDeleteLead, setConfirmDeleteLead] = useState(false);
+
   const [status, setStatus] = useState<LeadStatus>(lead.status || "NEW");
   const [priority, setPriority] = useState<LeadPriority>(
     lead.priority || (lead.status === "ADMITTED" ? "HOT" : "WARM"),
@@ -391,6 +432,38 @@ export default function LeadProfileModal({
     ],
   );
 
+  // Current lead index for Next/Prev navigation
+  const currentLeadIndex = useMemo(
+    () => allLeads.findIndex((l) => l.id === lead.id),
+    [allLeads, lead.id],
+  );
+  const prevLead = currentLeadIndex > 0 ? allLeads[currentLeadIndex - 1] : null;
+  const nextLead =
+    currentLeadIndex >= 0 && currentLeadIndex < allLeads.length - 1
+      ? allLeads[currentLeadIndex + 1]
+      : null;
+
+  // Calculate Candidate Age from DOB
+  const candidateAge = useMemo(() => {
+    if (!dateOfBirth) return null;
+    const dob = new Date(dateOfBirth);
+    if (isNaN(dob.getTime())) return null;
+    const diff = Date.now() - dob.getTime();
+    return Math.max(15, Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25)));
+  }, [dateOfBirth]);
+
+  // Smart Japan Partner School Matcher based on GPA & Study Gap
+  const matchedRecommendedSchools = useMemo(() => {
+    const avgGpa =
+      ((parseFloat(sscGpa) || 3.5) + (parseFloat(hscGpa) || 3.5)) / 2;
+    return partnerSchools.map((sch) => {
+      const minGpa = parseFloat(sch.minGpaRequired || "3.0") || 3.0;
+      const maxGap = sch.maxStudyGapYears ?? 5;
+      const qualifies = avgGpa >= minGpa && studyGapYears <= maxGap;
+      return { school: sch, qualifies, minGpa, maxGap };
+    });
+  }, [partnerSchools, sscGpa, hscGpa, studyGapYears]);
+
   // ---------------------------------------------------------------------------
   // Handlers
   // ---------------------------------------------------------------------------
@@ -407,12 +480,19 @@ export default function LeadProfileModal({
       email,
       city,
       address,
+      avatarUrl: avatarUrl || undefined,
+      dateOfBirth: dateOfBirth || undefined,
+      gender,
+      maritalStatus,
+      nidOrBirthRegNo: nidOrBirthRegNo || undefined,
       passportNo,
+      passportExpiryDate: passportExpiryDate || undefined,
       guardianName,
       guardianPhone,
       education,
       sscGpa,
       hscGpa,
+      honorsOrDiplomaCgpa: honorsOrDiplomaCgpa || undefined,
       graduationYear,
       gpaDetails: gpaDetails || `SSC ${sscGpa} • HSC ${hscGpa}`,
       studyGapYears,
@@ -421,6 +501,10 @@ export default function LeadProfileModal({
       japaneseExamStatus,
       japaneseExamScore,
       interest,
+      preferredIntake,
+      preferredJapanCity,
+      callOutcome,
+      customTags,
       status,
       priority,
       branch,
@@ -461,6 +545,84 @@ export default function LeadProfileModal({
     onSaved(
       tr(`${name}-এর ৩৬০° প্রোফাইল, ডকুমেন্ট ভল্ট ও এসেসমেন্ট সেভ হয়েছে!`, `${name}'s 360° profile and assessment saved!`),
     );
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingAvatar(true);
+    try {
+      const res = await uploadMediaImage(file, { maxDimension: 400 });
+      setAvatarUrl(res.url);
+      updateCrmLeadProfile(lead.id, { avatarUrl: res.url });
+      onSaved(
+        tr("প্রার্থীর ছবি সফলভাবে আপলোড হয়েছে!", "Candidate photo uploaded!"),
+      );
+    } catch {
+      onSaved(tr("ছবি আপলোড সমস্যা হয়েছে", "Photo upload failed"));
+    } finally {
+      setIsUploadingAvatar(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleAddCustomTag = (tagToAdd?: string) => {
+    const clean = (tagToAdd ?? newTagInput).trim();
+    if (!clean) return;
+    if (!customTags.includes(clean)) {
+      const next = [...customTags, clean];
+      setCustomTags(next);
+      updateCrmLeadProfile(lead.id, { customTags: next });
+    }
+    if (!tagToAdd) setNewTagInput("");
+  };
+
+  const handleRemoveCustomTag = (tagToRemove: string) => {
+    const next = customTags.filter((t) => t !== tagToRemove);
+    setCustomTags(next);
+    updateCrmLeadProfile(lead.id, { customTags: next });
+  };
+
+  const handleAddCustomDocument = () => {
+    const cleanTitle = newCustomDocTitle.trim();
+    if (!cleanTitle) return;
+    const newDoc: LeadDocumentItem = {
+      id: `doc-custom-${Date.now()}`,
+      titleBn: cleanTitle,
+      titleEn: cleanTitle,
+      category: "ACADEMIC",
+      status: "SUBMITTED",
+      updatedAt: new Date().toISOString().slice(0, 10),
+    };
+    const nextList = [...documentChecklist, newDoc];
+    setDocumentChecklist(nextList);
+    updateCrmLeadProfile(lead.id, { documentChecklist: nextList });
+    setNewCustomDocTitle("");
+    onSaved(
+      tr(`নতুন ডকুমেন্ট স্লট "${cleanTitle}" যুক্ত হয়েছে`, `Custom document "${cleanTitle}" added`),
+    );
+  };
+
+  const handleSetQuickFollowUp = (daysFromToday: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + daysFromToday);
+    const iso = d.toISOString().slice(0, 10);
+    setFollowUpDate(iso);
+    updateCrmLeadProfile(lead.id, { followUpDate: iso });
+  };
+
+  const handleCopyPhone = async () => {
+    await navigator.clipboard.writeText(phone);
+    setCopiedPhone(true);
+    setTimeout(() => setCopiedPhone(false), 2000);
+  };
+
+  const handleDeleteCurrentLead = () => {
+    deleteCrmLead(lead.id);
+    if (onDeleted) {
+      onDeleted(name);
+    }
+    onClose();
   };
 
   const cycleDocStatus = (docId: string) => {
@@ -782,9 +944,35 @@ export default function LeadProfileModal({
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             {/* Candidate Identity & Key Status */}
             <div className="flex items-start sm:items-center gap-3.5">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/10 font-bold text-base text-white border border-white/15">
-                {(name || "ST").slice(0, 2).toUpperCase()}
-              </div>
+              <label
+                className="group relative flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl bg-white/10 font-bold text-base text-white border border-white/15 hover:border-white/40 transition"
+                title={tr("প্রার্থীর ছবি আপলোড করুন", "Upload Candidate Photo", "顔写真をアップロード")}
+              >
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span>{(name || "ST").slice(0, 2).toUpperCase()}</span>
+                )}
+                <span className="absolute inset-0 flex items-center justify-center bg-slate-950/60 opacity-0 group-hover:opacity-100 transition">
+                  {isUploadingAvatar ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-white" />
+                  ) : (
+                    <Camera className="h-4 w-4 text-white" />
+                  )}
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  disabled={isUploadingAvatar}
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                />
+              </label>
+
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-base sm:text-lg font-bold tracking-tight text-white">
@@ -810,39 +998,105 @@ export default function LeadProfileModal({
                   </span>
                   {lead.hasLoginAccess && (
                     <span className="rounded-md bg-emerald-500/20 border border-emerald-400/30 px-2 py-0.5 text-[11px] font-semibold text-emerald-200">
-                      {tr("পোর্টাল লগইন সচল", "Portal Active")}
+                      {tr("পোর্টাল লগইন সচল", "Portal Active", "ポータル有効")}
+                    </span>
+                  )}
+                  {lead.source === "GOOGLE_SHEET" && (
+                    <span className="rounded-md bg-blue-500/20 border border-blue-400/30 px-2 py-0.5 text-[10px] font-semibold text-blue-200">
+                      Google Sheet
                     </span>
                   )}
                 </div>
 
                 {/* Unboxed Metadata Row with · separators */}
                 <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-300 font-mono tabular-nums">
-                  <span>{phone}</span>
+                  <button
+                    type="button"
+                    onClick={handleCopyPhone}
+                    className="inline-flex items-center gap-1 hover:text-white transition"
+                    title={tr("ফোন নম্বর কপি করুন", "Copy Phone Number", "電話番号をコピー")}
+                  >
+                    <span>{phone}</span>
+                    {copiedPhone ? (
+                      <Check className="h-3 w-3 text-emerald-400" />
+                    ) : (
+                      <Copy className="h-3 w-3 text-slate-400" />
+                    )}
+                  </button>
+                  <span aria-hidden="true">·</span>
+                  <a
+                    href={`tel:${phone}`}
+                    className="inline-flex items-center gap-1 text-emerald-300 hover:underline font-sans"
+                  >
+                    <PhoneCall className="h-3 w-3" />
+                    <span>{tr("কল", "Call", "発信")}</span>
+                  </a>
+                  <span aria-hidden="true">·</span>
+                  <a
+                    href={`https://wa.me/${cleanWaNumber}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-emerald-300 hover:underline font-sans"
+                  >
+                    <span>WhatsApp</span>
+                  </a>
                   <span aria-hidden="true">·</span>
                   <span className="font-sans">{city}</span>
+                  {candidateAge !== null && (
+                    <>
+                      <span aria-hidden="true">·</span>
+                      <span>{candidateAge} yrs</span>
+                    </>
+                  )}
                   <span aria-hidden="true">·</span>
                   <span>
-                    {tr("ডকুমেন্ট:", "Docs:")} {eligibility.verifiedDocsCount}/
-                    {eligibility.totalDocsCount} Verified
+                    {tr("ডকুমেন্ট:", "Docs:", "書類:")} {eligibility.verifiedDocsCount}/
+                    {eligibility.totalDocsCount}
                   </span>
                   <span aria-hidden="true">·</span>
                   <span className="text-emerald-300 font-semibold">
-                    {tr("জমা:", "Paid:")} ৳{livePaidAmountBdt.toLocaleString()}
+                    {tr("জমা:", "Paid:", "入金:")} ৳{livePaidAmountBdt.toLocaleString()}
                   </span>
                   <span aria-hidden="true">·</span>
                   <span className={liveDueAmountBdt > 0 ? "text-amber-300 font-semibold" : "text-slate-400"}>
-                    {tr("বকেয়া:", "Due:")} ৳{liveDueAmountBdt.toLocaleString()}
+                    {tr("বকেয়া:", "Due:", "未払:")} ৳{liveDueAmountBdt.toLocaleString()}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Right: Live Eligibility Meter & Quick Actions */}
-            <div className="flex flex-wrap items-center gap-2.5">
-              <div className="rounded-xl bg-white/10 border border-white/10 px-3.5 py-2 flex items-center gap-3">
+            {/* Right: Prev/Next Switcher, Live Eligibility Meter & Quick Actions */}
+            <div className="flex flex-wrap items-center gap-2">
+              {allLeads.length > 1 && onSelectLead && (
+                <div className="inline-flex items-center rounded-xl bg-white/10 border border-white/10 p-0.5 mr-1">
+                  <button
+                    type="button"
+                    disabled={!prevLead}
+                    onClick={() => prevLead && onSelectLead(prevLead)}
+                    className="rounded-lg p-1.5 text-slate-300 hover:bg-white/15 hover:text-white disabled:opacity-35 transition"
+                    title={prevLead ? `Previous: ${prevLead.name}` : "No previous lead"}
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  </button>
+                  <span className="px-2 text-[11px] font-mono text-slate-300 tabular-nums">
+                    {currentLeadIndex + 1}/{allLeads.length}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={!nextLead}
+                    onClick={() => nextLead && onSelectLead(nextLead)}
+                    className="rounded-lg p-1.5 text-slate-300 hover:bg-white/15 hover:text-white disabled:opacity-35 transition"
+                    title={nextLead ? `Next: ${nextLead.name}` : "No next lead"}
+                  >
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
+
+              <div className="rounded-xl bg-white/10 border border-white/10 px-3 py-1.5 flex items-center gap-2.5">
                 <div>
                   <span className="block text-[10px] text-slate-300">
-                    {tr("জাপান ভিসা এলিজিবিলিটি", "Japan Visa Eligibility")}
+                    {tr("জাপান ভিসা এলিজিবিলিটি", "Japan Visa Eligibility", "ビザ適格スコア")}
                   </span>
                   <span className="text-sm font-bold tabular-nums text-white">
                     {eligibility.totalScore}%{" "}
@@ -859,7 +1113,7 @@ export default function LeadProfileModal({
                     </span>
                   </span>
                 </div>
-                <div className="w-16 bg-slate-700 rounded-full h-2 overflow-hidden">
+                <div className="w-14 bg-slate-700 rounded-full h-2 overflow-hidden">
                   <div
                     className={`h-full rounded-full ${
                       eligibility.totalScore >= 80
@@ -879,7 +1133,7 @@ export default function LeadProfileModal({
                 className="inline-flex items-center gap-1.5 rounded-xl bg-white/10 hover:bg-white/20 px-3 py-2 text-xs font-semibold text-white transition whitespace-nowrap shrink-0"
               >
                 <Printer className="h-3.5 w-3.5" />
-                <span>{tr("এসেসমেন্ট শিট", "Print Sheet")}</span>
+                <span>{tr("এসেসমেন্ট শিট", "Print Sheet", "査定表印刷")}</span>
               </button>
 
               <button
@@ -888,7 +1142,20 @@ export default function LeadProfileModal({
                 className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-3.5 py-2 text-xs font-semibold text-white transition whitespace-nowrap shrink-0"
               >
                 <Save className="h-3.5 w-3.5" />
-                <span>{tr("সব তথ্য সেভ", "Save Profile")}</span>
+                <span>{tr("সব তথ্য সেভ", "Save Profile", "保存")}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteLead((prev) => !prev)}
+                className={`rounded-xl p-2 transition ${
+                  confirmDeleteLead
+                    ? "bg-red-600 text-white"
+                    : "bg-white/10 text-red-300 hover:bg-red-500/20 hover:text-red-200"
+                }`}
+                title={tr("লিড ডিলিট করুন", "Delete Lead", "リード削除")}
+              >
+                <Trash2 className="h-4 w-4" />
               </button>
 
               <button
@@ -901,6 +1168,34 @@ export default function LeadProfileModal({
               </button>
             </div>
           </div>
+
+          {confirmDeleteLead && (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-red-950/80 border border-red-400/30 px-3.5 py-2 text-xs text-red-100">
+              <span>
+                {tr(
+                  `আপনি কি নিশ্চিতভাবে "${name}"-এর লিড প্রোফাইল ডিলিট করতে চান?`,
+                  `Are you sure you want to permanently delete "${name}" from CRM?`,
+                  `「${name}」のリード情報を完全に削除しますか？`
+                )}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmDeleteLead(false)}
+                  className="rounded-lg bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-white/20"
+                >
+                  {tr("বাতিল", "Cancel", "キャンセル")}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteCurrentLead}
+                  className="rounded-lg bg-red-600 px-3 py-1 text-[11px] font-bold text-white hover:bg-red-500"
+                >
+                  {tr("হ্যাঁ, মুছে ফেলুন", "Yes, Delete Permanently", "削除する")}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* 5-Tab Segmented Command Bar */}
           <div className="mt-4 flex items-center gap-1.5 overflow-x-auto pt-2 border-t border-white/10">
@@ -1128,7 +1423,7 @@ export default function LeadProfileModal({
                     </div>
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {tr("পাসপোর্ট নম্বর (যদি থাকে)", "Passport Number")}
+                        {tr("পাসপোর্ট নম্বর (যদি থাকে)", "Passport Number", "パスポート番号")}
                       </label>
                       <input
                         type="text"
@@ -1138,33 +1433,121 @@ export default function LeadProfileModal({
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
                       />
                     </div>
+                    <div>
+                      <label className="font-semibold text-slate-700">
+                        {tr("পাসপোর্টের মেয়াদ উত্তীর্ণের তারিখ", "Passport Expiry Date", "パスポート有効期限")}
+                      </label>
+                      <input
+                        type="date"
+                        value={passportExpiryDate}
+                        onChange={(e) => setPassportExpiryDate(e.target.value)}
+                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-semibold text-slate-700">
+                        {tr("জন্ম তারিখ (Date of Birth)", "Date of Birth", "生年月日")}
+                        {candidateAge !== null && (
+                          <span className="ml-1.5 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-bold text-slate-700">
+                            {candidateAge} yrs
+                          </span>
+                        )}
+                      </label>
+                      <input
+                        type="date"
+                        value={dateOfBirth}
+                        onChange={(e) => setDateOfBirth(e.target.value)}
+                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-semibold text-slate-700">
+                        {tr("লিঙ্গ ও বৈবাহিক অবস্থা", "Gender & Marital Status", "性別・婚姻状況")}
+                      </label>
+                      <div className="mt-1 grid grid-cols-2 gap-2">
+                        <select
+                          value={gender}
+                          onChange={(e) => setGender(e.target.value as any)}
+                          className="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-2"
+                        >
+                          <option value="MALE">{tr("পুরুষ (Male)", "Male", "男性")}</option>
+                          <option value="FEMALE">{tr("নারী (Female)", "Female", "女性")}</option>
+                          <option value="OTHER">{tr("অন্যান্য", "Other", "その他")}</option>
+                        </select>
+                        <select
+                          value={maritalStatus}
+                          onChange={(e) => setMaritalStatus(e.target.value as any)}
+                          className="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-2"
+                        >
+                          <option value="SINGLE">{tr("অবিবাহিত", "Single", "未婚")}</option>
+                          <option value="MARRIED">{tr("বিবাহিত", "Married", "既婚")}</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="font-semibold text-slate-700">
+                        {tr("জাতীয় পরিচয়পত্র (NID) / জন্ম নিবন্ধন নম্বর", "NID / Birth Reg. No", "NID・出生登録番号")}
+                      </label>
+                      <input
+                        type="text"
+                        value={nidOrBirthRegNo}
+                        onChange={(e) => setNidOrBirthRegNo(e.target.value)}
+                        placeholder="e.g. 1999269481029"
+                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-semibold text-slate-700">
+                        {tr("টার্গেট জাপান ইনটেক ও পছন্দের শহর", "Target Intake & Preferred City", "希望入学期・希望都市")}
+                      </label>
+                      <div className="mt-1 grid grid-cols-2 gap-2">
+                        <select
+                          value={preferredIntake}
+                          onChange={(e) => setPreferredIntake(e.target.value as any)}
+                          className="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-2 font-semibold"
+                        >
+                          <option value="APRIL">April (Spring)</option>
+                          <option value="JULY">July (Summer)</option>
+                          <option value="OCTOBER">October (Autumn)</option>
+                          <option value="JANUARY">January (Winter)</option>
+                          <option value="SSW_ANYTIME">SSW / Direct</option>
+                        </select>
+                        <input
+                          type="text"
+                          value={preferredJapanCity}
+                          onChange={(e) => setPreferredJapanCity(e.target.value)}
+                          placeholder="Tokyo / Osaka / Fukuoka"
+                          className="w-full rounded-xl border border-slate-200 px-2.5 py-2"
+                        />
+                      </div>
+                    </div>
                     <div className="sm:col-span-2">
                       <label className="font-semibold text-slate-700">
-                        {tr("বর্তমান ও স্থায়ী ঠিকানা", "Current & Permanent Address")}
+                        {tr("বর্তমান ও স্থায়ী ঠিকানা", "Current & Permanent Address", "現住所・本籍地")}
                       </label>
                       <input
                         type="text"
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
-                        placeholder={tr("বাসা/রোড, থানা, জেলা...", "House/Road, Area, District...")}
+                        placeholder={tr("বাসা/রোড, থানা, জেলা...", "House/Road, Area, District...", "番地・市区町村...")}
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
                       />
                     </div>
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {tr("অভিভাবক / স্পন্সরের নাম", "Guardian / Sponsor Name")}
+                        {tr("অভিভাবক / স্পন্সরের নাম", "Guardian / Sponsor Name", "保護者・経費支弁者名")}
                       </label>
                       <input
                         type="text"
                         value={guardianName}
                         onChange={(e) => setGuardianName(e.target.value)}
-                        placeholder={tr("পিতা / মাতা / ভাই", "Father / Mother / Sibling")}
+                        placeholder={tr("পিতা / মাতা / ভাই", "Father / Mother / Sibling", "父・母・兄弟")}
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
                       />
                     </div>
                     <div>
                       <label className="font-semibold text-slate-700">
-                        {tr("অভিভাবকের ফোন নম্বর", "Guardian Phone")}
+                        {tr("অভিভাবকের ফোন নম্বর", "Guardian Phone", "保護者電話番号")}
                       </label>
                       <input
                         type="text"
@@ -1173,6 +1556,82 @@ export default function LeadProfileModal({
                         placeholder="017..."
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
                       />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="font-semibold text-slate-700">
+                        {tr("কাউন্সেলরের সার্বিক মূল্যায়ন নোট (General Assessment Notes)", "Counselor General Assessment Notes", "カウンセラー総合所見")}
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder={tr("প্রার্থীর আর্থিক সক্ষমতা, পারিবারিক ব্যাকগ্রাউন্ড বা বিশেষ কোনো মন্তব্য...", "Write key assessment notes, sponsor strength, or special remarks...", "特記事項を入力...")}
+                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Custom Profile Tags Manager */}
+                  <div className="pt-3 border-t border-slate-100 space-y-2.5 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                        <Tag className="h-3.5 w-3.5 text-slate-600" />
+                        <span>{tr("প্রোফাইল ট্যাগ ও হাইলাইট (Custom Tags)", "Custom Profile Tags & Badges", "カスタムタグ")}</span>
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {customTags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="inline-flex items-center gap-1 rounded-lg bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white"
+                        >
+                          <span>{tag}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveCustomTag(tag)}
+                            className="text-slate-300 hover:text-white"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                      {["N5 Running", "Passport Ready", "Sponsor Strong", "Bank Loan Needed", "Google Sheet Import"].map(
+                        (preset) =>
+                          !customTags.includes(preset) && (
+                            <button
+                              key={preset}
+                              type="button"
+                              onClick={() => handleAddCustomTag(preset)}
+                              className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600 hover:border-slate-400 hover:bg-slate-100 transition"
+                            >
+                              + {preset}
+                            </button>
+                          )
+                      )}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newTagInput}
+                        onChange={(e) => setNewTagInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleAddCustomTag();
+                          }
+                        }}
+                        placeholder={tr("নতুন ট্যাগ লিখুন (যেমন: July Batch, High GPA)...", "Add custom tag...", "タグを追加...")}
+                        className="flex-1 rounded-xl border border-slate-200 px-3 py-1.5 text-xs"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleAddCustomTag()}
+                        className="rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition"
+                      >
+                        {tr("+ ট্যাগ যোগ", "+ Add Tag", "+ 追加")}
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1237,6 +1696,29 @@ export default function LeadProfileModal({
                         onChange={(e) => setHscGpa(e.target.value)}
                         placeholder="4.25"
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono tabular-nums"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-semibold text-slate-700">
+                        {tr("অনার্স / বিএসসি CGPA (যদি থাকে)", "Honors / BSc CGPA", "大学CGPA")}
+                      </label>
+                      <input
+                        type="text"
+                        value={honorsOrDiplomaCgpa}
+                        onChange={(e) => setHonorsOrDiplomaCgpa(e.target.value)}
+                        placeholder="3.45 / 4.00"
+                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono tabular-nums"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-semibold text-slate-700">
+                        {tr("আগ্রহের প্রোগ্রাম", "Target Program", "希望プログラム")}
+                      </label>
+                      <input
+                        type="text"
+                        value={interest}
+                        onChange={(e) => setInterest(e.target.value as ServiceInterest)}
+                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold"
                       />
                     </div>
 
@@ -1379,7 +1861,93 @@ export default function LeadProfileModal({
                         ))}
                       </select>
                     </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="font-semibold text-slate-700">
+                        {tr("সর্বশেষ কল ফলাফল (Call Disposition)", "Last Call Outcome", "最終架電結果")}
+                      </label>
+                      <select
+                        value={callOutcome}
+                        onChange={(e) => setCallOutcome(e.target.value as LeadCallOutcome)}
+                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-800"
+                      >
+                        <option value="CONNECTED_INTERESTED">Connected — Interested (আগ্রহী)</option>
+                        <option value="PROMISED_OFFICE_VISIT">Promised Office Visit (অফিসে আসবে)</option>
+                        <option value="GUARDIAN_DISCUSSION_NEEDED">Guardian Discussion Needed (অভিভাবকের সাথে কথা বলবে)</option>
+                        <option value="CALL_BACK_LATER">Busy / Call Back Later (পরে কল করতে বলেছে)</option>
+                        <option value="NO_ANSWER">No Answer / Switched Off (ফোন ধরেনি)</option>
+                        <option value="DOCS_PENDING">Documents Pending (ডকুমেন্ট রেডি করছে)</option>
+                        <option value="NOT_ELIGIBLE">Not Eligible (যোগ্যতা ঘাটতি)</option>
+                      </select>
+                    </div>
                   </div>
+
+                  {/* Smart Japan Partner School Matcher */}
+                  {matchedRecommendedSchools.length > 0 && (
+                    <div className="pt-3 border-t border-slate-100 space-y-2 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                          <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+                          <span>
+                            {tr(
+                              "প্রার্থীর প্রোফাইল অনুযায়ী প্রস্তাবিত জাপানি স্কুল",
+                              "Recommended Japan Partner Schools",
+                              "推奨パートナー日本語学校"
+                            )}
+                          </span>
+                        </span>
+                      </div>
+                      <div className="space-y-1.5">
+                        {matchedRecommendedSchools.slice(0, 4).map(({ school: sc, qualifies, minGpa, maxGap }) => {
+                          const isSelected = partnerSchoolId === sc.id || targetSchool === sc.name;
+                          return (
+                            <div
+                              key={sc.id}
+                              className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 transition ${
+                                isSelected
+                                  ? "border-emerald-500 bg-emerald-50/70"
+                                  : "border-slate-200/80 bg-slate-50/60"
+                              }`}
+                            >
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <p className="font-bold text-slate-900 truncate">{sc.name}</p>
+                                  <span
+                                    className={`rounded px-1.5 py-0.2 text-[10px] font-semibold ${
+                                      qualifies
+                                        ? "bg-emerald-100 text-emerald-800"
+                                        : "bg-amber-100 text-amber-800"
+                                    }`}
+                                  >
+                                    {qualifies ? "Match ✓" : "Review"}
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-slate-500">
+                                  {sc.location} · Min GPA {minGpa} · Max Gap {maxGap}y
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPartnerSchoolId(sc.id);
+                                  setTargetSchool(sc.name);
+                                }}
+                                className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold shrink-0 transition ${
+                                  isSelected
+                                    ? "bg-emerald-600 text-white"
+                                    : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+                                }`}
+                              >
+                                {isSelected
+                                  ? tr("✓ নির্বাচিত", "✓ Selected", "✓ 選択済")
+                                  : tr("নির্বাচন করুন", "Select", "選択")}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1521,6 +2089,29 @@ export default function LeadProfileModal({
                       </div>
                     </div>
                   ))}
+                </div>
+
+                {/* Add Custom Document Slot */}
+                <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                  <input
+                    type="text"
+                    value={newCustomDocTitle}
+                    onChange={(e) => setNewCustomDocTitle(e.target.value)}
+                    placeholder={tr(
+                      "অতিরিক্ত ডকুমেন্ট স্লট যুক্ত করুন (যেমন: Study Gap Certificate, Trade License)...",
+                      "Add custom document requirement (e.g., Study Gap Certificate, Tax Return)...",
+                      "追加書類項目を入力..."
+                    )}
+                    className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddCustomDocument}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition shrink-0"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>{tr("নতুন ডকুমেন্ট স্লট", "Add Doc Slot", "書類枠を追加")}</span>
+                  </button>
                 </div>
               </div>
 
@@ -2049,9 +2640,9 @@ export default function LeadProfileModal({
                         {tr("প্রার্থীর সাথে প্রতিটি ফোনালাপ, অফিস ভিজিট ও মিটিং নোট তারিখসহ সংরক্ষণ করুন", "Record every phone call, office visit, and guardian meeting with timestamps")}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2 text-xs">
+                    <div className="flex flex-wrap items-center gap-1.5 text-xs">
                       <span className="font-semibold text-slate-600">
-                        {tr("পরবর্তী ফলো-আপ:", "Next Follow-up:")}
+                        {tr("পরবর্তী ফলো-আপ:", "Next Follow-up:", "次回フォロー:")}
                       </span>
                       <input
                         type="date"
@@ -2059,6 +2650,27 @@ export default function LeadProfileModal({
                         onChange={(e) => setFollowUpDate(e.target.value)}
                         className="rounded-lg border border-slate-200 px-2.5 py-1 font-mono text-xs"
                       />
+                      <button
+                        type="button"
+                        onClick={() => handleSetQuickFollowUp(1)}
+                        className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100"
+                      >
+                        {tr("আগামীকাল", "Tomorrow", "明日")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSetQuickFollowUp(3)}
+                        className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100"
+                      >
+                        +3d
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSetQuickFollowUp(7)}
+                        className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100"
+                      >
+                        +7d
+                      </button>
                     </div>
                   </div>
 

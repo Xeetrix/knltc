@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
+import { useKnlTcCms } from "@/hooks/use-knltc-cms";
 
 interface Props {
   onSelectCourse?: (courseId: string) => void;
@@ -22,7 +23,15 @@ interface Props {
 
 export default function CoursePackagesSection({ onSelectCourse }: Props) {
   const { language } = useLanguage();
+  const { cms } = useKnlTcCms();
   const [selectedId, setSelectedId] = useState<string>("N5_COURSE");
+
+  const n5Price = cms.languageCoursePage?.n5PriceBdt || 12000;
+  const n4Price = cms.languageCoursePage?.n4PriceBdt || 12000;
+  const n5FeeEn = `৳${n5Price.toLocaleString("en-US")}`;
+  const n4FeeEn = `৳${n4Price.toLocaleString("en-US")}`;
+  const n5FeeBn = `৳${n5Price.toLocaleString("bn-BD")}`;
+  const n4FeeBn = `৳${n4Price.toLocaleString("bn-BD")}`;
 
   const t = translate(
     {
@@ -47,7 +56,7 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
             level: "JLPT N5 & JFT-Basic (Beginner)",
             title: "Japanese N5 Level Comprehensive Course",
             duration: "3 Months • 120 Hours",
-            fee: "৳12,000",
+            fee: n5FeeEn,
             examTarget: "JLPT N5, NAT-TEST 5Q, JFT-Basic",
             targetAudience: "Designed for beginners with zero prior Japanese knowledge.",
             highlights: [
@@ -69,7 +78,7 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
             level: "JLPT N4 & SSW Job Track (Intermediate)",
             title: "Japanese N4 Level Comprehensive Course",
             duration: "3 Months • 130 Hours",
-            fee: "৳14,500",
+            fee: n4FeeEn,
             examTarget: "JLPT N4, NAT-TEST 4Q, SSW Skill Tests",
             targetAudience: "For students with N5 knowledge, SSW job candidates, and degree applicants.",
             highlights: [
@@ -130,7 +139,7 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
             level: "JLPT N5 ও JFT-Basic (বিগিনার)",
             title: "Japanese N5 Level Comprehensive Course",
             duration: "৩ মাস • ১২০ ঘণ্টা নিবিড় প্রশিক্ষণ",
-            fee: "৳১২,০০০",
+            fee: n5FeeBn,
             examTarget: "JLPT N5, NAT-TEST 5Q, JFT-Basic",
             targetAudience: "যাদের জাপানি ভাষায় কোনো পূর্ব অভিজ্ঞতা নেই, তাদের একদম শূন্য লেভেল থেকে শেখার কোর্স।",
             highlights: [
@@ -152,7 +161,7 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
             level: "JLPT N4 ও SSW জব ট্র্যাক (ইন্টারমিডিয়েট)",
             title: "Japanese N4 Level Comprehensive Course",
             duration: "৩ মাস • ১৩০ ঘণ্টা নিবিড় প্রশিক্ষণ",
-            fee: "৳১৪,৫০০",
+            fee: n4FeeBn,
             examTarget: "JLPT N4, NAT-TEST 4Q, SSW স্কিল টেস্ট",
             targetAudience: "যাদের N5 সম্পন্ন বা বেসিক জানা আছে এবং SSW জব ভিসা বা বিশ্ববিদ্যালয়ের প্রস্তুতি নিতে চান।",
             highlights: [
@@ -213,7 +222,7 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
             level: "JLPT N5・JFT-Basic（基礎レベル）",
             title: "日本語N5集中総合講座",
             duration: "3ヶ月 • 120時間",
-            fee: "৳12,000",
+            fee: n5FeeEn,
             examTarget: "JLPT N5, NAT-TEST 5Q, JFT-Basic",
             targetAudience: "日本語学習が初めての方向け。ひらがな・カタカナからスタートします。",
             highlights: [
@@ -235,7 +244,7 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
             level: "JLPT N4・特定技能就労（中級レベル）",
             title: "日本語N4中級総合講座",
             duration: "3ヶ月 • 130時間",
-            fee: "৳14,500",
+            fee: n4FeeEn,
             examTarget: "JLPT N4, NAT-TEST 4Q, 特定技能試験",
             targetAudience: "N5修了者、特定技能（介護・外食等）就労希望者、大学進学希望者。",
             highlights: [

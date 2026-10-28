@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
 import { trackLead } from "@/lib/meta-pixel";
+import { submitPublicContactInquiry } from "@/lib/knltc-cms-store";
 
 type ContactFormState = { name: string; phone: string; interest: string; message: string };
 const initialForm: ContactFormState = { name: "", phone: "", interest: "", message: "" };
@@ -31,10 +32,26 @@ export default function ContactForm() {
     event.preventDefault();
     setSubmitting(true);
     try {
-      const response = await fetch("/api/contact", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
-      if (!response.ok) throw new Error("Request failed");
+      // Immediately record in the central KNLTC CRM store & sync to server
+      submitPublicContactInquiry({
+        name: form.name,
+        phone: form.phone,
+        interest: form.interest,
+        message: form.message,
+      });
+
+      await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      }).catch(() => null);
+
       toast({ title: t.submitted, description: t.thanks });
-      trackLead();
+      try {
+        trackLead();
+      } catch {
+        // ignore
+      }
       setForm(initialForm);
     } catch {
       toast({ title: t.failed, description: t.retry, variant: "destructive" });

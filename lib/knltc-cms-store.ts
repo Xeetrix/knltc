@@ -47,7 +47,14 @@ export interface SystemUserAccount {
 // ------------------------------------------------------------------------------
 // CRM & Lead Management
 // ------------------------------------------------------------------------------
-export type LeadSource = "FACEBOOK_META" | "WHATSAPP_DIRECT" | "WEBSITE_FORM" | "OFFICE_WALKIN" | "B2B_REFERRAL" | "SUB_AGENT";
+export type LeadSource =
+  | "FACEBOOK_META"
+  | "WHATSAPP_DIRECT"
+  | "WEBSITE_FORM"
+  | "OFFICE_WALKIN"
+  | "B2B_REFERRAL"
+  | "SUB_AGENT"
+  | "GOOGLE_SHEET";
 export type LeadStatus = "NEW" | "CONTACTED" | "COUNSELED" | "OFFICE_VISIT_BOOKED" | "ADMITTED" | "ARCHIVED";
 export type ServiceInterest =
   | "STUDENT_VISA_REGULAR"
@@ -61,6 +68,15 @@ export type ServiceInterest =
   | "JAPANESE_N4";
 
 export type LeadPriority = "HOT" | "WARM" | "COLD";
+
+export type LeadCallOutcome =
+  | "INTERESTED"
+  | "CALL_LATER"
+  | "NO_ANSWER"
+  | "BUSY"
+  | "WRONG_NUMBER"
+  | "GUARDIAN_DISCUSSION"
+  | "OFFICE_VISIT_CONFIRMED";
 
 export interface LeadDocumentItem {
   id: string;
@@ -96,7 +112,13 @@ export interface CrmLead {
   email?: string;
   city: string;
   address?: string;
+  avatarUrl?: string;
+  dateOfBirth?: string;
+  gender?: "MALE" | "FEMALE" | "OTHER";
+  maritalStatus?: "SINGLE" | "MARRIED";
+  nidOrBirthRegNo?: string;
   passportNo?: string;
+  passportExpiryDate?: string;
   guardianName?: string;
   guardianPhone?: string;
   gpaDetails?: string;
@@ -104,9 +126,14 @@ export interface CrmLead {
   interest: ServiceInterest;
   status: LeadStatus;
   priority?: LeadPriority;
+  callOutcome?: LeadCallOutcome;
+  customTags?: string[];
+  preferredIntake?: "JANUARY" | "APRIL" | "JULY" | "OCTOBER";
+  preferredJapanCity?: string;
   education: string;
   sscGpa?: string;
   hscGpa?: string;
+  honorsOrDiplomaCgpa?: string;
   graduationYear?: string;
   japaneseProficiency: "NONE" | "LEARNING_N5" | "PASSED_N5" | "PASSED_N4" | "NAT_JFT";
   japaneseExamType?: "NONE" | "JLPT_N5" | "JLPT_N4" | "NAT_5Q" | "NAT_4Q" | "JFT_BASIC";
@@ -119,6 +146,7 @@ export interface CrmLead {
   followUpDate: string;
   lastContactedAt: string;
   createdAt: string;
+  importedFromSheetAt?: string;
   // Individual Profile, File Open / Admission & Login Provisioning
   isFileOpened?: boolean;
   isCourseEnrolled?: boolean;
@@ -3207,4 +3235,298 @@ export function assignStudentToB2bAgent(
   saveCmsStore(store);
   return agent;
 }
+
+// ------------------------------------------------------------------------------
+// Bulk CRM Lead Operations (Google Sheet / CSV Import, Bulk Update & Delete)
+// ------------------------------------------------------------------------------
+export function normalizeBdPhone(rawPhone: string): string {
+  const digits = String(rawPhone || "").replace(/[^0-9]/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("8801") && digits.length === 13) {
+    return "0" + digits.slice(3);
+  }
+  if (digits.startsWith("1") && digits.length === 10) {
+    return "0" + digits;
+  }
+  return digits;
+}
+
+export function deleteCrmLead(leadId: string): void {
+  const store = getCmsStore();
+  store.crmLeads = store.crmLeads.filter((l) => l.id !== leadId);
+  const cms = store.websiteCms?.[0];
+  if (cms?.leadExtendedProfiles?.[leadId]) {
+    delete cms.leadExtendedProfiles[leadId];
+    syncToServer("CMS_UPDATE", undefined, cms);
+  }
+  saveCmsStore(store);
+  syncToServer("DELETE", "knltc_crm_leads", { id: leadId });
+}
+
+export function bulkDeleteCrmLeads(leadIds: string[]): number {
+  if (!leadIds.length) return 0;
+  const idSet = new Set(leadIds);
+  const store = getCmsStore();
+  const initialCount = store.crmLeads.length;
+  store.crmLeads = store.crmLeads.filter((l) => !idSet.has(l.id));
+  const deletedCount = initialCount - store.crmLeads.length;
+
+  const cms = store.websiteCms?.[0];
+  if (cms?.leadExtendedProfiles) {
+    leadIds.forEach((id) => {
+      delete cms.leadExtendedProfiles![id];
+    });
+    syncToServer("CMS_UPDATE", undefined, cms);
+  }
+
+  saveCmsStore(store);
+  leadIds.forEach((id) => {
+    syncToServer("DELETE", "knltc_crm_leads", { id });
+  });
+  return deletedCount;
+}
+
+export function bulkUpdateCrmLeads(
+  leadIds: string[],
+  updates: Partial<CrmLead>,
+): number {
+  if (!leadIds.length) return 0;
+  const idSet = new Set(leadIds);
+  const store = getCmsStore();
+  const cms = store.websiteCms?.[0] || DEFAULT_WEBSITE_CMS;
+  if (!cms.leadExtendedProfiles) cms.leadExtendedProfiles = {};
+
+  let updatedCount = 0;
+  store.crmLeads.forEach((lead) => {
+    if (!idSet.has(lead.id)) return;
+    Object.assign(lead, updates, { lastContactedAt: new Date().toISOString() });
+    cms.leadExtendedProfiles![lead.id] = {
+      ...(cms.leadExtendedProfiles![lead.id] || {}),
+      ...lead,
+    };
+    updatedCount++;
+  });
+
+  store.websiteCms = [cms];
+  saveCmsStore(store);
+  syncToServer("CMS_UPDATE", undefined, cms);
+  return updatedCount;
+}
+
+export function bulkImportCrmLeads(
+  rows: Partial<CrmLead>[],
+  options?: {
+    duplicateStrategy?: "UPDATE_EXISTING" | "SKIP_DUPLICATE" | "CREATE_NEW";
+    defaultBranch?: "DHK-HQ" | "KHULNA-01";
+    defaultAssignedTo?: string;
+    defaultSource?: LeadSource;
+    defaultStatus?: LeadStatus;
+    defaultPriority?: LeadPriority;
+    customImportTag?: string;
+  },
+): {
+  importedCount: number;
+  updatedCount: number;
+  skippedCount: number;
+  totalProcessed: number;
+} {
+  const store = getCmsStore();
+  const cms = store.websiteCms?.[0] || DEFAULT_WEBSITE_CMS;
+  if (!cms.leadExtendedProfiles) cms.leadExtendedProfiles = {};
+
+  const strategy = options?.duplicateStrategy || "UPDATE_EXISTING";
+  const fallbackBranch = options?.defaultBranch || "DHK-HQ";
+  const fallbackAssignedTo = options?.defaultAssignedTo || "শেখ বাসেত";
+  const fallbackSource = options?.defaultSource || "GOOGLE_SHEET";
+  const fallbackStatus = options?.defaultStatus || "NEW";
+  const fallbackPriority = options?.defaultPriority || "WARM";
+  const nowIso = new Date().toISOString();
+  const todayDate = nowIso.slice(0, 10);
+
+  let importedCount = 0;
+  let updatedCount = 0;
+  let skippedCount = 0;
+
+  rows.forEach((row, idx) => {
+    const cleanName = (row.name || "").trim();
+    const rawPhone = (row.phone || row.whatsapp || "").trim();
+    if (!cleanName && !rawPhone) {
+      skippedCount++;
+      return;
+    }
+
+    const normPhone = normalizeBdPhone(rawPhone);
+    const displayPhone = normPhone || rawPhone || "01700000000";
+    const displayWa =
+      row.whatsapp && row.whatsapp.trim()
+        ? row.whatsapp.trim()
+        : displayPhone.startsWith("+88")
+          ? displayPhone
+          : `+88${displayPhone}`;
+
+    // Check existing lead by normalized phone number
+    const existingLead = normPhone
+      ? store.crmLeads.find((l) => normalizeBdPhone(l.phone) === normPhone)
+      : undefined;
+
+    if (existingLead && strategy === "SKIP_DUPLICATE") {
+      skippedCount++;
+      return;
+    }
+
+    const interest: ServiceInterest = row.interest || "STUDENT_VISA_REGULAR";
+    const defaultContract =
+      row.contractAmountBdt ??
+      (interest === "STUDENT_VISA_PREMIUM"
+        ? 1100000
+        : interest === "JAPANESE_N5" || interest === "JAPANESE_N4"
+          ? 12000
+          : 120000);
+    const paid = row.paidAmountBdt ?? existingLead?.paidAmountBdt ?? 0;
+    const due = Math.max(0, defaultContract - paid);
+
+    const tags = Array.from(
+      new Set([
+        ...(existingLead?.customTags || []),
+        ...(row.customTags || []),
+        ...(options?.customImportTag ? [options.customImportTag] : ["Google Sheet"]),
+      ]),
+    );
+
+    if (existingLead && strategy === "UPDATE_EXISTING") {
+      const merged: Partial<CrmLead> = {
+        name: cleanName || existingLead.name,
+        phone: displayPhone || existingLead.phone,
+        whatsapp: displayWa || existingLead.whatsapp,
+        email: row.email || existingLead.email,
+        city: row.city || existingLead.city,
+        address: row.address || existingLead.address,
+        passportNo: row.passportNo || existingLead.passportNo,
+        guardianName: row.guardianName || existingLead.guardianName,
+        guardianPhone: row.guardianPhone || existingLead.guardianPhone,
+        education: row.education || existingLead.education,
+        sscGpa: row.sscGpa || existingLead.sscGpa,
+        hscGpa: row.hscGpa || existingLead.hscGpa,
+        graduationYear: row.graduationYear || existingLead.graduationYear,
+        studyGapYears:
+          row.studyGapYears !== undefined ? row.studyGapYears : existingLead.studyGapYears,
+        japaneseProficiency: row.japaneseProficiency || existingLead.japaneseProficiency,
+        interest: row.interest || existingLead.interest,
+        status: row.status || existingLead.status,
+        priority: row.priority || existingLead.priority,
+        assignedTo: row.assignedTo || existingLead.assignedTo,
+        branch: row.branch || existingLead.branch,
+        targetSchool: row.targetSchool || existingLead.targetSchool,
+        targetSchoolName: row.targetSchool || existingLead.targetSchoolName,
+        contractAmountBdt: defaultContract,
+        paidAmountBdt: paid,
+        dueAmountBdt: due,
+        notes: row.notes
+          ? existingLead.notes
+            ? `${existingLead.notes} | ${row.notes}`
+            : row.notes
+          : existingLead.notes,
+        customTags: tags,
+        importedFromSheetAt: nowIso,
+        lastContactedAt: nowIso,
+      };
+      Object.assign(existingLead, merged);
+      cms.leadExtendedProfiles![existingLead.id] = {
+        ...(cms.leadExtendedProfiles![existingLead.id] || {}),
+        ...existingLead,
+      };
+      updatedCount++;
+      return;
+    }
+
+    // Create brand new lead
+    const newId = `lead-${Date.now()}-${idx}-${Math.floor(100 + Math.random() * 899)}`;
+    const newLead: CrmLead = {
+      id: newId,
+      name: cleanName || `Candidate ${displayPhone.slice(-4)}`,
+      phone: displayPhone,
+      whatsapp: displayWa,
+      email: row.email || "",
+      city: row.city || "ঢাকা",
+      address: row.address || "",
+      passportNo: row.passportNo || "",
+      guardianName: row.guardianName || "",
+      guardianPhone: row.guardianPhone || "",
+      gpaDetails:
+        row.gpaDetails ||
+        (row.sscGpa || row.hscGpa
+          ? `SSC: ${row.sscGpa || "N/A"}, HSC: ${row.hscGpa || "N/A"}`
+          : ""),
+      source: row.source || fallbackSource,
+      interest,
+      status: row.status || fallbackStatus,
+      priority: row.priority || fallbackPriority,
+      education: row.education || "HSC / Equivalent",
+      sscGpa: row.sscGpa || "4.25",
+      hscGpa: row.hscGpa || "4.00",
+      graduationYear: row.graduationYear || "2024",
+      japaneseProficiency: row.japaneseProficiency || "NONE",
+      studyGapYears: Number(row.studyGapYears ?? 1),
+      assignedTo: row.assignedTo || fallbackAssignedTo,
+      branch: row.branch || fallbackBranch,
+      targetSchool: row.targetSchool || "",
+      targetSchoolName: row.targetSchool || "",
+      contractAmountBdt: defaultContract,
+      paidAmountBdt: paid,
+      dueAmountBdt: due,
+      notes: row.notes || "Imported from Google Sheets / CSV",
+      followUpDate: row.followUpDate || todayDate,
+      lastContactedAt: nowIso,
+      createdAt: row.createdAt || nowIso,
+      importedFromSheetAt: nowIso,
+      customTags: tags,
+      activityLog: [
+        {
+          id: `act-${Date.now()}-${idx}`,
+          type: "MEETING_NOTE",
+          summary: row.notes
+            ? `Google Sheet থেকে ইম্পোর্টকৃত নোট: ${row.notes}`
+            : "Google Sheet / CSV থেকে লিড প্রোফাইল সিঙ্ক করা হয়েছে।",
+          counselorName: row.assignedTo || fallbackAssignedTo,
+          createdAt: nowIso,
+        },
+      ],
+    };
+
+    store.crmLeads.unshift(newLead);
+    cms.leadExtendedProfiles![newLead.id] = { ...newLead };
+    importedCount++;
+
+    syncToServer("INSERT", "knltc_crm_leads", {
+      id: newLead.id,
+      name: newLead.name,
+      phone: newLead.phone,
+      whatsapp: newLead.whatsapp,
+      email: newLead.email,
+      city: newLead.city,
+      source: newLead.source,
+      interest: newLead.interest,
+      status: newLead.status,
+      education: newLead.education,
+      japanese_proficiency: newLead.japaneseProficiency,
+      study_gap_years: newLead.studyGapYears,
+      assigned_to: newLead.assignedTo,
+      branch: newLead.branch,
+      notes: newLead.notes,
+      follow_up_date: newLead.followUpDate,
+    });
+  });
+
+  store.websiteCms = [cms];
+  saveCmsStore(store);
+  syncToServer("CMS_UPDATE", undefined, cms);
+
+  return {
+    importedCount,
+    updatedCount,
+    skippedCount,
+    totalProcessed: importedCount + updatedCount + skippedCount,
+  };
+}
+
 

@@ -45,6 +45,8 @@ import {
   Receipt,
   Printer,
   Download,
+  Upload,
+  FileSpreadsheet,
   TrendingUp,
   TrendingDown,
   Filter,
@@ -58,6 +60,9 @@ import {
   fetchLiveStoreFromServer,
   addCrmLead,
   updateCrmLeadStatus,
+  deleteCrmLead,
+  bulkDeleteCrmLeads,
+  bulkUpdateCrmLeads,
   updateVisaStage,
   addLmsCredentials,
   addFinancialTransaction,
@@ -89,6 +94,7 @@ import {
   type CrmLead,
   type VisaStage,
   type LeadStatus,
+  type LeadPriority,
   type LeadSource,
   type ServiceInterest,
   type JobCircular,
@@ -107,6 +113,7 @@ import OrderManager from "@/components/admin/OrderManager";
 import ReviewManager from "@/components/admin/ReviewManager";
 import CategoryManager from "@/components/admin/CategoryManager";
 import LeadProfileModal from "@/components/admin/LeadProfileModal";
+import CrmImportExportModal from "@/components/admin/CrmImportExportModal";
 import PartnerProfileModal from "@/components/admin/PartnerProfileModal";
 import UserAccessControlPanel from "@/components/admin/UserAccessControlPanel";
 import StudentProfileView from "@/components/admin/StudentProfileView";
@@ -161,6 +168,15 @@ export default function DashboardPage() {
   const [financeFilterCategory, setFinanceFilterCategory] = useState<"ALL" | "INCOME" | "EXPENSE">("ALL");
   const [financeSearchQuery, setFinanceSearchQuery] = useState("");
   const [selectedTxForReceipt, setSelectedTxForReceipt] = useState<FinancialTransaction | null>(null);
+
+  // CRM Search, Filter, Bulk Selection & Import/Export states
+  const [crmImportExportMode, setCrmImportExportMode] = useState<"IMPORT" | "EXPORT" | null>(null);
+  const [crmSearchQuery, setCrmSearchQuery] = useState("");
+  const [crmStatusFilter, setCrmStatusFilter] = useState<"ALL" | LeadStatus | "FOLLOWUP_DUE">("ALL");
+  const [crmPriorityFilter, setCrmPriorityFilter] = useState<"ALL" | LeadPriority>("ALL");
+  const [crmSourceFilter, setCrmSourceFilter] = useState<"ALL" | LeadSource>("ALL");
+  const [crmCounselorFilter, setCrmCounselorFilter] = useState<string>("ALL");
+  const [selectedCrmLeadIds, setSelectedCrmLeadIds] = useState<string[]>([]);
 
   // Clean Custom Modals State (Replaces all ugly browser prompts)
   const [activeModal, setActiveModal] = useState<ActiveModalType>(null);
@@ -507,13 +523,76 @@ export default function DashboardPage() {
     window.location.href = "/admin/login";
   };
 
-  const filteredLeads = useMemo(() => {
+  const branchLeads = useMemo(() => {
     if (!store) return [];
     return store.crmLeads.filter((l) => {
       if (activeBranch === "ALL") return true;
       return l.branch === activeBranch;
     });
   }, [store, activeBranch]);
+
+  const filteredLeads = useMemo(() => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    return branchLeads.filter((l) => {
+      // Status filter
+      if (crmStatusFilter === "FOLLOWUP_DUE") {
+        if (!l.followUpDate || l.followUpDate > todayStr || l.status === "ARCHIVED") {
+          return false;
+        }
+      } else if (crmStatusFilter !== "ALL" && l.status !== crmStatusFilter) {
+        return false;
+      }
+
+      // Priority filter
+      const resolvedPrio = l.priority || (l.status === "ADMITTED" ? "HOT" : "WARM");
+      if (crmPriorityFilter !== "ALL" && resolvedPrio !== crmPriorityFilter) {
+        return false;
+      }
+
+      // Source filter
+      if (crmSourceFilter !== "ALL" && l.source !== crmSourceFilter) {
+        return false;
+      }
+
+      // Counselor filter
+      if (crmCounselorFilter !== "ALL" && l.assignedTo !== crmCounselorFilter) {
+        return false;
+      }
+
+      // Search query
+      if (crmSearchQuery.trim()) {
+        const q = crmSearchQuery.trim().toLowerCase();
+        const haystack = [
+          l.name,
+          l.phone,
+          l.whatsapp,
+          l.email,
+          l.city,
+          l.passportNo,
+          l.fileTrackingNo,
+          l.id,
+          l.education,
+          l.assignedTo,
+          l.targetSchoolName || l.targetSchool,
+          l.referredByAgentName || l.b2bAgentName,
+          ...(l.customTags || []),
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+
+      return true;
+    });
+  }, [
+    branchLeads,
+    crmStatusFilter,
+    crmPriorityFilter,
+    crmSourceFilter,
+    crmCounselorFilter,
+    crmSearchQuery,
+  ]);
 
   const filteredVisaApplicants = useMemo(() => {
     if (!store) return [];
@@ -1782,7 +1861,7 @@ export default function DashboardPage() {
                   ========================================================================= */}
               {activeTab === "crm" && (
                 <div className="space-y-5">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                     <div>
                       <h2 className="text-xl font-bold text-slate-900 tracking-tight">
                         {t.crm.title}
@@ -1791,21 +1870,397 @@ export default function DashboardPage() {
                         {t.crm.subtitle}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setActiveModal("ADD_LEAD")}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-[#b91c1c] px-4 py-2.5 text-xs font-semibold text-white hover:bg-red-800 transition shadow-2xs shrink-0"
-                    >
-                      <Plus className="h-4 w-4" />
-                      <span>{t.crm.quickAddBtn}</span>
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setCrmImportExportMode("IMPORT")}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50/80 px-3.5 py-2.5 text-xs font-semibold text-emerald-900 hover:bg-emerald-100 transition shrink-0"
+                      >
+                        <FileSpreadsheet className="h-4 w-4 text-emerald-700" />
+                        <span>
+                          {tr(
+                            "Google Sheet / CSV ইমপোর্ট",
+                            "Import Sheet / CSV",
+                            "Googleシート / CSV取込"
+                          )}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCrmImportExportMode("EXPORT")}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition shrink-0"
+                      >
+                        <Download className="h-4 w-4 text-slate-600" />
+                        <span>
+                          {tr(
+                            `এক্সপোর্ট (${filteredLeads.length})`,
+                            `Export (${filteredLeads.length})`,
+                            `エクスポート (${filteredLeads.length})`
+                          )}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveModal("ADD_LEAD")}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-[#b91c1c] px-4 py-2.5 text-xs font-semibold text-white hover:bg-red-800 transition shadow-2xs shrink-0"
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span>{t.crm.quickAddBtn}</span>
+                      </button>
+                    </div>
                   </div>
+
+                  {/* Interactive Status Pipeline Filter Bar */}
+                  {(() => {
+                    const todayStr = new Date().toISOString().slice(0, 10);
+                    const dueFollowUpCount = branchLeads.filter(
+                      (l) => l.followUpDate && l.followUpDate <= todayStr && l.status !== "ARCHIVED"
+                    ).length;
+
+                    const statusTabs: {
+                      id: "ALL" | LeadStatus | "FOLLOWUP_DUE";
+                      label: string;
+                      count: number;
+                      accent?: string;
+                    }[] = [
+                      {
+                        id: "ALL",
+                        label: tr("সকল লিড", "All Leads", "全リード"),
+                        count: branchLeads.length,
+                      },
+                      {
+                        id: "NEW",
+                        label: t.crm.statuses.NEW,
+                        count: branchLeads.filter((l) => l.status === "NEW").length,
+                      },
+                      {
+                        id: "CONTACTED",
+                        label: t.crm.statuses.CONTACTED,
+                        count: branchLeads.filter((l) => l.status === "CONTACTED").length,
+                      },
+                      {
+                        id: "COUNSELED",
+                        label: t.crm.statuses.COUNSELED,
+                        count: branchLeads.filter((l) => l.status === "COUNSELED").length,
+                      },
+                      {
+                        id: "OFFICE_VISIT_BOOKED",
+                        label: t.crm.statuses.OFFICE_VISIT_BOOKED,
+                        count: branchLeads.filter((l) => l.status === "OFFICE_VISIT_BOOKED").length,
+                      },
+                      {
+                        id: "ADMITTED",
+                        label: t.crm.statuses.ADMITTED,
+                        count: branchLeads.filter((l) => l.status === "ADMITTED").length,
+                      },
+                      {
+                        id: "FOLLOWUP_DUE",
+                        label: tr("আজকের ফলো-আপ", "Follow-up Due", "本日フォロー対象"),
+                        count: dueFollowUpCount,
+                        accent: "amber",
+                      },
+                    ];
+
+                    return (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {statusTabs.map((tab) => {
+                          const active = crmStatusFilter === tab.id;
+                          return (
+                            <button
+                              key={tab.id}
+                              type="button"
+                              onClick={() => setCrmStatusFilter(tab.id)}
+                              className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
+                                active
+                                  ? "bg-slate-900 text-white shadow-2xs"
+                                  : tab.accent === "amber" && tab.count > 0
+                                    ? "border border-amber-200 bg-amber-50/70 text-amber-900 hover:bg-amber-100"
+                                    : "border border-slate-200/80 bg-white text-slate-600 hover:bg-slate-50"
+                              }`}
+                            >
+                              <span>{tab.label}</span>
+                              <span
+                                className={`rounded-md px-1.5 py-0.2 font-mono text-[10px] tabular-nums ${
+                                  active
+                                    ? "bg-white/20 text-white"
+                                    : "bg-slate-100 text-slate-700"
+                                }`}
+                              >
+                                {tab.count}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Search & Multi-Dimensional Filter Controls */}
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-2.5 text-xs">
+                      <div className="sm:col-span-2 lg:col-span-5 relative">
+                        <Search className="h-3.5 w-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={crmSearchQuery}
+                          onChange={(e) => setCrmSearchQuery(e.target.value)}
+                          placeholder={tr(
+                            "নাম, মোবাইল নম্বর, পাসপোর্ট, জেলা, স্কুল বা ট্যাগ দিয়ে খুঁজুন...",
+                            "Search by name, phone, passport, city, school, or tag...",
+                            "氏名・電話番号・パスポート・都市・タグで検索..."
+                          )}
+                          className="w-full rounded-xl border border-slate-200 pl-8 pr-3 py-2 text-xs text-slate-900 focus:border-slate-400 focus:outline-hidden"
+                        />
+                      </div>
+
+                      <div className="lg:col-span-2">
+                        <select
+                          value={crmPriorityFilter}
+                          onChange={(e) => setCrmPriorityFilter(e.target.value as any)}
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-700"
+                        >
+                          <option value="ALL">
+                            {tr("সব প্রায়োরিটি (All Priority)", "All Priorities", "全優先度")}
+                          </option>
+                          <option value="HOT">HOT Priority</option>
+                          <option value="WARM">WARM Lead</option>
+                          <option value="COLD">COLD Lead</option>
+                        </select>
+                      </div>
+
+                      <div className="lg:col-span-2">
+                        <select
+                          value={crmSourceFilter}
+                          onChange={(e) => setCrmSourceFilter(e.target.value as any)}
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-700"
+                        >
+                          <option value="ALL">
+                            {tr("সব মাধ্যম (All Sources)", "All Sources", "全流入元")}
+                          </option>
+                          <option value="GOOGLE_SHEET">Google Sheet Import</option>
+                          <option value="FACEBOOK_AD">Facebook Ads</option>
+                          <option value="WHATSAPP_DIRECT">WhatsApp Direct</option>
+                          <option value="WEBSITE_CALCULATOR">Website Inquiry</option>
+                          <option value="WALK_IN_DHAKA">Walk-in (Dhaka HQ)</option>
+                          <option value="WALK_IN_KHULNA">Walk-in (Khulna)</option>
+                          <option value="SUB_AGENT_REFERRAL">B2B Sub-Agent</option>
+                        </select>
+                      </div>
+
+                      <div className="lg:col-span-3 flex items-center gap-2">
+                        <select
+                          value={crmCounselorFilter}
+                          onChange={(e) => setCrmCounselorFilter(e.target.value)}
+                          className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-700"
+                        >
+                          <option value="ALL">
+                            {tr("সকল কাউন্সেলর (All Counselors)", "All Counselors", "全カウンセラー")}
+                          </option>
+                          {Array.from(new Set(branchLeads.map((l) => l.assignedTo).filter(Boolean))).map(
+                            (cName) => (
+                              <option key={cName} value={cName}>
+                                {cName}
+                              </option>
+                            )
+                          )}
+                        </select>
+
+                        {(crmSearchQuery ||
+                          crmStatusFilter !== "ALL" ||
+                          crmPriorityFilter !== "ALL" ||
+                          crmSourceFilter !== "ALL" ||
+                          crmCounselorFilter !== "ALL") && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCrmSearchQuery("");
+                              setCrmStatusFilter("ALL");
+                              setCrmPriorityFilter("ALL");
+                              setCrmSourceFilter("ALL");
+                              setCrmCounselorFilter("ALL");
+                            }}
+                            className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-[11px] font-semibold text-slate-600 hover:bg-slate-100 shrink-0"
+                          >
+                            {tr("রিসেট", "Reset", "リセット")}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bulk Selection Actions Bar */}
+                  {selectedCrmLeadIds.length > 0 && (
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-900 px-4 py-3 text-xs text-white shadow-md">
+                      <div className="flex items-center gap-2">
+                        <span className="rounded-lg bg-emerald-500/20 border border-emerald-400/30 px-2.5 py-1 font-mono font-bold text-emerald-300 tabular-nums">
+                          {selectedCrmLeadIds.length}
+                        </span>
+                        <span className="font-semibold">
+                          {tr(
+                            "টি লিড নির্বাচিত করা হয়েছে — বাল্ক অ্যাকশন নিন:",
+                            "leads selected — apply bulk action:",
+                            "件のリードを選択中 — 一括操作："
+                          )}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        <select
+                          defaultValue=""
+                          onChange={(e) => {
+                            if (!e.target.value) return;
+                            const nextStatus = e.target.value as LeadStatus;
+                            const count = bulkUpdateCrmLeads(selectedCrmLeadIds, { status: nextStatus });
+                            setStore({ ...getCmsStore() });
+                            showToast(
+                              tr(
+                                `${count}টি লিডের স্ট্যাটাস "${nextStatus}"-এ পরিবর্তন করা হয়েছে`,
+                                `Updated status to ${nextStatus} for ${count} leads`,
+                                `${count}件のステータスを${nextStatus}に更新しました`
+                              )
+                            );
+                            e.target.value = "";
+                          }}
+                          className="rounded-xl border border-white/15 bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-white"
+                        >
+                          <option value="" className="text-slate-900">
+                            {tr("স্ট্যাটাস পরিবর্তন...", "Set Status...", "ステータス変更...")}
+                          </option>
+                          <option value="NEW" className="text-slate-900">NEW</option>
+                          <option value="CONTACTED" className="text-slate-900">CONTACTED</option>
+                          <option value="COUNSELED" className="text-slate-900">COUNSELED</option>
+                          <option value="OFFICE_VISIT_BOOKED" className="text-slate-900">OFFICE_VISIT_BOOKED</option>
+                          <option value="ADMITTED" className="text-slate-900">ADMITTED</option>
+                          <option value="ARCHIVED" className="text-slate-900">ARCHIVED</option>
+                        </select>
+
+                        <select
+                          defaultValue=""
+                          onChange={(e) => {
+                            if (!e.target.value) return;
+                            const nextPrio = e.target.value as LeadPriority;
+                            const count = bulkUpdateCrmLeads(selectedCrmLeadIds, { priority: nextPrio });
+                            setStore({ ...getCmsStore() });
+                            showToast(
+                              tr(
+                                `${count}টি লিডের প্রায়োরিটি "${nextPrio}" করা হয়েছে`,
+                                `Updated priority to ${nextPrio} for ${count} leads`,
+                                `${count}件の優先度を${nextPrio}に更新しました`
+                              )
+                            );
+                            e.target.value = "";
+                          }}
+                          className="rounded-xl border border-white/15 bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-white"
+                        >
+                          <option value="" className="text-slate-900">
+                            {tr("প্রায়োরিটি সেট...", "Set Priority...", "優先度変更...")}
+                          </option>
+                          <option value="HOT" className="text-slate-900">HOT Priority</option>
+                          <option value="WARM" className="text-slate-900">WARM Lead</option>
+                          <option value="COLD" className="text-slate-900">COLD Lead</option>
+                        </select>
+
+                        <select
+                          defaultValue=""
+                          onChange={(e) => {
+                            if (!e.target.value) return;
+                            const counselorName = e.target.value;
+                            const staffObj = store.staffList.find((s) => s.name === counselorName);
+                            const count = bulkUpdateCrmLeads(selectedCrmLeadIds, {
+                              assignedTo: counselorName,
+                              assignedCounselorId: staffObj?.id,
+                            });
+                            setStore({ ...getCmsStore() });
+                            showToast(
+                              tr(
+                                `${count}টি লিড "${counselorName}"-কে অ্যাসাইন করা হয়েছে`,
+                                `Assigned ${count} leads to ${counselorName}`,
+                                `${count}件を${counselorName}に割り当てました`
+                              )
+                            );
+                            e.target.value = "";
+                          }}
+                          className="rounded-xl border border-white/15 bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-white"
+                        >
+                          <option value="" className="text-slate-900">
+                            {tr("কাউন্সেলর অ্যাসাইন...", "Assign Counselor...", "担当者割当...")}
+                          </option>
+                          {store.staffList
+                            .filter(
+                              (s) =>
+                                s.role === "COUNSELOR" ||
+                                s.role === "TELE_COUNSELOR" ||
+                                s.role === "BRANCH_MANAGER"
+                            )
+                            .map((s) => (
+                              <option key={s.id} value={s.name} className="text-slate-900">
+                                {s.name}
+                              </option>
+                            ))}
+                        </select>
+
+                        <button
+                          type="button"
+                          onClick={() => setCrmImportExportMode("EXPORT")}
+                          className="inline-flex items-center gap-1 rounded-xl bg-white/15 px-3 py-1.5 font-semibold text-white hover:bg-white/25 transition"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          <span>{tr("এক্সপোর্ট", "Export Selected", "選択分出力")}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const count = bulkDeleteCrmLeads(selectedCrmLeadIds);
+                            setSelectedCrmLeadIds([]);
+                            setStore({ ...getCmsStore() });
+                            showToast(
+                              tr(
+                                `${count}টি লিড মুছে ফেলা হয়েছে`,
+                                `Deleted ${count} selected leads`,
+                                `${count}件のリードを削除しました`
+                              )
+                            );
+                          }}
+                          className="inline-flex items-center gap-1 rounded-xl bg-red-600 px-3 py-1.5 font-semibold text-white hover:bg-red-500 transition"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          <span>{tr("ডিলিট", "Delete", "削除")}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCrmLeadIds([])}
+                          className="rounded-xl bg-white/10 px-2.5 py-1.5 text-slate-300 hover:text-white"
+                        >
+                          {tr("বাতিল", "Clear", "解除")}
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="rounded-2xl border border-slate-200/80 bg-white overflow-hidden">
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs">
                         <thead className="border-b border-slate-100 bg-slate-50/70 font-semibold text-slate-500">
                           <tr>
+                            <th className="w-9 px-3 py-3">
+                              <input
+                                type="checkbox"
+                                checked={
+                                  filteredLeads.length > 0 &&
+                                  filteredLeads.every((l) => selectedCrmLeadIds.includes(l.id))
+                                }
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedCrmLeadIds(filteredLeads.map((l) => l.id));
+                                  } else {
+                                    setSelectedCrmLeadIds([]);
+                                  }
+                                }}
+                                className="h-3.5 w-3.5 rounded accent-slate-900 cursor-pointer"
+                              />
+                            </th>
                             <th className="px-4 py-3">{t.crm.colCandidate}</th>
                             <th className="px-4 py-3">{t.crm.colSource}</th>
                             <th className="px-4 py-3">
@@ -1821,7 +2276,7 @@ export default function DashboardPage() {
                             const waText = encodeURIComponent(
                               `Hello ${lead.name}, greetings from KNLTC. We would like to follow up on your Japan study & visa inquiry.`,
                             );
-                            const waLink = `https://wa.me/${lead.whatsapp.replace(/[^0-9]/g, "")}?text=${waText}`;
+                            const waLink = `https://wa.me/${(lead.whatsapp || lead.phone).replace(/[^0-9]/g, "")}?text=${waText}`;
                             const contractBdt =
                               lead.contractAmountBdt ||
                               (lead.interest === "STUDENT_VISA_PREMIUM"
@@ -1834,59 +2289,118 @@ export default function DashboardPage() {
                             const elig = calculateLeadEligibility(lead);
                             const leadPriority =
                               lead.priority || (lead.status === "ADMITTED" ? "HOT" : "WARM");
+                            const isSelected = selectedCrmLeadIds.includes(lead.id);
 
                             return (
-                              <tr key={lead.id} className="hover:bg-slate-50/70 transition-colors">
+                              <tr
+                                key={lead.id}
+                                className={`transition-colors ${
+                                  isSelected ? "bg-slate-50" : "hover:bg-slate-50/70"
+                                }`}
+                              >
+                                <td className="px-3 py-3.5">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedCrmLeadIds((prev) => [...prev, lead.id]);
+                                      } else {
+                                        setSelectedCrmLeadIds((prev) =>
+                                          prev.filter((id) => id !== lead.id)
+                                        );
+                                      }
+                                    }}
+                                    className="h-3.5 w-3.5 rounded accent-slate-900 cursor-pointer"
+                                  />
+                                </td>
                                 <td className="px-4 py-3.5">
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-start gap-2.5">
                                     <button
                                       type="button"
                                       onClick={() => setSelectedLeadForProfile(lead)}
-                                      className="text-left group"
+                                      className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-slate-100 border border-slate-200 font-bold text-[11px] text-slate-700 hover:border-slate-400 transition mt-0.5"
                                     >
-                                      <p className="font-bold text-slate-900 text-xs sm:text-sm group-hover:text-[#b91c1c] transition-colors">
-                                        {lead.name}
-                                      </p>
+                                      {lead.avatarUrl ? (
+                                        <img
+                                          src={lead.avatarUrl}
+                                          alt={lead.name}
+                                          className="h-full w-full object-cover"
+                                        />
+                                      ) : (
+                                        <span>{(lead.name || "ST").slice(0, 2).toUpperCase()}</span>
+                                      )}
                                     </button>
-                                    <span
-                                      className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded ${
-                                        leadPriority === "HOT"
-                                          ? "bg-red-50 text-red-700"
-                                          : leadPriority === "WARM"
-                                            ? "bg-amber-50 text-amber-800"
-                                            : "bg-slate-100 text-slate-600"
-                                      }`}
-                                    >
-                                      {leadPriority}
-                                    </span>
-                                  </div>
-                                  <p className="text-slate-400 font-mono text-[11px] tabular-nums mt-0.5">
-                                    {lead.phone} · {lead.city}
-                                  </p>
-                                  <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500 font-mono tabular-nums">
-                                    <span
-                                      className={
-                                        elig.totalScore >= 80
-                                          ? "text-emerald-700 font-semibold"
-                                          : elig.totalScore >= 65
-                                            ? "text-amber-700 font-semibold"
-                                            : "text-slate-600 font-semibold"
-                                      }
-                                    >
-                                      {tr("যোগ্যতা:", "Eligibility:", "適格性:")} {elig.totalScore}%
-                                    </span>
-                                    <span aria-hidden="true">·</span>
-                                    <span>
-                                      {tr("ডকুমেন্ট:", "Documents:", "提出書類:")} {elig.verifiedDocsCount}/{elig.totalDocsCount}
-                                    </span>
-                                    {(lead.targetSchoolName || lead.targetSchool) && (
-                                      <>
-                                        <span aria-hidden="true">·</span>
-                                        <span className="font-sans text-slate-700 font-medium">
-                                          {lead.targetSchoolName || lead.targetSchool}
+                                    <div>
+                                      <div className="flex flex-wrap items-center gap-1.5">
+                                        <button
+                                          type="button"
+                                          onClick={() => setSelectedLeadForProfile(lead)}
+                                          className="text-left group"
+                                        >
+                                          <p className="font-bold text-slate-900 text-xs sm:text-sm group-hover:text-[#b91c1c] transition-colors">
+                                            {lead.name}
+                                          </p>
+                                        </button>
+                                        <span
+                                          className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded ${
+                                            leadPriority === "HOT"
+                                              ? "bg-red-50 text-red-700"
+                                              : leadPriority === "WARM"
+                                                ? "bg-amber-50 text-amber-800"
+                                                : "bg-slate-100 text-slate-600"
+                                          }`}
+                                        >
+                                          {leadPriority}
                                         </span>
-                                      </>
-                                    )}
+                                        {lead.source === "GOOGLE_SHEET" && (
+                                          <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">
+                                            Sheet
+                                          </span>
+                                        )}
+                                      </div>
+                                      <p className="text-slate-400 font-mono text-[11px] tabular-nums mt-0.5">
+                                        {lead.phone} · {lead.city}
+                                        {lead.followUpDate ? ` · Follow-up: ${lead.followUpDate}` : ""}
+                                      </p>
+                                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500 font-mono tabular-nums">
+                                        <span
+                                          className={
+                                            elig.totalScore >= 80
+                                              ? "text-emerald-700 font-semibold"
+                                              : elig.totalScore >= 65
+                                                ? "text-amber-700 font-semibold"
+                                                : "text-slate-600 font-semibold"
+                                          }
+                                        >
+                                          {tr("যোগ্যতা:", "Eligibility:", "適格性:")} {elig.totalScore}%
+                                        </span>
+                                        <span aria-hidden="true">·</span>
+                                        <span>
+                                          {tr("ডকুমেন্ট:", "Docs:", "書類:")} {elig.verifiedDocsCount}/{elig.totalDocsCount}
+                                        </span>
+                                        {(lead.targetSchoolName || lead.targetSchool) && (
+                                          <>
+                                            <span aria-hidden="true">·</span>
+                                            <span className="font-sans text-slate-700 font-medium">
+                                              {lead.targetSchoolName || lead.targetSchool}
+                                            </span>
+                                          </>
+                                        )}
+                                      </div>
+                                      {lead.customTags && lead.customTags.length > 0 && (
+                                        <div className="mt-1 flex flex-wrap gap-1">
+                                          {lead.customTags.slice(0, 3).map((tag) => (
+                                            <span
+                                              key={tag}
+                                              className="rounded bg-slate-100 px-1.5 py-0.2 text-[10px] font-medium text-slate-600"
+                                            >
+                                              {tag}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
                                 </td>
                                 <td className="px-4 py-3.5">
@@ -2000,22 +2514,38 @@ export default function DashboardPage() {
                           })}
                           {filteredLeads.length === 0 && (
                             <tr>
-                              <td colSpan={6} className="py-12 text-center">
+                              <td colSpan={7} className="py-12 text-center">
                                 <p className="text-sm font-semibold text-slate-600">
                                   {tr(
-                                    "এখনো কোনো CRM লিড যুক্ত করা হয়নি",
-                                    "No CRM leads recorded yet",
-                                    "CRMリードがまだ登録されていません",
+                                    "কোনো CRM লিড পাওয়া যায়নি",
+                                    "No matching CRM leads found",
+                                    "条件に一致するCRMリードが見つかりません",
                                   )}
                                 </p>
-                                <button
-                                  type="button"
-                                  onClick={() => setActiveModal("ADD_LEAD")}
-                                  className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-[#b91c1c] px-4 py-2 text-xs font-semibold text-white hover:bg-red-800 transition"
-                                >
-                                  <Plus className="h-3.5 w-3.5" />
-                                  <span>{t.crm.quickAddBtn}</span>
-                                </button>
+                                <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => setCrmImportExportMode("IMPORT")}
+                                    className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-semibold text-emerald-900 hover:bg-emerald-100 transition"
+                                  >
+                                    <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-700" />
+                                    <span>
+                                      {tr(
+                                        "Google Sheet থেকে লিড ইমপোর্ট করুন",
+                                        "Import Leads from Google Sheet",
+                                        "Googleシートからインポート"
+                                      )}
+                                    </span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setActiveModal("ADD_LEAD")}
+                                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#b91c1c] px-4 py-2 text-xs font-semibold text-white hover:bg-red-800 transition"
+                                  >
+                                    <Plus className="h-3.5 w-3.5" />
+                                    <span>{t.crm.quickAddBtn}</span>
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           )}
@@ -4548,11 +5078,47 @@ export default function DashboardPage() {
           {/* Individual Lead Profile Modal */}
           {selectedLeadForProfile && (
             <LeadProfileModal
+              key={selectedLeadForProfile.id}
               lead={selectedLeadForProfile}
+              allLeads={filteredLeads}
+              onSelectLead={(nextLead) => setSelectedLeadForProfile(nextLead)}
               onClose={() => setSelectedLeadForProfile(null)}
               onSaved={(msg) => {
-                setStore({ ...getCmsStore() });
+                const updatedStore = getCmsStore();
+                setStore({ ...updatedStore });
+                const refreshed = updatedStore.crmLeads.find(
+                  (l) => l.id === selectedLeadForProfile.id
+                );
+                if (refreshed) setSelectedLeadForProfile(refreshed);
                 showToast(msg);
+              }}
+              onDeleted={(deletedName) => {
+                setStore({ ...getCmsStore() });
+                showToast(
+                  tr(
+                    `"${deletedName}"-এর লিড প্রোফাইল মুছে ফেলা হয়েছে`,
+                    `Deleted lead profile for "${deletedName}"`,
+                    `「${deletedName}」のリードを削除しました`
+                  )
+                );
+              }}
+            />
+          )}
+
+          {/* CRM Google Sheets / CSV Import & Export Modal */}
+          {crmImportExportMode && (
+            <CrmImportExportModal
+              initialMode={crmImportExportMode}
+              allLeads={store.crmLeads}
+              filteredLeads={filteredLeads}
+              selectedLeadIds={selectedCrmLeadIds}
+              staffList={store.staffList}
+              activeBranch={activeBranch === "ALL" ? "DHK-HQ" : activeBranch}
+              onClose={() => setCrmImportExportMode(null)}
+              onImported={(summaryMsg) => {
+                setStore({ ...getCmsStore() });
+                setCrmImportExportMode(null);
+                showToast(summaryMsg);
               }}
             />
           )}

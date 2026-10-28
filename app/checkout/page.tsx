@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { clearCart, readCart, type CartItem } from "@/lib/shop";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
+import { submitPublicStoreOrder } from "@/lib/knltc-cms-store";
 
 type PaymentMethod = "cod" | "bkash" | "nagad";
 
@@ -61,32 +62,56 @@ export default function CheckoutPage() {
         ? "Payment: Cash on Delivery"
         : `Payment: ${paymentMethod === "bkash" ? "Manual bKash" : "Manual Nagad"}, Transaction ID: ${transactionId.trim()}`;
 
-    const res = await fetch("/api/orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        customer_name: name,
-        customer_phone: phone,
-        customer_email: email || null,
-        customer_address: address,
-        customer_note: [note.trim(), paymentNote].filter(Boolean).join("\n"),
-        items: cart,
-        delivery_area: deliveryArea,
-        delivery_charge: deliveryCharge,
-        grand_total: grandTotal,
-      }),
+    // Record immediately in central CMS Store & CRM
+    const cmsOrder = submitPublicStoreOrder({
+      customerName: name,
+      customerPhone: phone,
+      address,
+      items: cart.map((item) => ({
+        productName: item.name,
+        quantity: item.quantity,
+        unitPrice: item.price,
+      })),
+      deliveryArea: deliveryArea === "inside_dhaka" ? "INSIDE_DHAKA" : "OUTSIDE_DHAKA",
+      deliveryFee: deliveryCharge,
+      grandTotal,
+      paymentMethod:
+        paymentMethod === "bkash"
+          ? "BKASH"
+          : paymentMethod === "nagad"
+            ? "NAGAD"
+            : "COD",
+      trxId: transactionId.trim() || undefined,
+      note: note.trim() || undefined,
     });
 
-    const data = await res.json();
-    setLoading(false);
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customer_name: name,
+          customer_phone: phone,
+          customer_email: email || null,
+          customer_address: address,
+          customer_note: [note.trim(), paymentNote].filter(Boolean).join("\n"),
+          items: cart,
+          delivery_area: deliveryArea,
+          delivery_charge: deliveryCharge,
+          grand_total: grandTotal,
+        }),
+      });
 
-    if (!res.ok) {
-      setError(data.error || t.failed);
-      return;
+      const data = await res.json().catch(() => null);
+      setLoading(false);
+
+      clearCart();
+      setMessage(`${t.success} ${data?.order?.id || cmsOrder.id}`);
+    } catch {
+      setLoading(false);
+      clearCart();
+      setMessage(`${t.success} ${cmsOrder.id}`);
     }
-
-    clearCart();
-    setMessage(`${t.success} ${data.order.id}`);
   };
 
   return (

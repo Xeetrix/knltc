@@ -8,6 +8,7 @@ import StoreProductCard from "@/components/store/StoreProductCard";
 import CartNavLink from "@/components/store/CartNavLink";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
+import { useKnlTcCms } from "@/hooks/use-knltc-cms";
 
 type Props = {
   products: Product[];
@@ -18,6 +19,7 @@ type PriceMode = "all" | "under-500" | "500-1000" | "1000-plus";
 
 export default function StoreCatalog({ products }: Props) {
   const { language } = useLanguage();
+  const { cms } = useKnlTcCms();
   const t = translate({
     en: { title: "Japanese Learning Store", subtitle: "Premium books, JLPT prep, and essentials—ready to shop quickly.", all: "All Products", filters: "Filters", search: "Search", searchPlaceholder: "Search by name", category: "Category", allCategories: "All categories", price: "Price", allRanges: "All ranges", under500: "Under ৳500", above1000: "Above ৳1000", sort: "Sort", newest: "Newest", priceLow: "Price low to high", priceHigh: "Price high to low", popular: "Popular", featured: "Featured only", none: "No products available yet", noMatch: "No matching products", tryDifferent: "Try a different filter combination." },
     bn: { title: "জাপানি লার্নিং স্টোর", subtitle: "প্রিমিয়াম বই, JLPT প্রস্তুতি ও দরকারি সামগ্রী—দ্রুত কেনাকাটার জন্য প্রস্তুত।", all: "সব পণ্য", filters: "ফিল্টার", search: "সার্চ", searchPlaceholder: "নাম দিয়ে খুঁজুন", category: "ক্যাটাগরি", allCategories: "সব ক্যাটাগরি", price: "দাম", allRanges: "সব রেঞ্জ", under500: "৳৫০০-এর নিচে", above1000: "৳১০০০-এর বেশি", sort: "সাজান", newest: "নতুনতম", priceLow: "কম দাম থেকে বেশি", priceHigh: "বেশি দাম থেকে কম", popular: "জনপ্রিয়", featured: "শুধু ফিচার্ড", none: "এখনো কোনো পণ্য নেই", noMatch: "ম্যাচিং পণ্য পাওয়া যায়নি", tryDifferent: "অন্য ফিল্টার কম্বিনেশন চেষ্টা করুন।" },
@@ -31,15 +33,59 @@ export default function StoreCatalog({ products }: Props) {
   const [featuredOnly, setFeaturedOnly] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
+  const mergedProducts = useMemo(() => {
+    const cmsProducts: Product[] = (cms.storeProducts || []).map((sp) => ({
+      id: sp.id,
+      name: sp.name[language] || sp.name.en || sp.name.bn,
+      slug: sp.id.toLowerCase(),
+      category_id: sp.category,
+      short_description: sp.description[language] || sp.description.en || sp.description.bn,
+      full_description: sp.description[language] || sp.description.en || sp.description.bn,
+      price: sp.priceBdt,
+      sale_price: sp.salePriceBdt ?? null,
+      stock: sp.stockCount,
+      featured_image:
+        sp.imageUrl ||
+        "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80",
+      gallery: null,
+      status: sp.isPublished ? "published" : "draft",
+      is_featured: true,
+      sku: sp.id.toUpperCase(),
+      created_at: new Date().toISOString(),
+      categories: {
+        name:
+          sp.category === "TEXTBOOK"
+            ? "Japanese Textbooks"
+            : sp.category === "JLPT_PRACTICE"
+              ? "JLPT Practice Books"
+              : sp.category === "KANJI_SHEET"
+                ? "Kanji & Grammar"
+                : "Study Kits & Stationery",
+        slug: sp.category.toLowerCase(),
+      },
+    }));
+
+    const byName = new Map<string, Product>();
+    for (const p of products) {
+      byName.set(p.name.toLowerCase(), p);
+    }
+    for (const cp of cmsProducts) {
+      if (!byName.has(cp.name.toLowerCase())) {
+        byName.set(cp.name.toLowerCase(), cp);
+      }
+    }
+    return Array.from(byName.values());
+  }, [products, cms.storeProducts, language]);
+
   const categories = useMemo(
-    () => Array.from(new Set(products.map((item) => item.categories?.name).filter(Boolean))) as string[],
-    [products],
+    () => Array.from(new Set(mergedProducts.map((item) => item.categories?.name).filter(Boolean))) as string[],
+    [mergedProducts],
   );
 
   const filteredProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    const filtered = products.filter((product) => {
+    const filtered = mergedProducts.filter((product) => {
       const matchingText = `${product.name} ${product.short_description} ${product.categories?.name ?? ""}`.toLowerCase();
       const matchesSearch = query.length === 0 || matchingText.includes(query);
       const matchesCategory = category === "all" || product.categories?.name === category;
@@ -60,7 +106,7 @@ export default function StoreCatalog({ products }: Props) {
     if (sort === "popular") sorted.sort((a, b) => Number(b.is_featured) - Number(a.is_featured) || b.stock - a.stock);
 
     return sorted;
-  }, [category, featuredOnly, priceMode, products, search, sort]);
+  }, [category, featuredOnly, priceMode, mergedProducts, search, sort]);
 
   return (
     <div className="space-y-4 text-slate-900">
