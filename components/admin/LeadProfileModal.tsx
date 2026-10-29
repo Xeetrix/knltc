@@ -3,44 +3,49 @@
 import React, { useState, useMemo } from "react";
 import { trModal } from "@/lib/modal-translations";
 import {
-  X,
-  UserCheck,
-  KeyRound,
-  ShieldCheck,
-  Send,
-  Save,
-  FileCheck2,
+  ArrowLeft,
+  User,
+  CheckSquare,
+  FolderOpen,
+  Sparkles,
   Landmark,
-  Wallet,
-  Plane,
-  GraduationCap,
-  MessageSquare,
-  PhoneCall,
-  Calendar,
-  Printer,
-  CheckCircle2,
-  Clock,
-  AlertCircle,
-  Plus,
-  Building2,
   Receipt,
-  BookOpen,
+  Phone,
+  Mail,
+  Globe,
+  GraduationCap,
+  Tag,
+  Calendar,
+  Edit3,
+  Trash2,
+  Plus,
+  Clock,
+  CheckCircle2,
   Upload,
   Loader2,
-  Paperclip,
+  ExternalLink,
   ChevronLeft,
   ChevronRight,
+  Send,
+  PhoneCall,
+  Building2,
+  ShieldCheck,
+  KeyRound,
   Copy,
   Check,
-  Trash2,
-  Tag,
-  Sparkles,
+  Printer,
   Camera,
+  X,
+  Save,
+  FileCheck2,
+  Award,
+  Wallet,
 } from "lucide-react";
 import { uploadDocumentFile, uploadMediaImage } from "@/lib/media-upload";
 import {
   getCmsStore,
   updateCrmLeadProfile,
+  updateCrmLeadStatus,
   deleteCrmLead,
   provisionLeadLoginAndEnrollment,
   promoteLeadToVisaPipeline,
@@ -49,29 +54,79 @@ import {
   getLeadDocumentChecklist,
   calculateLeadEligibility,
   addLeadActivityLog,
-  updateLmsProgressAndAttendance,
+  formatLeadInterestLabel,
+  formatLeadSourceLabel,
+  formatProficiencyLabel,
   type CrmLead,
   type DashboardTabId,
   type LeadStatus,
   type LeadPriority,
-  type LeadCallOutcome,
   type LeadDocumentItem,
   type LeadActivityItem,
+  type ProfileTaskItem,
   type ServiceInterest,
-  type UserRole,
   type VisaStage,
   type TransactionType,
   type FinancialTransaction,
+  type JapanesePartnerSchool,
 } from "@/lib/knltc-cms-store";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 
-type ProfileTabId = "bio" | "docs" | "finance_visa" | "timeline" | "access_print";
+type WorkspaceTabId =
+  | "overview"
+  | "tasks"
+  | "documents"
+  | "matches"
+  | "applications"
+  | "invoices";
+
+const STATUS_META: Record<
+  LeadStatus,
+  { labelEn: string; labelBn: string; badgeClass: string; dotClass: string }
+> = {
+  NEW: {
+    labelEn: "New Lead",
+    labelBn: "নতুন লিড",
+    badgeClass: "bg-slate-100 text-slate-700 border-slate-200",
+    dotClass: "bg-slate-400",
+  },
+  CONTACTED: {
+    labelEn: "Contacted",
+    labelBn: "যোগাযোগকৃত",
+    badgeClass: "bg-blue-50 text-blue-700 border-blue-200",
+    dotClass: "bg-blue-600",
+  },
+  COUNSELED: {
+    labelEn: "Counseled",
+    labelBn: "কাউন্সেলিং সম্পন্ন",
+    badgeClass: "bg-indigo-50 text-indigo-700 border-indigo-200",
+    dotClass: "bg-indigo-600",
+  },
+  OFFICE_VISIT_BOOKED: {
+    labelEn: "Office Visit Booked",
+    labelBn: "অফিস ভিজিট বুকড",
+    badgeClass: "bg-amber-50 text-amber-800 border-amber-200",
+    dotClass: "bg-amber-500",
+  },
+  ADMITTED: {
+    labelEn: "Admitted",
+    labelBn: "ভর্তি নিশ্চিত",
+    badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    dotClass: "bg-emerald-600",
+  },
+  ARCHIVED: {
+    labelEn: "Archived / Closed",
+    labelBn: "আর্কাইভড / বাতিল",
+    badgeClass: "bg-rose-50 text-rose-700 border-rose-200",
+    dotClass: "bg-rose-500",
+  },
+};
 
 const VISA_STAGE_LABELS: Record<VisaStage, { bn: string; en: string; ja: string }> = {
   1: {
     bn: "ধাপ ১: ফাইল ওপেনিং (৳০ অগ্রিম)",
     en: "Stage 1: File Opening (৳0 Advance)",
-    ja: "ステップ1: ファイル開設（事前費用৳0）",
+    ja: "ステップ1: ファイル開設",
   },
   2: {
     bn: "ধাপ ২: ভাষা প্রশিক্ষণ (N5/N4)",
@@ -96,7 +151,7 @@ const VISA_STAGE_LABELS: Record<VisaStage, { bn: string; en: string; ja: string 
   6: {
     bn: "ধাপ ৬: প্রি-ভিসা (COE) অনুমোদন",
     en: "Stage 6: Pre-Visa (COE) Approval",
-    ja: "ステップ6: 在留資格認定証明書（COE）交付",
+    ja: "ステップ6: COE交付承認",
   },
   7: {
     bn: "ধাপ ৭: টিউশন ফি ও মূল COE রিলিজ",
@@ -120,6 +175,61 @@ const VISA_STAGE_LABELS: Record<VisaStage, { bn: string; en: string; ja: string 
   },
 };
 
+function getDefaultTasksForLead(lead: CrmLead, isBn: boolean): ProfileTaskItem[] {
+  return [
+    {
+      id: "task-1",
+      title: isBn
+        ? "প্রাথমিক টেলি-কাউন্সেলিং ও যোগ্যতা যাচাই কল"
+        : "Complete initial counseling & eligibility assessment call",
+      dueDate: lead.followUpDate || new Date().toISOString().slice(0, 10),
+      completed: lead.status !== "NEW",
+      category: "CALL",
+      assignee: lead.assignedTo || "Counselor",
+    },
+    {
+      id: "task-2",
+      title: isBn
+        ? "SSC ও HSC মূল মার্কশিট এবং সার্টিফিকেট স্ক্যান সংগ্রহ"
+        : "Collect SSC & HSC academic transcripts and certificates",
+      dueDate: "",
+      completed: Boolean(lead.sscGpa && lead.hscGpa),
+      category: "DOCUMENT",
+      assignee: lead.assignedTo || "Counselor",
+    },
+    {
+      id: "task-3",
+      title: isBn
+        ? "পাসপোর্ট কপি বা জাতীয় পরিচয়পত্র (NID) যাচাইকরণ"
+        : "Verify valid Passport copy or NID/Birth Registration",
+      dueDate: "",
+      completed: Boolean(lead.passportNo),
+      category: "DOCUMENT",
+      assignee: lead.assignedTo || "Counselor",
+    },
+    {
+      id: "task-4",
+      title: isBn
+        ? "জাপানি ভাষা ব্যাচ (JLPT N5 / N4) বা পার্টনার স্কুল নির্বাচন"
+        : "Match candidate with target Japanese Partner School & Language Batch",
+      dueDate: "",
+      completed: Boolean(lead.targetSchool || lead.isCourseEnrolled),
+      category: "INTERVIEW",
+      assignee: lead.assignedTo || "Counselor",
+    },
+    {
+      id: "task-5",
+      title: isBn
+        ? "ফাইল ওপেনিং চুক্তি ও প্রাথমিক অ্যাডমিশন ইনভয়েস সম্পন্নকরণ"
+        : "Confirm admission agreement & issue initial fee invoice",
+      dueDate: "",
+      completed: lead.status === "ADMITTED" || Boolean(lead.isFileOpened),
+      category: "FINANCE",
+      assignee: lead.assignedTo || "Accounts",
+    },
+  ];
+}
+
 export default function LeadProfileModal({
   lead,
   allLeads = [],
@@ -127,6 +237,7 @@ export default function LeadProfileModal({
   onDeleted,
   onClose,
   onSaved,
+  backLabel,
 }: {
   lead: CrmLead;
   allLeads?: CrmLead[];
@@ -134,312 +245,85 @@ export default function LeadProfileModal({
   onDeleted?: (deletedName: string) => void;
   onClose: () => void;
   onSaved: (message: string) => void;
+  backLabel?: string;
 }) {
   const { language } = useLanguage();
   const tr = (bn: string, en: string, ja?: string) => trModal(language, bn, en, ja);
   const isBn = language === "bn";
 
-  // Active 360° Command Center Tab
-  const [activeTab, setActiveTab] = useState<ProfileTabId>("bio");
+  const [activeTab, setActiveTab] = useState<WorkspaceTabId>("overview");
   const [storeTick, setStoreTick] = useState(0);
+  const [isEditingModalOpen, setIsEditingModalOpen] = useState(false);
+  const [isUpdateStatusOpen, setIsUpdateStatusOpen] = useState(false);
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingDocId, setUploadingDocId] = useState<string | null>(null);
+  const [docCategoryFilter, setDocCategoryFilter] = useState<
+    "ALL" | "IDENTITY" | "ACADEMIC" | "LANGUAGE" | "SPONSOR_FINANCIAL"
+  >("ALL");
+  const [copiedCredentials, setCopiedCredentials] = useState(false);
 
-  // Load live entities from CMS Store for relational linking
+  // Live store snapshot
   const liveStore = useMemo(() => {
     void storeTick;
     return getCmsStore();
   }, [storeTick]);
 
-  const partnerSchools = useMemo(() => liveStore.partnerSchools || [], [liveStore.partnerSchools]);
+  const partnerSchools = useMemo(
+    () => liveStore.partnerSchools || [],
+    [liveStore.partnerSchools]
+  );
   const b2bAgents = useMemo(() => liveStore.b2bAgents || [], [liveStore.b2bAgents]);
-  const counselors = liveStore.staffList.filter(
-    (s) => s.role === "TELE_COUNSELOR" || s.role === "COUNSELOR" || s.role === "BRANCH_MANAGER",
+  const counselors = useMemo(
+    () =>
+      liveStore.staffList.filter(
+        (s) =>
+          s.role === "TELE_COUNSELOR" ||
+          s.role === "COUNSELOR" ||
+          s.role === "BRANCH_MANAGER"
+      ),
+    [liveStore.staffList]
   );
-  const visaOfficers = liveStore.staffList.filter(
-    (s) => s.role === "VISA_OFFICER" || s.role === "BRANCH_MANAGER",
-  );
-  const senseis = liveStore.staffList.filter((s) => s.role === "SENIOR_SENSEI");
 
-  // Linked Visa Applicant, LMS Bridge & Financial Transactions
+  // Linked Visa & LMS & Finance records
   const linkedVisa = useMemo(
     () =>
       liveStore.visaApplicants.find(
-        (v) => v.leadId === lead.id || v.linkedLeadId === lead.id || v.phone === lead.phone,
+        (v) =>
+          v.leadId === lead.id ||
+          v.linkedLeadId === lead.id ||
+          (lead.phone && v.phone === lead.phone)
       ) || null,
-    [liveStore.visaApplicants, lead.id, lead.phone],
+    [liveStore.visaApplicants, lead.id, lead.phone]
   );
 
   const linkedLms = useMemo(
     () =>
       liveStore.lmsBridges.find(
-        (b) => b.leadId === lead.id || b.linkedLeadId === lead.id || b.phone === lead.phone,
+        (b) =>
+          b.leadId === lead.id ||
+          b.linkedLeadId === lead.id ||
+          (lead.phone && b.phone === lead.phone)
       ) || null,
-    [liveStore.lmsBridges, lead.id, lead.phone],
+    [liveStore.lmsBridges, lead.id, lead.phone]
   );
 
   const studentTransactions = useMemo(
     () =>
       liveStore.transactions.filter(
         (tx) =>
-          tx.category !== "EXPENSE" &&
-          !tx.type.startsWith("EXPENSE") &&
-          (tx.linkedLeadId === lead.id ||
-            (tx.studentPhone && tx.studentPhone === lead.phone) ||
-            Boolean(
-              tx.studentName &&
-                lead.name &&
-                String(tx.studentName).toLowerCase() === String(lead.name).toLowerCase(),
-            )),
+          tx.linkedLeadId === lead.id ||
+          (linkedVisa && tx.linkedVisaId === linkedVisa.id) ||
+          (lead.phone && tx.studentPhone === lead.phone) ||
+          tx.studentName.toLowerCase() === lead.name.toLowerCase()
       ),
-    [liveStore.transactions, lead.id, lead.phone, lead.name],
+    [liveStore.transactions, lead.id, lead.phone, lead.name, linkedVisa]
   );
 
-  // ---------------------------------------------------------------------------
-  // 1. Bio, Academic & Exam Tracker State
-  // ---------------------------------------------------------------------------
-  const [name, setName] = useState(lead.name || "");
-  const [phone, setPhone] = useState(lead.phone || "");
-  const [whatsapp, setWhatsapp] = useState(lead.whatsapp || lead.phone || "");
-  const [email, setEmail] = useState(lead.email || "");
-  const [city, setCity] = useState(lead.city || "Dhaka");
-  const [address, setAddress] = useState(lead.address || "");
-  const [avatarUrl, setAvatarUrl] = useState(lead.avatarUrl || "");
-  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const [dateOfBirth, setDateOfBirth] = useState(lead.dateOfBirth || "");
-  const [gender, setGender] = useState<NonNullable<CrmLead["gender"]>>(lead.gender || "MALE");
-  const [maritalStatus, setMaritalStatus] = useState<NonNullable<CrmLead["maritalStatus"]>>(
-    lead.maritalStatus || "SINGLE"
-  );
-  const [nidOrBirthRegNo, setNidOrBirthRegNo] = useState(lead.nidOrBirthRegNo || "");
-  const [passportNo, setPassportNo] = useState(lead.passportNo || "");
-  const [passportExpiryDate, setPassportExpiryDate] = useState(lead.passportExpiryDate || "");
-  const [guardianName, setGuardianName] = useState(lead.guardianName || "");
-  const [guardianPhone, setGuardianPhone] = useState(lead.guardianPhone || "");
-  const [education, setEducation] = useState(lead.education || "HSC");
-  const [sscGpa, setSscGpa] = useState(lead.sscGpa || "4.50");
-  const [hscGpa, setHscGpa] = useState(lead.hscGpa || "4.25");
-  const [honorsOrDiplomaCgpa, setHonorsOrDiplomaCgpa] = useState(lead.honorsOrDiplomaCgpa || "");
-  const [graduationYear, setGraduationYear] = useState(lead.graduationYear || "2024");
-  const [gpaDetails, setGpaDetails] = useState(lead.gpaDetails || "");
-  const [studyGapYears, setStudyGapYears] = useState<number>(lead.studyGapYears ?? 0);
-  const [japaneseProficiency, setJapaneseProficiency] = useState<CrmLead["japaneseProficiency"]>(
-    lead.japaneseProficiency || "NONE",
-  );
-  const [japaneseExamType, setJapaneseExamType] = useState<
-    NonNullable<CrmLead["japaneseExamType"]>
-  >(lead.japaneseExamType || "NONE");
-  const [japaneseExamStatus, setJapaneseExamStatus] = useState<
-    NonNullable<CrmLead["japaneseExamStatus"]>
-  >(lead.japaneseExamStatus || "NOT_REGISTERED");
-  const [japaneseExamScore, setJapaneseExamScore] = useState(lead.japaneseExamScore || "");
-
-  const [interest, setInterest] = useState<ServiceInterest>(
-    lead.interest || "STUDENT_VISA_REGULAR",
-  );
-  const [preferredIntake, setPreferredIntake] = useState<
-    NonNullable<CrmLead["preferredIntake"]>
-  >(lead.preferredIntake || "APRIL");
-  const [preferredJapanCity, setPreferredJapanCity] = useState(
-    lead.preferredJapanCity || "Tokyo",
-  );
-  const [callOutcome, setCallOutcome] = useState<LeadCallOutcome>(
-    lead.callOutcome || "INTERESTED",
-  );
-  const [customTags, setCustomTags] = useState<string[]>(lead.customTags || []);
-  const [newTagInput, setNewTagInput] = useState("");
-  const [newCustomDocTitle, setNewCustomDocTitle] = useState("");
-  const [copiedPhone, setCopiedPhone] = useState(false);
-  const [confirmDeleteLead, setConfirmDeleteLead] = useState(false);
-
-  const [status, setStatus] = useState<LeadStatus>(lead.status || "NEW");
-  const [priority, setPriority] = useState<LeadPriority>(
-    lead.priority || (lead.status === "ADMITTED" ? "HOT" : "WARM"),
-  );
-  const [branch, setBranch] = useState<"DHK-HQ" | "KHULNA-01">(lead.branch || "DHK-HQ");
-  const [assignedTo, setAssignedTo] = useState(
-    lead.assignedTo || counselors[0]?.name || "শেখ বাসেত",
-  );
-  const [assignedCounselorId, setAssignedCounselorId] = useState(
-    lead.assignedCounselorId || counselors.find((c) => c.name === lead.assignedTo)?.id || "",
-  );
-  const [b2bAgentId, setB2bAgentId] = useState(lead.b2bAgentId || lead.referredByAgentId || "");
-  const [b2bAgentName, setB2bAgentName] = useState(
-    lead.b2bAgentName || lead.referredByAgentName || "",
-  );
-  const [followUpDate, setFollowUpDate] = useState(
-    lead.followUpDate || new Date().toISOString().slice(0, 10),
-  );
-  const [notes, setNotes] = useState(lead.notes || "");
-
-  // ---------------------------------------------------------------------------
-  // 2. Document Checklist Vault & Sponsor Solvency State
-  // ---------------------------------------------------------------------------
-  const [documentChecklist, setDocumentChecklist] = useState<LeadDocumentItem[]>(() =>
-    getLeadDocumentChecklist(lead),
-  );
-  const [sponsorRelation, setSponsorRelation] = useState<
-    NonNullable<CrmLead["sponsorRelation"]>
-  >(lead.sponsorRelation || linkedVisa?.sponsorRelation || "FATHER");
-  const [sponsorOccupation, setSponsorOccupation] = useState(
-    lead.sponsorOccupation || "ব্যবসা / প্রথম শ্রেণীর চাকরি",
-  );
-  const [sponsorMonthlyIncomeBdt, setSponsorMonthlyIncomeBdt] = useState<number>(
-    lead.sponsorMonthlyIncomeBdt ?? 85000,
-  );
-  const [sponsorBankName, setSponsorBankName] = useState(
-    lead.sponsorBankName || linkedVisa?.sponsorBank || "অগ্রণী ব্যাংক পিএলসি",
-  );
-  const [sponsorBankBalanceBdt, setSponsorBankBalanceBdt] = useState<number>(
-    lead.sponsorBankBalanceBdt ?? linkedVisa?.sponsorBalanceBdt ?? 1850000,
-  );
-  const [bankLoanRequired, setBankLoanRequired] = useState<boolean>(
-    lead.bankLoanRequired ?? linkedVisa?.bankLoanAssistance ?? false,
-  );
-  const [preferredLoanBank, setPreferredLoanBank] = useState(
-    lead.preferredLoanBank || linkedVisa?.bankLoanBank || "অগ্রণী ব্যাংক পিএলসি (এডুকেশন লোন)",
-  );
-
-  // ---------------------------------------------------------------------------
-  // 3. Finance, Visa Stage & LMS State
-  // ---------------------------------------------------------------------------
-  const [packageType, setPackageType] = useState<"REGULAR" | "PREMIUM">(
-    lead.packageType || (lead.interest === "STUDENT_VISA_PREMIUM" ? "PREMIUM" : "REGULAR"),
-  );
-  const [partnerSchoolId, setPartnerSchoolId] = useState(
-    lead.partnerSchoolId || lead.targetSchoolId || partnerSchools[0]?.id || "",
-  );
-  const [targetSchool, setTargetSchool] = useState(
-    lead.targetSchool || lead.targetSchoolName || partnerSchools[0]?.name || "",
-  );
-  const [assignedVisaOfficerId, setAssignedVisaOfficerId] = useState(
-    lead.assignedVisaOfficerId || linkedVisa?.visaOfficerId || visaOfficers[0]?.id || "",
-  );
-  const [schoolInterviewStatus, setSchoolInterviewStatus] = useState<
-    NonNullable<CrmLead["schoolInterviewStatus"]>
-  >(lead.schoolInterviewStatus || "NOT_SCHEDULED");
-  const [schoolInterviewDate, setSchoolInterviewDate] = useState(
-    lead.schoolInterviewDate || "",
-  );
-
-  const [contractAmountBdt, setContractAmountBdt] = useState<number>(
-    lead.contractAmountBdt ?? (lead.packageType === "PREMIUM" ? 1100000 : 120000),
-  );
-  const livePaidAmountBdt = useMemo(() => {
-    const freshLead = liveStore.crmLeads.find((l) => l.id === lead.id);
-    return freshLead?.paidAmountBdt ?? lead.paidAmountBdt ?? 0;
-  }, [liveStore.crmLeads, lead.id, lead.paidAmountBdt]);
-
-  const liveDueAmountBdt = Math.max(0, contractAmountBdt - livePaidAmountBdt);
-
-  // Inline Quick Fee Collection State
-  const [feeAmountBdt, setFeeAmountBdt] = useState<number>(
-    liveDueAmountBdt > 0 ? Math.min(20000, liveDueAmountBdt) : 12000,
-  );
-  const [feeType, setFeeType] = useState<TransactionType>("COURSE_FEE");
-  const [feeMethod, setFeeMethod] = useState<FinancialTransaction["paymentMethod"]>("BKASH");
-  const [feeTrxRef, setFeeTrxRef] = useState("");
-
-  // LMS Progress & Attendance State
-  const [courseLevel, setCourseLevel] = useState<"N5" | "N4" | "IRODORI">(
-    linkedLms?.courseLevel || "N5",
-  );
-  const [enrolledBatchOrSession, setEnrolledBatchOrSession] = useState(
-    lead.enrolledBatchOrSession || linkedLms?.activeBatch || "APRIL_2027 • N5 Special Batch",
-  );
-  const [lmsProgressPct, setLmsProgressPct] = useState<number>(
-    linkedLms?.progressPercentage ?? 25,
-  );
-  const [attendancePct, setAttendancePct] = useState<number>(
-    lead.attendancePercentage ?? 92,
-  );
-
-  // ---------------------------------------------------------------------------
-  // 4. Counseling Activity Timeline State
-  // ---------------------------------------------------------------------------
-  const [activityLog, setActivityLog] = useState<LeadActivityItem[]>(() => {
-    if (lead.activityLog && lead.activityLog.length > 0) return lead.activityLog;
-    return [
-      {
-        id: "act-init-1",
-        type: "CALL",
-        summary: lead.notes || "প্রাথমিক টেলি-কাউন্সেলিং ও প্রোফাইল যাচাই সম্পন্ন হয়েছে।",
-        counselorName: lead.assignedTo || "শেখ বাসেত",
-        createdAt: lead.createdAt || new Date().toISOString(),
-      },
-    ];
-  });
-  const [newActivityType, setNewActivityType] =
-    useState<LeadActivityItem["type"]>("CALL");
-  const [newActivitySummary, setNewActivitySummary] = useState("");
-
-  // ---------------------------------------------------------------------------
-  // 5. Portal Login Provisioning State
-  // ---------------------------------------------------------------------------
-  const defaultSuggestedLogin =
-    lead.loginEmail ||
-    lead.email ||
-    `${(lead.name || "student").toLowerCase().replace(/[^a-z0-9]/g, "") || lead.phone.slice(-4)}@knltc.com`;
-
-  const [isCourseEnrolled, setIsCourseEnrolled] = useState<boolean>(
-    Boolean(lead.isCourseEnrolled || lead.status === "ADMITTED"),
-  );
-  const [isFileOpened, setIsFileOpened] = useState<boolean>(
-    Boolean(lead.isFileOpened || lead.status === "ADMITTED" || linkedVisa),
-  );
-  const [initialPaymentBdt, setInitialPaymentBdt] = useState<number>(0);
-  const [loginEmail, setLoginEmail] = useState(defaultSuggestedLogin);
-  const [loginPassword, setLoginPassword] = useState(
-    lead.loginPassword || `knltc${lead.phone.replace(/\D/g, "").slice(-4) || "2026"}`,
-  );
-  const [role, setRole] = useState<UserRole>("STUDENT");
-  const [allowedTabs, setAllowedTabs] = useState<DashboardTabId[]>(
-    lead.allowedTabs && lead.allowedTabs.length > 0
-      ? lead.allowedTabs
-      : ["my_profile", "visa", "lms"],
-  );
-
-  // ---------------------------------------------------------------------------
-  // Live Eligibility Calculation
-  // ---------------------------------------------------------------------------
-  const eligibility = useMemo(
-    () =>
-      calculateLeadEligibility({
-        ...lead,
-        sscGpa,
-        hscGpa,
-        gpaDetails: gpaDetails || `SSC ${sscGpa}, HSC ${hscGpa}`,
-        studyGapYears,
-        japaneseProficiency,
-        japaneseExamType,
-        japaneseExamStatus,
-        isCourseEnrolled,
-        sponsorBankBalanceBdt,
-        bankLoanRequired,
-        guardianName,
-        passportNo,
-        documentChecklist,
-      }),
-    [
-      lead,
-      sscGpa,
-      hscGpa,
-      gpaDetails,
-      studyGapYears,
-      japaneseProficiency,
-      japaneseExamType,
-      japaneseExamStatus,
-      isCourseEnrolled,
-      sponsorBankBalanceBdt,
-      bankLoanRequired,
-      guardianName,
-      passportNo,
-      documentChecklist,
-    ],
-  );
-
-  // Current lead index for Next/Prev navigation
+  // Prev / Next navigation in filtered list
   const currentLeadIndex = useMemo(
-    () => allLeads.findIndex((l) => l.id === lead.id),
-    [allLeads, lead.id],
+    () => allLeads.findIndex((item) => item.id === lead.id),
+    [allLeads, lead.id]
   );
   const prevLead = currentLeadIndex > 0 ? allLeads[currentLeadIndex - 1] : null;
   const nextLead =
@@ -447,2626 +331,2294 @@ export default function LeadProfileModal({
       ? allLeads[currentLeadIndex + 1]
       : null;
 
-  // Calculate Candidate Age from DOB
-  const candidateAge = useMemo(() => {
-    if (!dateOfBirth) return null;
-    const dob = new Date(dateOfBirth);
-    if (isNaN(dob.getTime())) return null;
-    const diff = Date.now() - dob.getTime();
-    return Math.max(15, Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25)));
-  }, [dateOfBirth]);
+  // Editable Profile State
+  const [name, setName] = useState(lead.name);
+  const [phone, setPhone] = useState(lead.phone);
+  const [whatsapp, setWhatsapp] = useState(lead.whatsapp || lead.phone);
+  const [email, setEmail] = useState(lead.email || lead.loginEmail || "");
+  const [city, setCity] = useState(lead.city || "Dhaka");
+  const [address, setAddress] = useState(lead.address || "");
+  const [avatarUrl, setAvatarUrl] = useState(lead.avatarUrl || "");
+  const [passportNo, setPassportNo] = useState(lead.passportNo || "");
+  const [guardianName, setGuardianName] = useState(
+    lead.guardianName || linkedVisa?.sponsorName || ""
+  );
+  const [guardianPhone, setGuardianPhone] = useState(lead.guardianPhone || "");
+  const [education, setEducation] = useState(lead.education || "HSC");
+  const [sscGpa, setSscGpa] = useState(lead.sscGpa || "4.00");
+  const [hscGpa, setHscGpa] = useState(lead.hscGpa || "3.70");
+  const [studyGapYears, setStudyGapYears] = useState<number>(lead.studyGapYears ?? 0);
+  const [japaneseProficiency, setJapaneseProficiency] = useState<
+    CrmLead["japaneseProficiency"]
+  >(lead.japaneseProficiency || "NONE");
+  const [interest, setInterest] = useState<ServiceInterest>(
+    lead.interest || "STUDENT_VISA_REGULAR"
+  );
+  const [status, setStatus] = useState<LeadStatus>(lead.status || "NEW");
+  const [priority, setPriority] = useState<LeadPriority>(lead.priority || "WARM");
+  const [assignedTo, setAssignedTo] = useState(
+    lead.assignedTo || "Sales & Marketing Team"
+  );
+  const [branch, setBranch] = useState<"DHK-HQ" | "KHULNA-01">(
+    lead.branch || "DHK-HQ"
+  );
+  const [followUpDate, setFollowUpDate] = useState(lead.followUpDate || "");
+  const [notes, setNotes] = useState(lead.notes || "");
+  const [targetSchool, setTargetSchool] = useState(
+    lead.targetSchool || linkedVisa?.targetSchool || ""
+  );
+  const [partnerSchoolId, setPartnerSchoolId] = useState(
+    lead.partnerSchoolId || linkedVisa?.partnerSchoolId || ""
+  );
+  const [b2bAgentId, setB2bAgentId] = useState(
+    lead.b2bAgentId || linkedVisa?.b2bAgentId || ""
+  );
+  const [b2bAgentName, setB2bAgentName] = useState(
+    lead.b2bAgentName || linkedVisa?.b2bAgentName || ""
+  );
+  const [contractAmountBdt, setContractAmountBdt] = useState<number>(
+    lead.contractAmountBdt ??
+      linkedVisa?.contractAmountBdt ??
+      (lead.interest === "STUDENT_VISA_PREMIUM" ? 1100000 : 120000)
+  );
+  const [paidAmountBdt, setPaidAmountBdt] = useState<number>(
+    lead.paidAmountBdt ?? linkedVisa?.paidAmountBdt ?? 0
+  );
+  const [sponsorBankName, setSponsorBankName] = useState(
+    lead.sponsorBankName || linkedVisa?.sponsorBank || "Agrani Bank PLC"
+  );
+  const [sponsorBankBalanceBdt, setSponsorBankBalanceBdt] = useState<number>(
+    lead.sponsorBankBalanceBdt ?? linkedVisa?.sponsorBalanceBdt ?? 1850000
+  );
 
-  // Smart Japan Partner School Matcher based on GPA & Study Gap
-  const matchedRecommendedSchools = useMemo(() => {
-    const avgGpa =
-      ((parseFloat(sscGpa) || 3.5) + (parseFloat(hscGpa) || 3.5)) / 2;
-    return partnerSchools.map((sch) => {
-      const minGpa = parseFloat(sch.minGpaRequired || "3.0") || 3.0;
-      const maxGap = sch.maxStudyGapYears ?? 5;
-      const qualifies = avgGpa >= minGpa && studyGapYears <= maxGap;
-      return { school: sch, qualifies, minGpa, maxGap };
-    });
-  }, [partnerSchools, sscGpa, hscGpa, studyGapYears]);
+  // Documents, Tasks, AI Summary & Activity Timeline
+  const [documents, setDocuments] = useState<LeadDocumentItem[]>(() =>
+    getLeadDocumentChecklist(lead)
+  );
+  const [tasks, setTasks] = useState<ProfileTaskItem[]>(() =>
+    lead.tasks && lead.tasks.length > 0
+      ? lead.tasks
+      : getDefaultTasksForLead(lead, isBn)
+  );
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskDueDate, setNewTaskDueDate] = useState("");
+  const [aiSummary, setAiSummary] = useState<string>(lead.aiSummary || "");
+  const [activityLog, setActivityLog] = useState<LeadActivityItem[]>(
+    () => lead.activityLog || []
+  );
 
-  // ---------------------------------------------------------------------------
-  // Handlers
-  // ---------------------------------------------------------------------------
-  const buildUpdatedLeadPayload = (): Partial<CrmLead> => {
-    const selectedAgent = b2bAgents.find((a) => a.id === b2bAgentId);
-    const selectedSchool = partnerSchools.find((s) => s.id === partnerSchoolId);
-    const selectedOfficer = visaOfficers.find((v) => v.id === assignedVisaOfficerId);
-    const resolvedSchoolName = selectedSchool?.name || targetSchool || undefined;
+  // Inline Status Update Composer State
+  const [nextStatusInput, setNextStatusInput] = useState<LeadStatus>(
+    lead.status === "NEW" ? "CONTACTED" : lead.status
+  );
+  const [statusUpdateNote, setStatusUpdateNote] = useState("");
+  const [statusUpdateFollowUp, setStatusUpdateFollowUp] = useState(
+    lead.followUpDate || ""
+  );
 
-    return {
+  // Quick Fee Payment State (in Invoices tab)
+  const [quickPayAmount, setQuickPayAmount] = useState<string>("");
+  const [quickPayType, setQuickPayType] = useState<TransactionType>(
+    "REGULAR_SERVICE_CHARGE"
+  );
+  const [quickPayMethod, setQuickPayMethod] = useState<
+    FinancialTransaction["paymentMethod"]
+  >("CASH_OFFICE");
+  const [quickPayRef, setQuickPayRef] = useState<string>("");
+
+  // Portal Login Provisioning State (in Applications tab)
+  const [loginEmail, setLoginEmail] = useState(
+    lead.loginEmail ||
+      lead.email ||
+      `${lead.name.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 10) || "student"}@knltc.jp`
+  );
+  const [loginPassword, setLoginPassword] = useState(
+    lead.loginPassword || `Japan@${lead.phone.slice(-4) || "2027"}`
+  );
+  const [courseLevel, setCourseLevel] = useState<"N5" | "N4" | "IRODORI">(
+    linkedLms?.courseLevel || "N5"
+  );
+  const [enrolledBatch, setEnrolledBatch] = useState(
+    lead.enrolledBatchOrSession ||
+      linkedLms?.activeBatch ||
+      "JLPT N5 Regular Batch — April 2027"
+  );
+
+  // Eligibility Calculation
+  const eligibility = useMemo(
+    () =>
+      calculateLeadEligibility({
+        ...lead,
+        education,
+        sscGpa,
+        hscGpa,
+        studyGapYears,
+        japaneseProficiency,
+        sponsorBankBalanceBdt,
+        documentChecklist: documents,
+      }),
+    [
+      lead,
+      education,
+      sscGpa,
+      hscGpa,
+      studyGapYears,
+      japaneseProficiency,
+      sponsorBankBalanceBdt,
+      documents,
+    ]
+  );
+
+  const uploadedDocsCount = useMemo(
+    () => documents.filter((d) => d.status !== "MISSING").length,
+    [documents]
+  );
+
+  // Auto-generated narrative summary (matches reference screenshot style)
+  const autoNarrativeSummary = useMemo(() => {
+    if (aiSummary) return aiSummary;
+    const programLabel = formatLeadInterestLabel(interest, isBn);
+    const docPhrase =
+      uploadedDocsCount > 0
+        ? `has submitted ${uploadedDocsCount} of ${documents.length} required documents`
+        : `has not yet submitted any applications or documents`;
+    const recentNote =
+      activityLog[0]?.note ||
+      activityLog[0]?.summary ||
+      (notes ? notes : "");
+    const notePhrase = recentNote
+      ? `In the recent update, the counselor noted: "${recentNote}".`
+      : `In recent interactions, no specific concerns or questions were recorded.`;
+    const nextAction =
+      status === "NEW"
+        ? "contact the candidate to verify academic transcripts and explain the Japan application roadmap."
+        : status === "CONTACTED" || status === "COUNSELED"
+          ? "guide the candidate on the application process and required documents for the chosen program."
+          : status === "OFFICE_VISIT_BOOKED"
+            ? "conduct the in-office assessment, finalize partner school selection, and open the COE file."
+            : "complete COE documentation verification and track Japanese language batch progress.";
+
+    if (isBn) {
+      return `${name}-এর একটি শক্তিশালী একাডেমিক প্রোফাইল রয়েছে (HSC GPA ${hscGpa || "N/A"} এবং SSC GPA ${sscGpa || "N/A"})। তিনি জাপানের ${programLabel} প্রোগ্রামে আগ্রহী এবং এখন পর্যন্ত ${uploadedDocsCount}/${documents.length}টি ডকুমেন্ট জমা দিয়েছেন। ${recentNote ? `সাম্প্রতিক নোটে উল্লেখ আছে: "${recentNote}"।` : ""} কাউন্সেলরের জন্য পরবর্তী সবচেয়ে কার্যকর পদক্ষেপ হবে নির্বাচিত প্রোগ্রামের আবেদন প্রক্রিয়া ও প্রয়োজনীয় ডকুমেন্টগুলো সম্পর্কে তাকে গাইড করা।`;
+    }
+    return `${name} has a strong academic profile with a high school GPA of ${hscGpa || "3.7"} and an SSC GPA of ${sscGpa || "4.00"}. The candidate is interested in ${programLabel} in Japan but ${docPhrase}. ${notePhrase} The most useful next action for the counselor would be to ${nextAction}`;
+  }, [
+    aiSummary,
+    interest,
+    isBn,
+    uploadedDocsCount,
+    documents.length,
+    activityLog,
+    notes,
+    status,
+    name,
+    hscGpa,
+    sscGpa,
+  ]);
+
+  // Smart School & Program Matches
+  const schoolMatches = useMemo(() => {
+    const candidateGpa = Math.min(
+      5,
+      (parseFloat(sscGpa || "4.0") + parseFloat(hscGpa || "3.7")) / 2 || 3.8
+    );
+    const baseSchools: JapanesePartnerSchool[] =
+      partnerSchools.length > 0
+        ? partnerSchools
+        : [
+            {
+              id: "jp-sch-tokyo-1",
+              name: "Tokyo International Japanese School",
+              japaneseName: "東京国際日本語学院",
+              institutionType: "LANGUAGE_SCHOOL",
+              location: "Shinjuku, Tokyo",
+              contactPerson: "Yamamoto Sensei",
+              email: "admissions@tijs.ac.jp",
+              commissionPerStudentYen: 120000,
+              commissionPerStudentBdt: 96000,
+              firstYearTuitionYen: 760000,
+              intakeMonths: ["APRIL", "OCTOBER"],
+              minGpaRequired: "3.00",
+              maxStudyGapYears: 5,
+              minLanguageLevel: "JLPT N5 / NAT 5Q",
+              activeStudentsCount: 14,
+              intakeQuota: 30,
+              totalCommissionReceivedYen: 0,
+              status: "ACTIVE_PARTNER",
+            },
+            {
+              id: "jp-sch-osaka-2",
+              name: "Osaka Meros Language Academy",
+              japaneseName: "大阪メロス言語学院",
+              institutionType: "LANGUAGE_SCHOOL",
+              location: "Namba, Osaka",
+              contactPerson: "Tanaka Kenji",
+              email: "int@meros-osaka.jp",
+              commissionPerStudentYen: 110000,
+              commissionPerStudentBdt: 88000,
+              firstYearTuitionYen: 720000,
+              intakeMonths: ["APRIL", "JULY", "OCTOBER"],
+              minGpaRequired: "2.80",
+              maxStudyGapYears: 6,
+              minLanguageLevel: "JLPT N5 / Studying",
+              activeStudentsCount: 9,
+              intakeQuota: 25,
+              totalCommissionReceivedYen: 0,
+              status: "ACTIVE_PARTNER",
+            },
+            {
+              id: "jp-sch-fukuoka-3",
+              name: "Fukuoka Kyushu Foreign Language Institute",
+              japaneseName: "九州外国語学院（福岡）",
+              institutionType: "LANGUAGE_SCHOOL",
+              location: "Hakata, Fukuoka",
+              contactPerson: "Sato Haruka",
+              email: "apply@kyushu-fli.jp",
+              commissionPerStudentYen: 100000,
+              commissionPerStudentBdt: 80000,
+              firstYearTuitionYen: 690000,
+              intakeMonths: ["JANUARY", "APRIL", "JULY", "OCTOBER"],
+              minGpaRequired: "2.50",
+              maxStudyGapYears: 7,
+              minLanguageLevel: "Beginner / N5 Prep",
+              activeStudentsCount: 6,
+              intakeQuota: 25,
+              totalCommissionReceivedYen: 0,
+              status: "ACTIVE_PARTNER",
+            },
+          ];
+
+    return baseSchools
+      .map((sch) => {
+        const minGpa = parseFloat(sch.minGpaRequired || "2.80") || 2.8;
+        const maxGap = sch.maxStudyGapYears ?? 5;
+        let matchScore = 85;
+        if (candidateGpa >= minGpa + 0.7) matchScore += 10;
+        else if (candidateGpa >= minGpa) matchScore += 5;
+        else matchScore -= 18;
+
+        if (studyGapYears <= maxGap) matchScore += 4;
+        else matchScore -= 15;
+
+        matchScore = Math.max(45, Math.min(99, matchScore));
+        const isCurrentTarget =
+          (partnerSchoolId && sch.id === partnerSchoolId) ||
+          (targetSchool &&
+            sch.name.toLowerCase() === targetSchool.toLowerCase());
+
+        return {
+          school: sch,
+          matchScore,
+          isEligible: candidateGpa >= minGpa && studyGapYears <= maxGap + 1,
+          isCurrentTarget,
+        };
+      })
+      .sort((a, b) => b.matchScore - a.matchScore);
+  }, [partnerSchools, sscGpa, hscGpa, studyGapYears, partnerSchoolId, targetSchool]);
+
+  // Persist helper
+  const persistLeadChanges = (
+    overrides?: Partial<CrmLead>,
+    toastMsg?: string
+  ) => {
+    const due = Math.max(0, contractAmountBdt - paidAmountBdt);
+    const payload: Partial<CrmLead> = {
       name,
       phone,
       whatsapp,
       email,
       city,
       address,
-      avatarUrl: avatarUrl || undefined,
-      dateOfBirth: dateOfBirth || undefined,
-      gender,
-      maritalStatus,
-      nidOrBirthRegNo: nidOrBirthRegNo || undefined,
+      avatarUrl,
       passportNo,
-      passportExpiryDate: passportExpiryDate || undefined,
       guardianName,
       guardianPhone,
       education,
       sscGpa,
       hscGpa,
-      honorsOrDiplomaCgpa: honorsOrDiplomaCgpa || undefined,
-      graduationYear,
-      gpaDetails: gpaDetails || `SSC ${sscGpa} • HSC ${hscGpa}`,
       studyGapYears,
       japaneseProficiency,
-      japaneseExamType,
-      japaneseExamStatus,
-      japaneseExamScore,
       interest,
-      preferredIntake,
-      preferredJapanCity,
-      callOutcome,
-      customTags,
       status,
       priority,
-      branch,
       assignedTo,
-      assignedCounselorId: assignedCounselorId || undefined,
-      b2bAgentId: b2bAgentId || undefined,
-      referredByAgentId: b2bAgentId || undefined,
-      b2bAgentName: selectedAgent?.organizationName || b2bAgentName || undefined,
-      referredByAgentName: selectedAgent?.organizationName || b2bAgentName || undefined,
-      partnerSchoolId: partnerSchoolId || undefined,
-      targetSchoolId: partnerSchoolId || undefined,
-      targetSchool: resolvedSchoolName,
-      targetSchoolName: resolvedSchoolName,
-      assignedVisaOfficerId: assignedVisaOfficerId || undefined,
-      assignedVisaOfficerName: selectedOfficer?.name || undefined,
-      contractAmountBdt,
-      sponsorRelation,
-      sponsorOccupation,
-      sponsorMonthlyIncomeBdt,
-      sponsorBankName,
-      sponsorBankBalanceBdt,
-      bankLoanRequired,
-      preferredLoanBank,
-      schoolInterviewStatus,
-      schoolInterviewDate,
-      attendancePercentage: attendancePct,
-      documentChecklist,
-      activityLog,
+      branch,
       followUpDate,
       notes,
+      targetSchool,
+      partnerSchoolId,
+      b2bAgentId,
+      b2bAgentName,
+      contractAmountBdt,
+      paidAmountBdt,
+      dueAmountBdt: due,
+      sponsorBankName,
+      sponsorBankBalanceBdt,
+      documentChecklist: documents,
+      tasks,
+      aiSummary,
+      activityLog,
+      ...overrides,
     };
-  };
-
-  const handleSaveAllProfileChanges = () => {
-    updateCrmLeadProfile(lead.id, buildUpdatedLeadPayload());
-    updateLmsProgressAndAttendance(lead.id, phone, lmsProgressPct, attendancePct);
+    updateCrmLeadProfile(lead.id, payload);
     setStoreTick((t) => t + 1);
-    onSaved(
-      tr(`${name}-এর ৩৬০° প্রোফাইল, ডকুমেন্ট ভল্ট ও এসেসমেন্ট সেভ হয়েছে!`, `${name}'s 360° profile and assessment saved!`),
-    );
+    if (toastMsg) {
+      onSaved(toastMsg);
+    }
   };
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setIsUploadingAvatar(true);
+  // Generate AI Profile Summary via Gemini API
+  const handleGenerateAiSummary = async () => {
+    setIsGeneratingAi(true);
     try {
-      const res = await uploadMediaImage(file, { maxDimension: 400 });
-      setAvatarUrl(res.url);
-      updateCrmLeadProfile(lead.id, { avatarUrl: res.url });
-      onSaved(
-        tr("প্রার্থীর ছবি সফলভাবে আপলোড হয়েছে!", "Candidate photo uploaded!"),
-      );
+      const res = await fetch("/api/admin/ai-profile-summary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          entityType: "LEAD",
+          name,
+          program: formatLeadInterestLabel(interest, false),
+          status,
+          sscGpa,
+          hscGpa,
+          education,
+          japaneseProficiency: formatProficiencyLabel(japaneseProficiency, false),
+          studyGapYears,
+          uploadedDocsCount,
+          totalDocsCount: documents.length,
+          latestNote: activityLog[0]?.note || activityLog[0]?.summary || notes,
+          city,
+          language,
+        }),
+      });
+      const data = await res.json();
+      if (data.summary) {
+        setAiSummary(data.summary);
+        persistLeadChanges(
+          { aiSummary: data.summary },
+          tr(
+            "AI প্রোফাইল সামারি আপডেট ও Google Sheet-এ সেভ হয়েছে",
+            "AI Profile Summary updated & saved to Google Sheet"
+          )
+        );
+      }
     } catch {
-      onSaved(tr("ছবি আপলোড সমস্যা হয়েছে", "Photo upload failed"));
-    } finally {
-      setIsUploadingAvatar(false);
-      e.target.value = "";
-    }
-  };
-
-  const handleAddCustomTag = (tagToAdd?: string) => {
-    const clean = (tagToAdd ?? newTagInput).trim();
-    if (!clean) return;
-    if (!customTags.includes(clean)) {
-      const next = [...customTags, clean];
-      setCustomTags(next);
-      updateCrmLeadProfile(lead.id, { customTags: next });
-    }
-    if (!tagToAdd) setNewTagInput("");
-  };
-
-  const handleRemoveCustomTag = (tagToRemove: string) => {
-    const next = customTags.filter((t) => t !== tagToRemove);
-    setCustomTags(next);
-    updateCrmLeadProfile(lead.id, { customTags: next });
-  };
-
-  const handleAddCustomDocument = () => {
-    const cleanTitle = newCustomDocTitle.trim();
-    if (!cleanTitle) return;
-    const newDoc: LeadDocumentItem = {
-      id: `doc-custom-${Date.now()}`,
-      titleBn: cleanTitle,
-      titleEn: cleanTitle,
-      category: "ACADEMIC",
-      status: "SUBMITTED",
-      updatedAt: new Date().toISOString().slice(0, 10),
-    };
-    const nextList = [...documentChecklist, newDoc];
-    setDocumentChecklist(nextList);
-    updateCrmLeadProfile(lead.id, { documentChecklist: nextList });
-    setNewCustomDocTitle("");
-    onSaved(
-      tr(`নতুন ডকুমেন্ট স্লট "${cleanTitle}" যুক্ত হয়েছে`, `Custom document "${cleanTitle}" added`),
-    );
-  };
-
-  const handleSetQuickFollowUp = (daysFromToday: number) => {
-    const d = new Date();
-    d.setDate(d.getDate() + daysFromToday);
-    const iso = d.toISOString().slice(0, 10);
-    setFollowUpDate(iso);
-    updateCrmLeadProfile(lead.id, { followUpDate: iso });
-  };
-
-  const handleCopyPhone = async () => {
-    await navigator.clipboard.writeText(phone);
-    setCopiedPhone(true);
-    setTimeout(() => setCopiedPhone(false), 2000);
-  };
-
-  const handleDeleteCurrentLead = () => {
-    deleteCrmLead(lead.id);
-    if (onDeleted) {
-      onDeleted(name);
-    }
-    onClose();
-  };
-
-  const cycleDocStatus = (docId: string) => {
-    const order: LeadDocumentItem["status"][] = ["MISSING", "SUBMITTED", "VERIFIED"];
-    const nextList = documentChecklist.map((item) => {
-      if (item.id !== docId) return item;
-      const nextStatus = order[(order.indexOf(item.status) + 1) % order.length];
-      return {
-        ...item,
-        status: nextStatus,
-        updatedAt: new Date().toISOString().slice(0, 10),
-      };
-    });
-    setDocumentChecklist(nextList);
-    updateCrmLeadProfile(lead.id, { documentChecklist: nextList });
-  };
-
-  const markAllDocsStatus = (targetStatus: LeadDocumentItem["status"]) => {
-    const nextList = documentChecklist.map((item) => ({
-      ...item,
-      status: targetStatus,
-      updatedAt: new Date().toISOString().slice(0, 10),
-    }));
-    setDocumentChecklist(nextList);
-    updateCrmLeadProfile(lead.id, { documentChecklist: nextList });
-    onSaved(
-      tr(`সকল ডকুমেন্ট "${targetStatus}" হিসেবে চিহ্নিত করা হয়েছে`, `All documents marked as ${targetStatus}`),
-    );
-  };
-
-  const [uploadingDocId, setUploadingDocId] = useState<string | null>(null);
-
-  const handleStudentDocUpload = async (docId: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingDocId(docId);
-    try {
-      const res = await uploadDocumentFile(file, { trackingNo: lead.id, docType: docId });
-      const nextList = documentChecklist.map((item) => {
-        if (item.id !== docId) return item;
-        return {
-          ...item,
-          status: "VERIFIED" as const,
-          fileUrl: res.url,
-          fileName: res.fileName || file.name,
-          updatedAt: new Date().toISOString().slice(0, 10),
-        };
-      });
-      setDocumentChecklist(nextList);
-      updateCrmLeadProfile(lead.id, { documentChecklist: nextList });
-      onSaved(
-        tr(`${file.name} ভল্টে সংরক্ষিত হয়েছে`, `${file.name} saved to student vault`),
-      );
-    } catch (err) {
-      console.error("Student doc upload error:", err);
-    } finally {
-      setUploadingDocId(null);
-      e.target.value = "";
-    }
-  };
-
-  const handleAddActivityEntry = (
-    typeOverride?: LeadActivityItem["type"],
-    summaryOverride?: string,
-  ) => {
-    const finalType = typeOverride || newActivityType;
-    const finalSummary = (summaryOverride ?? newActivitySummary).trim();
-    if (!finalSummary) return;
-
-    const updatedLead = addLeadActivityLog(lead.id, {
-      type: finalType,
-      summary: finalSummary,
-      counselorName: assignedTo || "শেখ বাসেত",
-    });
-
-    if (updatedLead?.activityLog) {
-      setActivityLog(updatedLead.activityLog);
-    } else {
-      const fallbackItem: LeadActivityItem = {
-        id: `act-${Date.now()}`,
-        type: finalType,
-        summary: finalSummary,
-        counselorName: assignedTo || "শেখ বাসেত",
-        createdAt: new Date().toISOString(),
-      };
-      const next = [fallbackItem, ...activityLog];
-      setActivityLog(next);
-      updateCrmLeadProfile(lead.id, { activityLog: next });
-    }
-
-    if (!summaryOverride) {
-      setNewActivitySummary("");
-    }
-    setStoreTick((t) => t + 1);
-  };
-
-  const handleQuickCollectFee = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!feeAmountBdt || feeAmountBdt <= 0) return;
-
-    updateCrmLeadProfile(lead.id, buildUpdatedLeadPayload());
-
-    const tx = addFinancialTransaction({
-      receiptNo: `KNLTC-REC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-      date: new Date().toISOString().slice(0, 10),
-      studentName: name.trim(),
-      studentPhone: phone.trim(),
-      category: "INCOME",
-      type: feeType,
-      amountBdt: Number(feeAmountBdt),
-      paymentMethod: feeMethod,
-      referenceOrTrx: feeTrxRef.trim() || `TRX-${Date.now().toString().slice(-6)}`,
-      branch,
-      verifiedBy: assignedTo || "Sheikh Baset (MD)",
-      notes: `Collected from 360° Lead Profile (${feeType})`,
-      linkedLeadId: lead.id,
-    });
-
-    handleAddActivityEntry(
-      "PAYMENT",
-      `ফি জমা নেওয়া হয়েছে: ৳${tx.amountBdt.toLocaleString()} (${tx.receiptNo} • ${tx.paymentMethod})`,
-    );
-    setFeeTrxRef("");
-    setStoreTick((t) => t + 1);
-    onSaved(
-      tr(`৳${tx.amountBdt.toLocaleString()} জমা নেওয়া হয়েছে (রসিদ: ${tx.receiptNo})`, `Collected ৳${tx.amountBdt.toLocaleString()} (Receipt: ${tx.receiptNo})`),
-    );
-  };
-
-  const handleAdvanceOrSetVisaStage = (nextStage: VisaStage) => {
-    updateCrmLeadProfile(lead.id, buildUpdatedLeadPayload());
-    let targetVisa = linkedVisa;
-    if (!targetVisa) {
-      targetVisa = promoteLeadToVisaPipeline({
-        leadId: lead.id,
-        partnerSchoolId: partnerSchoolId || undefined,
-        targetSchool: targetSchool || undefined,
-        packageType,
-        b2bAgentId: b2bAgentId || undefined,
-        visaOfficerId: assignedVisaOfficerId || undefined,
-        contractAmountBdt,
-      });
-      setIsFileOpened(true);
-      setStatus("ADMITTED");
-    }
-    if (targetVisa) {
-      updateVisaStage(targetVisa.id, nextStage);
-      handleAddActivityEntry(
-        "STAGE_CHANGE",
-        `${tr("ভিসা পাইপলাইন আপডেট", "Visa Pipeline Update", "ビザ進捗更新")}: ${VISA_STAGE_LABELS[nextStage][language === "ja" ? "ja" : language === "en" ? "en" : "bn"]}`,
-      );
-      setStoreTick((t) => t + 1);
       onSaved(
         tr(
-          `${name}-এর ভিসা ধাপ আপডেট হয়েছে: ${VISA_STAGE_LABELS[nextStage].bn}`,
-          `Visa stage updated: ${VISA_STAGE_LABELS[nextStage].en}`,
-          `ビザ段階更新: ${VISA_STAGE_LABELS[nextStage].ja}`
-        ),
+          "সামারি জেনারেট করতে সমস্যা হয়েছে",
+          "Could not generate AI summary right now"
+        )
       );
+    } finally {
+      setIsGeneratingAi(false);
     }
   };
 
-  const toggleTabPermission = (tabId: DashboardTabId) => {
-    setAllowedTabs((prev) =>
-      prev.includes(tabId) ? prev.filter((item) => item !== tabId) : [...prev, tabId],
-    );
-  };
+  // Submit Inline Status Update (+ Add Update)
+  const handleAddStatusUpdate = (e: React.FormEvent) => {
+    e.preventDefault();
+    const prevStatusLabel = STATUS_META[status]?.labelEn || status;
+    const nextStatusLabel = STATUS_META[nextStatusInput]?.labelEn || nextStatusInput;
+    const trimmedNote = statusUpdateNote.trim();
 
-  const generateRandomPassword = () => {
-    const digits = Math.floor(1000 + Math.random() * 9000);
-    setLoginPassword(`JP@${digits}`);
-  };
+    const newLogItem: LeadActivityItem = {
+      id: `act-${Date.now()}`,
+      type: "STAGE_CHANGE",
+      fromStatus: prevStatusLabel,
+      toStatus: nextStatusLabel,
+      note: trimmedNote || undefined,
+      summary: trimmedNote
+        ? `${prevStatusLabel} → ${nextStatusLabel}: "${trimmedNote}"`
+        : `${prevStatusLabel} → ${nextStatusLabel}`,
+      counselorName: assignedTo || "Counselor / system",
+      createdAt: new Date().toISOString(),
+    };
 
-  const handleProvisionLoginAndAdmission = () => {
-    if (!loginEmail.trim() || !loginPassword.trim()) {
-      onSaved(tr("লগইন ইমেইল ও পাসওয়ার্ড প্রদান করুন।", "Please provide Login ID and Password."));
-      return;
+    const nextLog = [newLogItem, ...activityLog];
+    setStatus(nextStatusInput);
+    setActivityLog(nextLog);
+    if (trimmedNote) setNotes(trimmedNote);
+    if (statusUpdateFollowUp) setFollowUpDate(statusUpdateFollowUp);
+
+    if (nextStatusInput === "ADMITTED" && status !== "ADMITTED") {
+      updateCrmLeadStatus(lead.id, "ADMITTED", trimmedNote || notes);
     }
 
-    const finalTabs: DashboardTabId[] =
-      allowedTabs.length > 0 ? allowedTabs : ["my_profile", "visa", "lms"];
-    const selectedAgent = b2bAgents.find((a) => a.id === b2bAgentId);
-    const selectedSchool = partnerSchools.find((s) => s.id === partnerSchoolId);
-    const selectedOfficer = visaOfficers.find((v) => v.id === assignedVisaOfficerId);
-    const resolvedSchoolName = selectedSchool?.name || targetSchool || "Unassigned School";
-
-    provisionLeadLoginAndEnrollment(
+    persistLeadChanges(
       {
-        id: lead.id,
-        name,
-        phone,
-        whatsapp,
-        email,
-        city,
-        education,
-        interest,
-        branch,
-        notes,
+        status: nextStatusInput,
+        notes: trimmedNote || notes,
+        followUpDate: statusUpdateFollowUp || followUpDate,
+        activityLog: nextLog,
       },
-      {
-        loginEmail: loginEmail.trim(),
-        loginPassword: loginPassword.trim(),
-        role,
-        allowedTabs: finalTabs,
-        isFileOpened,
-        isCourseEnrolled,
-        enrolledBatchOrSession,
-        packageType,
-        targetSchool: resolvedSchoolName,
-        partnerSchoolId: partnerSchoolId || undefined,
-        b2bAgentId: b2bAgentId || undefined,
-        b2bAgentName: selectedAgent?.organizationName || b2bAgentName || undefined,
-        assignedCounselorId: assignedCounselorId || undefined,
-        assignedVisaOfficerId: assignedVisaOfficerId || undefined,
-        assignedVisaOfficerName: selectedOfficer?.name || undefined,
-        contractAmountBdt,
-        initialPaymentBdt: Number(initialPaymentBdt) || 0,
-        courseLevel,
-        accountStatus: "ACTIVE",
-        address,
-        passportNo,
-        guardianName,
-        guardianPhone,
-        gpaDetails: gpaDetails || `SSC ${sscGpa} • HSC ${hscGpa}`,
-      },
+      tr(
+        `স্ট্যাটাস "${nextStatusLabel}"-এ আপডেট ও টাইমলাইনে লগ করা হয়েছে`,
+        `Status updated to "${nextStatusLabel}" & logged in timeline`
+      )
     );
+    setStatusUpdateNote("");
+    setIsUpdateStatusOpen(false);
+  };
 
-    updateCrmLeadProfile(lead.id, {
-      ...buildUpdatedLeadPayload(),
-      email: loginEmail.trim(),
-      status: isFileOpened || isCourseEnrolled ? "ADMITTED" : status,
-      isFileOpened,
-      isCourseEnrolled,
-      enrolledBatchOrSession,
-      packageType,
-      targetSchool: resolvedSchoolName,
-      hasLoginAccess: true,
-      loginEmail: loginEmail.trim().toLowerCase(),
-      loginPassword: loginPassword.trim(),
-      allowedTabs: finalTabs,
+  // Rate Lead (Priority Change)
+  const handleRateLead = (nextPriority: LeadPriority) => {
+    setPriority(nextPriority);
+    const logEntry: LeadActivityItem = {
+      id: `act-rate-${Date.now()}`,
+      type: "MEETING_NOTE",
+      fromStatus: STATUS_META[status]?.labelEn || status,
+      toStatus: `${nextPriority} Lead`,
+      note: `Lead rating updated to ${nextPriority}`,
+      summary: `Rated lead as ${nextPriority}`,
+      counselorName: assignedTo || "Counselor",
+      createdAt: new Date().toISOString(),
+    };
+    const nextLog = [logEntry, ...activityLog];
+    setActivityLog(nextLog);
+    persistLeadChanges(
+      { priority: nextPriority, activityLog: nextLog },
+      tr(
+        `লিড রেটিং "${nextPriority}" সেট করা হয়েছে`,
+        `Lead rated as ${nextPriority}`
+      )
+    );
+  };
+
+  // Document Upload Handler
+  const handleDocUpload = async (docItem: LeadDocumentItem, file: File) => {
+    setUploadingDocId(docItem.id);
+    try {
+      const result = await uploadDocumentFile(file, "knltc-documents");
+      const nextDocs = documents.map((d) =>
+        d.id === docItem.id
+          ? {
+              ...d,
+              status: "SUBMITTED" as const,
+              fileUrl: result.url,
+              fileName: file.name,
+              updatedAt: new Date().toISOString().slice(0, 10),
+            }
+          : d
+      );
+      setDocuments(nextDocs);
+      const docLog: LeadActivityItem = {
+        id: `act-doc-${Date.now()}`,
+        type: "DOC_UPDATE",
+        fromStatus: "Documents",
+        toStatus: "Uploaded",
+        note: `Uploaded ${docItem.titleEn} (${file.name})`,
+        summary: `Uploaded document: ${docItem.titleEn}`,
+        counselorName: assignedTo || "Counselor",
+        createdAt: new Date().toISOString(),
+      };
+      const nextLog = [docLog, ...activityLog];
+      setActivityLog(nextLog);
+      persistLeadChanges(
+        { documentChecklist: nextDocs, activityLog: nextLog },
+        tr(
+          `"${docItem.titleBn}" Google Drive-এ আপলোড হয়েছে`,
+          `"${docItem.titleEn}" uploaded to Google Drive`
+        )
+      );
+    } catch (err) {
+      onSaved(
+        err instanceof Error ? err.message : "Document upload failed"
+      );
+    } finally {
+      setUploadingDocId(null);
+    }
+  };
+
+  const formattedAddedDate = useMemo(() => {
+    try {
+      const d = new Date(lead.createdAt || new Date().toISOString());
+      if (isNaN(d.getTime())) return "Oct 29, 2026";
+      return d.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    } catch {
+      return "Oct 29, 2026";
+    }
+  }, [lead.createdAt]);
+
+  const formatTimelineDate = (iso: string) => {
+    try {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return iso;
+      return d.toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      });
+    } catch {
+      return iso;
+    }
+  };
+
+  // Synthesize timeline items so even imported Google Sheet rows show a rich timeline
+  const timelineItems = useMemo(() => {
+    const list: LeadActivityItem[] = [...activityLog];
+    if (list.length === 0 && notes) {
+      list.push({
+        id: "seed-note-1",
+        type: "CALL",
+        fromStatus: "New Lead",
+        toStatus: STATUS_META[status]?.labelEn || "Contacted",
+        note: notes,
+        summary: notes,
+        counselorName: assignedTo || "AI / system",
+        createdAt: lead.lastContactedAt || lead.createdAt || new Date().toISOString(),
+      });
+    }
+    list.push({
+      id: "seed-created-0",
+      type: "STAGE_CHANGE",
+      toStatus: "New Lead",
+      summary: `Lead added from ${formatLeadSourceLabel(lead.source)}`,
+      counselorName: "AI / system",
+      createdAt: lead.createdAt || new Date().toISOString(),
     });
+    return list;
+  }, [activityLog, notes, status, assignedTo, lead.lastContactedAt, lead.createdAt, lead.source]);
 
-    onSaved(
-      tr(`${name} (${loginEmail.trim()}) — ভর্তি ও পোর্টাল লগইন চালু হয়েছে!`, `${name} (${loginEmail.trim()}) — Admission & Portal Login activated!`),
-    );
-    onClose();
-  };
-
-  // Pre-built WhatsApp Templates
-  const whatsappTemplates = useMemo(() => {
-    const missingDocs = documentChecklist
-      .filter((d) => d.status === "MISSING")
-      .slice(0, 4)
-      .map((d) => `• ${d.titleBn}`)
-      .join("\n");
-
-    return [
-      {
-        id: "tpl-counseling",
-        titleBn: "১. প্রাথমিক কাউন্সেলিং ও এলিজিবিলিটি রিপোর্ট",
-        titleEn: "1. Counseling & Eligibility Summary",
-        message: `আসসালামু আলাইকুম ${name},\nকবির নিউ লাইফ ট্রেনিং সেন্টার (KNLTC - Japan Gateway)-এ আপনার প্রোফাইল মূল্যায়ন সম্পন্ন হয়েছে।\n\n• জাপান ভিসা এলিজিবিলিটি স্কোর: ${eligibility.totalScore}%\n• প্রস্তাবিত প্রোগ্রাম: ${interest}\n• কাউন্সেলর: ${assignedTo}\n\nবিস্তারিত ফাইল ওপেনিংয়ের জন্য আমাদের অফিসে আসার আমন্ত্রণ রইল।`,
-      },
-      {
-        id: "tpl-docs",
-        titleBn: "২. বকেয়া ডকুমেন্ট জমাদানের রিমাইন্ডার",
-        titleEn: "2. Missing Document Reminder",
-        message: `প্রিয় ${name},\nআপনার জাপান প্রি-ভিসা (COE) ফাইল প্রসেসিংয়ের জন্য নিচের ডকুমেন্টগুলো দ্রুত অফিসে জমা দেওয়ার অনুরোধ করা হচ্ছে:\n\n${missingDocs || "• পাসপোর্ট ও একাডেমিক ট্রান্সক্রিপ্ট"}\n\nধন্যবাদান্তে,\nKNLTC ভিসা প্রসেসিং সেল`,
-      },
-      {
-        id: "tpl-interview",
-        titleBn: "৩. জাপানি স্কুল জুম ইন্টারভিউ প্রস্তুতি",
-        titleEn: "3. Japanese School Zoom Interview Prep",
-        message: `প্রিয় ${name},\nআপনার টার্গেট জাপানি স্কুল (${targetSchool || "Partner School"})-এর সাথে জুম ইন্টারভিউয়ের প্রস্তুতি সেশন নির্ধারিত হয়েছে।\n• তারিখ: ${schoolInterviewDate || followUpDate}\n• জিকোশোকাই (Self-Introduction) ও স্টাডি প্ল্যান রিভিশন করে আসবেন।`,
-      },
-      {
-        id: "tpl-due",
-        titleBn: "৪. বকেয়া কোর্স/সার্ভিস ফি কিস্তি রিমাইন্ডার",
-        titleEn: "4. Pending Fee Installment Notice",
-        message: `প্রিয় ${name},\nKNLTC-তে আপনার মোট চুক্তি ৳${contractAmountBdt.toLocaleString()}, পরিশোধিত ৳${livePaidAmountBdt.toLocaleString()} এবং বর্তমান বকেয়া ৳${liveDueAmountBdt.toLocaleString()}।\nপরবর্তী কিস্তি পরিশোধ করে অফিসিয়াল মানি রসিদ সংগ্রহ করার অনুরোধ করা হলো।`,
-      },
-      {
-        id: "tpl-login",
-        titleBn: "৫. স্টুডেন্ট পোর্টাল লগইন আইডি ও পাসওয়ার্ড",
-        titleEn: "5. Student Portal Login Credentials",
-        message: `অভিনন্দন ${name}!\nআপনার KNLTC স্টুডেন্ট পোর্টাল লগইন চালু হয়েছে:\n\n• পোর্টাল লিংক: ${typeof window !== "undefined" ? window.location.origin : ""}/admin/login\n• লগইন আইডি: ${loginEmail}\n• পাসওয়ার্ড: ${loginPassword}\n• ব্যাচ: ${enrolledBatchOrSession}`,
-      },
-    ];
-  }, [
-    name,
-    eligibility.totalScore,
-    interest,
-    assignedTo,
-    documentChecklist,
-    targetSchool,
-    schoolInterviewDate,
-    followUpDate,
-    contractAmountBdt,
-    livePaidAmountBdt,
-    liveDueAmountBdt,
-    loginEmail,
-    loginPassword,
-    enrolledBatchOrSession,
-  ]);
-
-  const cleanWaNumber = (whatsapp || phone).replace(/[^0-9]/g, "");
-
-  // Required Solvency Math
-  const requiredSolvencyBdt = packageType === "PREMIUM" ? 2000000 : 1800000;
-  const solvencyDeltaBdt = sponsorBankBalanceBdt - requiredSolvencyBdt;
+  const openTasksCount = tasks.filter((t) => !t.completed).length;
+  const dueAmountBdt = Math.max(0, contractAmountBdt - paidAmountBdt);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/65 p-2 sm:p-5 backdrop-blur-xs overflow-y-auto">
-      <div className="relative my-auto w-full max-w-6xl rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden max-h-[94vh] flex flex-col">
-        {/* =====================================================================
-            TOP 360° COMMAND CENTER HEADER
-            ===================================================================== */}
-        <div className="border-b border-slate-200 bg-slate-900 px-5 py-4 text-white">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            {/* Candidate Identity & Key Status */}
-            <div className="flex items-start sm:items-center gap-3.5">
-              <label
-                className="group relative flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl bg-white/10 font-bold text-base text-white border border-white/15 hover:border-white/40 transition"
-                title={tr("প্রার্থীর ছবি আপলোড করুন", "Upload Candidate Photo", "顔写真をアップロード")}
-              >
-                {avatarUrl ? (
-                  <img
-                    src={avatarUrl}
-                    alt={name}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <span>{(name || "ST").slice(0, 2).toUpperCase()}</span>
-                )}
-                <span className="absolute inset-0 flex items-center justify-center bg-slate-950/60 opacity-0 group-hover:opacity-100 transition">
-                  {isUploadingAvatar ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-white" />
-                  ) : (
-                    <Camera className="h-4 w-4 text-white" />
-                  )}
-                </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  disabled={isUploadingAvatar}
-                  onChange={handleAvatarUpload}
-                  className="hidden"
-                />
-              </label>
+    <div className="min-h-[calc(100vh-5rem)] bg-[#F8FAFC] rounded-2xl border border-slate-200/80 p-5 sm:p-8 shadow-2xs">
+      {/* =====================================================================
+          1. TOP BACK BAR & PREV / NEXT RECORD NAVIGATION
+          ===================================================================== */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <button
+          type="button"
+          onClick={onClose}
+          className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition cursor-pointer"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>{backLabel || tr("লিড তালিকায় ফিরে যান", "Back to Leads", "リード一覧へ戻る")}</span>
+        </button>
 
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-base sm:text-lg font-bold tracking-tight text-white">
-                    {name || "Unnamed Candidate"}
-                  </h2>
-                  <span className="text-xs font-mono text-slate-400">
-                    · {lead.fileTrackingNo || lead.id}
-                  </span>
+        {allLeads.length > 1 && onSelectLead && (
+          <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-1 shadow-2xs">
+            <button
+              type="button"
+              disabled={!prevLead}
+              onClick={() => prevLead && onSelectLead(prevLead)}
+              className="rounded-lg p-1 text-slate-600 hover:bg-slate-100 disabled:opacity-35 transition"
+              title="Previous Lead"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <span className="text-[11px] font-semibold text-slate-500 tabular-nums px-1.5">
+              {currentLeadIndex + 1} / {allLeads.length}
+            </span>
+            <button
+              type="button"
+              disabled={!nextLead}
+              onClick={() => nextLead && onSelectLead(nextLead)}
+              className="rounded-lg p-1 text-slate-600 hover:bg-slate-100 disabled:opacity-35 transition"
+              title="Next Lead"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* =====================================================================
+          2. CANDIDATE IDENTITY HEADER (Matches Reference Screenshot)
+          ===================================================================== */}
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-5 mb-7">
+        <div className="flex items-start gap-4">
+          {/* Circular Avatar with Photo Upload Support */}
+          <label className="relative group flex h-14 w-14 shrink-0 cursor-pointer items-center justify-center rounded-full bg-[#2563EB] text-white text-xl font-bold shadow-xs overflow-hidden">
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={name}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <span>{name.trim().charAt(0).toUpperCase() || "A"}</span>
+            )}
+            <div className="absolute inset-0 bg-slate-900/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+              {uploadingAvatar ? (
+                <Loader2 className="h-4 w-4 animate-spin text-white" />
+              ) : (
+                <Camera className="h-4 w-4 text-white" />
+              )}
+            </div>
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setUploadingAvatar(true);
+                try {
+                  const res = await uploadMediaImage(file, "knltc-media");
+                  setAvatarUrl(res.url);
+                  persistLeadChanges(
+                    { avatarUrl: res.url },
+                    tr("প্রোফাইল ছবি আপলোড হয়েছে", "Profile photo updated")
+                  );
+                } catch {
+                  onSaved(tr("ছবি আপলোড ব্যর্থ হয়েছে", "Photo upload failed"));
+                } finally {
+                  setUploadingAvatar(false);
+                }
+              }}
+            />
+          </label>
+
+          <div>
+            {/* Name + Edit Button + Delete Icon */}
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                {name}
+              </h1>
+
+              <button
+                type="button"
+                onClick={() => setIsEditingModalOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs transition cursor-pointer"
+              >
+                <Edit3 className="h-3.5 w-3.5 text-slate-500" />
+                <span>{tr("এডিট", "Edit", "編集")}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  deleteCrmLead(lead.id);
+                  if (onDeleted) onDeleted(name);
+                  onClose();
+                }}
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition cursor-pointer"
+                title={tr("লিড মুছে ফেলুন", "Delete Lead")}
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Subtitle: Globe · Country · Program */}
+            <div className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-500 mt-1">
+              <Globe className="h-3.5 w-3.5 text-slate-400" />
+              <span>
+                Japan · {formatLeadInterestLabel(interest, isBn)}
+              </span>
+              {city && (
+                <span className="text-slate-400">· {city}</span>
+              )}
+            </div>
+
+            {/* Status Pill + Rate Lead Dropdown */}
+            <div className="flex flex-wrap items-center gap-2.5 mt-3">
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${STATUS_META[status]?.badgeClass || "bg-blue-50 text-blue-700 border-blue-200"}`}
+              >
+                <Phone className="h-3 w-3" />
+                <span>
+                  {isBn
+                    ? STATUS_META[status]?.labelBn
+                    : STATUS_META[status]?.labelEn}
+                </span>
+              </span>
+
+              <select
+                value={priority}
+                onChange={(e) => handleRateLead(e.target.value as LeadPriority)}
+                aria-label="Rate lead"
+                className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-2xs cursor-pointer focus:outline-none focus:border-indigo-400"
+              >
+                <option value="HOT">
+                  {tr("রেট লিড: Hot (অগ্রাধিকার)", "Rate lead: Hot 🔥", "評価: Hot")}
+                </option>
+                <option value="WARM">
+                  {tr("রেট লিড: Warm (আগ্রহী)", "Rate lead: Warm ⭐", "評価: Warm")}
+                </option>
+                <option value="COLD">
+                  {tr("রেট লিড: Cold (সাধারণ)", "Rate lead: Cold ❄️", "評価: Cold")}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Quick Outreach Buttons */}
+        <div className="flex flex-wrap items-center gap-2">
+          <a
+            href={`tel:${phone.replace(/[^0-9+]/g, "")}`}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs transition"
+          >
+            <PhoneCall className="h-3.5 w-3.5 text-blue-600" />
+            <span>{tr("সরাসরি কল", "Call Now", "電話発信")}</span>
+          </a>
+          <a
+            href={`https://wa.me/${(whatsapp || phone).replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
+              `আসসালামু আলাইকুম ${name}, KNLTC (Japan Education & Career) থেকে যোগাযোগ করছি।`
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-emerald-700 shadow-2xs transition"
+          >
+            <Send className="h-3.5 w-3.5" />
+            <span>WhatsApp</span>
+          </a>
+        </div>
+      </div>
+
+      {/* =====================================================================
+          3. 6-TAB HORIZONTAL NAVIGATION BAR (Overview, Tasks, Documents, Matches, Applications, Invoices)
+          ===================================================================== */}
+      <div className="border-b border-slate-200/90 mb-6 overflow-x-auto">
+        <nav className="flex items-center gap-6 min-w-max">
+          {(
+            [
+              {
+                id: "overview" as WorkspaceTabId,
+                label: tr("ওভারভিউ", "Overview", "概要"),
+                icon: User,
+                badge: undefined as string | number | undefined,
+              },
+              {
+                id: "tasks" as WorkspaceTabId,
+                label: tr("টাস্কসমূহ", "Tasks", "タスク"),
+                icon: CheckSquare,
+                badge: openTasksCount > 0 ? openTasksCount : undefined,
+              },
+              {
+                id: "documents" as WorkspaceTabId,
+                label: tr("ডকুমেন্টস", "Documents", "必要書類"),
+                icon: FolderOpen,
+                badge: `${uploadedDocsCount}/${documents.length}`,
+              },
+              {
+                id: "matches" as WorkspaceTabId,
+                label: tr("স্কুল ম্যাচিং", "Matches", "マッチング"),
+                icon: Sparkles,
+                badge: schoolMatches.length,
+              },
+              {
+                id: "applications" as WorkspaceTabId,
+                label: tr("অ্যাপ্লিকেশন ও ভিসা", "Applications", "申請・ビザ"),
+                icon: Landmark,
+                badge: linkedVisa ? `Stage ${linkedVisa.stage}` : undefined,
+              },
+              {
+                id: "invoices" as WorkspaceTabId,
+                label: tr("ইনভয়েস ও ফি", "Invoices", "請求・入金"),
+                icon: Receipt,
+                badge: studentTransactions.length > 0 ? studentTransactions.length : undefined,
+              },
+            ] as const
+          ).map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`group relative flex items-center gap-2 py-3.5 text-xs sm:text-sm font-semibold transition cursor-pointer ${
+                  isActive
+                    ? "text-slate-900"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                <Icon
+                  className={`h-4 w-4 ${
+                    isActive
+                      ? "text-indigo-600"
+                      : "text-slate-400 group-hover:text-slate-600"
+                  }`}
+                />
+                <span>{tab.label}</span>
+                {tab.badge !== undefined && (
                   <span
-                    className={`rounded-md px-2 py-0.5 text-[11px] font-semibold ${
-                      priority === "HOT"
-                        ? "bg-red-500/20 text-red-200 border border-red-400/30"
-                        : priority === "WARM"
-                          ? "bg-amber-500/20 text-amber-200 border border-amber-400/30"
-                          : "bg-slate-700 text-slate-300"
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums ${
+                      isActive
+                        ? "bg-indigo-50 text-indigo-700"
+                        : "bg-slate-100 text-slate-600"
                     }`}
                   >
-                    {priority === "HOT"
-                      ? "HOT PRIORITY"
-                      : priority === "WARM"
-                        ? "WARM LEAD"
-                        : "COLD LEAD"}
+                    {tab.badge}
                   </span>
-                  {lead.hasLoginAccess && (
-                    <span className="rounded-md bg-emerald-500/20 border border-emerald-400/30 px-2 py-0.5 text-[11px] font-semibold text-emerald-200">
-                      {tr("পোর্টাল লগইন সচল", "Portal Active", "ポータル有効")}
-                    </span>
-                  )}
-                  {lead.source === "GOOGLE_SHEET" && (
-                    <span className="rounded-md bg-blue-500/20 border border-blue-400/30 px-2 py-0.5 text-[10px] font-semibold text-blue-200">
-                      Google Sheet
-                    </span>
-                  )}
+                )}
+                {isActive && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-indigo-600" />
+                )}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* =====================================================================
+          TAB 1: OVERVIEW (Exact 2-Column Layout from Reference Screenshot)
+          ===================================================================== */}
+      {activeTab === "overview" && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* LEFT COLUMN (4 cols): LEAD INFORMATION + ACADEMIC PROFILE */}
+          <div className="lg:col-span-4 space-y-5">
+            {/* LEAD INFORMATION CARD */}
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-2xs">
+              <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-5">
+                {tr("লিড ইনফরমেশন", "LEAD INFORMATION", "基本情報")}
+              </h2>
+
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <Phone className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      {tr("ফোন", "PHONE", "電話番号")}
+                    </div>
+                    <div className="text-sm font-medium text-slate-900 font-mono mt-0.5">
+                      {phone || "Not provided"}
+                    </div>
+                  </div>
                 </div>
 
-                {/* Unboxed Metadata Row with · separators */}
-                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-300 font-mono tabular-nums">
-                  <button
-                    type="button"
-                    onClick={handleCopyPhone}
-                    className="inline-flex items-center gap-1 hover:text-white transition"
-                    title={tr("ফোন নম্বর কপি করুন", "Copy Phone Number", "電話番号をコピー")}
-                  >
-                    <span>{phone}</span>
-                    {copiedPhone ? (
-                      <Check className="h-3 w-3 text-emerald-400" />
-                    ) : (
-                      <Copy className="h-3 w-3 text-slate-400" />
-                    )}
-                  </button>
-                  <span aria-hidden="true">·</span>
-                  <a
-                    href={`tel:${phone}`}
-                    className="inline-flex items-center gap-1 text-emerald-300 hover:underline font-sans"
-                  >
-                    <PhoneCall className="h-3 w-3" />
-                    <span>{tr("কল", "Call", "発信")}</span>
-                  </a>
-                  <span aria-hidden="true">·</span>
-                  <a
-                    href={`https://wa.me/${cleanWaNumber}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-emerald-300 hover:underline font-sans"
-                  >
-                    <span>WhatsApp</span>
-                  </a>
-                  <span aria-hidden="true">·</span>
-                  <span className="font-sans">{city}</span>
-                  {candidateAge !== null && (
-                    <>
-                      <span aria-hidden="true">·</span>
-                      <span>{candidateAge} yrs</span>
-                    </>
-                  )}
-                  <span aria-hidden="true">·</span>
-                  <span>
-                    {tr("ডকুমেন্ট:", "Docs:", "書類:")} {eligibility.verifiedDocsCount}/
-                    {eligibility.totalDocsCount}
+                <div className="flex items-start gap-3">
+                  <Mail className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      {tr("ইমেইল", "EMAIL", "メールアドレス")}
+                    </div>
+                    <div className="text-sm font-medium text-slate-900 break-all mt-0.5">
+                      {email || `${name.toLowerCase().replace(/[^a-z0-9]/g, "")}@gmail.com`}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Globe className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      {tr("দেশ ও শহর", "COUNTRY", "対象国・都市")}
+                    </div>
+                    <div className="text-sm font-medium text-slate-900 mt-0.5">
+                      Japan {city ? `(${city})` : ""}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <GraduationCap className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      {tr("প্রোগ্রাম", "PROGRAM", "希望プログラム")}
+                    </div>
+                    <div className="text-sm font-medium text-slate-900 mt-0.5">
+                      {formatLeadInterestLabel(interest, isBn)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Tag className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      {tr("উৎস / সোর্স", "SOURCE", "流入元")}
+                    </div>
+                    <div className="text-sm font-medium text-slate-900 mt-0.5">
+                      {formatLeadSourceLabel(lead.source)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Calendar className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      {tr("যুক্ত করার তারিখ", "ADDED", "登録日")}
+                    </div>
+                    <div className="text-sm font-medium text-slate-900 mt-0.5">
+                      {formattedAddedDate}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <span className="text-slate-400 font-medium">
+                    {tr("কাউন্সেলর ও শাখা", "Counselor & Branch", "担当・拠点")}
                   </span>
-                  <span aria-hidden="true">·</span>
-                  <span className="text-emerald-300 font-semibold">
-                    {tr("জমা:", "Paid:", "入金:")} ৳{livePaidAmountBdt.toLocaleString()}
-                  </span>
-                  <span aria-hidden="true">·</span>
-                  <span className={liveDueAmountBdt > 0 ? "text-amber-300 font-semibold" : "text-slate-400"}>
-                    {tr("বকেয়া:", "Due:", "未払:")} ৳{liveDueAmountBdt.toLocaleString()}
+                  <span className="font-semibold text-slate-800">
+                    {assignedTo} ({branch === "KHULNA-01" ? "Khulna" : "Dhaka HQ"})
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Right: Prev/Next Switcher, Live Eligibility Meter & Quick Actions */}
-            <div className="flex flex-wrap items-center gap-2">
-              {allLeads.length > 1 && onSelectLead && (
-                <div className="inline-flex items-center rounded-xl bg-white/10 border border-white/10 p-0.5 mr-1">
-                  <button
-                    type="button"
-                    disabled={!prevLead}
-                    onClick={() => prevLead && onSelectLead(prevLead)}
-                    className="rounded-lg p-1.5 text-slate-300 hover:bg-white/15 hover:text-white disabled:opacity-35 transition"
-                    title={prevLead ? `Previous: ${prevLead.name}` : "No previous lead"}
-                  >
-                    <ChevronLeft className="h-3.5 w-3.5" />
-                  </button>
-                  <span className="px-2 text-[11px] font-mono text-slate-300 tabular-nums">
-                    {currentLeadIndex + 1}/{allLeads.length}
-                  </span>
-                  <button
-                    type="button"
-                    disabled={!nextLead}
-                    onClick={() => nextLead && onSelectLead(nextLead)}
-                    className="rounded-lg p-1.5 text-slate-300 hover:bg-white/15 hover:text-white disabled:opacity-35 transition"
-                    title={nextLead ? `Next: ${nextLead.name}` : "No next lead"}
-                  >
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              )}
+            {/* ACADEMIC PROFILE CARD (Soft Indigo Tinted Card Like Screenshot) */}
+            <div className="rounded-2xl border border-indigo-100/90 bg-[#EEF2FF]/75 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-[11px] font-bold uppercase tracking-wider text-indigo-700">
+                  {tr("একাডেমিক প্রোফাইল", "ACADEMIC PROFILE", "学歴・語学プロファイル")}
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingModalOpen(true)}
+                  className="text-[11px] font-semibold text-indigo-600 hover:underline cursor-pointer"
+                >
+                  {tr("আপডেট", "Edit GPA", "編集")}
+                </button>
+              </div>
 
-              <div className="rounded-xl bg-white/10 border border-white/10 px-3 py-1.5 flex items-center gap-2.5">
+              <div className="grid grid-cols-2 gap-y-4 gap-x-6">
                 <div>
-                  <span className="block text-[10px] text-slate-300">
-                    {tr("জাপান ভিসা এলিজিবিলিটি", "Japan Visa Eligibility", "ビザ適格スコア")}
+                  <div className="text-xs text-slate-500">SSC GPA</div>
+                  <div className="text-base font-bold text-slate-900 tabular-nums mt-0.5">
+                    {sscGpa || "4.00"}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-xs text-slate-500">HSC GPA</div>
+                  <div className="text-base font-bold text-slate-900 tabular-nums mt-0.5">
+                    {hscGpa || "3.70"}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-xs text-slate-500">
+                    {tr("প্রোগ্রাম লেভেল", "Program Level", "課程レベル")}
+                  </div>
+                  <div className="text-sm font-bold text-slate-900 mt-0.5">
+                    {education || "Foundation"}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-xs text-slate-500">
+                    {tr("ভাষা ও যোগ্যতা", "Language & Score", "日本語・適格率")}
+                  </div>
+                  <div className="text-sm font-bold text-indigo-700 tabular-nums mt-0.5">
+                    {formatProficiencyLabel(japaneseProficiency, isBn)} ·{" "}
+                    {eligibility.totalScore}%
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT COLUMN (8 cols): AI PROFILE SUMMARY + UPDATE STATUS + ACTIVITY TIMELINE */}
+          <div className="lg:col-span-8 space-y-5">
+            {/* 1. AI PROFILE SUMMARY CARD */}
+            <div className="rounded-2xl border border-violet-200/80 bg-[#F5F3FF]/70 p-6 shadow-2xs">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-violet-700">
+                  <Sparkles className="h-3.5 w-3.5 text-violet-600" />
+                  <span>
+                    {tr("এআই প্রোফাইল সামারি", "AI PROFILE SUMMARY", "AIプロファイル要約")}
                   </span>
-                  <span className="text-sm font-bold tabular-nums text-white">
-                    {eligibility.totalScore}%{" "}
+                </div>
+
+                <button
+                  type="button"
+                  disabled={isGeneratingAi}
+                  onClick={handleGenerateAiSummary}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-violet-200 bg-white px-3 py-1 text-[11px] font-semibold text-violet-700 hover:bg-violet-50 disabled:opacity-50 transition cursor-pointer shadow-2xs"
+                >
+                  {isGeneratingAi ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3 w-3" />
+                  )}
+                  <span>
+                    {isGeneratingAi
+                      ? tr("বিশ্লেষণ হচ্ছে...", "Generating...", "生成中...")
+                      : tr("১-ক্লিক AI পরামর্শ", "1-Click AI Advise", "AIアドバイス生成")}
+                  </span>
+                </button>
+              </div>
+
+              <p className="text-sm leading-relaxed text-slate-800">
+                {autoNarrativeSummary}
+              </p>
+            </div>
+
+            {/* 2. UPDATE STATUS CARD */}
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-2xs">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-3">
+                    {tr("স্ট্যাটাস আপডেট", "UPDATE STATUS", "ステータス更新")}
+                  </h2>
+                  <div className="flex flex-wrap items-center gap-2.5">
                     <span
-                      className={`text-[11px] font-semibold ${
-                        eligibility.totalScore >= 80
-                          ? "text-emerald-300"
-                          : eligibility.totalScore >= 65
-                            ? "text-amber-300"
-                            : "text-red-300"
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold ${STATUS_META[status]?.badgeClass || "bg-blue-50 text-blue-700 border-blue-200"}`}
+                    >
+                      <Phone className="h-3.5 w-3.5" />
+                      <span>
+                        {isBn
+                          ? STATUS_META[status]?.labelBn
+                          : STATUS_META[status]?.labelEn}
+                      </span>
+                    </span>
+                    <span className="text-xs text-slate-400">
+                      — {tr("বর্তমান স্ট্যাটাস", "current status", "現在のステータス")}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsUpdateStatusOpen((prev) => !prev)}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>{tr("আপডেট যোগ করুন", "Add Update", "更新を追加")}</span>
+                </button>
+              </div>
+
+              {/* Expandable Inline Status + Call Note Composer */}
+              {isUpdateStatusOpen && (
+                <form
+                  onSubmit={handleAddStatusUpdate}
+                  className="mt-5 pt-5 border-t border-slate-100 space-y-4"
+                >
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                        {tr("নতুন স্ট্যাটাস নির্বাচন করুন", "New Status", "新しいステータス")}
+                      </label>
+                      <select
+                        value={nextStatusInput}
+                        onChange={(e) =>
+                          setNextStatusInput(e.target.value as LeadStatus)
+                        }
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800"
+                      >
+                        <option value="NEW">New Lead</option>
+                        <option value="CONTACTED">Contacted</option>
+                        <option value="COUNSELED">Counseled</option>
+                        <option value="OFFICE_VISIT_BOOKED">Office Visit Booked</option>
+                        <option value="ADMITTED">Admitted (Confirm &amp; Open Visa File)</option>
+                        <option value="ARCHIVED">Archived / Closed</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                        {tr("পরবর্তী ফলো-আপ তারিখ", "Next Follow-up Date", "次回フォロー日")}
+                      </label>
+                      <input
+                        type="date"
+                        value={statusUpdateFollowUp}
+                        onChange={(e) => setStatusUpdateFollowUp(e.target.value)}
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                      {tr("কল / কাউন্সেলিং নোট", "Call / Counseling Note", "通話・面談メモ")}
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={statusUpdateNote}
+                      onChange={(e) => setStatusUpdateNote(e.target.value)}
+                      placeholder={tr(
+                        "যেমন: সৌজন্যমূলক কথাবার্তা হয়েছে। উনি একটু ব্যস্ত আছেন, আগামীকাল রাত ৯টার পর ফ্রি থাকবেন...",
+                        'e.g. "Sowjonno mulok kotha barta hoyeche. uni ektu busy achen agamikal rat 9 tar por free thakben."',
+                        "通話内容や次回アクションを記入..."
+                      )}
+                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsUpdateStatusOpen(false)}
+                      className="rounded-xl border border-slate-200 px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                    >
+                      {tr("বাতিল", "Cancel", "キャンセル")}
+                    </button>
+                    <button
+                      type="submit"
+                      className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 transition cursor-pointer"
+                    >
+                      {tr("আপডেট সেভ করুন", "Save Update", "更新を保存")}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+
+            {/* 3. ACTIVITY TIMELINE CARD */}
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-2xs">
+              <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-5">
+                <Clock className="h-3.5 w-3.5 text-slate-400" />
+                <span>
+                  {tr("অ্যাক্টিভিটি টাইমলাইন", "ACTIVITY TIMELINE", "活動タイムライン")}
+                </span>
+              </div>
+
+              <div className="relative pl-6 border-l-2 border-slate-100 space-y-6 ml-2">
+                {timelineItems.map((item, idx) => {
+                  const isLatest = idx === 0;
+                  const noteContent = item.note || item.summary;
+                  return (
+                    <div key={item.id} className="relative">
+                      {/* Timeline Node Dot */}
+                      <span
+                        className={`absolute -left-[31px] top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full ring-4 ring-white ${
+                          isLatest ? "bg-blue-500" : "bg-slate-400"
+                        }`}
+                      />
+
+                      {/* Status Transition Line: e.g. New Lead -> [Contacted] */}
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        {item.fromStatus ? (
+                          <>
+                            <span className="text-slate-500 font-medium">
+                              {item.fromStatus}
+                            </span>
+                            <span className="text-slate-400">→</span>
+                            <span className="rounded-full bg-blue-50 border border-blue-200/80 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
+                              {item.toStatus || "Contacted"}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
+                            {item.toStatus || "New Lead"}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Timestamp & Actor */}
+                      <div className="text-[11px] text-slate-400 mt-1">
+                        {formatTimelineDate(item.createdAt)} ·{" "}
+                        {item.counselorName || "AI / system"}
+                      </div>
+
+                      {/* Quoted Note */}
+                      {noteContent &&
+                        !noteContent.startsWith("Lead added from") && (
+                          <p className="text-xs sm:text-sm italic text-slate-600 mt-1.5 leading-relaxed">
+                            &ldquo;{noteContent.replace(/^["“]|["”]$/g, "")}&rdquo;
+                          </p>
+                        )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          TAB 2: TASKS (Interactive Counselor & Document Follow-up Checklist)
+          ===================================================================== */}
+      {activeTab === "tasks" && (
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-2xs space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">
+                {tr(
+                  "কাউন্সেলর ও অ্যাডমিশন ফলো-আপ টাস্ক",
+                  "Counselor & Admission Tasks",
+                  "カウンセラー・出願タスク"
+                )}
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {tr(
+                  "এই শিক্ষার্থীর ফাইল প্রসেসিং ও ফলো-আপের ধাপগুলো টিক দিয়ে সম্পন্ন করুন",
+                  "Track follow-up calls, document collection, and interview tasks synced to Google Sheets."
+                )}
+              </p>
+            </div>
+
+            <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
+              {tasks.filter((t) => t.completed).length} / {tasks.length}{" "}
+              {tr("সম্পন্ন", "Completed", "完了")}
+            </span>
+          </div>
+
+          {/* Add New Task Form */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!newTaskTitle.trim()) return;
+              const newItem: ProfileTaskItem = {
+                id: `task-${Date.now()}`,
+                title: newTaskTitle.trim(),
+                dueDate: newTaskDueDate || undefined,
+                completed: false,
+                category: "GENERAL",
+                assignee: assignedTo,
+              };
+              const nextTasks = [newItem, ...tasks];
+              setTasks(nextTasks);
+              setNewTaskTitle("");
+              setNewTaskDueDate("");
+              persistLeadChanges(
+                { tasks: nextTasks },
+                tr("নতুন টাস্ক যুক্ত হয়েছে", "Task added & saved")
+              );
+            }}
+            className="flex flex-col sm:flex-row gap-2.5 pt-2"
+          >
+            <input
+              type="text"
+              value={newTaskTitle}
+              onChange={(e) => setNewTaskTitle(e.target.value)}
+              placeholder={tr(
+                "নতুন টাস্ক লিখুন (যেমন: আগামীকাল অভিভাবকের সাথে জুম মিটিং)...",
+                "Add a new task for this candidate (e.g. Schedule guardian Zoom call)..."
+              )}
+              className="flex-1 rounded-xl border border-slate-200 px-3.5 py-2 text-xs font-medium text-slate-800 focus:border-indigo-500 focus:outline-none"
+            />
+            <input
+              type="date"
+              value={newTaskDueDate}
+              onChange={(e) => setNewTaskDueDate(e.target.value)}
+              className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700"
+            />
+            <button
+              type="submit"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition cursor-pointer"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>{tr("টাস্ক যোগ করুন", "Add Task", "追加")}</span>
+            </button>
+          </form>
+
+          {/* Tasks List */}
+          <div className="divide-y divide-slate-100 border border-slate-200/80 rounded-xl overflow-hidden">
+            {tasks.map((task) => (
+              <div
+                key={task.id}
+                className={`flex items-center justify-between gap-4 p-4 transition ${
+                  task.completed ? "bg-slate-50/70" : "bg-white hover:bg-slate-50/40"
+                }`}
+              >
+                <label className="flex items-start gap-3 cursor-pointer flex-1">
+                  <input
+                    type="checkbox"
+                    checked={task.completed}
+                    onChange={() => {
+                      const nextTasks = tasks.map((t) =>
+                        t.id === task.id ? { ...t, completed: !t.completed } : t
+                      );
+                      setTasks(nextTasks);
+                      persistLeadChanges(
+                        { tasks: nextTasks },
+                        tr("টাস্ক স্ট্যাটাস আপডেট হয়েছে", "Task status updated")
+                      );
+                    }}
+                    className="mt-0.5 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <div>
+                    <div
+                      className={`text-xs sm:text-sm font-medium ${
+                        task.completed
+                          ? "line-through text-slate-400"
+                          : "text-slate-900"
                       }`}
                     >
-                      ({eligibility.tier})
-                    </span>
-                  </span>
-                </div>
-                <div className="w-14 bg-slate-700 rounded-full h-2 overflow-hidden">
+                      {task.title}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-slate-400">
+                      <span>{task.assignee || assignedTo}</span>
+                      {task.dueDate && <span>· Due: {task.dueDate}</span>}
+                    </div>
+                  </div>
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextTasks = tasks.filter((t) => t.id !== task.id);
+                    setTasks(nextTasks);
+                    persistLeadChanges({ tasks: nextTasks });
+                  }}
+                  className="text-slate-300 hover:text-rose-600 p-1 rounded-lg transition"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          TAB 3: DOCUMENTS (12-Item Japan COE & Embassy Document Vault)
+          ===================================================================== */}
+      {activeTab === "documents" && (
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-2xs space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">
+                {tr(
+                  "জাপান COE ও এম্বাসি ১২টি ডকুমেন্ট ভল্ট (Google Drive)",
+                  "Japan COE & Embassy 12-Document Vault (Google Drive)",
+                  "日本COE・大使館提出12書類チェックリスト"
+                )}
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {tr(
+                  "সরাসরি পিডিএফ বা ছবি আপলোড করুন — ফাইলগুলো স্বয়ংক্রিয়ভাবে Google Drive-এ সংরক্ষিত হবে",
+                  "Upload PDFs or scans directly to Google Drive and verify COE readiness."
+                )}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-1.5">
+              {(
+                [
+                  { id: "ALL", label: tr("সব (১২)", "All (12)") },
+                  { id: "IDENTITY", label: tr("পরিচয়পত্র", "Identity") },
+                  { id: "ACADEMIC", label: tr("একাডেমিক", "Academic") },
+                  { id: "LANGUAGE", label: tr("ভাষা সনদ", "Language") },
+                  { id: "SPONSOR_FINANCIAL", label: tr("স্পন্সর ও ব্যাংক", "Financial") },
+                ] as const
+              ).map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setDocCategoryFilter(cat.id)}
+                  className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
+                    docCategoryFilter === cat.id
+                      ? "bg-slate-900 text-white"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            {documents
+              .filter(
+                (d) =>
+                  docCategoryFilter === "ALL" || d.category === docCategoryFilter
+              )
+              .map((doc) => {
+                const isUploading = uploadingDocId === doc.id;
+                return (
                   <div
-                    className={`h-full rounded-full ${
-                      eligibility.totalScore >= 80
-                        ? "bg-emerald-400"
-                        : eligibility.totalScore >= 65
-                          ? "bg-amber-400"
-                          : "bg-red-400"
+                    key={doc.id}
+                    className="flex flex-col justify-between rounded-xl border border-slate-200/90 p-4 hover:border-slate-300 transition gap-3"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="text-xs sm:text-sm font-semibold text-slate-900">
+                          {isBn ? doc.titleBn : doc.titleEn}
+                        </div>
+                        <div className="text-[11px] text-slate-400 mt-0.5">
+                          {doc.fileName
+                            ? `${doc.fileName} (${doc.updatedAt || "Uploaded"})`
+                            : tr("এখনো ফাইল আপলোড করা হয়নি", "No file uploaded yet")}
+                        </div>
+                      </div>
+
+                      <select
+                        value={doc.status}
+                        onChange={(e) => {
+                          const nextStatus = e.target
+                            .value as LeadDocumentItem["status"];
+                          const nextDocs = documents.map((d) =>
+                            d.id === doc.id ? { ...d, status: nextStatus } : d
+                          );
+                          setDocuments(nextDocs);
+                          persistLeadChanges(
+                            { documentChecklist: nextDocs },
+                            tr("ডকুমেন্ট স্ট্যাটাস আপডেট হয়েছে", "Document status updated")
+                          );
+                        }}
+                        className={`rounded-lg border px-2.5 py-1 text-[11px] font-bold ${
+                          doc.status === "VERIFIED"
+                            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                            : doc.status === "SUBMITTED"
+                              ? "border-blue-200 bg-blue-50 text-blue-700"
+                              : "border-slate-200 bg-slate-50 text-slate-600"
+                        }`}
+                      >
+                        <option value="MISSING">{tr("বাকি (Missing)", "Missing")}</option>
+                        <option value="SUBMITTED">{tr("জমা হয়েছে (Submitted)", "Submitted")}</option>
+                        <option value="VERIFIED">{tr("যাচাইকৃত (Verified)", "Verified")}</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                      <label className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer transition">
+                        {isUploading ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-indigo-600" />
+                        ) : (
+                          <Upload className="h-3.5 w-3.5 text-indigo-600" />
+                        )}
+                        <span>
+                          {isUploading
+                            ? tr("আপলোড হচ্ছে...", "Uploading...")
+                            : tr("Drive-এ আপলোড", "Upload File")}
+                        </span>
+                        <input
+                          type="file"
+                          accept=".pdf,image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) handleDocUpload(doc, f);
+                          }}
+                        />
+                      </label>
+
+                      {doc.fileUrl && (
+                        <a
+                          href={doc.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:underline"
+                        >
+                          <span>{tr("ফাইল দেখুন", "View File")}</span>
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          TAB 4: MATCHES (Smart Japanese Partner School & Program Matcher)
+          ===================================================================== */}
+      {activeTab === "matches" && (
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-2xs">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <div>
+                <h2 className="text-base font-bold text-slate-900">
+                  {tr(
+                    "স্মার্ট জাপানি স্কুল ও প্রোগ্রাম ম্যাচিং",
+                    "Recommended Japanese Partner Schools & Programs",
+                    "AI推奨提携日本語学校・プログラム"
+                  )}
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {tr(
+                    `প্রার্থীর SSC GPA (${sscGpa}), HSC GPA (${hscGpa}), এবং Study Gap (${studyGapYears} বছর) অনুযায়ী স্বয়ংক্রিয়ভাবে র‍্যাঙ্ক করা হয়েছে`,
+                    `Automatically ranked based on SSC GPA (${sscGpa}), HSC GPA (${hscGpa}), and Study Gap (${studyGapYears} yrs).`
+                  )}
+                </p>
+              </div>
+
+              {targetSchool && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3.5 py-1 text-xs font-semibold text-emerald-700">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  <span>
+                    {tr("নির্বাচিত স্কুল:", "Selected:")} {targetSchool}
+                  </span>
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {schoolMatches.map(({ school, matchScore, isCurrentTarget }) => (
+                <div
+                  key={school.id}
+                  className={`flex flex-col justify-between rounded-2xl border p-5 transition ${
+                    isCurrentTarget
+                      ? "border-indigo-500 bg-indigo-50/30 ring-1 ring-indigo-500"
+                      : "border-slate-200 bg-white hover:border-slate-300"
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-bold text-indigo-700 tabular-nums">
+                        {matchScore}% Match
+                      </span>
+                      <span className="text-[11px] font-medium text-slate-400">
+                        {school.location}
+                      </span>
+                    </div>
+
+                    <h3 className="text-sm font-bold text-slate-900">
+                      {school.name}
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {school.japaneseName}
+                    </p>
+
+                    <div className="mt-4 space-y-1.5 text-xs text-slate-600 border-t border-slate-100 pt-3">
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">1st Year Tuition:</span>
+                        <span className="font-semibold text-slate-900 tabular-nums">
+                          ¥{(school.firstYearTuitionYen || 760000).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Min GPA Req:</span>
+                        <span className="font-semibold text-slate-900 tabular-nums">
+                          {school.minGpaRequired || "2.80"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Max Study Gap:</span>
+                        <span className="font-semibold text-slate-900 tabular-nums">
+                          {school.maxStudyGapYears ?? 5} Years
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTargetSchool(school.name);
+                      setPartnerSchoolId(school.id);
+                      const logItem: LeadActivityItem = {
+                        id: `act-sch-${Date.now()}`,
+                        type: "STAGE_CHANGE",
+                        fromStatus: "School Match",
+                        toStatus: school.name,
+                        note: `Matched and assigned candidate to ${school.name} (${school.location})`,
+                        summary: `Assigned school: ${school.name}`,
+                        counselorName: assignedTo || "Counselor",
+                        createdAt: new Date().toISOString(),
+                      };
+                      const nextLog = [logItem, ...activityLog];
+                      setActivityLog(nextLog);
+                      persistLeadChanges(
+                        {
+                          targetSchool: school.name,
+                          targetSchoolName: school.name,
+                          partnerSchoolId: school.id,
+                          targetSchoolId: school.id,
+                          activityLog: nextLog,
+                        },
+                        tr(
+                          `"${school.name}" এই শিক্ষার্থীর জন্য নির্বাচন করা হয়েছে`,
+                          `Matched & assigned "${school.name}"`
+                        )
+                      );
+                    }}
+                    className={`mt-4 w-full rounded-xl py-2 text-xs font-semibold transition cursor-pointer ${
+                      isCurrentTarget
+                        ? "bg-emerald-600 text-white"
+                        : "bg-slate-900 text-white hover:bg-slate-800"
                     }`}
-                    style={{ width: `${eligibility.totalScore}%` }}
+                  >
+                    {isCurrentTarget
+                      ? tr("✓ বর্তমান নির্বাচিত স্কুল", "✓ Selected Target School")
+                      : tr("এই স্কুলে এসাইন করুন", "Select & Match School")}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          TAB 5: APPLICATIONS (10-Stage Visa Pipeline + LMS & Student Login)
+          ===================================================================== */}
+      {activeTab === "applications" && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* 10-Stage Visa Application Tracker */}
+          <div className="lg:col-span-7 rounded-2xl border border-slate-200/90 bg-white p-6 shadow-2xs space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 className="text-base font-bold text-slate-900">
+                  {tr(
+                    "জাপান ভিসা ও COE ১০-ধাপের অ্যাপ্লিকেশন ট্র্যাকার",
+                    "Japan Visa & COE 10-Stage Application Pipeline",
+                    "日本ビザ・COE 10段階申請トラッカー"
+                  )}
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {linkedVisa
+                    ? `Tracking ID: ${linkedVisa.trackingNo} · School: ${linkedVisa.targetSchool}`
+                    : tr(
+                        "এখনো ভিসা ফাইল ওপেন করা হয়নি — ১ ক্লিকে ভিসা পাইপলাইনে যুক্ত করুন",
+                        "Not yet in Visa Pipeline — click below to open Visa File"
+                      )}
+                </p>
+              </div>
+
+              {!linkedVisa && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    promoteLeadToVisaPipeline({
+                      leadId: lead.id,
+                      targetSchool: targetSchool || "Tokyo International Japanese School",
+                      partnerSchoolId,
+                      b2bAgentId,
+                      packageType:
+                        interest === "STUDENT_VISA_PREMIUM" ? "PREMIUM" : "REGULAR",
+                      contractAmountBdt,
+                    });
+                    setStatus("ADMITTED");
+                    setStoreTick((t) => t + 1);
+                    onSaved(
+                      tr(
+                        "ভিসা ফাইল ওপেন হয়েছে এবং Visa Kanban-এ যুক্ত হয়েছে",
+                        "Visa file opened & synced to Visa Kanban"
+                      )
+                    );
+                  }}
+                  className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 transition cursor-pointer"
+                >
+                  {tr("+ ভিসা ফাইল ওপেন করুন", "+ Open Visa Application File")}
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              {([1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as VisaStage[]).map((st) => {
+                const currentStage = linkedVisa?.stage || 0;
+                const isCompleted = currentStage > st;
+                const isCurrent = currentStage === st;
+                return (
+                  <div
+                    key={st}
+                    className={`flex items-center justify-between rounded-xl border px-4 py-2.5 text-xs transition ${
+                      isCurrent
+                        ? "border-indigo-500 bg-indigo-50/60 font-bold text-indigo-950"
+                        : isCompleted
+                          ? "border-emerald-200 bg-emerald-50/40 text-emerald-800"
+                          : "border-slate-200/80 bg-white text-slate-600"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
+                          isCompleted
+                            ? "bg-emerald-600 text-white"
+                            : isCurrent
+                              ? "bg-indigo-600 text-white"
+                              : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        {isCompleted ? "✓" : st}
+                      </span>
+                      <span>
+                        {isBn
+                          ? VISA_STAGE_LABELS[st].bn
+                          : VISA_STAGE_LABELS[st].en}
+                      </span>
+                    </div>
+
+                    {linkedVisa && currentStage !== st && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateVisaStage(linkedVisa.id, st);
+                          setStoreTick((t) => t + 1);
+                          onSaved(
+                            tr(
+                              `ভিসা ধাপ ${st}-এ উন্নীত করা হয়েছে`,
+                              `Updated Visa Application to Stage ${st}`
+                            )
+                          );
+                        }}
+                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                      >
+                        {tr("সেট করুন", "Set Stage")}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* LMS Language Course & Student Portal Login Provisioning */}
+          <div className="lg:col-span-5 rounded-2xl border border-slate-200/90 bg-white p-6 shadow-2xs space-y-4">
+            <div className="flex items-center gap-2">
+              <KeyRound className="h-4 w-4 text-indigo-600" />
+              <h2 className="text-base font-bold text-slate-900">
+                {tr(
+                  "LMS ভাষা ব্যাচ ও স্টুডেন্ট পোর্টাল লগইন",
+                  "LMS Batch & Student Portal Access"
+                )}
+              </h2>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="font-semibold text-slate-600">
+                  {tr("লগইন ইমেইল", "Portal Login Email")}
+                </label>
+                <input
+                  type="email"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-600">
+                  {tr("পাসওয়ার্ড", "Portal Password")}
+                </label>
+                <input
+                  type="text"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="font-semibold text-slate-600">
+                    {tr("কোর্স লেভেল", "Course Level")}
+                  </label>
+                  <select
+                    value={courseLevel}
+                    onChange={(e) =>
+                      setCourseLevel(e.target.value as "N5" | "N4" | "IRODORI")
+                    }
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold"
+                  >
+                    <option value="N5">JLPT N5</option>
+                    <option value="N4">JLPT N4</option>
+                    <option value="IRODORI">Irodori Spoken</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-semibold text-slate-600">
+                    {tr("ব্যাচ সেশন", "Active Batch")}
+                  </label>
+                  <input
+                    type="text"
+                    value={enrolledBatch}
+                    onChange={(e) => setEnrolledBatch(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
                   />
                 </div>
               </div>
 
+              <div className="flex flex-wrap gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    provisionLeadLoginAndEnrollment(
+                      {
+                        id: lead.id,
+                        name,
+                        phone,
+                        whatsapp,
+                        email: loginEmail,
+                        city,
+                        education,
+                        interest,
+                        branch,
+                        notes,
+                      },
+                      {
+                        loginEmail,
+                        loginPassword,
+                        role: "STUDENT",
+                        allowedTabs: ["my_profile", "lms", "visa"],
+                        isFileOpened: true,
+                        isCourseEnrolled: true,
+                        enrolledBatchOrSession: enrolledBatch,
+                        targetSchool:
+                          targetSchool || "Tokyo International Japanese School",
+                        partnerSchoolId,
+                        b2bAgentId,
+                        b2bAgentName,
+                        contractAmountBdt,
+                        courseLevel,
+                      }
+                    );
+                    setStatus("ADMITTED");
+                    setStoreTick((t) => t + 1);
+                    onSaved(
+                      tr(
+                        "ভর্তি, ভিসা ফাইল ও স্টুডেন্ট লগইন একসাথে চালু হয়েছে!",
+                        "Enrolled in LMS, opened Visa File & activated Student Login!"
+                      )
+                    );
+                  }}
+                  className="flex-1 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-semibold text-white hover:bg-slate-800 transition cursor-pointer"
+                >
+                  {tr(
+                    "ভর্তি নিশ্চিত ও লগইন চালু করুন",
+                    "Activate Admission & Student Portal"
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(
+                      `KNLTC Portal\nEmail: ${loginEmail}\nPassword: ${loginPassword}`
+                    );
+                    setCopiedCredentials(true);
+                    setTimeout(() => setCopiedCredentials(false), 2000);
+                  }}
+                  className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                >
+                  {copiedCredentials ? (
+                    <Check className="h-3.5 w-3.5 text-emerald-600" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5" />
+                  )}
+                  <span>{copiedCredentials ? "Copied" : "Copy"}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          TAB 6: INVOICES (Contract Summary, Fee Collection & Receipts)
+          ===================================================================== */}
+      {activeTab === "invoices" && (
+        <div className="space-y-5">
+          {/* 3 Financial KPI Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-2xs">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                {tr("মোট চুক্তিমূল্য (Contract)", "TOTAL CONTRACT AMOUNT")}
+              </div>
+              <div className="text-2xl font-bold text-slate-900 tabular-nums mt-1">
+                ৳{contractAmountBdt.toLocaleString()}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/40 p-5 shadow-2xs">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">
+                {tr("মোট জমা (Paid)", "TOTAL PAID / COLLECTED")}
+              </div>
+              <div className="text-2xl font-bold text-emerald-700 tabular-nums mt-1">
+                ৳{paidAmountBdt.toLocaleString()}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-rose-200/80 bg-rose-50/40 p-5 shadow-2xs">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-rose-700">
+                {tr("বর্তমান বকেয়া (Due)", "REMAINING DUE BALANCE")}
+              </div>
+              <div className="text-2xl font-bold text-rose-700 tabular-nums mt-1">
+                ৳{dueAmountBdt.toLocaleString()}
+              </div>
+            </div>
+          </div>
+
+          {/* Record Fee Payment Form */}
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-2xs">
+            <h3 className="text-sm font-bold text-slate-900 mb-3">
+              {tr(
+                "নতুন পেমেন্ট / ইনভয়েস রেকর্ড করুন",
+                "Record Fee Payment & Issue Official Receipt"
+              )}
+            </h3>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const amt = Number(quickPayAmount);
+                if (!amt || amt <= 0) return;
+                addFinancialTransaction({
+                  receiptNo: `KNLTC-REC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+                  date: new Date().toISOString().slice(0, 10),
+                  studentName: name,
+                  studentPhone: phone,
+                  category: "INCOME",
+                  type: quickPayType,
+                  amountBdt: amt,
+                  paymentMethod: quickPayMethod,
+                  referenceOrTrx:
+                    quickPayRef.trim() || `TRX-${Date.now().toString().slice(-6)}`,
+                  branch,
+                  verifiedBy: assignedTo || "Accounts",
+                  notes: `Payment recorded from student 360 profile`,
+                  linkedLeadId: lead.id,
+                  linkedVisaId: linkedVisa?.id,
+                });
+                const nextPaid = paidAmountBdt + amt;
+                setPaidAmountBdt(nextPaid);
+                setQuickPayAmount("");
+                setQuickPayRef("");
+                setStoreTick((t) => t + 1);
+                onSaved(
+                  tr(
+                    `৳${amt.toLocaleString()} জমা হয়েছে এবং ফিন্যান্স লেজারে যুক্ত হয়েছে`,
+                    `Recorded ৳${amt.toLocaleString()} payment & synced with Finance Ledger`
+                  )
+                );
+              }}
+              className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs"
+            >
+              <input
+                type="number"
+                required
+                value={quickPayAmount}
+                onChange={(e) => setQuickPayAmount(e.target.value)}
+                placeholder={tr("টাকার পরিমাণ (BDT) *", "Amount (BDT) *")}
+                className="rounded-xl border border-slate-200 px-3.5 py-2 font-semibold tabular-nums"
+              />
+              <select
+                value={quickPayType}
+                onChange={(e) => setQuickPayType(e.target.value as TransactionType)}
+                className="rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
+              >
+                <option value="COURSE_FEE">Language Course Fee</option>
+                <option value="REGULAR_SERVICE_CHARGE">Visa Service Charge</option>
+                <option value="PREMIUM_PACKAGE_ADVANCE">Premium Package Installment</option>
+              </select>
+              <select
+                value={quickPayMethod}
+                onChange={(e) =>
+                  setQuickPayMethod(
+                    e.target.value as FinancialTransaction["paymentMethod"]
+                  )
+                }
+                className="rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
+              >
+                <option value="CASH_OFFICE">Cash at Office</option>
+                <option value="BKASH">bKash Merchant</option>
+                <option value="BANK_TRANSFER">Bank Deposit / Transfer</option>
+              </select>
+              <button
+                type="submit"
+                className="rounded-xl bg-emerald-600 px-4 py-2 font-semibold text-white hover:bg-emerald-700 transition cursor-pointer"
+              >
+                {tr("+ পেমেন্ট জমা নিন", "+ Record Payment")}
+              </button>
+            </form>
+          </div>
+
+          {/* Payment History Table */}
+          <div className="rounded-2xl border border-slate-200/90 bg-white overflow-hidden shadow-2xs">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-slate-900">
+                {tr("পেমেন্ট ও মানি রসিদ ইতিহাস", "Invoices & Payment History")}
+              </h3>
               <button
                 type="button"
-                onClick={() => setActiveTab("access_print")}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-white/10 hover:bg-white/20 px-3 py-2 text-xs font-semibold text-white transition whitespace-nowrap shrink-0"
+                onClick={() => window.print()}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
               >
                 <Printer className="h-3.5 w-3.5" />
-                <span>{tr("এসেসমেন্ট শিট", "Print Sheet", "査定表印刷")}</span>
+                <span>{tr("প্রিন্ট স্টেটমেন্ট", "Print Statement")}</span>
               </button>
+            </div>
 
+            {studentTransactions.length === 0 ? (
+              <div className="p-8 text-center text-xs text-slate-400">
+                {tr(
+                  "এই শিক্ষার্থীর নামে এখনো কোনো পেমেন্ট রসিদ ইস্যু করা হয়নি।",
+                  "No invoices or payments recorded for this candidate yet."
+                )}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                      <th className="py-3 px-4">Receipt No</th>
+                      <th className="py-3 px-4">Date</th>
+                      <th className="py-3 px-4">Type</th>
+                      <th className="py-3 px-4">Method</th>
+                      <th className="py-3 px-4 text-right">Amount (BDT)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {studentTransactions.map((tx) => (
+                      <tr key={tx.id} className="hover:bg-slate-50/60">
+                        <td className="py-3 px-4 font-mono font-semibold text-slate-900">
+                          {tx.receiptNo}
+                        </td>
+                        <td className="py-3 px-4 text-slate-600 tabular-nums">
+                          {tx.date}
+                        </td>
+                        <td className="py-3 px-4 text-slate-700 font-medium">
+                          {tx.type}
+                        </td>
+                        <td className="py-3 px-4 text-slate-600">
+                          {tx.paymentMethod}
+                        </td>
+                        <td className="py-3 px-4 text-right font-bold text-emerald-700 tabular-nums">
+                          ৳{tx.amountBdt.toLocaleString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          INLINE EDIT PROFILE MODAL (Triggered by "Edit" Button in Header)
+          ===================================================================== */}
+      {isEditingModalOpen && (
+        <div
+          className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-950/50 backdrop-blur-xs p-4 overflow-y-auto"
+          onClick={() => setIsEditingModalOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl space-y-4 my-8"
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900">
+                {tr(
+                  "শিক্ষার্থীর পূর্ণাঙ্গ প্রোফাইল ও একাডেমিক তথ্য সম্পাদনা",
+                  "Edit Candidate Profile & Academic Details"
+                )}
+              </h3>
               <button
                 type="button"
-                onClick={handleSaveAllProfileChanges}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-3.5 py-2 text-xs font-semibold text-white transition whitespace-nowrap shrink-0"
-              >
-                <Save className="h-3.5 w-3.5" />
-                <span>{tr("সব তথ্য সেভ", "Save Profile", "保存")}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setConfirmDeleteLead((prev) => !prev)}
-                className={`rounded-xl p-2 transition ${
-                  confirmDeleteLead
-                    ? "bg-red-600 text-white"
-                    : "bg-white/10 text-red-300 hover:bg-red-500/20 hover:text-red-200"
-                }`}
-                title={tr("লিড ডিলিট করুন", "Delete Lead", "リード削除")}
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-xl bg-white/10 p-2 text-slate-300 hover:bg-white/20 hover:text-white transition"
-                title="Close"
+                onClick={() => setIsEditingModalOpen(false)}
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
-          </div>
 
-          {confirmDeleteLead && (
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-red-950/80 border border-red-400/30 px-3.5 py-2 text-xs text-red-100">
-              <span>
-                {tr(
-                  `আপনি কি নিশ্চিতভাবে "${name}"-এর লিড প্রোফাইল ডিলিট করতে চান?`,
-                  `Are you sure you want to permanently delete "${name}" from CRM?`,
-                  `「${name}」のリード情報を完全に削除しますか？`
-                )}
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setConfirmDeleteLead(false)}
-                  className="rounded-lg bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-white/20"
-                >
-                  {tr("বাতিল", "Cancel", "キャンセル")}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDeleteCurrentLead}
-                  className="rounded-lg bg-red-600 px-3 py-1 text-[11px] font-bold text-white hover:bg-red-500"
-                >
-                  {tr("হ্যাঁ, মুছে ফেলুন", "Yes, Delete Permanently", "削除する")}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* 5-Tab Segmented Command Bar */}
-          <div className="mt-4 flex items-center gap-1.5 overflow-x-auto pt-2 border-t border-white/10">
-            {(
-              [
-                {
-                  id: "bio" as ProfileTabId,
-                  icon: UserCheck,
-                  labelBn: "১. বায়োডাটা, জিপিএ ও এলিজিবিলিটি",
-                  labelEn: "1. Bio & Eligibility",
-                  labelJa: "1. 履歴書・評定・資格判定",
-                },
-                {
-                  id: "docs" as ProfileTabId,
-                  icon: FileCheck2,
-                  labelBn: `২. ডকুমেন্ট ভল্ট (${eligibility.verifiedDocsCount}/12) ও স্পন্সর`,
-                  labelEn: `2. Docs (${eligibility.verifiedDocsCount}/12) & Sponsor`,
-                  labelJa: `2. 提出書類 (${eligibility.verifiedDocsCount}/12)・経費支弁者`,
-                },
-                {
-                  id: "finance_visa" as ProfileTabId,
-                  icon: Wallet,
-                  labelBn: "৩. পেমেন্ট লেজার, ভিসা ধাপ ও LMS",
-                  labelEn: "3. Finance, Visa & LMS",
-                  labelJa: "3. 学費出納帳・ビザ段階・LMS",
-                },
-                {
-                  id: "timeline" as ProfileTabId,
-                  icon: MessageSquare,
-                  labelBn: `৪. কাউন্সেলিং টাইমলাইন (${activityLog.length}) ও WhatsApp`,
-                  labelEn: `4. Timeline (${activityLog.length}) & WhatsApp`,
-                  labelJa: `4. 面談タイムライン (${activityLog.length})・WhatsApp`,
-                },
-                {
-                  id: "access_print" as ProfileTabId,
-                  icon: KeyRound,
-                  labelBn: "৫. পোর্টাল লগইন ও প্রিন্ট ডসিয়ার",
-                  labelEn: "5. Portal Login & Print",
-                  labelJa: "5. ポータルログイン・調書印刷",
-                },
-              ] as const
-            ).map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold transition whitespace-nowrap shrink-0 ${
-                    isActive
-                      ? "bg-white text-slate-900 shadow-xs"
-                      : "text-slate-300 hover:bg-white/10 hover:text-white"
-                  }`}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  <span>{language === "ja" ? (tab as any).labelJa || tab.labelEn : isBn ? tab.labelBn : tab.labelEn}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* =====================================================================
-            TAB CONTENT WORKSPACE
-            ===================================================================== */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6 bg-slate-50/50">
-          {/* -------------------------------------------------------------------
-              TAB 1: BIO, ACADEMIC, JAPAN EXAM & ELIGIBILITY SCORE
-              ------------------------------------------------------------------- */}
-          {activeTab === "bio" && (
-            <div className="space-y-6">
-              {/* Auto Japan Visa Eligibility Breakdown Panel */}
-              <div className="rounded-2xl border border-slate-200/80 bg-white p-5">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pb-4 border-b border-slate-100">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900">
-                      {tr("স্বয়ংক্রিয় জাপান ভিসা এলিজিবিলিটি মূল্যায়ন (Auto Eligibility Assessment)", "Automated Japan Immigration Eligibility Assessment")}
-                    </h3>
-                    <p className="text-xs text-slate-600 mt-0.5">
-                      {language === "ja" ? ((eligibility as any).recommendationJa || eligibility.recommendationEn) : isBn ? eligibility.recommendationBn : eligibility.recommendationEn}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-xs text-slate-500">
-                      {tr("মোট স্কোর:", "Total Score:")}
-                    </span>
-                    <span className="text-xl font-bold text-slate-900 font-mono tabular-nums">
-                      {eligibility.totalScore} / 100
-                    </span>
-                  </div>
-                </div>
-
-                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
-                  <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3.5">
-                    <div className="flex items-center justify-between font-semibold text-slate-700">
-                      <span>{tr("১. একাডেমিক GPA", "1. Academic GPA")}</span>
-                      <span className="font-mono tabular-nums">{eligibility.gpaScore} / 30</span>
-                    </div>
-                    <div className="mt-2 h-1.5 w-full rounded-full bg-slate-200 overflow-hidden">
-                      <div
-                        className="h-full bg-slate-900 rounded-full"
-                        style={{ width: `${(eligibility.gpaScore / 30) * 100}%` }}
-                      />
-                    </div>
-                    <p className="mt-1.5 text-[11px] text-slate-500 font-mono tabular-nums">
-                      SSC: {sscGpa || "N/A"} · HSC: {hscGpa || "N/A"}
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3.5">
-                    <div className="flex items-center justify-between font-semibold text-slate-700">
-                      <span>{tr("২. স্টাডি গ্যাপ", "2. Study Gap")}</span>
-                      <span className="font-mono tabular-nums">{eligibility.gapScore} / 25</span>
-                    </div>
-                    <div className="mt-2 h-1.5 w-full rounded-full bg-slate-200 overflow-hidden">
-                      <div
-                        className="h-full bg-emerald-600 rounded-full"
-                        style={{ width: `${(eligibility.gapScore / 25) * 100}%` }}
-                      />
-                    </div>
-                    <p className="mt-1.5 text-[11px] text-slate-500 font-mono tabular-nums">
-                      {studyGapYears} {tr("বছর গ্যাপ", "Years Gap")} (Pass: {graduationYear})
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3.5">
-                    <div className="flex items-center justify-between font-semibold text-slate-700">
-                      <span>{tr("৩. জাপানি ভাষা দক্ষতা", "3. Language & Exam")}</span>
-                      <span className="font-mono tabular-nums">{eligibility.languageScore} / 25</span>
-                    </div>
-                    <div className="mt-2 h-1.5 w-full rounded-full bg-slate-200 overflow-hidden">
-                      <div
-                        className="h-full bg-amber-600 rounded-full"
-                        style={{ width: `${(eligibility.languageScore / 25) * 100}%` }}
-                      />
-                    </div>
-                    <p className="mt-1.5 text-[11px] text-slate-500">
-                      {japaneseProficiency} · {japaneseExamType} ({japaneseExamStatus})
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3.5">
-                    <div className="flex items-center justify-between font-semibold text-slate-700">
-                      <span>{tr("৪. সলভেন্সি ও ডকুমেন্ট", "4. Solvency & Docs")}</span>
-                      <span className="font-mono tabular-nums">{eligibility.financialScore} / 20</span>
-                    </div>
-                    <div className="mt-2 h-1.5 w-full rounded-full bg-slate-200 overflow-hidden">
-                      <div
-                        className="h-full bg-emerald-700 rounded-full"
-                        style={{ width: `${(eligibility.financialScore / 20) * 100}%` }}
-                      />
-                    </div>
-                    <p className="mt-1.5 text-[11px] text-slate-500 font-mono tabular-nums">
-                      ৳{(sponsorBankBalanceBdt / 100000).toFixed(1)}L · {eligibility.verifiedDocsCount}/12 Docs
-                    </p>
-                  </div>
-                </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs max-h-[68vh] overflow-y-auto pr-1">
+              <div>
+                <label className="font-semibold text-slate-700">Full Name *</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-medium"
+                />
               </div>
 
-              {/* Main Bio & Academic Form Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                {/* Left 7 Cols: Personal & Guardian Information */}
-                <div className="lg:col-span-7 rounded-2xl border border-slate-200/80 bg-white p-5 space-y-4">
-                  <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">
-                    {tr("ব্যক্তিগত, পাসপোর্ট ও অভিভাবকের তথ্য", "Personal, Passport & Guardian Information")}
-                  </h3>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("প্রার্থীর পূর্ণ নাম *", "Candidate Full Name *")}
-                      </label>
-                      <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold text-slate-900"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("মোবাইল নম্বর *", "Phone Number *")}
-                      </label>
-                      <input
-                        type="text"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono font-semibold text-slate-900"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("WhatsApp নম্বর", "WhatsApp Number")}
-                      </label>
-                      <input
-                        type="text"
-                        value={whatsapp}
-                        onChange={(e) => setWhatsapp(e.target.value)}
-                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("ইমেইল ঠিকানা", "Email Address")}
-                      </label>
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="student@email.com"
-                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("জেলা / শহর", "City / District")}
-                      </label>
-                      <input
-                        type="text"
-                        value={city}
-                        onChange={(e) => setCity(e.target.value)}
-                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("পাসপোর্ট নম্বর (যদি থাকে)", "Passport Number", "パスポート番号")}
-                      </label>
-                      <input
-                        type="text"
-                        value={passportNo}
-                        onChange={(e) => setPassportNo(e.target.value)}
-                        placeholder="e.g. A04928172"
-                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("পাসপোর্টের মেয়াদ উত্তীর্ণের তারিখ", "Passport Expiry Date", "パスポート有効期限")}
-                      </label>
-                      <input
-                        type="date"
-                        value={passportExpiryDate}
-                        onChange={(e) => setPassportExpiryDate(e.target.value)}
-                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("জন্ম তারিখ (Date of Birth)", "Date of Birth", "生年月日")}
-                        {candidateAge !== null && (
-                          <span className="ml-1.5 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-bold text-slate-700">
-                            {candidateAge} yrs
-                          </span>
-                        )}
-                      </label>
-                      <input
-                        type="date"
-                        value={dateOfBirth}
-                        onChange={(e) => setDateOfBirth(e.target.value)}
-                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("লিঙ্গ ও বৈবাহিক অবস্থা", "Gender & Marital Status", "性別・婚姻状況")}
-                      </label>
-                      <div className="mt-1 grid grid-cols-2 gap-2">
-                        <select
-                          value={gender}
-                          onChange={(e) => setGender(e.target.value as any)}
-                          className="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-2"
-                        >
-                          <option value="MALE">{tr("পুরুষ (Male)", "Male", "男性")}</option>
-                          <option value="FEMALE">{tr("নারী (Female)", "Female", "女性")}</option>
-                          <option value="OTHER">{tr("অন্যান্য", "Other", "その他")}</option>
-                        </select>
-                        <select
-                          value={maritalStatus}
-                          onChange={(e) => setMaritalStatus(e.target.value as any)}
-                          className="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-2"
-                        >
-                          <option value="SINGLE">{tr("অবিবাহিত", "Single", "未婚")}</option>
-                          <option value="MARRIED">{tr("বিবাহিত", "Married", "既婚")}</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("জাতীয় পরিচয়পত্র (NID) / জন্ম নিবন্ধন নম্বর", "NID / Birth Reg. No", "NID・出生登録番号")}
-                      </label>
-                      <input
-                        type="text"
-                        value={nidOrBirthRegNo}
-                        onChange={(e) => setNidOrBirthRegNo(e.target.value)}
-                        placeholder="e.g. 1999269481029"
-                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("টার্গেট জাপান ইনটেক ও পছন্দের শহর", "Target Intake & Preferred City", "希望入学期・希望都市")}
-                      </label>
-                      <div className="mt-1 grid grid-cols-2 gap-2">
-                        <select
-                          value={preferredIntake}
-                          onChange={(e) => setPreferredIntake(e.target.value as any)}
-                          className="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-2 font-semibold"
-                        >
-                          <option value="APRIL">April (Spring)</option>
-                          <option value="JULY">July (Summer)</option>
-                          <option value="OCTOBER">October (Autumn)</option>
-                          <option value="JANUARY">January (Winter)</option>
-                          <option value="SSW_ANYTIME">SSW / Direct</option>
-                        </select>
-                        <input
-                          type="text"
-                          value={preferredJapanCity}
-                          onChange={(e) => setPreferredJapanCity(e.target.value)}
-                          placeholder="Tokyo / Osaka / Fukuoka"
-                          className="w-full rounded-xl border border-slate-200 px-2.5 py-2"
-                        />
-                      </div>
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className="font-semibold text-slate-700">
-                        {tr("বর্তমান ও স্থায়ী ঠিকানা", "Current & Permanent Address", "現住所・本籍地")}
-                      </label>
-                      <input
-                        type="text"
-                        value={address}
-                        onChange={(e) => setAddress(e.target.value)}
-                        placeholder={tr("বাসা/রোড, থানা, জেলা...", "House/Road, Area, District...", "番地・市区町村...")}
-                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("অভিভাবক / স্পন্সরের নাম", "Guardian / Sponsor Name", "保護者・経費支弁者名")}
-                      </label>
-                      <input
-                        type="text"
-                        value={guardianName}
-                        onChange={(e) => setGuardianName(e.target.value)}
-                        placeholder={tr("পিতা / মাতা / ভাই", "Father / Mother / Sibling", "父・母・兄弟")}
-                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("অভিভাবকের ফোন নম্বর", "Guardian Phone", "保護者電話番号")}
-                      </label>
-                      <input
-                        type="text"
-                        value={guardianPhone}
-                        onChange={(e) => setGuardianPhone(e.target.value)}
-                        placeholder="017..."
-                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
-                      />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className="font-semibold text-slate-700">
-                        {tr("কাউন্সেলরের সার্বিক মূল্যায়ন নোট (General Assessment Notes)", "Counselor General Assessment Notes", "カウンセラー総合所見")}
-                      </label>
-                      <textarea
-                        rows={2}
-                        value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
-                        placeholder={tr("প্রার্থীর আর্থিক সক্ষমতা, পারিবারিক ব্যাকগ্রাউন্ড বা বিশেষ কোনো মন্তব্য...", "Write key assessment notes, sponsor strength, or special remarks...", "特記事項を入力...")}
-                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-xs"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Custom Profile Tags Manager */}
-                  <div className="pt-3 border-t border-slate-100 space-y-2.5 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-800 flex items-center gap-1.5">
-                        <Tag className="h-3.5 w-3.5 text-slate-600" />
-                        <span>{tr("প্রোফাইল ট্যাগ ও হাইলাইট (Custom Tags)", "Custom Profile Tags & Badges", "カスタムタグ")}</span>
-                      </span>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {customTags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="inline-flex items-center gap-1 rounded-lg bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white"
-                        >
-                          <span>{tag}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveCustomTag(tag)}
-                            className="text-slate-300 hover:text-white"
-                          >
-                            ×
-                          </button>
-                        </span>
-                      ))}
-                      {["N5 Running", "Passport Ready", "Sponsor Strong", "Bank Loan Needed", "Google Sheet Import"].map(
-                        (preset) =>
-                          !customTags.includes(preset) && (
-                            <button
-                              key={preset}
-                              type="button"
-                              onClick={() => handleAddCustomTag(preset)}
-                              className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600 hover:border-slate-400 hover:bg-slate-100 transition"
-                            >
-                              + {preset}
-                            </button>
-                          )
-                      )}
-                    </div>
-
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={newTagInput}
-                        onChange={(e) => setNewTagInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            handleAddCustomTag();
-                          }
-                        }}
-                        placeholder={tr("নতুন ট্যাগ লিখুন (যেমন: July Batch, High GPA)...", "Add custom tag...", "タグを追加...")}
-                        className="flex-1 rounded-xl border border-slate-200 px-3 py-1.5 text-xs"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleAddCustomTag()}
-                        className="rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition"
-                      >
-                        {tr("+ ট্যাগ যোগ", "+ Add Tag", "+ 追加")}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right 5 Cols: Academic GPA, Study Gap, Japanese Exam & ERP Assignment */}
-                <div className="lg:col-span-5 rounded-2xl border border-slate-200/80 bg-white p-5 space-y-4">
-                  <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">
-                    {tr("একাডেমিক ফলাফল, জাপানি পরীক্ষা ও অ্যাসাইনমেন্ট", "Academic GPA, Japanese Exam & ERP Links")}
-                  </h3>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("সর্বশেষ শিক্ষাগত যোগ্যতা", "Highest Education")}
-                      </label>
-                      <input
-                        type="text"
-                        value={education}
-                        onChange={(e) => setEducation(e.target.value)}
-                        placeholder="HSC / Diploma / BSc"
-                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("পাসের সাল ও স্টাডি গ্যাপ", "Pass Year & Gap (Yrs)")}
-                      </label>
-                      <div className="mt-1 grid grid-cols-2 gap-2">
-                        <input
-                          type="text"
-                          value={graduationYear}
-                          onChange={(e) => setGraduationYear(e.target.value)}
-                          placeholder="2024"
-                          className="w-full rounded-xl border border-slate-200 px-2.5 py-2 font-mono tabular-nums"
-                        />
-                        <input
-                          type="number"
-                          min={0}
-                          max={15}
-                          value={studyGapYears}
-                          onChange={(e) => setStudyGapYears(Number(e.target.value))}
-                          className="w-full rounded-xl border border-slate-200 px-2.5 py-2 font-mono font-semibold tabular-nums"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="font-semibold text-slate-700">SSC / সমমান GPA</label>
-                      <input
-                        type="text"
-                        value={sscGpa}
-                        onChange={(e) => setSscGpa(e.target.value)}
-                        placeholder="4.50"
-                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono tabular-nums"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-semibold text-slate-700">HSC / ডিপ্লোমা GPA</label>
-                      <input
-                        type="text"
-                        value={hscGpa}
-                        onChange={(e) => setHscGpa(e.target.value)}
-                        placeholder="4.25"
-                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono tabular-nums"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("অনার্স / বিএসসি CGPA (যদি থাকে)", "Honors / BSc CGPA", "大学CGPA")}
-                      </label>
-                      <input
-                        type="text"
-                        value={honorsOrDiplomaCgpa}
-                        onChange={(e) => setHonorsOrDiplomaCgpa(e.target.value)}
-                        placeholder="3.45 / 4.00"
-                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono tabular-nums"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("আগ্রহের প্রোগ্রাম", "Target Program", "希望プログラム")}
-                      </label>
-                      <input
-                        type="text"
-                        value={interest}
-                        onChange={(e) => setInterest(e.target.value as ServiceInterest)}
-                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("জাপানি ভাষা স্তর", "Japanese Level")}
-                      </label>
-                      <select
-                        value={japaneseProficiency}
-                        onChange={(e) => setJapaneseProficiency(e.target.value as any)}
-                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold"
-                      >
-                        <option value="NONE">শুরু করেনি (NONE)</option>
-                        <option value="LEARNING_N5">N5 শিখছে (LEARNING_N5)</option>
-                        <option value="PASSED_N5">JLPT/NAT N5 পাস</option>
-                        <option value="PASSED_N4">JLPT/JFT N4 পাস</option>
-                        <option value="NAT_JFT">NAT / JFT Basic পাস</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("অফিসিয়াল পরীক্ষা (JLPT/NAT/JFT)", "Official Exam Type")}
-                      </label>
-                      <select
-                        value={japaneseExamType}
-                        onChange={(e) => setJapaneseExamType(e.target.value as any)}
-                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold"
-                      >
-                        <option value="NONE">এখনো নিবন্ধন করেনি</option>
-                        <option value="JLPT_N5">JLPT N5</option>
-                        <option value="NAT_5Q">NAT-TEST 5Q (N5 Eqv.)</option>
-                        <option value="JLPT_N4">JLPT N4</option>
-                        <option value="NAT_4Q">NAT-TEST 4Q (N4 Eqv.)</option>
-                        <option value="JFT_BASIC">JFT-Basic (SSW)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("পরীক্ষার স্ট্যাটাস", "Exam Status")}
-                      </label>
-                      <select
-                        value={japaneseExamStatus}
-                        onChange={(e) => setJapaneseExamStatus(e.target.value as any)}
-                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
-                      >
-                        <option value="NOT_REGISTERED">Not Registered</option>
-                        <option value="REGISTERED">Registered (Admit Card)</option>
-                        <option value="PASSED">Passed (Certificate Ready)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("স্কোর / রেজিঃ নম্বর", "Exam Score / Reg No")}
-                      </label>
-                      <input
-                        type="text"
-                        value={japaneseExamScore}
-                        onChange={(e) => setJapaneseExamScore(e.target.value)}
-                        placeholder="e.g. 112/180"
-                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono tabular-nums"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("লিড প্রায়োরিটি", "Priority")}
-                      </label>
-                      <select
-                        value={priority}
-                        onChange={(e) => setPriority(e.target.value as LeadPriority)}
-                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-bold"
-                      >
-                        <option value="HOT">HOT (তাৎক্ষণিক ভর্তি প্রস্তুত)</option>
-                        <option value="WARM">WARM (ফলো-আপ চলমান)</option>
-                        <option value="COLD">COLD (পরবর্তীতে যোগাযোগ)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("লিড স্ট্যাটাস", "Lead Status")}
-                      </label>
-                      <select
-                        value={status}
-                        onChange={(e) => setStatus(e.target.value as LeadStatus)}
-                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold"
-                      >
-                        <option value="NEW">NEW (নতুন লিড)</option>
-                        <option value="CONTACTED">CONTACTED (কথা হয়েছে)</option>
-                        <option value="COUNSELED">COUNSELED (কাউন্সেলিং সম্পন্ন)</option>
-                        <option value="OFFICE_VISIT_BOOKED">OFFICE_VISIT_BOOKED</option>
-                        <option value="ADMITTED">ADMITTED (ভর্তি / ফাইল ওপেন)</option>
-                        <option value="ARCHIVED">ARCHIVED</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("দায়িত্বপ্রাপ্ত কাউন্সেলর (HR)", "Assigned Counselor")}
-                      </label>
-                      <select
-                        value={assignedCounselorId}
-                        onChange={(e) => {
-                          const found = counselors.find((c) => c.id === e.target.value);
-                          setAssignedCounselorId(e.target.value);
-                          if (found) setAssignedTo(found.name);
-                        }}
-                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
-                      >
-                        <option value="">{assignedTo}</option>
-                        {counselors.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name} ({c.role})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("রেফারকারী বিটুবি এজেন্ট", "Referring B2B Agent")}
-                      </label>
-                      <select
-                        value={b2bAgentId}
-                        onChange={(e) => {
-                          const ag = b2bAgents.find((a) => a.id === e.target.value);
-                          setB2bAgentId(e.target.value);
-                          setB2bAgentName(ag?.organizationName || "");
-                        }}
-                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
-                      >
-                        <option value="">সরাসরি অফিস (Direct Inquiry)</option>
-                        {b2bAgents.map((a) => (
-                          <option key={a.id} value={a.id}>
-                            {a.organizationName} ({a.city})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <label className="font-semibold text-slate-700">
-                        {tr("সর্বশেষ কল ফলাফল (Call Disposition)", "Last Call Outcome", "最終架電結果")}
-                      </label>
-                      <select
-                        value={callOutcome}
-                        onChange={(e) => setCallOutcome(e.target.value as LeadCallOutcome)}
-                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-800"
-                      >
-                        <option value="CONNECTED_INTERESTED">Connected — Interested (আগ্রহী)</option>
-                        <option value="PROMISED_OFFICE_VISIT">Promised Office Visit (অফিসে আসবে)</option>
-                        <option value="GUARDIAN_DISCUSSION_NEEDED">Guardian Discussion Needed (অভিভাবকের সাথে কথা বলবে)</option>
-                        <option value="CALL_BACK_LATER">Busy / Call Back Later (পরে কল করতে বলেছে)</option>
-                        <option value="NO_ANSWER">No Answer / Switched Off (ফোন ধরেনি)</option>
-                        <option value="DOCS_PENDING">Documents Pending (ডকুমেন্ট রেডি করছে)</option>
-                        <option value="NOT_ELIGIBLE">Not Eligible (যোগ্যতা ঘাটতি)</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Smart Japan Partner School Matcher */}
-                  {matchedRecommendedSchools.length > 0 && (
-                    <div className="pt-3 border-t border-slate-100 space-y-2 text-xs">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-slate-800 flex items-center gap-1.5">
-                          <Sparkles className="h-3.5 w-3.5 text-amber-600" />
-                          <span>
-                            {tr(
-                              "প্রার্থীর প্রোফাইল অনুযায়ী প্রস্তাবিত জাপানি স্কুল",
-                              "Recommended Japan Partner Schools",
-                              "推奨パートナー日本語学校"
-                            )}
-                          </span>
-                        </span>
-                      </div>
-                      <div className="space-y-1.5">
-                        {matchedRecommendedSchools.slice(0, 4).map(({ school: sc, qualifies, minGpa, maxGap }) => {
-                          const isSelected = partnerSchoolId === sc.id || targetSchool === sc.name;
-                          return (
-                            <div
-                              key={sc.id}
-                              className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 transition ${
-                                isSelected
-                                  ? "border-emerald-500 bg-emerald-50/70"
-                                  : "border-slate-200/80 bg-slate-50/60"
-                              }`}
-                            >
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-1.5">
-                                  <p className="font-bold text-slate-900 truncate">{sc.name}</p>
-                                  <span
-                                    className={`rounded px-1.5 py-0.2 text-[10px] font-semibold ${
-                                      qualifies
-                                        ? "bg-emerald-100 text-emerald-800"
-                                        : "bg-amber-100 text-amber-800"
-                                    }`}
-                                  >
-                                    {qualifies ? "Match ✓" : "Review"}
-                                  </span>
-                                </div>
-                                <p className="text-[11px] text-slate-500">
-                                  {sc.location} · Min GPA {minGpa} · Max Gap {maxGap}y
-                                </p>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setPartnerSchoolId(sc.id);
-                                  setTargetSchool(sc.name);
-                                }}
-                                className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold shrink-0 transition ${
-                                  isSelected
-                                    ? "bg-emerald-600 text-white"
-                                    : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
-                                }`}
-                              >
-                                {isSelected
-                                  ? tr("✓ নির্বাচিত", "✓ Selected", "✓ 選択済")
-                                  : tr("নির্বাচন করুন", "Select", "選択")}
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
+              <div>
+                <label className="font-semibold text-slate-700">Phone *</label>
+                <input
+                  type="text"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
+                />
               </div>
-            </div>
-          )}
 
-          {/* -------------------------------------------------------------------
-              TAB 2: 12-ITEM DOCUMENT VAULT & SPONSOR SOLVENCY CALCULATOR
-              ------------------------------------------------------------------- */}
-          {activeTab === "docs" && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Left 7 Cols: 12-Item Immigration Document Checklist */}
-              <div className="lg:col-span-7 rounded-2xl border border-slate-200/80 bg-white p-5 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 border-b border-slate-100">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900">
-                      {tr("জাপান ইমিগ্রেশন (COE) ১২টি আবশ্যিক ডকুমেন্ট চেকলিস্ট ভল্ট", "12-Item Japan Immigration COE Document Checklist Vault")}
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      {tr("যেকোনো ডকুমেন্টে ক্লিক করে স্ট্যাটাস পরিবর্তন করুন (Missing ➔ Submitted ➔ Verified)", "Click any item to cycle status between Missing, Submitted, and Verified")}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => markAllDocsStatus("SUBMITTED")}
-                      className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 transition"
-                    >
-                      {tr("সব জমা হয়েছে", "All Submitted")}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => markAllDocsStatus("VERIFIED")}
-                      className="rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-emerald-700 transition"
-                    >
-                      {tr("সব ভেরিফাইড", "Verify All")}
-                    </button>
-                  </div>
-                </div>
+              <div>
+                <label className="font-semibold text-slate-700">Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
+                />
+              </div>
 
-                {/* Progress Bar */}
-                <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
-                  <div className="flex items-center justify-between text-xs font-semibold text-slate-700 tabular-nums">
-                    <span>
-                      {tr("ডকুমেন্ট প্রস্তুতি অগ্রগতি", "Document Readiness")}
-                    </span>
-                    <span>
-                      {eligibility.verifiedDocsCount} Verified · {eligibility.submittedDocsCount} Submitted /{" "}
-                      {eligibility.totalDocsCount} Total
-                    </span>
-                  </div>
-                  <div className="mt-2 h-2 w-full rounded-full bg-slate-200 overflow-hidden">
-                    <div
-                      className="h-full bg-emerald-600 rounded-full transition-all"
-                      style={{
-                        width: `${Math.round(
-                          ((eligibility.verifiedDocsCount + eligibility.submittedDocsCount * 0.5) /
-                            eligibility.totalDocsCount) *
-                            100,
-                        )}%`,
-                      }}
-                    />
-                  </div>
-                </div>
+              <div>
+                <label className="font-semibold text-slate-700">City</label>
+                <input
+                  type="text"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
+                />
+              </div>
 
-                {/* 12 Document Rows */}
-                <div className="divide-y divide-slate-100 border border-slate-100 rounded-xl overflow-hidden">
-                  {documentChecklist.map((doc, idx) => (
-                    <div
-                      key={doc.id}
-                      onClick={() => cycleDocStatus(doc.id)}
-                      className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-slate-50 cursor-pointer transition select-none"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className="text-xs font-mono font-semibold text-slate-400 w-5 shrink-0 tabular-nums">
-                          {String(idx + 1).padStart(2, "0")}.
-                        </span>
-                        <div className="min-w-0">
-                          <p className="text-xs font-semibold text-slate-900 truncate">
-                            {language === "ja" ? ((doc as any).titleJa || doc.titleEn) : isBn ? doc.titleBn : doc.titleEn}
-                          </p>
-                          <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-400">
-                            <span>{doc.category}</span>
-                            {doc.fileName && (
-                              <span className="text-emerald-700 font-semibold truncate max-w-[120px]">
-                                · 📎 {doc.fileName}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+              <div>
+                <label className="font-semibold text-slate-700">SSC GPA</label>
+                <input
+                  type="text"
+                  value={sscGpa}
+                  onChange={(e) => setSscGpa(e.target.value)}
+                  placeholder="4.00"
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
+                />
+              </div>
 
-                      <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-                        {doc.fileUrl && (
-                          <a
-                            href={doc.fileUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition"
-                            title="View / Download"
-                          >
-                            <Paperclip className="h-3.5 w-3.5 text-blue-600" />
-                          </a>
-                        )}
+              <div>
+                <label className="font-semibold text-slate-700">HSC GPA</label>
+                <input
+                  type="text"
+                  value={hscGpa}
+                  onChange={(e) => setHscGpa(e.target.value)}
+                  placeholder="3.70"
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
+                />
+              </div>
 
-                        <label className={`cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition ${
-                          uploadingDocId === doc.id ? "opacity-50 pointer-events-none" : ""
-                        }`} title={tr("ফাইল আপলোড করুন", "Upload File")}>
-                          {uploadingDocId === doc.id ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin text-[#b91c1c]" />
-                          ) : (
-                            <Upload className="h-3.5 w-3.5" />
-                          )}
-                          <input
-                            type="file"
-                            disabled={uploadingDocId === doc.id}
-                            accept="image/*,.pdf,.doc,.docx"
-                            onChange={(e) => handleStudentDocUpload(doc.id, e)}
-                            className="hidden"
-                          />
-                        </label>
+              <div>
+                <label className="font-semibold text-slate-700">
+                  Program Level / Highest Degree
+                </label>
+                <input
+                  type="text"
+                  value={education}
+                  onChange={(e) => setEducation(e.target.value)}
+                  placeholder="Foundation / HSC / BSc"
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
+                />
+              </div>
 
-                        <button
-                          type="button"
-                          onClick={() => cycleDocStatus(doc.id)}
-                          className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
-                            doc.status === "VERIFIED"
-                              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                              : doc.status === "SUBMITTED"
-                                ? "bg-amber-50 text-amber-800 border border-amber-200"
-                                : "bg-red-50 text-red-700 border border-red-200"
-                          }`}
-                        >
-                          {doc.status === "VERIFIED"
-                            ? tr("✓ ভেরিফাইড", "✓ Verified")
-                            : doc.status === "SUBMITTED"
-                              ? tr("জমা দিয়েছে", "Submitted")
-                              : tr("বাকি আছে", "Missing")}
-                        </button>
-                      </div>
-                    </div>
+              <div>
+                <label className="font-semibold text-slate-700">
+                  Study Gap (Years)
+                </label>
+                <input
+                  type="number"
+                  value={studyGapYears}
+                  onChange={(e) => setStudyGapYears(Number(e.target.value) || 0)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 tabular-nums"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700">
+                  Target Program in Japan
+                </label>
+                <select
+                  value={interest}
+                  onChange={(e) => setInterest(e.target.value as ServiceInterest)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
+                >
+                  <option value="STUDENT_VISA_REGULAR">Student Visa • Regular</option>
+                  <option value="STUDENT_VISA_PREMIUM">Student Visa • Premium</option>
+                  <option value="JAPANESE_N5">Language Program (JLPT N5)</option>
+                  <option value="JAPANESE_N4">Language Program (JLPT N4)</option>
+                  <option value="SSW_CONSTRUCTION_SPECIAL">SSW • Construction</option>
+                  <option value="SSW_CAREGIVER">SSW • Caregiver</option>
+                  <option value="SSW_AGRICULTURE">SSW • Agriculture</option>
+                  <option value="SSW_FOOD_SERVICE">SSW • Food Service</option>
+                  <option value="TITP_TECHNICAL">TITP • Technical Intern</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700">
+                  Japanese Proficiency
+                </label>
+                <select
+                  value={japaneseProficiency}
+                  onChange={(e) =>
+                    setJapaneseProficiency(
+                      e.target.value as CrmLead["japaneseProficiency"]
+                    )
+                  }
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
+                >
+                  <option value="NONE">Beginner (N5 Prep)</option>
+                  <option value="LEARNING_N5">Studying JLPT N5</option>
+                  <option value="PASSED_N5">JLPT N5 Passed</option>
+                  <option value="PASSED_N4">JLPT N4 Passed</option>
+                  <option value="NAT_JFT">NAT / JFT Passed</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700">Passport No.</label>
+                <input
+                  type="text"
+                  value={passportNo}
+                  onChange={(e) => setPassportNo(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700">
+                  Assigned Counselor
+                </label>
+                <input
+                  type="text"
+                  value={assignedTo}
+                  onChange={(e) => setAssignedTo(e.target.value)}
+                  list="counselors-datalist"
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
+                />
+                <datalist id="counselors-datalist">
+                  {counselors.map((c) => (
+                    <option key={c.id} value={c.name} />
                   ))}
-                </div>
-
-                {/* Add Custom Document Slot */}
-                <div className="flex flex-col sm:flex-row gap-2 pt-2">
-                  <input
-                    type="text"
-                    value={newCustomDocTitle}
-                    onChange={(e) => setNewCustomDocTitle(e.target.value)}
-                    placeholder={tr(
-                      "অতিরিক্ত ডকুমেন্ট স্লট যুক্ত করুন (যেমন: Study Gap Certificate, Trade License)...",
-                      "Add custom document requirement (e.g., Study Gap Certificate, Tax Return)...",
-                      "追加書類項目を入力..."
-                    )}
-                    className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-xs"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddCustomDocument}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition shrink-0"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    <span>{tr("নতুন ডকুমেন্ট স্লট", "Add Doc Slot", "書類枠を追加")}</span>
-                  </button>
-                </div>
+                </datalist>
               </div>
 
-              {/* Right 5 Cols: Sponsor Bank Solvency & Education Loan Calculator */}
-              <div className="lg:col-span-5 rounded-2xl border border-slate-200/80 bg-white p-5 space-y-4">
-                <div className="border-b border-slate-100 pb-3">
-                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <Landmark className="h-4 w-4 text-slate-700" />
-                    <span>
-                      {tr("স্পন্সর ব্যাংক সলভেন্সি ও লোন ক্যালকুলেটর", "Sponsor Bank Solvency & Loan Calculator")}
-                    </span>
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {tr("জাপান ইমিগ্রেশনের নিয়ম অনুযায়ী স্পন্সরের ন্যূনতম ১৮–২০ লক্ষ টাকা সলভেন্সি যাচাই", "Verify required ৳18L–20L BDT sponsor bank solvency for Japan Immigration")}
-                  </p>
-                </div>
+              <div>
+                <label className="font-semibold text-slate-700">
+                  Contract Amount (BDT)
+                </label>
+                <input
+                  type="number"
+                  value={contractAmountBdt}
+                  onChange={(e) =>
+                    setContractAmountBdt(Number(e.target.value) || 0)
+                  }
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold tabular-nums"
+                />
+              </div>
 
-                {/* Live Solvency Verdict Box */}
-                <div
-                  className={`rounded-xl p-4 border ${
-                    solvencyDeltaBdt >= 0
-                      ? "bg-emerald-50/70 border-emerald-200 text-emerald-950"
-                      : "bg-amber-50/70 border-amber-200 text-amber-950"
-                  }`}
+              <div>
+                <label className="font-semibold text-slate-700">
+                  B2B Referral Agent (Optional)
+                </label>
+                <select
+                  value={b2bAgentId}
+                  onChange={(e) => {
+                    const ag = b2bAgents.find((a) => a.id === e.target.value);
+                    setB2bAgentId(e.target.value);
+                    setB2bAgentName(ag ? ag.organizationName : "");
+                  }}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2"
                 >
-                  <div className="flex items-center justify-between text-xs font-semibold">
-                    <span>
-                      {tr("প্রয়োজনীয় সলভেন্সি:", "Required Solvency:")} ৳
-                      {requiredSolvencyBdt.toLocaleString()}
-                    </span>
-                    <span className="font-mono tabular-nums">
-                      {solvencyDeltaBdt >= 0
-                        ? `+৳${solvencyDeltaBdt.toLocaleString()} উদ্বৃত্ত`
-                        : `-৳${Math.abs(solvencyDeltaBdt).toLocaleString()} ঘাটতি`}
-                    </span>
-                  </div>
-                  <p className="mt-1.5 text-xs">
-                    {solvencyDeltaBdt >= 0
-                      ? tr("✓ স্পন্সরের ব্যাংক ব্যালেন্স জাপান ইমিগ্রেশনের COE আবেদনের জন্য সম্পূর্ণ পর্যাপ্ত।", "✓ Sponsor bank balance meets Japan Immigration COE requirements.")
-                      : tr("⚠ ব্যালেন্স কিছুটা কম রয়েছে — অগ্রণী / সোস্যাল ইসলামী / পূবালী ব্যাংকের এডুকেশন লোন সহায়তা নেওয়ার পরামর্শ দিন।", "⚠ Balance shortfall detected — enable Partner Bank Education Loan support below.")}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
-                  <div>
-                    <label className="font-semibold text-slate-700">
-                      {tr("স্পন্সরের সাথে সম্পর্ক", "Sponsor Relation")}
-                    </label>
-                    <select
-                      value={sponsorRelation}
-                      onChange={(e) => setSponsorRelation(e.target.value as any)}
-                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold"
-                    >
-                      <option value="FATHER">পিতা (Father)</option>
-                      <option value="MOTHER">মাতা (Mother)</option>
-                      <option value="BROTHER">ভাই (Brother)</option>
-                      <option value="SISTER">বোন (Sister)</option>
-                      <option value="SELF">নিজস্ব (Self)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="font-semibold text-slate-700">
-                      {tr("স্পন্সরের পেশা / আয়ের উৎস", "Sponsor Occupation")}
-                    </label>
-                    <input
-                      type="text"
-                      value={sponsorOccupation}
-                      onChange={(e) => setSponsorOccupation(e.target.value)}
-                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="font-semibold text-slate-700">
-                      {tr("স্পন্সরের মাসিক আয় (BDT)", "Monthly Income (BDT)")}
-                    </label>
-                    <input
-                      type="number"
-                      value={sponsorMonthlyIncomeBdt}
-                      onChange={(e) => setSponsorMonthlyIncomeBdt(Number(e.target.value))}
-                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono font-semibold tabular-nums"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="font-semibold text-slate-700">
-                      {tr("বার্ষিক আয় হিসাব (১২ মাস)", "Annual Income (Calculated)")}
-                    </label>
-                    <div className="mt-1 w-full rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 font-mono font-bold text-slate-800 tabular-nums">
-                      ৳{(sponsorMonthlyIncomeBdt * 12).toLocaleString()} / yr
-                    </div>
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <label className="font-semibold text-slate-700">
-                      {tr("স্পন্সরের ব্যাংকের নাম ও শাখা", "Sponsor Bank Name")}
-                    </label>
-                    <input
-                      type="text"
-                      value={sponsorBankName}
-                      onChange={(e) => setSponsorBankName(e.target.value)}
-                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
-                    />
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <label className="font-semibold text-slate-700">
-                      {tr("বর্তমান ব্যাংক সলভেন্সি ব্যালেন্স (BDT)", "Current Bank Balance (BDT)")}
-                    </label>
-                    <input
-                      type="number"
-                      step={50000}
-                      value={sponsorBankBalanceBdt}
-                      onChange={(e) => setSponsorBankBalanceBdt(Number(e.target.value))}
-                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-sm font-bold text-emerald-800 tabular-nums"
-                    />
-                  </div>
-
-                  <div className="sm:col-span-2 pt-2 border-t border-slate-100">
-                    <label className="flex items-center gap-2.5 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={bankLoanRequired}
-                        onChange={(e) => setBankLoanRequired(e.target.checked)}
-                        className="h-4 w-4 rounded accent-slate-900"
-                      />
-                      <span className="font-semibold text-slate-800">
-                        {tr("KNLTC পার্টনার ব্যাংক এডুকেশন লোন সহায়তা প্রয়োজন", "Requires Partner Bank Education Loan Assistance")}
-                      </span>
-                    </label>
-
-                    {bankLoanRequired && (
-                      <div className="mt-2.5">
-                        <label className="font-semibold text-slate-700">
-                          {tr("পছন্দের লোন প্রদানকারী ব্যাংক", "Preferred Partner Bank")}
-                        </label>
-                        <select
-                          value={preferredLoanBank}
-                          onChange={(e) => setPreferredLoanBank(e.target.value)}
-                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
-                        >
-                          <option value="অগ্রণী ব্যাংক পিএলসি (এডুকেশন লোন)">
-                            অগ্রণী ব্যাংক পিএলসি (Agrani Bank PLC)
-                          </option>
-                          <option value="সোস্যাল ইসলামী ব্যাংক (SIBL)">
-                            সোস্যাল ইসলামী ব্যাংক (SIBL)
-                          </option>
-                          <option value="পূবালী ব্যাংক পিএলসি">
-                            পূবালী ব্যাংক পিএলসি (Pubali Bank PLC)
-                          </option>
-                          <option value="ব্র্যাক ব্যাংক স্টুডেন্ট ফাইল">
-                            ব্র্যাক ব্যাংক (BRAC Bank Student File)
-                          </option>
-                        </select>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                  <option value="">Direct / No Agent</option>
+                  {b2bAgents.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.organizationName} ({a.contactPerson})
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
-          )}
 
-          {/* -------------------------------------------------------------------
-              TAB 3: LIVE STUDENT LEDGER, 10-STEP VISA CONTROLLER & LMS PROGRESS
-              ------------------------------------------------------------------- */}
-          {activeTab === "finance_visa" && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Left 6 Cols: Live Student Financial Ledger & Instant Fee Collection */}
-              <div className="lg:col-span-6 space-y-5">
-                <div className="rounded-2xl border border-slate-200/80 bg-white p-5 space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900">
-                        {tr("শিক্ষার্থীর লাইভ পেমেন্ট লেজার ও কিস্তি আদায়", "Live Student Financial Ledger & Fee Collection")}
-                      </h3>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        {tr("এখান থেকে ফি জমা নিলে মূল Finance লেজার ও রসিদে স্বয়ংক্রিয়ভাবে যুক্ত হবে", "Collecting fees here syncs directly with the main Finance Ledger")}
-                      </p>
-                    </div>
-                    <Receipt className="h-4 w-4 text-slate-400" />
-                  </div>
-
-                  {/* 3 Financial Summary Boxes */}
-                  <div className="grid grid-cols-3 gap-3 text-xs">
-                    <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3">
-                      <span className="text-[11px] text-slate-500 block">
-                        {tr("মোট চুক্তিমূল্য (Contract)", "Total Contract")}
-                      </span>
-                      <input
-                        type="number"
-                        step={5000}
-                        value={contractAmountBdt}
-                        onChange={(e) => setContractAmountBdt(Number(e.target.value))}
-                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1 font-mono text-sm font-bold text-slate-900 tabular-nums"
-                      />
-                    </div>
-                    <div className="rounded-xl border border-emerald-200/70 bg-emerald-50/50 p-3">
-                      <span className="text-[11px] text-emerald-800 block">
-                        {tr("মোট পরিশোধিত (Paid)", "Total Paid")}
-                      </span>
-                      <p className="mt-1.5 font-mono text-base font-bold text-emerald-700 tabular-nums">
-                        ৳{livePaidAmountBdt.toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="rounded-xl border border-amber-200/70 bg-amber-50/50 p-3">
-                      <span className="text-[11px] text-amber-900 block">
-                        {tr("বর্তমান বকেয়া (Due)", "Current Due")}
-                      </span>
-                      <p className="mt-1.5 font-mono text-base font-bold text-amber-800 tabular-nums">
-                        ৳{liveDueAmountBdt.toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Quick Collect Fee Installment Form */}
-                  <form
-                    onSubmit={handleQuickCollectFee}
-                    className="rounded-xl border border-slate-200/80 bg-slate-50/60 p-4 space-y-3 text-xs"
-                  >
-                    <p className="font-bold text-slate-900">
-                      {tr("+ তাৎক্ষণিক কিস্তি / ফি জমা নিন", "+ Record Instant Fee Payment")}
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="font-semibold text-slate-700">
-                          {tr("জমার পরিমাণ (BDT)", "Amount (BDT)")}
-                        </label>
-                        <input
-                          type="number"
-                          required
-                          min={100}
-                          value={feeAmountBdt}
-                          onChange={(e) => setFeeAmountBdt(Number(e.target.value))}
-                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono font-bold tabular-nums"
-                        />
-                      </div>
-                      <div>
-                        <label className="font-semibold text-slate-700">
-                          {tr("খাত / ফি টাইপ", "Fee Type")}
-                        </label>
-                        <select
-                          value={feeType}
-                          onChange={(e) => setFeeType(e.target.value as TransactionType)}
-                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
-                        >
-                          <option value="COURSE_FEE">ভাষা কোর্স ফি (N5/N4)</option>
-                          <option value="SERVICE_CHARGE_COE">COE সার্ভিস চার্জ</option>
-                          <option value="REGULAR_SERVICE_CHARGE">রেগুলার প্যাকেজ কিস্তি</option>
-                          <option value="PREMIUM_PACKAGE_ADVANCE">প্রিমিয়াম প্যাকেজ কিস্তি</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="font-semibold text-slate-700">
-                          {tr("পেমেন্ট মাধ্যম", "Payment Method")}
-                        </label>
-                        <select
-                          value={feeMethod}
-                          onChange={(e) => setFeeMethod(e.target.value as any)}
-                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
-                        >
-                          <option value="BKASH">bKash Merchant</option>
-                          <option value="NAGAD">Nagad</option>
-                          <option value="BANK_TRANSFER">Bank Transfer</option>
-                          <option value="CASH_OFFICE">Cash at Office</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="font-semibold text-slate-700">
-                          {tr("TrxID / রেফারেন্স", "TrxID / Reference")}
-                        </label>
-                        <input
-                          type="text"
-                          value={feeTrxRef}
-                          onChange={(e) => setFeeTrxRef(e.target.value)}
-                          placeholder="e.g. BK982341"
-                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono"
-                        />
-                      </div>
-                    </div>
-                    <button
-                      type="submit"
-                      className="w-full rounded-xl bg-emerald-600 py-2.5 text-xs font-semibold text-white hover:bg-emerald-700 transition"
-                    >
-                      {tr("ফি জমা দিন ও মানি রসিদ জেনারেট করুন", "Collect Fee & Issue Official Receipt")}
-                    </button>
-                  </form>
-
-                  {/* Student Payment History Table */}
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-700 mb-2">
-                      {tr(`পূর্বে পরিশোধিত রসিদসমূহ (${studentTransactions.length})`, `Payment Receipt History (${studentTransactions.length})`)}
-                    </h4>
-                    {studentTransactions.length > 0 ? (
-                      <div className="divide-y divide-slate-100 rounded-xl border border-slate-200/80 overflow-hidden text-xs">
-                        {studentTransactions.map((tx) => (
-                          <div
-                            key={tx.id}
-                            className="flex items-center justify-between px-3.5 py-2.5 bg-white"
-                          >
-                            <div>
-                              <span className="font-mono font-semibold text-slate-900">
-                                {tx.receiptNo}
-                              </span>
-                              <span className="text-slate-400 mx-1.5">·</span>
-                              <span className="text-slate-600">{tx.type}</span>
-                              <p className="text-[11px] text-slate-400 font-mono">
-                                {tx.date} · {tx.paymentMethod} ({tx.referenceOrTrx})
-                              </p>
-                            </div>
-                            <span className="font-mono font-bold text-emerald-700 tabular-nums">
-                              +৳{tx.amountBdt.toLocaleString()}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="rounded-xl border border-slate-200/60 bg-slate-50 p-4 text-center text-xs text-slate-400">
-                        {tr("এই শিক্ষার্থীর নামে এখনো কোনো পেমেন্ট রসিদ নেই।", "No payment receipts recorded for this student yet.")}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Right 6 Cols: Direct 10-Step Visa Stage Controller & LMS Progress */}
-              <div className="lg:col-span-6 space-y-5">
-                {/* 10-Step Visa Pipeline Controller */}
-                <div className="rounded-2xl border border-slate-200/80 bg-white p-5 space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900">
-                        {tr("১০-ধাপ ভিসা পাইপলাইন ও জাপানি স্কুল ইন্টারভিউ কন্ট্রোল", "10-Step Visa Pipeline & School Interview Controller")}
-                      </h3>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        {linkedVisa
-                          ? `Tracking ID: ${linkedVisa.trackingNo} · COE: ${linkedVisa.coEStatus}`
-                          : tr("যেকোনো ধাপে ক্লিক করলেই ভিসা পাইপলাইনে ফাইল চালু ও সিঙ্ক হবে", "Select a stage below to activate or advance in the Visa Pipeline")}
-                      </p>
-                    </div>
-                    <Plane className="h-4 w-4 text-slate-400" />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("ভিসা প্রসেসিং ধাপ (Stage 1–10)", "Current Visa Stage (1–10)")}
-                      </label>
-                      <select
-                        value={linkedVisa?.stage || 1}
-                        onChange={(e) =>
-                          handleAdvanceOrSetVisaStage(Number(e.target.value) as VisaStage)
-                        }
-                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-900"
-                      >
-                        {([1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as VisaStage[]).map((st) => (
-                          <option key={st} value={st}>
-                            {VISA_STAGE_LABELS[st][language === "ja" ? "ja" : language === "en" ? "en" : "bn"]}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("টার্গেট জাপানি পার্টনার স্কুল", "Target Partner School")}
-                      </label>
-                      <select
-                        value={partnerSchoolId}
-                        onChange={(e) => {
-                          const sc = partnerSchools.find((s) => s.id === e.target.value);
-                          setPartnerSchoolId(e.target.value);
-                          if (sc) setTargetSchool(sc.name);
-                        }}
-                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
-                      >
-                        <option value="">-- স্কুল নির্বাচন করুন --</option>
-                        {partnerSchools.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.name} ({s.location})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("স্কুল জুম ইন্টারভিউ স্ট্যাটাস", "School Interview Status")}
-                      </label>
-                      <select
-                        value={schoolInterviewStatus}
-                        onChange={(e) => setSchoolInterviewStatus(e.target.value as any)}
-                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold"
-                      >
-                        <option value="NOT_SCHEDULED">নির্ধারিত হয়নি (Not Scheduled)</option>
-                        <option value="SCHEDULED">ইন্টারভিউ শিডিউলড (Scheduled)</option>
-                        <option value="PASSED">ইন্টারভিউ উত্তীর্ণ (Passed ✓)</option>
-                        <option value="RE_INTERVIEW">পুনঃইন্টারভিউ (Re-Interview)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("ইন্টারভিউ তারিখ", "Interview Date")}
-                      </label>
-                      <input
-                        type="date"
-                        value={schoolInterviewDate}
-                        onChange={(e) => setSchoolInterviewDate(e.target.value)}
-                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
-                      />
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <label className="font-semibold text-slate-700">
-                        {tr("দায়িত্বপ্রাপ্ত ভিসা প্রসেসিং অফিসার (HR)", "Assigned Visa Officer")}
-                      </label>
-                      <select
-                        value={assignedVisaOfficerId}
-                        onChange={(e) => setAssignedVisaOfficerId(e.target.value)}
-                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
-                      >
-                        <option value="">-- ভিসা অফিসার নির্বাচন করুন --</option>
-                        {visaOfficers.map((vo) => (
-                          <option key={vo.id} value={vo.id}>
-                            {vo.name} ({vo.role})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* LMS Batch Progress & Attendance Summary */}
-                <div className="rounded-2xl border border-slate-200/80 bg-white p-5 space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900">
-                        {tr("জাপানি ভাষা ব্যাচ (LMS) অগ্রগতি ও উপস্থিতি", "LMS Language Batch Progress & Attendance")}
-                      </h3>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        {linkedLms
-                          ? `Enrollment: ${linkedLms.enrollmentNo} · Sensei: ${linkedLms.assignedSenseiName || senseis[0]?.name || "Assigned"}`
-                          : tr("শিক্ষার্থীর ক্লাস উপস্থিতি ও সিলেবাস সম্পন্ন করার হার", "Track syllabus completion and classroom attendance")}
-                      </p>
-                    </div>
-                    <BookOpen className="h-4 w-4 text-slate-400" />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("ভর্তিকৃত ব্যাচ / সেশন", "Active Batch / Session")}
-                      </label>
-                      <input
-                        type="text"
-                        value={enrolledBatchOrSession}
-                        onChange={(e) => setEnrolledBatchOrSession(e.target.value)}
-                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-medium"
-                      />
-                    </div>
-                    <div>
-                      <label className="font-semibold text-slate-700">
-                        {tr("কোর্স লেভেল", "Course Level")}
-                      </label>
-                      <select
-                        value={courseLevel}
-                        onChange={(e) => setCourseLevel(e.target.value as any)}
-                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold"
-                      >
-                        <option value="N5">JLPT N5 (Minna no Nihongo I)</option>
-                        <option value="N4">JLPT N4 (Minna no Nihongo II)</option>
-                        <option value="IRODORI">Irodori Spoken Japanese</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between font-semibold text-slate-700">
-                        <span>{tr("সিলেবাস অগ্রগতি (LMS)", "Syllabus Progress")}</span>
-                        <span className="font-mono tabular-nums">{lmsProgressPct}%</span>
-                      </div>
-                      <input
-                        type="range"
-                        min={0}
-                        max={100}
-                        value={lmsProgressPct}
-                        onChange={(e) => setLmsProgressPct(Number(e.target.value))}
-                        className="mt-2 w-full accent-slate-900"
-                      />
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between font-semibold text-slate-700">
-                        <span>{tr("ক্লাস উপস্থিতির হার (Attendance)", "Class Attendance")}</span>
-                        <span className="font-mono tabular-nums">{attendancePct}%</span>
-                      </div>
-                      <input
-                        type="range"
-                        min={0}
-                        max={100}
-                        value={attendancePct}
-                        onChange={(e) => setAttendancePct(Number(e.target.value))}
-                        className="mt-2 w-full accent-emerald-600"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setIsEditingModalOpen(false)}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+              >
+                {tr("বাতিল", "Cancel")}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  persistLeadChanges(
+                    {},
+                    tr(
+                      "প্রোফাইল আপডেট ও Google Sheet-এ সেভ হয়েছে",
+                      "Profile changes saved & synced to Google Sheet"
+                    )
+                  );
+                  setIsEditingModalOpen(false);
+                }}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-5 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition cursor-pointer"
+              >
+                <Save className="h-3.5 w-3.5" />
+                <span>{tr("সেভ করুন", "Save Changes")}</span>
+              </button>
             </div>
-          )}
-
-          {/* -------------------------------------------------------------------
-              TAB 4: COUNSELING TIMELINE, FOLLOW-UP & 1-CLICK WHATSAPP TEMPLATES
-              ------------------------------------------------------------------- */}
-          {activeTab === "timeline" && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Left 7 Cols: Add Activity & Chronological Counseling Feed */}
-              <div className="lg:col-span-7 space-y-5">
-                <div className="rounded-2xl border border-slate-200/80 bg-white p-5 space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3">
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900">
-                        {tr("কাউন্সেলিং ও কল অ্যাক্টিভিটি লগ (Timestamped Timeline)", "Timestamped Counseling & Call Activity Log")}
-                      </h3>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        {tr("প্রার্থীর সাথে প্রতিটি ফোনালাপ, অফিস ভিজিট ও মিটিং নোট তারিখসহ সংরক্ষণ করুন", "Record every phone call, office visit, and guardian meeting with timestamps")}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                      <span className="font-semibold text-slate-600">
-                        {tr("পরবর্তী ফলো-আপ:", "Next Follow-up:", "次回フォロー:")}
-                      </span>
-                      <input
-                        type="date"
-                        value={followUpDate}
-                        onChange={(e) => setFollowUpDate(e.target.value)}
-                        className="rounded-lg border border-slate-200 px-2.5 py-1 font-mono text-xs"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleSetQuickFollowUp(1)}
-                        className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100"
-                      >
-                        {tr("আগামীকাল", "Tomorrow", "明日")}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleSetQuickFollowUp(3)}
-                        className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100"
-                      >
-                        +3d
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleSetQuickFollowUp(7)}
-                        className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100"
-                      >
-                        +7d
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* New Activity Input Box */}
-                  <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5 space-y-3 text-xs">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {(
-                        [
-                          { id: "CALL", labelBn: "ফোনালাপ (Phone Call)" },
-                          { id: "VISIT", labelBn: "অফিস ভিজিট (Office Visit)" },
-                          { id: "MEETING_NOTE", labelBn: "ভয়েস / মিটিং সামারি" },
-                          { id: "DOC_UPDATE", labelBn: "ডকুমেন্ট ফলো-আপ" },
-                        ] as const
-                      ).map((item) => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => setNewActivityType(item.id)}
-                          className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
-                            newActivityType === item.id
-                              ? "bg-slate-900 text-white"
-                              : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100"
-                          }`}
-                        >
-                          {item.labelBn}
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={newActivitySummary}
-                        onChange={(e) => setNewActivitySummary(e.target.value)}
-                        placeholder={
-                          tr("কথোপকথনের সারসংক্ষেপ লিখুন (যেমন: অভিভাবক আগামীকাল পাসপোর্ট ও মার্কশিট নিয়ে আসবেন)...", "Write call or meeting summary...")
-                        }
-                        className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleAddActivityEntry()}
-                        className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition shrink-0"
-                      >
-                        {tr("+ লগ যুক্ত করুন", "+ Log Entry")}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Activity Timeline List */}
-                  <div className="divide-y divide-slate-100 border border-slate-100 rounded-xl overflow-hidden">
-                    {activityLog.map((act) => (
-                      <div key={act.id} className="p-3.5 bg-white hover:bg-slate-50/60 transition">
-                        <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono">
-                          <span className="font-sans font-semibold text-slate-700">
-                            {act.type} · {act.counselorName}
-                          </span>
-                          <span>{new Date(act.createdAt).toLocaleString()}</span>
-                        </div>
-                        <p className="mt-1 text-xs text-slate-800 leading-relaxed">{act.summary}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Right 5 Cols: 1-Click Contextual WhatsApp Templates */}
-              <div className="lg:col-span-5 space-y-5">
-                <div className="rounded-2xl border border-slate-200/80 bg-white p-5 space-y-4">
-                  <div className="border-b border-slate-100 pb-3">
-                    <h3 className="text-sm font-bold text-slate-900">
-                      {tr("১-ক্লিক প্রফেশনাল WhatsApp মেসেজ টেমপ্লেট", "1-Click Contextual WhatsApp Templates")}
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      {tr("যেকোনো টেমপ্লেটে ক্লিক করলে প্রার্থীর নাম ও তথ্যসহ WhatsApp ওপেন হবে এবং টাইমলাইনে রেকর্ড থাকবে", "Click any template to send via WhatsApp and auto-log in the timeline")}
-                    </p>
-                  </div>
-
-                  <div className="space-y-3">
-                    {whatsappTemplates.map((tpl) => {
-                      const href = `https://wa.me/${cleanWaNumber}?text=${encodeURIComponent(tpl.message)}`;
-                      return (
-                        <div
-                          key={tpl.id}
-                          className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-3.5 space-y-2"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-xs font-bold text-slate-900">
-                              {language === "ja" ? ((tpl as any).titleJa || tpl.titleEn) : isBn ? tpl.titleBn : tpl.titleEn}
-                            </span>
-                            <a
-                              href={href}
-                              target="_blank"
-                              rel="noreferrer"
-                              onClick={() =>
-                                handleAddActivityEntry(
-                                  "WHATSAPP",
-                                  `WhatsApp মেসেজ পাঠানো হয়েছে: ${tpl.titleBn}`,
-                                )
-                              }
-                              className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-emerald-700 transition shrink-0"
-                            >
-                              <Send className="h-3 w-3" />
-                              <span>WhatsApp পাঠান</span>
-                            </a>
-                          </div>
-                          <p className="text-[11px] text-slate-600 whitespace-pre-line line-clamp-3">
-                            {tpl.message}
-                          </p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* -------------------------------------------------------------------
-              TAB 5: PORTAL LOGIN ACCESS & PRINTABLE OFFICIAL ASSESSMENT SHEET
-              ------------------------------------------------------------------- */}
-          {activeTab === "access_print" && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Left 5 Cols: Portal Login Credentials & Permissions */}
-              <div className="lg:col-span-5 rounded-2xl border border-slate-200/80 bg-white p-5 space-y-4">
-                <div className="border-b border-slate-100 pb-3">
-                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <KeyRound className="h-4 w-4 text-slate-700" />
-                    <span>
-                      {tr("স্টুডেন্ট পোর্টাল লগইন ও অ্যাক্সেস কন্ট্রোল", "Student Portal Login & Access Control")}
-                    </span>
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {tr("শিক্ষার্থীকে পোর্টাল আইডি ও পাসওয়ার্ড দিয়ে তার নিজস্ব ফাইল ও ক্লাসরুম অ্যাক্সেস দিন", "Provision student portal credentials and module permissions")}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <label
-                    className={`flex items-start gap-2.5 rounded-xl border p-3 cursor-pointer transition ${
-                      isCourseEnrolled
-                        ? "border-emerald-600 bg-emerald-50/50"
-                        : "border-slate-200 bg-white"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isCourseEnrolled}
-                      onChange={(e) => setIsCourseEnrolled(e.target.checked)}
-                      className="mt-0.5 h-4 w-4 accent-emerald-600"
-                    />
-                    <div>
-                      <p className="font-bold text-slate-900">
-                        {tr("ভাষা কোর্সে ভর্তি", "Course Enrolled")}
-                      </p>
-                      <p className="text-[10px] text-slate-500">LMS ক্লাসরুম চালু হবে</p>
-                    </div>
-                  </label>
-
-                  <label
-                    className={`flex items-start gap-2.5 rounded-xl border p-3 cursor-pointer transition ${
-                      isFileOpened
-                        ? "border-emerald-600 bg-emerald-50/50"
-                        : "border-slate-200 bg-white"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isFileOpened}
-                      onChange={(e) => setIsFileOpened(e.target.checked)}
-                      className="mt-0.5 h-4 w-4 accent-emerald-600"
-                    />
-                    <div>
-                      <p className="font-bold text-slate-900">
-                        {tr("ভিসা ফাইল ওপেন", "Visa File Opened")}
-                      </p>
-                      <p className="text-[10px] text-slate-500">১০-ধাপ বোর্ডে যুক্ত হবে</p>
-                    </div>
-                  </label>
-                </div>
-
-                <div className="space-y-3 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-700">
-                      {tr("লগইন ইমেইল ও পাসওয়ার্ড", "Login Credentials")}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={generateRandomPassword}
-                      className="rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-200"
-                    >
-                      {tr("নতুন পাসওয়ার্ড জেনারেট", "Generate Password")}
-                    </button>
-                  </div>
-
-                  <div>
-                    <label className="font-semibold text-slate-600">Login Email / User ID *</label>
-                    <input
-                      type="text"
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono font-bold text-slate-900"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="font-semibold text-slate-600">Login Password *</label>
-                    <input
-                      type="text"
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono font-bold text-emerald-800"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="font-semibold text-slate-600">
-                      {tr("আজকের প্রাথমিক পেমেন্ট জমা (যদি থাকে)", "Initial Payment Today (BDT)")}
-                    </label>
-                    <input
-                      type="number"
-                      min={0}
-                      step={1000}
-                      value={initialPaymentBdt}
-                      onChange={(e) => setInitialPaymentBdt(Number(e.target.value))}
-                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono font-bold tabular-nums"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5 pt-2">
-                    <p className="font-semibold text-slate-700">
-                      {tr("পোর্টাল মডিউল পারমিশন:", "Allowed Student Tabs:")}
-                    </p>
-                    {(
-                      [
-                        { id: "my_profile" as DashboardTabId, label: "My Profile & File Tracker" },
-                        { id: "visa" as DashboardTabId, label: "10-Step Visa Pipeline Tracker" },
-                        { id: "lms" as DashboardTabId, label: "Language Course & LMS Classroom" },
-                        { id: "store_blog" as DashboardTabId, label: "Bookstore & Visa Guidelines" },
-                      ] as const
-                    ).map((tb) => (
-                      <label
-                        key={tb.id}
-                        className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={allowedTabs.includes(tb.id)}
-                          onChange={() => toggleTabPermission(tb.id)}
-                          className="h-3.5 w-3.5 accent-slate-900"
-                        />
-                        <span className="font-medium text-slate-800">{tb.label}</span>
-                      </label>
-                    ))}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleProvisionLoginAndAdmission}
-                    className="w-full rounded-xl bg-slate-900 py-3 text-xs font-bold text-white hover:bg-slate-800 transition"
-                  >
-                    {tr("ভর্তি কনফার্ম ও লগইন অ্যাক্সেস চালু করুন", "Confirm Admission & Activate Portal Login")}
-                  </button>
-                </div>
-              </div>
-
-              {/* Right 7 Cols: Printable Official Student Assessment & Admission Dossier */}
-              <div className="lg:col-span-7 rounded-2xl border border-slate-200/80 bg-white p-6 space-y-5">
-                <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-                  <div>
-                    <p className="text-[11px] font-bold text-emerald-700">
-                      KABIR NEW LIFE TRAINING CENTER (KNLTC)
-                    </p>
-                    <h3 className="text-base font-bold text-slate-900">
-                      Official Japan Visa Student Assessment & File Dossier
-                    </h3>
-                    <p className="text-xs text-slate-500 font-mono">
-                      File ID: {lead.fileTrackingNo || lead.id} · Date:{" "}
-                      {new Date().toISOString().slice(0, 10)}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => window.print()}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition shrink-0"
-                  >
-                    <Printer className="h-3.5 w-3.5" />
-                    <span>{tr("প্রিন্ট করুন (A4)", "Print Dossier")}</span>
-                  </button>
-                </div>
-
-                {/* Printable Bio & Eligibility Summary Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs border-b border-slate-100 pb-4">
-                  <div>
-                    <span className="text-slate-400 block">Candidate Name</span>
-                    <span className="font-bold text-slate-900">{name}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block">Phone / WhatsApp</span>
-                    <span className="font-mono font-semibold text-slate-900">{phone}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block">Passport No</span>
-                    <span className="font-mono font-semibold text-slate-900">
-                      {passportNo || "Pending"}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block">Academic GPA & Gap</span>
-                    <span className="font-mono font-semibold text-slate-900">
-                      SSC {sscGpa} · HSC {hscGpa} ({studyGapYears}y gap)
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block">Japanese Level / Exam</span>
-                    <span className="font-semibold text-slate-900">
-                      {japaneseProficiency} ({japaneseExamType})
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block">Eligibility Score</span>
-                    <span className="font-mono font-bold text-emerald-700">
-                      {eligibility.totalScore}% ({eligibility.tier})
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block">Target Partner School</span>
-                    <span className="font-semibold text-slate-900">
-                      {targetSchool || "To Be Assigned"}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block">Sponsor & Bank Solvency</span>
-                    <span className="font-mono font-semibold text-slate-900">
-                      {guardianName || sponsorRelation} · ৳{sponsorBankBalanceBdt.toLocaleString()}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block">Contract / Paid / Due</span>
-                    <span className="font-mono font-semibold text-slate-900">
-                      ৳{contractAmountBdt.toLocaleString()} / ৳{livePaidAmountBdt.toLocaleString()} / Due ৳
-                      {liveDueAmountBdt.toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Document Verification Summary */}
-                <div className="text-xs">
-                  <p className="font-bold text-slate-800 mb-2">
-                    Document Verification Status ({eligibility.verifiedDocsCount}/
-                    {eligibility.totalDocsCount} Verified)
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                    {documentChecklist.map((d) => (
-                      <div
-                        key={d.id}
-                        className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/70 px-2.5 py-1.5 text-[11px]"
-                      >
-                        <span className="truncate pr-2 text-slate-700">{d.titleBn}</span>
-                        <span
-                          className={`font-mono font-bold shrink-0 ${
-                            d.status === "VERIFIED"
-                              ? "text-emerald-700"
-                              : d.status === "SUBMITTED"
-                                ? "text-amber-700"
-                                : "text-red-600"
-                          }`}
-                        >
-                          {d.status}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Official Signature Blocks */}
-                <div className="pt-8 grid grid-cols-3 gap-6 text-center text-[11px] text-slate-500">
-                  <div className="border-t border-slate-300 pt-1.5">
-                    Candidate Signature
-                  </div>
-                  <div className="border-t border-slate-300 pt-1.5">
-                    Guardian / Sponsor Signature
-                  </div>
-                  <div className="border-t border-slate-300 pt-1.5">
-                    Counselor ({assignedTo})
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

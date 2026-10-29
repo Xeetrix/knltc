@@ -89,6 +89,15 @@ export interface LeadDocumentItem {
   updatedAt?: string;
 }
 
+export interface ProfileTaskItem {
+  id: string;
+  title: string;
+  dueDate?: string;
+  completed: boolean;
+  category?: "CALL" | "DOCUMENT" | "INTERVIEW" | "FINANCE" | "GENERAL";
+  assignee?: string;
+}
+
 export interface LeadActivityItem {
   id: string;
   type:
@@ -102,6 +111,9 @@ export interface LeadActivityItem {
   summary: string;
   counselorName: string;
   createdAt: string;
+  fromStatus?: string;
+  toStatus?: string;
+  note?: string;
 }
 
 export interface CrmLead {
@@ -179,9 +191,11 @@ export interface CrmLead {
   schoolInterviewStatus?: "NOT_SCHEDULED" | "SCHEDULED" | "PASSED" | "RE_INTERVIEW";
   schoolInterviewDate?: string;
   attendancePercentage?: number;
-  // 12-Item Document Checklist & Activity Timeline
+  // 12-Item Document Checklist, Tasks, AI Summary & Activity Timeline
   documentChecklist?: LeadDocumentItem[];
   activityLog?: LeadActivityItem[];
+  tasks?: ProfileTaskItem[];
+  aiSummary?: string;
   hasLoginAccess?: boolean;
   loginEmail?: string;
   loginPassword?: string;
@@ -326,7 +340,11 @@ export interface JapanesePartnerSchool {
   intakeQuota?: number; // e.g. 20 seats per intake
   totalCommissionReceivedYen: number;
   status: "ACTIVE_PARTNER" | "IN_REVIEW";
+  priority?: LeadPriority;
   documents?: PartnerDocumentItem[];
+  tasks?: ProfileTaskItem[];
+  activityLog?: LeadActivityItem[];
+  aiSummary?: string;
   notes?: string;
 }
 
@@ -362,7 +380,12 @@ export interface B2bAgent {
   agreedCommissionBdt: number;
   pendingCommissionBdt: number;
   paidCommissionBdt: number;
+  status?: "ACTIVE" | "UNDER_VERIFICATION" | "SUSPENDED";
+  priority?: LeadPriority;
   documents?: PartnerDocumentItem[];
+  tasks?: ProfileTaskItem[];
+  activityLog?: LeadActivityItem[];
+  aiSummary?: string;
   portalAccountId?: string;
   notes?: string;
 }
@@ -1157,8 +1180,10 @@ export function normalizeSheetLeadPriority(raw: any, status?: LeadStatus): LeadP
 
 export function formatLeadInterestLabel(
   interest: ServiceInterest | string | undefined,
-  lang: "bn" | "en" | "ja" = "en",
+  lang: "bn" | "en" | "ja" | boolean = "en",
 ): string {
+  const resolvedLang: "bn" | "en" | "ja" =
+    typeof lang === "boolean" ? (lang ? "bn" : "en") : lang;
   const code = normalizeSheetLeadInterest(interest);
   const map: Record<ServiceInterest, { bn: string; en: string; ja: string }> = {
     STUDENT_VISA_REGULAR: {
@@ -1207,7 +1232,7 @@ export function formatLeadInterestLabel(
       ja: "日本語コース（N4）",
     },
   };
-  return map[code]?.[lang] || map.STUDENT_VISA_REGULAR[lang];
+  return map[code]?.[resolvedLang] || map.STUDENT_VISA_REGULAR[resolvedLang];
 }
 
 export function formatLeadSourceLabel(rawSource: string | undefined): string {
@@ -1227,8 +1252,10 @@ export function formatLeadSourceLabel(rawSource: string | undefined): string {
 
 export function formatProficiencyLabel(
   prof: CrmLead["japaneseProficiency"] | string | undefined,
-  lang: "bn" | "en" | "ja" = "en",
+  lang: "bn" | "en" | "ja" | boolean = "en",
 ): string {
+  const resolvedLang: "bn" | "en" | "ja" =
+    typeof lang === "boolean" ? (lang ? "bn" : "en") : lang;
   const code = normalizeSheetJapaneseProficiency(prof);
   const map: Record<CrmLead["japaneseProficiency"], { bn: string; en: string; ja: string }> = {
     NONE: { bn: "বিগিনার (No N5)", en: "Beginner (N5 Prep)", ja: "初学者" },
@@ -1237,7 +1264,7 @@ export function formatProficiencyLabel(
     PASSED_N4: { bn: "JLPT N4 পাস", en: "JLPT N4 Passed", ja: "N4合格" },
     NAT_JFT: { bn: "NAT / JFT পাস", en: "NAT / JFT Passed", ja: "JFT/NAT合格" },
   };
-  return map[code]?.[lang] || map.NONE[lang];
+  return map[code]?.[resolvedLang] || map.NONE[resolvedLang];
 }
 
 function isIsoDateLike(val: any): boolean {
@@ -3485,6 +3512,9 @@ export function addLeadActivityLog(
     type: LeadActivityItem["type"];
     summary: string;
     counselorName: string;
+    fromStatus?: string;
+    toStatus?: string;
+    note?: string;
   },
 ): CrmLead | null {
   const store = getCmsStore();
@@ -3497,6 +3527,9 @@ export function addLeadActivityLog(
     summary: entry.summary,
     counselorName: entry.counselorName,
     createdAt: new Date().toISOString(),
+    fromStatus: entry.fromStatus,
+    toStatus: entry.toStatus,
+    note: entry.note,
   };
 
   lead.activityLog = [newEntry, ...(lead.activityLog || [])];

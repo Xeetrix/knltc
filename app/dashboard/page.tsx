@@ -1228,6 +1228,9 @@ export default function DashboardPage() {
                         type="button"
                         onClick={() => {
                           setActiveTab(tab.id as DashboardTabId);
+                          setSelectedLeadForProfile(null);
+                          setSelectedSchoolForProfile(null);
+                          setSelectedAgentForProfile(null);
                           setMobileNavOpen(false);
                         }}
                         className={`relative w-full flex items-center justify-between gap-2.5 rounded-xl px-3 py-2 text-xs font-medium transition-colors text-left ${
@@ -1435,7 +1438,79 @@ export default function DashboardPage() {
 
         {/* Main Animated Workspace Viewport */}
         <main className="flex-1 mx-auto w-full max-w-7xl px-4 py-6 sm:px-6">
-
+          {selectedLeadForProfile ? (
+            <LeadProfileModal
+              key={selectedLeadForProfile.id}
+              lead={selectedLeadForProfile}
+              allLeads={filteredLeads}
+              backLabel={
+                activeTab === "visa"
+                  ? tr("ভিসা কানবানে ফিরে যান", "Back to Visa Kanban", "ビザカンバンへ戻る")
+                  : tr("লিড তালিকায় ফিরে যান", "Back to Leads", "リード一覧へ戻る")
+              }
+              onSelectLead={(nextLead) => setSelectedLeadForProfile(nextLead)}
+              onClose={() => setSelectedLeadForProfile(null)}
+              onSaved={(msg) => {
+                const updatedStore = getCmsStore();
+                setStore({ ...updatedStore });
+                const refreshed = updatedStore.crmLeads.find(
+                  (l) => l.id === selectedLeadForProfile.id
+                );
+                if (refreshed) setSelectedLeadForProfile(refreshed);
+                showToast(msg);
+              }}
+              onDeleted={(deletedName) => {
+                setStore({ ...getCmsStore() });
+                showToast(
+                  tr(
+                    `"${deletedName}"-এর লিড প্রোফাইল মুছে ফেলা হয়েছে`,
+                    `Deleted lead profile for "${deletedName}"`,
+                    `「${deletedName}」のリードを削除しました`
+                  )
+                );
+              }}
+            />
+          ) : selectedSchoolForProfile ? (
+            <PartnerProfileModal
+              key={selectedSchoolForProfile.id}
+              mode="SCHOOL"
+              school={selectedSchoolForProfile}
+              allLeads={store.crmLeads}
+              allVisaApplicants={store.visaApplicants}
+              allTransactions={store.transactions}
+              language={language}
+              onClose={() => setSelectedSchoolForProfile(null)}
+              onRefreshStore={() => {
+                const updatedStore = getCmsStore();
+                setStore({ ...updatedStore });
+                const refreshed = updatedStore.partnerSchools.find(
+                  (s) => s.id === selectedSchoolForProfile.id
+                );
+                if (refreshed) setSelectedSchoolForProfile(refreshed);
+              }}
+              onShowToast={(msg, sub) => showToast(msg, sub)}
+            />
+          ) : selectedAgentForProfile ? (
+            <PartnerProfileModal
+              key={selectedAgentForProfile.id}
+              mode="AGENT"
+              agent={selectedAgentForProfile}
+              allLeads={store.crmLeads}
+              allVisaApplicants={store.visaApplicants}
+              allTransactions={store.transactions}
+              language={language}
+              onClose={() => setSelectedAgentForProfile(null)}
+              onRefreshStore={() => {
+                const updatedStore = getCmsStore();
+                setStore({ ...updatedStore });
+                const refreshed = updatedStore.b2bAgents.find(
+                  (a) => a.id === selectedAgentForProfile.id
+                );
+                if (refreshed) setSelectedAgentForProfile(refreshed);
+              }}
+              onShowToast={(msg, sub) => showToast(msg, sub)}
+            />
+          ) : (
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
@@ -3727,7 +3802,24 @@ export default function DashboardPage() {
                                           : t.visa.packageRegular}
                                       </span>
                                     </div>
-                                    <p className="font-bold text-xs text-slate-900 mt-1">{app.name}</p>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const matched = store.crmLeads.find(
+                                          (l) =>
+                                            l.id === app.leadId ||
+                                            l.id === app.linkedLeadId ||
+                                            l.phone === app.phone ||
+                                            l.name.toLowerCase() === app.name.toLowerCase()
+                                        );
+                                        if (matched) {
+                                          setSelectedLeadForProfile(matched);
+                                        }
+                                      }}
+                                      className="font-bold text-xs text-slate-900 hover:text-indigo-600 transition text-left mt-1 cursor-pointer block"
+                                    >
+                                      {app.name}
+                                    </button>
                                     <p className="text-[11px] font-medium text-slate-600 truncate">
                                       🏫 {app.targetSchool}
                                     </p>
@@ -6211,35 +6303,6 @@ export default function DashboardPage() {
               )}
             </motion.div>
           </AnimatePresence>
-
-          {/* Individual Lead Profile Modal */}
-          {selectedLeadForProfile && (
-            <LeadProfileModal
-              key={selectedLeadForProfile.id}
-              lead={selectedLeadForProfile}
-              allLeads={filteredLeads}
-              onSelectLead={(nextLead) => setSelectedLeadForProfile(nextLead)}
-              onClose={() => setSelectedLeadForProfile(null)}
-              onSaved={(msg) => {
-                const updatedStore = getCmsStore();
-                setStore({ ...updatedStore });
-                const refreshed = updatedStore.crmLeads.find(
-                  (l) => l.id === selectedLeadForProfile.id
-                );
-                if (refreshed) setSelectedLeadForProfile(refreshed);
-                showToast(msg);
-              }}
-              onDeleted={(deletedName) => {
-                setStore({ ...getCmsStore() });
-                showToast(
-                  tr(
-                    `"${deletedName}"-এর লিড প্রোফাইল মুছে ফেলা হয়েছে`,
-                    `Deleted lead profile for "${deletedName}"`,
-                    `「${deletedName}」のリードを削除しました`
-                  )
-                );
-              }}
-            />
           )}
 
           {/* CRM Google Sheets / CSV Import & Export Modal */}
@@ -6257,50 +6320,6 @@ export default function DashboardPage() {
                 setCrmImportExportMode(null);
                 showToast(summaryMsg);
               }}
-            />
-          )}
-
-          {/* 360° Partner School / University Profile Command Center Modal */}
-          {selectedSchoolForProfile && (
-            <PartnerProfileModal
-              mode="SCHOOL"
-              school={selectedSchoolForProfile}
-              allLeads={store.crmLeads}
-              allVisaApplicants={store.visaApplicants}
-              allTransactions={store.transactions}
-              language={language}
-              onClose={() => setSelectedSchoolForProfile(null)}
-              onRefreshStore={() => {
-                const updatedStore = getCmsStore();
-                setStore({ ...updatedStore });
-                const refreshed = updatedStore.partnerSchools.find(
-                  (s) => s.id === selectedSchoolForProfile.id,
-                );
-                if (refreshed) setSelectedSchoolForProfile(refreshed);
-              }}
-              onShowToast={(msg, sub) => showToast(msg, sub)}
-            />
-          )}
-
-          {/* 360° B2B Agent Profile Command Center Modal */}
-          {selectedAgentForProfile && (
-            <PartnerProfileModal
-              mode="AGENT"
-              agent={selectedAgentForProfile}
-              allLeads={store.crmLeads}
-              allVisaApplicants={store.visaApplicants}
-              allTransactions={store.transactions}
-              language={language}
-              onClose={() => setSelectedAgentForProfile(null)}
-              onRefreshStore={() => {
-                const updatedStore = getCmsStore();
-                setStore({ ...updatedStore });
-                const refreshed = updatedStore.b2bAgents.find(
-                  (a) => a.id === selectedAgentForProfile.id,
-                );
-                if (refreshed) setSelectedAgentForProfile(refreshed);
-              }}
-              onShowToast={(msg, sub) => showToast(msg, sub)}
             />
           )}
         </main>

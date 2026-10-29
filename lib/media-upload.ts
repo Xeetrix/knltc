@@ -99,8 +99,12 @@ export async function compressImageToDataUrl(
  */
 export async function uploadMediaImage(
   file: File,
-  options?: UploadOptions,
+  rawOptions?: UploadOptions | string,
 ): Promise<UploadResult> {
+  const options: UploadOptions | undefined =
+    typeof rawOptions === "string"
+      ? { bucket: rawOptions, folderName: rawOptions }
+      : rawOptions;
   const maxDim = options?.maxDimension || 800;
   const quality = options?.quality || 0.85;
   const folderName = options?.folderName || options?.bucket || "KNLTC_Images";
@@ -158,8 +162,12 @@ export async function uploadMediaImage(
  */
 export async function uploadDocumentFile(
   file: File,
-  options?: UploadOptions,
+  rawOptions?: UploadOptions | string,
 ): Promise<UploadResult> {
+  const options: UploadOptions | undefined =
+    typeof rawOptions === "string"
+      ? { bucket: rawOptions, folderName: rawOptions }
+      : rawOptions;
   const trackingNo = options?.trackingNo || "knltc-doc";
   const docType = options?.docType || "visa_document";
   const folderName = options?.folderName || "KNLTC_Visa_And_Student_Docs";
