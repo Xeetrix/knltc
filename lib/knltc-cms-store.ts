@@ -1147,6 +1147,105 @@ export function normalizeSheetJapaneseProficiency(raw: any): CrmLead["japanesePr
   return "NONE";
 }
 
+export function normalizeSheetLeadPriority(raw: any, status?: LeadStatus): LeadPriority {
+  const p = String(raw || "").trim().toUpperCase();
+  if (p === "HOT" || p === "HIGH" || p === "URGENT") return "HOT";
+  if (p === "COLD" || p === "LOW") return "COLD";
+  if (p === "WARM" || p === "MEDIUM" || p === "NORMAL") return "WARM";
+  return status === "ADMITTED" ? "HOT" : "WARM";
+}
+
+export function formatLeadInterestLabel(
+  interest: ServiceInterest | string | undefined,
+  lang: "bn" | "en" | "ja" = "en",
+): string {
+  const code = normalizeSheetLeadInterest(interest);
+  const map: Record<ServiceInterest, { bn: string; en: string; ja: string }> = {
+    STUDENT_VISA_REGULAR: {
+      bn: "স্টুডেন্ট ভিসা (রেগুলার)",
+      en: "Student Visa • Regular",
+      ja: "留学ビザ（一般）",
+    },
+    STUDENT_VISA_PREMIUM: {
+      bn: "স্টুডেন্ট ভিসা (প্রিমিয়াম)",
+      en: "Student Visa • Premium",
+      ja: "留学ビザ（プレミアム）",
+    },
+    SSW_CONSTRUCTION_SPECIAL: {
+      bn: "SSW কনস্ট্রাকশন ভিসা",
+      en: "SSW • Construction",
+      ja: "特定技能・建設",
+    },
+    SSW_CAREGIVER: {
+      bn: "SSW নার্সিং কেয়ারগিভার",
+      en: "SSW • Nursing Care",
+      ja: "特定技能・介護",
+    },
+    SSW_AGRICULTURE: {
+      bn: "SSW এগ্রিকালচার ও ফার্মিং",
+      en: "SSW • Agriculture",
+      ja: "特定技能・農業",
+    },
+    SSW_FOOD_SERVICE: {
+      bn: "SSW ফুড সার্ভিস ও রেস্টুরেন্ট",
+      en: "SSW • Food Service",
+      ja: "特定技能・外食業",
+    },
+    TITP_TECHNICAL: {
+      bn: "TITP টেকনিক্যাল ইন্টার্ন",
+      en: "TITP • Technical Intern",
+      ja: "技能実習（TITP）",
+    },
+    JAPANESE_N5: {
+      bn: "জাপানি ভাষা কোর্স (N5)",
+      en: "Japanese Language • N5",
+      ja: "日本語コース（N5）",
+    },
+    JAPANESE_N4: {
+      bn: "জাপানি ভাষা কোর্স (N4)",
+      en: "Japanese Language • N4",
+      ja: "日本語コース（N4）",
+    },
+  };
+  return map[code]?.[lang] || map.STUDENT_VISA_REGULAR[lang];
+}
+
+export function formatLeadSourceLabel(rawSource: string | undefined): string {
+  const s = String(rawSource || "").trim();
+  if (!s || /^\d{4}-\d{2}-\d{2}/.test(s)) return "Google Sheet";
+  const upper = s.toUpperCase();
+  if (upper === "FACEBOOK_META" || upper === "FACEBOOK_AD") return "Meta Lead Ads";
+  if (upper === "WHATSAPP_DIRECT") return "WhatsApp Direct";
+  if (upper === "WEBSITE_FORM" || upper === "WEBSITE_CALCULATOR") return "Website Portal";
+  if (upper === "WALK_IN" || upper === "WALK_IN_DHAKA") return "Walk-in • Dhaka HQ";
+  if (upper === "WALK_IN_KHULNA") return "Walk-in • Khulna";
+  if (upper === "B2B_REFERRAL" || upper === "SUB_AGENT" || upper === "SUB_AGENT_REFERRAL")
+    return "B2B Partner Referral";
+  if (upper === "GOOGLE_SHEET") return "Google Sheet Sync";
+  return s.replace(/_/g, " ");
+}
+
+export function formatProficiencyLabel(
+  prof: CrmLead["japaneseProficiency"] | string | undefined,
+  lang: "bn" | "en" | "ja" = "en",
+): string {
+  const code = normalizeSheetJapaneseProficiency(prof);
+  const map: Record<CrmLead["japaneseProficiency"], { bn: string; en: string; ja: string }> = {
+    NONE: { bn: "বিগিনার (No N5)", en: "Beginner (N5 Prep)", ja: "初学者" },
+    LEARNING_N5: { bn: "N5 চলমান", en: "Learning N5", ja: "N5学習中" },
+    PASSED_N5: { bn: "JLPT N5 পাস", en: "JLPT N5 Passed", ja: "N5合格" },
+    PASSED_N4: { bn: "JLPT N4 পাস", en: "JLPT N4 Passed", ja: "N4合格" },
+    NAT_JFT: { bn: "NAT / JFT পাস", en: "NAT / JFT Passed", ja: "JFT/NAT合格" },
+  };
+  return map[code]?.[lang] || map.NONE[lang];
+}
+
+function isIsoDateLike(val: any): boolean {
+  if (!val) return false;
+  const s = String(val).trim();
+  return /^\d{4}-\d{2}-\d{2}/.test(s) || s.includes("T18:00:00") || s.endsWith(".000Z");
+}
+
 export function serializeLeadToSheetRow(lead: CrmLead): Record<string, any> {
   const defaultContract =
     lead.contractAmountBdt ??
@@ -1168,23 +1267,23 @@ export function serializeLeadToSheetRow(lead: CrmLead): Record<string, any> {
     source: lead.source || "FACEBOOK_META",
     interest: lead.interest || "STUDENT_VISA_REGULAR",
     status: lead.status || "NEW",
-    priority: lead.priority || "WARM",
-    passport_no: lead.passportNo || "",
     education: lead.education || "HSC",
     japanese_proficiency: lead.japaneseProficiency || "NONE",
     study_gap_years: Number(lead.studyGapYears) || 0,
     assigned_to: lead.assignedTo || "শেখ বাসেত",
     branch: lead.branch || "DHK-HQ",
+    notes: lead.notes || "",
+    follow_up_date: lead.followUpDate ? String(lead.followUpDate).slice(0, 10) : "",
+    last_contacted_at: lead.lastContactedAt || new Date().toISOString(),
+    created_at: lead.createdAt || new Date().toISOString(),
+    priority: lead.priority || "WARM",
+    passport_no: lead.passportNo || "",
     target_school: lead.targetSchool || lead.targetSchoolName || "",
     b2b_agent_name: lead.b2bAgentName || lead.referredByAgentName || "",
     contract_amount_bdt: defaultContract,
     paid_amount_bdt: paid,
     due_amount_bdt: due,
-    notes: lead.notes || "",
-    follow_up_date: lead.followUpDate ? String(lead.followUpDate).slice(0, 10) : new Date().toISOString().slice(0, 10),
-    last_contacted_at: lead.lastContactedAt || new Date().toISOString(),
     profile_json: JSON.stringify(lead),
-    created_at: lead.createdAt || new Date().toISOString(),
   };
 }
 
@@ -1325,7 +1424,35 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
 
     if (Array.isArray(data.crmLeads)) {
       const existingLeadsMap = new Map(store.crmLeads.map((item) => [item.id, item]));
-      store.crmLeads = data.crmLeads.map((l: any) => {
+      store.crmLeads = data.crmLeads.map((rawRow: any) => {
+        // Detect if this 18-column row was read under the temporary shifted header order
+        // where col 18 (created_at) landed in b2b_agent_name and col 14 (branch) landed in study_gap_years
+        const isShiftedHeaderRow =
+          !rawRow.profile_json &&
+          (isIsoDateLike(rawRow.b2b_agent_name) ||
+            String(rawRow.study_gap_years || "").toUpperCase().includes("DHK") ||
+            String(rawRow.study_gap_years || "").toUpperCase().includes("KHULNA") ||
+            String(rawRow.study_gap_years || "").toUpperCase().includes("DHAKA"));
+
+        const l = isShiftedHeaderRow
+          ? {
+              ...rawRow,
+              education: rawRow.priority || "HSC",
+              japanese_proficiency: rawRow.passport_no || "NONE",
+              study_gap_years: Number(rawRow.education) || 0,
+              assigned_to: rawRow.japanese_proficiency || "Sales & Marketing Team",
+              branch: rawRow.study_gap_years || "DHK-HQ",
+              notes: rawRow.assigned_to || "",
+              follow_up_date: rawRow.branch || "",
+              last_contacted_at: rawRow.target_school || "",
+              created_at: rawRow.b2b_agent_name || new Date().toISOString(),
+              priority: "WARM",
+              passport_no: "",
+              target_school: "",
+              b2b_agent_name: "",
+            }
+          : rawRow;
+
         const local = existingLeadsMap.get(l.id);
         let parsedProfile: Partial<CrmLead> = {};
         if (l.profile_json) {
@@ -1337,7 +1464,13 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
           }
         }
 
+        const status = normalizeSheetLeadStatus(l.status || parsedProfile.status || local?.status);
         const interest = normalizeSheetLeadInterest(l.interest || parsedProfile.interest || local?.interest);
+        const priority = normalizeSheetLeadPriority(
+          l.priority || parsedProfile.priority || local?.priority,
+          status,
+        );
+
         const defaultContract =
           l.contract_amount_bdt != null && l.contract_amount_bdt !== ""
             ? Number(l.contract_amount_bdt)
@@ -1357,8 +1490,49 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
             ? Number(l.due_amount_bdt)
             : Math.max(0, defaultContract - paid);
 
-        const rawFollowUp = l.follow_up_date || parsedProfile.followUpDate || local?.followUpDate || new Date().toISOString().slice(0, 10);
-        const cleanFollowUp = String(rawFollowUp).slice(0, 10);
+        // Sanitize counselor vs notes if a call remark accidentally landed in assigned_to
+        let rawAssigned = String(l.assigned_to || parsedProfile.assignedTo || local?.assignedTo || "").trim();
+        let rawNotes = String(l.notes ?? parsedProfile.notes ?? local?.notes ?? "").trim();
+
+        const looksLikeNoteInCounselor =
+          rawAssigned.length > 28 ||
+          /no reply|busy|switched off|not interested|call later|কথা হয়েছে|ফোন ধরেনি|কোরিয়াতে|পাসপোর্ট/i.test(
+            rawAssigned,
+          );
+
+        if (looksLikeNoteInCounselor) {
+          if (!rawNotes) {
+            rawNotes = rawAssigned;
+          } else if (!rawNotes.includes(rawAssigned)) {
+            rawNotes = `${rawAssigned} • ${rawNotes}`;
+          }
+          rawAssigned = "Sales & Marketing Team";
+        }
+        if (!rawAssigned) {
+          rawAssigned = "Sales & Marketing Team";
+        }
+
+        // Sanitize agent name so ISO dates never appear as Agent
+        let cleanAgentName = String(
+          l.b2b_agent_name || parsedProfile.b2bAgentName || local?.b2bAgentName || "",
+        ).trim();
+        if (isIsoDateLike(cleanAgentName)) {
+          cleanAgentName = "";
+        }
+
+        let cleanTargetSchool = String(
+          l.target_school || parsedProfile.targetSchool || local?.targetSchool || "",
+        ).trim();
+        if (isIsoDateLike(cleanTargetSchool)) {
+          cleanTargetSchool = "";
+        }
+
+        const rawFollowUp = String(
+          l.follow_up_date || parsedProfile.followUpDate || local?.followUpDate || "",
+        ).trim();
+        const cleanFollowUp = /^\d{4}-\d{2}-\d{2}/.test(rawFollowUp)
+          ? rawFollowUp.slice(0, 10)
+          : "";
 
         return {
           ...local,
@@ -1369,10 +1543,12 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
           whatsapp: String(l.whatsapp || l.phone || parsedProfile.whatsapp || local?.whatsapp || ""),
           email: l.email ?? parsedProfile.email ?? local?.email ?? "",
           city: l.city || parsedProfile.city || local?.city || "Dhaka",
-          source: (l.source || parsedProfile.source || local?.source || "FACEBOOK_META") as LeadSource,
+          source: (isIsoDateLike(l.source)
+            ? "GOOGLE_SHEET"
+            : l.source || parsedProfile.source || local?.source || "FACEBOOK_META") as LeadSource,
           interest,
-          status: normalizeSheetLeadStatus(l.status || parsedProfile.status || local?.status),
-          priority: (l.priority || parsedProfile.priority || local?.priority || "WARM") as LeadPriority,
+          status,
+          priority,
           passportNo: l.passport_no || parsedProfile.passportNo || local?.passportNo || "",
           education: l.education || parsedProfile.education || local?.education || "HSC",
           japaneseProficiency: normalizeSheetJapaneseProficiency(
@@ -1382,18 +1558,19 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
             l.study_gap_years != null && !isNaN(Number(l.study_gap_years))
               ? Number(l.study_gap_years)
               : parsedProfile.studyGapYears ?? local?.studyGapYears ?? 0,
-          assignedTo: l.assigned_to || parsedProfile.assignedTo || local?.assignedTo || "শেখ বাসেত",
+          assignedTo: rawAssigned,
           branch: normalizeSheetLeadBranch(l.branch || parsedProfile.branch || local?.branch),
-          targetSchool: l.target_school || parsedProfile.targetSchool || local?.targetSchool || "",
-          targetSchoolName: l.target_school || parsedProfile.targetSchoolName || local?.targetSchoolName || "",
-          b2bAgentName: l.b2b_agent_name || parsedProfile.b2bAgentName || local?.b2bAgentName || "",
-          referredByAgentName: l.b2b_agent_name || parsedProfile.referredByAgentName || local?.referredByAgentName || "",
+          targetSchool: cleanTargetSchool,
+          targetSchoolName: cleanTargetSchool,
+          b2bAgentName: cleanAgentName,
+          referredByAgentName: cleanAgentName,
           contractAmountBdt: defaultContract,
           paidAmountBdt: paid,
           dueAmountBdt: due,
-          notes: l.notes ?? parsedProfile.notes ?? local?.notes ?? "",
+          notes: rawNotes,
           followUpDate: cleanFollowUp,
-          lastContactedAt: l.last_contacted_at || parsedProfile.lastContactedAt || l.created_at || new Date().toISOString(),
+          lastContactedAt:
+            l.last_contacted_at || parsedProfile.lastContactedAt || l.created_at || new Date().toISOString(),
           createdAt: l.created_at || parsedProfile.createdAt || new Date().toISOString(),
         };
       });
@@ -1638,7 +1815,19 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
       if (serverCms.leadExtendedProfiles) {
         store.crmLeads = store.crmLeads.map((lead) => {
           const ext = serverCms.leadExtendedProfiles?.[lead.id];
-          return ext ? { ...lead, ...ext } : lead;
+          if (!ext) return lead;
+          return {
+            ...ext,
+            ...lead,
+            b2bAgentName: isIsoDateLike(lead.b2bAgentName || ext.b2bAgentName)
+              ? ""
+              : lead.b2bAgentName || ext.b2bAgentName || "",
+            referredByAgentName: isIsoDateLike(lead.referredByAgentName || ext.referredByAgentName)
+              ? ""
+              : lead.referredByAgentName || ext.referredByAgentName || "",
+            documentChecklist: lead.documentChecklist || ext.documentChecklist,
+            activityLog: lead.activityLog || ext.activityLog,
+          };
         });
       }
 
