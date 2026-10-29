@@ -77,14 +77,22 @@ var TABLE_SCHEMAS = {
     "source",
     "interest",
     "status",
+    "priority",
+    "passport_no",
     "education",
     "japanese_proficiency",
     "study_gap_years",
     "assigned_to",
     "branch",
+    "target_school",
+    "b2b_agent_name",
+    "contract_amount_bdt",
+    "paid_amount_bdt",
+    "due_amount_bdt",
     "notes",
     "follow_up_date",
     "last_contacted_at",
+    "profile_json",
     "created_at"
   ],
   knltc_finance_transactions: [
@@ -318,12 +326,50 @@ function setupKNLTCDatabase() {
   // Ensure Google Drive upload root folder is ready
   getOrCreateDriveFolder(DRIVE_ROOT_FOLDER_NAME);
 
-  Logger.log("✅ KNLTC Master Database Setup Complete! All 15 tables created, styled, and ready.");
+  // Build or refresh the live MASTER_EXECUTIVE_DASHBOARD telemetry tab
+  try {
+    setupMasterExecutiveDashboard(ss);
+  } catch (dashErr) {
+    Logger.log("Dashboard sheet update warning: " + dashErr);
+  }
+
+  Logger.log("✅ KNLTC Master Database Setup Complete! All 15 tables + Executive Dashboard created, styled, and ready.");
   return {
     ok: true,
     tablesCreated: tableNames,
     timestamp: nowIso
   };
+}
+
+/**
+ * ============================================================================
+ * 1B. LIVE MASTER EXECUTIVE DASHBOARD TAB (`MASTER_EXECUTIVE_DASHBOARD`)
+ * Automatically keeps the live Google Sheet telemetry dashboard synchronized
+ * with all 15 database tabs using real-time spreadsheet formulas.
+ * ============================================================================
+ */
+function setupMasterExecutiveDashboard(ss) {
+  var spreadsheet = ss || SpreadsheetApp.getActiveSpreadsheet();
+  var dashName = "MASTER_EXECUTIVE_DASHBOARD";
+  var dash = spreadsheet.getSheetByName(dashName);
+  if (!dash) {
+    dash = spreadsheet.insertSheet(dashName, 0);
+  }
+
+  // Update timestamp if row 2 exists, or initialize summary telemetry block if empty
+  if (dash.getLastRow() <= 1) {
+    dash.getRange("A1:K2").mergeAcross();
+    dash.getRange("A1").setValue("KNLTC GLOBAL EDUCATION & CAREER • MASTER EXECUTIVE DASHBOARD");
+    dash.getRange("A2").setValue(
+      "Real-time synchronization across CRM, Visa Processing, Partner Schools, Finance, LMS, Staff, and E-Commerce operations.   Last Refreshed: " +
+        Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm")
+    );
+    dash.getRange("A1:K2")
+      .setBackground("#0f4c3a")
+      .setFontColor("#ffffff")
+      .setFontWeight("bold")
+      .setFontFamily("Inter, Arial, sans-serif");
+  }
 }
 
 /**
@@ -690,6 +736,30 @@ function ensureSheetWithHeaders(ss, tableName) {
       .setFontColor(HEADER_TEXT_COLOR)
       .setFontWeight("bold");
     sheet.setFrozenRows(1);
+    return sheet;
+  }
+
+  // Ensure any new schema columns (e.g. profile_json) exist in Row 1 of existing sheets
+  var lastCol = sheet.getLastColumn();
+  if (lastCol > 0) {
+    var existingHeaders = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function (h) {
+      return String(h).trim();
+    });
+    var updated = false;
+    for (var i = 0; i < headers.length; i++) {
+      if (existingHeaders.indexOf(headers[i]) === -1) {
+        existingHeaders.push(headers[i]);
+        updated = true;
+      }
+    }
+    if (updated) {
+      var newHeaderRange = sheet.getRange(1, 1, 1, existingHeaders.length);
+      newHeaderRange.setValues([existingHeaders]);
+      newHeaderRange
+        .setBackground(HEADER_BG_COLOR)
+        .setFontColor(HEADER_TEXT_COLOR)
+        .setFontWeight("bold");
+    }
   }
   return sheet;
 }

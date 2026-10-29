@@ -55,13 +55,13 @@ export async function GET() {
       staffMembers,
       cmsRoot,
     ] = await Promise.allSettled([
-      selectRows<any>("knltc_crm_leads", { order: "created_at.desc", limit: 300 }, true),
-      selectRows<any>("knltc_visa_applicants", { order: "created_at.desc", limit: 200 }, true),
-      selectRows<any>("knltc_lms_bridges", { order: "created_at.desc", limit: 200 }, true),
-      selectRows<any>("knltc_b2b_agents", { order: "created_at.desc", limit: 100 }, true),
-      selectRows<any>("knltc_partner_schools", { order: "created_at.desc", limit: 100 }, true),
-      selectRows<any>("knltc_finance_transactions", { order: "created_at.desc", limit: 200 }, true),
-      selectRows<any>("knltc_staff_members", { order: "created_at.desc", limit: 100 }, true),
+      selectRows<any>("knltc_crm_leads", { order: "created_at.desc" }, true),
+      selectRows<any>("knltc_visa_applicants", { order: "created_at.desc" }, true),
+      selectRows<any>("knltc_lms_bridges", { order: "created_at.desc" }, true),
+      selectRows<any>("knltc_b2b_agents", { order: "created_at.desc" }, true),
+      selectRows<any>("knltc_partner_schools", { order: "created_at.desc" }, true),
+      selectRows<any>("knltc_finance_transactions", { order: "created_at.desc" }, true),
+      selectRows<any>("knltc_staff_members", { order: "created_at.desc" }, true),
       selectRows<any>("knltc_website_cms", "", true),
     ]);
 

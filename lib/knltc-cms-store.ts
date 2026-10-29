@@ -1094,6 +1094,223 @@ async function syncToServer(type: "UPSERT" | "INSERT" | "DELETE" | "CMS_UPDATE",
   }
 }
 
+export function normalizeSheetLeadStatus(raw: any): LeadStatus {
+  const s = String(raw || "NEW").trim().toUpperCase();
+  if (s === "NEW" || s === "NEW LEAD" || s === "NEW_LEAD" || s.includes("NEW")) return "NEW";
+  if (s === "CONTACTED" || s.includes("CONTACT") || s.includes("CALL")) return "CONTACTED";
+  if (s === "COUNSELED" || s.includes("COUNSEL")) return "COUNSELED";
+  if (s === "OFFICE_VISIT_BOOKED" || s.includes("VISIT") || s.includes("BOOKED")) return "OFFICE_VISIT_BOOKED";
+  if (s === "ADMITTED" || s.includes("ADMIT") || s.includes("CONFIRM")) return "ADMITTED";
+  if (s === "ARCHIVED" || s.includes("ARCHIVE") || s.includes("REJECT") || s.includes("CLOSED")) return "ARCHIVED";
+  return "NEW";
+}
+
+export function normalizeSheetLeadBranch(raw: any): "DHK-HQ" | "KHULNA-01" {
+  const b = String(raw || "DHK-HQ").trim().toUpperCase();
+  if (b.includes("KHULNA") || b === "KHULNA-01" || b.includes("খুলনা")) return "KHULNA-01";
+  return "DHK-HQ";
+}
+
+export function normalizeSheetLeadInterest(raw: any): ServiceInterest {
+  const i = String(raw || "STUDENT_VISA_REGULAR").trim().toUpperCase();
+  if (
+    i === "STUDENT_VISA_REGULAR" ||
+    i === "STUDENT_VISA_PREMIUM" ||
+    i === "SSW_CONSTRUCTION_SPECIAL" ||
+    i === "SSW_CAREGIVER" ||
+    i === "SSW_AGRICULTURE" ||
+    i === "SSW_FOOD_SERVICE" ||
+    i === "TITP_TECHNICAL" ||
+    i === "JAPANESE_N5" ||
+    i === "JAPANESE_N4"
+  ) {
+    return i as ServiceInterest;
+  }
+  if (i.includes("CONSTRUCT")) return "SSW_CONSTRUCTION_SPECIAL";
+  if (i.includes("CAREGIV") || i.includes("NURS")) return "SSW_CAREGIVER";
+  if (i.includes("AGRI")) return "SSW_AGRICULTURE";
+  if (i.includes("FOOD") || i.includes("RESTAURANT")) return "SSW_FOOD_SERVICE";
+  if (i.includes("TITP") || i.includes("INTERN")) return "TITP_TECHNICAL";
+  if (i.includes("PREMIUM")) return "STUDENT_VISA_PREMIUM";
+  if (i.includes("N4") && !i.includes("SSW")) return "JAPANESE_N4";
+  if (i.includes("N5")) return "JAPANESE_N5";
+  if (i.includes("SSW")) return "SSW_CONSTRUCTION_SPECIAL";
+  return "STUDENT_VISA_REGULAR";
+}
+
+export function normalizeSheetJapaneseProficiency(raw: any): CrmLead["japaneseProficiency"] {
+  const j = String(raw || "NONE").trim().toUpperCase();
+  if (j === "PASSED_N4" || j.includes("N4 PASS") || j === "N4") return "PASSED_N4";
+  if (j === "PASSED_N5" || j.includes("N5 PASS") || j === "N5") return "PASSED_N5";
+  if (j === "NAT_JFT" || j.includes("JFT") || j.includes("NAT")) return "NAT_JFT";
+  if (j === "LEARNING_N5" || j.includes("LEARN") || j.includes("RUNNING")) return "LEARNING_N5";
+  return "NONE";
+}
+
+export function serializeLeadToSheetRow(lead: CrmLead): Record<string, any> {
+  const defaultContract =
+    lead.contractAmountBdt ??
+    (lead.interest === "STUDENT_VISA_PREMIUM"
+      ? 1100000
+      : lead.interest === "JAPANESE_N5" || lead.interest === "JAPANESE_N4"
+        ? 12000
+        : 120000);
+  const paid = lead.paidAmountBdt ?? 0;
+  const due = lead.dueAmountBdt ?? Math.max(0, defaultContract - paid);
+
+  return {
+    id: lead.id,
+    name: lead.name,
+    phone: lead.phone,
+    whatsapp: lead.whatsapp || lead.phone,
+    email: lead.email || "",
+    city: lead.city || "Dhaka",
+    source: lead.source || "FACEBOOK_META",
+    interest: lead.interest || "STUDENT_VISA_REGULAR",
+    status: lead.status || "NEW",
+    priority: lead.priority || "WARM",
+    passport_no: lead.passportNo || "",
+    education: lead.education || "HSC",
+    japanese_proficiency: lead.japaneseProficiency || "NONE",
+    study_gap_years: Number(lead.studyGapYears) || 0,
+    assigned_to: lead.assignedTo || "শেখ বাসেত",
+    branch: lead.branch || "DHK-HQ",
+    target_school: lead.targetSchool || lead.targetSchoolName || "",
+    b2b_agent_name: lead.b2bAgentName || lead.referredByAgentName || "",
+    contract_amount_bdt: defaultContract,
+    paid_amount_bdt: paid,
+    due_amount_bdt: due,
+    notes: lead.notes || "",
+    follow_up_date: lead.followUpDate ? String(lead.followUpDate).slice(0, 10) : new Date().toISOString().slice(0, 10),
+    last_contacted_at: lead.lastContactedAt || new Date().toISOString(),
+    profile_json: JSON.stringify(lead),
+    created_at: lead.createdAt || new Date().toISOString(),
+  };
+}
+
+export function serializeVisaToSheetRow(v: VisaApplicant): Record<string, any> {
+  return {
+    id: v.id,
+    lead_id: v.leadId || v.linkedLeadId || "",
+    tracking_no: v.trackingNo,
+    name: v.name,
+    phone: v.phone,
+    branch: v.branch,
+    package_type: v.packageType,
+    intake_session: v.intakeSession,
+    stage: v.stage,
+    target_school: v.targetSchool || v.targetSchoolName || "",
+    partner_school_id: v.partnerSchoolId || v.targetSchoolId || "",
+    b2b_agent_id: v.b2bAgentId || v.referredByAgentId || "",
+    b2b_agent_name: v.b2bAgentName || v.referredByAgentName || "",
+    visa_officer_id: v.visaOfficerId || v.assignedVisaOfficerId || "",
+    visa_officer_name: v.visaOfficerName || v.assignedVisaOfficerName || "",
+    contract_amount_bdt: v.contractAmountBdt ?? 120000,
+    paid_amount_bdt: v.paidAmountBdt ?? 0,
+    due_amount_bdt: v.dueAmountBdt ?? Math.max(0, (v.contractAmountBdt ?? 120000) - (v.paidAmountBdt ?? 0)),
+    sponsor_name: v.sponsorName,
+    sponsor_relation: v.sponsorRelation,
+    sponsor_bank: v.sponsorBank,
+    sponsor_balance_bdt: v.sponsorBalanceBdt,
+    bank_loan_assistance: v.bankLoanAssistance,
+    bank_loan_bank: v.bankLoanBank || "",
+    coe_status: v.coEStatus,
+    visa_status: v.visaStatus,
+    counselor_name: v.counselorName,
+    updated_at: v.updatedAt || new Date().toISOString(),
+    created_at: v.updatedAt || new Date().toISOString(),
+  };
+}
+
+export function serializeSchoolToSheetRow(s: JapanesePartnerSchool): Record<string, any> {
+  return {
+    id: s.id,
+    name: s.name,
+    japanese_name: s.japaneseName || "",
+    institution_type: s.institutionType || "LANGUAGE_SCHOOL",
+    location: s.location || "",
+    contact_person: s.contactPerson || "",
+    email: s.email || "",
+    website_url: s.websiteUrl || "",
+    logo_url: s.logoUrl || "",
+    first_year_tuition_yen: s.firstYearTuitionYen ?? 760000,
+    commission_per_student_yen: s.commissionPerStudentYen ?? 0,
+    commission_per_student_bdt: s.commissionPerStudentBdt ?? 0,
+    intake_quota: s.intakeQuota ?? 20,
+    active_students_count: s.activeStudentsCount ?? 0,
+    total_commission_received_yen: s.totalCommissionReceivedYen ?? 0,
+    status: s.status || "ACTIVE_PARTNER",
+  };
+}
+
+export function serializeAgentToSheetRow(a: B2bAgent): Record<string, any> {
+  return {
+    id: a.id,
+    organization_name: a.organizationName,
+    agent_type: a.agentType || "LOCAL_SUB_AGENT",
+    contact_person: a.contactPerson,
+    phone: a.phone,
+    city: a.city || "",
+    referred_students_count: a.referredStudentsCount ?? 0,
+    successful_visas_count: a.successfulVisasCount ?? 0,
+    agreed_commission_bdt: a.agreedCommissionBdt ?? 30000,
+    pending_commission_bdt: a.pendingCommissionBdt ?? 0,
+    paid_commission_bdt: a.paidCommissionBdt ?? 0,
+    logo_url: a.logoUrl || "",
+    trade_license_no: a.tradeLicenseNo || "",
+    nid_or_passport_no: a.nidOrPassportNo || "",
+    bank_name: a.bankName || "",
+    bank_account_no: a.bankAccountNo || "",
+    bkash_or_nagad_no: a.bkashOrNagadNo || "",
+  };
+}
+
+export function serializeStaffToSheetRow(st: StaffMember): Record<string, any> {
+  return {
+    id: st.id,
+    name: st.name,
+    role: st.role,
+    location: st.location,
+    phone: st.phone,
+    email: st.email,
+    monthly_base_salary_bdt: st.monthlyBaseSalaryBdt ?? 0,
+    kpi_type: st.kpiType || "CALLS",
+    kpi_target: st.kpiTarget ?? st.callsTargetMonthly ?? 0,
+    kpi_achieved: st.kpiAchieved ?? st.callsCompleted ?? 0,
+    calls_target_monthly: st.callsTargetMonthly ?? 0,
+    calls_completed: st.callsCompleted ?? 0,
+    admissions_target: st.admissionsTarget ?? 0,
+    admissions_achieved: st.admissionsAchieved ?? 0,
+    performance_bonus_bdt: st.performanceBonusBdt ?? 0,
+    last_paid_month: st.lastPaidMonth || "",
+    status: st.status || "ACTIVE",
+  };
+}
+
+export function serializeTransactionToSheetRow(tx: FinancialTransaction): Record<string, any> {
+  return {
+    id: tx.id,
+    receipt_no: tx.receiptNo,
+    date: tx.date,
+    student_name: tx.studentName,
+    student_phone: tx.studentPhone || "",
+    category: tx.category || (tx.type.startsWith("EXPENSE") ? "EXPENSE" : "INCOME"),
+    type: tx.type,
+    amount_bdt: tx.amountBdt ?? 0,
+    due_amount_bdt: tx.dueAmountBdt ?? 0,
+    payment_method: tx.paymentMethod,
+    reference_or_trx: tx.referenceOrTrx,
+    branch: tx.branch,
+    verified_by: tx.verifiedBy,
+    notes: tx.notes || "",
+    linked_lead_id: tx.linkedLeadId || "",
+    linked_visa_id: tx.linkedVisaId || "",
+    linked_school_id: tx.linkedSchoolId || "",
+    linked_agent_id: tx.linkedAgentId || "",
+    linked_staff_id: tx.linkedStaffId || "",
+  };
+}
+
 export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | null> {
   if (typeof window === "undefined") return null;
   try {
@@ -1107,59 +1324,135 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
     let hasChanges = false;
 
     if (Array.isArray(data.crmLeads)) {
-      store.crmLeads = data.crmLeads.map((l: any) => ({
-        id: l.id,
-        name: l.name,
-        phone: l.phone,
-        whatsapp: l.whatsapp || l.phone,
-        email: l.email,
-        city: l.city || "Dhaka",
-        source: l.source || "FACEBOOK_META",
-        interest: l.interest || "STUDENT_VISA_REGULAR",
-        status: l.status || "NEW",
-        education: l.education || "HSC",
-        japaneseProficiency: l.japanese_proficiency || "NONE",
-        studyGapYears: Number(l.study_gap_years) || 0,
-        assignedTo: l.assigned_to || "শেখ বাসেত",
-        branch: l.branch || "DHK-HQ",
-        notes: l.notes || "",
-        followUpDate: l.follow_up_date || new Date().toISOString().split("T")[0],
-        lastContactedAt: l.last_contacted_at || l.created_at || new Date().toISOString(),
-        createdAt: l.created_at || new Date().toISOString(),
-      }));
+      const existingLeadsMap = new Map(store.crmLeads.map((item) => [item.id, item]));
+      store.crmLeads = data.crmLeads.map((l: any) => {
+        const local = existingLeadsMap.get(l.id);
+        let parsedProfile: Partial<CrmLead> = {};
+        if (l.profile_json) {
+          try {
+            parsedProfile =
+              typeof l.profile_json === "string" ? JSON.parse(l.profile_json) : l.profile_json;
+          } catch {
+            parsedProfile = {};
+          }
+        }
+
+        const interest = normalizeSheetLeadInterest(l.interest || parsedProfile.interest || local?.interest);
+        const defaultContract =
+          l.contract_amount_bdt != null && l.contract_amount_bdt !== ""
+            ? Number(l.contract_amount_bdt)
+            : parsedProfile.contractAmountBdt ??
+              local?.contractAmountBdt ??
+              (interest === "STUDENT_VISA_PREMIUM"
+                ? 1100000
+                : interest === "JAPANESE_N5" || interest === "JAPANESE_N4"
+                  ? 12000
+                  : 120000);
+        const paid =
+          l.paid_amount_bdt != null && l.paid_amount_bdt !== ""
+            ? Number(l.paid_amount_bdt)
+            : parsedProfile.paidAmountBdt ?? local?.paidAmountBdt ?? 0;
+        const due =
+          l.due_amount_bdt != null && l.due_amount_bdt !== ""
+            ? Number(l.due_amount_bdt)
+            : Math.max(0, defaultContract - paid);
+
+        const rawFollowUp = l.follow_up_date || parsedProfile.followUpDate || local?.followUpDate || new Date().toISOString().slice(0, 10);
+        const cleanFollowUp = String(rawFollowUp).slice(0, 10);
+
+        return {
+          ...local,
+          ...parsedProfile,
+          id: String(l.id),
+          name: l.name || parsedProfile.name || local?.name || "Candidate",
+          phone: String(l.phone || parsedProfile.phone || local?.phone || ""),
+          whatsapp: String(l.whatsapp || l.phone || parsedProfile.whatsapp || local?.whatsapp || ""),
+          email: l.email ?? parsedProfile.email ?? local?.email ?? "",
+          city: l.city || parsedProfile.city || local?.city || "Dhaka",
+          source: (l.source || parsedProfile.source || local?.source || "FACEBOOK_META") as LeadSource,
+          interest,
+          status: normalizeSheetLeadStatus(l.status || parsedProfile.status || local?.status),
+          priority: (l.priority || parsedProfile.priority || local?.priority || "WARM") as LeadPriority,
+          passportNo: l.passport_no || parsedProfile.passportNo || local?.passportNo || "",
+          education: l.education || parsedProfile.education || local?.education || "HSC",
+          japaneseProficiency: normalizeSheetJapaneseProficiency(
+            l.japanese_proficiency || parsedProfile.japaneseProficiency || local?.japaneseProficiency,
+          ),
+          studyGapYears:
+            l.study_gap_years != null && !isNaN(Number(l.study_gap_years))
+              ? Number(l.study_gap_years)
+              : parsedProfile.studyGapYears ?? local?.studyGapYears ?? 0,
+          assignedTo: l.assigned_to || parsedProfile.assignedTo || local?.assignedTo || "শেখ বাসেত",
+          branch: normalizeSheetLeadBranch(l.branch || parsedProfile.branch || local?.branch),
+          targetSchool: l.target_school || parsedProfile.targetSchool || local?.targetSchool || "",
+          targetSchoolName: l.target_school || parsedProfile.targetSchoolName || local?.targetSchoolName || "",
+          b2bAgentName: l.b2b_agent_name || parsedProfile.b2bAgentName || local?.b2bAgentName || "",
+          referredByAgentName: l.b2b_agent_name || parsedProfile.referredByAgentName || local?.referredByAgentName || "",
+          contractAmountBdt: defaultContract,
+          paidAmountBdt: paid,
+          dueAmountBdt: due,
+          notes: l.notes ?? parsedProfile.notes ?? local?.notes ?? "",
+          followUpDate: cleanFollowUp,
+          lastContactedAt: l.last_contacted_at || parsedProfile.lastContactedAt || l.created_at || new Date().toISOString(),
+          createdAt: l.created_at || parsedProfile.createdAt || new Date().toISOString(),
+        };
+      });
       hasChanges = true;
     }
 
     if (Array.isArray(data.visaApplicants)) {
-      store.visaApplicants = data.visaApplicants.map((v: any) => ({
-        id: v.id,
-        trackingNo: v.tracking_no,
-        name: v.name,
-        phone: v.phone,
-        branch: v.branch || "DHK-HQ",
-        packageType: v.package_type || "REGULAR",
-        intakeSession: v.intake_session || "APRIL_2027",
-        stage: Number(v.stage) || 1,
-        targetSchool: v.target_school,
-        sponsorName: v.sponsor_name,
-        sponsorRelation: v.sponsor_relation || "FATHER",
-        sponsorBank: v.sponsor_bank,
-        sponsorBalanceBdt: Number(v.sponsor_balance_bdt) || 0,
-        bankLoanAssistance: Boolean(v.bank_loan_assistance),
-        bankLoanBank: v.bank_loan_bank,
-        coEStatus: v.coe_status || "PENDING",
-        visaStatus: v.visa_status || "IN_PROCESS",
-        counselorName: v.counselor_name || "শেখ বাসেত",
-        updatedAt: v.updated_at || new Date().toISOString(),
-      }));
+      store.visaApplicants = data.visaApplicants.map((v: any) => {
+        const contract = v.contract_amount_bdt != null ? Number(v.contract_amount_bdt) : 120000;
+        const paid = v.paid_amount_bdt != null ? Number(v.paid_amount_bdt) : 0;
+        const due = v.due_amount_bdt != null ? Number(v.due_amount_bdt) : Math.max(0, contract - paid);
+        return {
+          id: v.id,
+          leadId: v.lead_id || "",
+          linkedLeadId: v.lead_id || "",
+          trackingNo: v.tracking_no,
+          name: v.name,
+          phone: String(v.phone || ""),
+          branch: normalizeSheetLeadBranch(v.branch),
+          packageType: v.package_type || "REGULAR",
+          intakeSession: v.intake_session || "APRIL_2027",
+          stage: (Number(v.stage) || 1) as VisaStage,
+          targetSchool: v.target_school || "",
+          targetSchoolName: v.target_school || "",
+          partnerSchoolId: v.partner_school_id || "",
+          targetSchoolId: v.partner_school_id || "",
+          b2bAgentId: v.b2b_agent_id || "",
+          referredByAgentId: v.b2b_agent_id || "",
+          b2bAgentName: v.b2b_agent_name || "",
+          referredByAgentName: v.b2b_agent_name || "",
+          visaOfficerId: v.visa_officer_id || "",
+          assignedVisaOfficerId: v.visa_officer_id || "",
+          visaOfficerName: v.visa_officer_name || "",
+          assignedVisaOfficerName: v.visa_officer_name || "",
+          contractAmountBdt: contract,
+          paidAmountBdt: paid,
+          dueAmountBdt: due,
+          sponsorName: v.sponsor_name || "",
+          sponsorRelation: v.sponsor_relation || "FATHER",
+          sponsorBank: v.sponsor_bank || "",
+          sponsorBalanceBdt: Number(v.sponsor_balance_bdt) || 0,
+          bankLoanAssistance: Boolean(v.bank_loan_assistance),
+          bankLoanBank: v.bank_loan_bank || "",
+          coEStatus: v.coe_status || "PENDING",
+          visaStatus: v.visa_status || "IN_PROCESS",
+          counselorName: v.counselor_name || "শেখ বাসেত",
+          updatedAt: v.updated_at || new Date().toISOString(),
+        };
+      });
       hasChanges = true;
     }
 
     if (Array.isArray(data.lmsBridges)) {
       store.lmsBridges = data.lmsBridges.map((b: any) => ({
         id: b.id,
+        leadId: b.lead_id || "",
+        linkedLeadId: b.lead_id || "",
         studentName: b.student_name,
-        phone: b.phone,
+        phone: String(b.phone || ""),
         courseLevel: b.course_level || "N5",
         enrollmentNo: b.enrollment_no,
         portalUsername: b.portal_username,
@@ -1170,6 +1463,8 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
         credentialsSentAt: b.credentials_sent_at || new Date().toISOString(),
         progressPercentage: Number(b.progress_percentage) || 0,
         activeBatch: b.active_batch || "",
+        assignedSenseiId: b.assigned_sensei_id || "",
+        assignedSenseiName: b.assigned_sensei_name || "",
       }));
       hasChanges = true;
     }
@@ -1199,13 +1494,13 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
           totalCommissionReceivedYen: Number(s.total_commission_received_yen) || local?.totalCommissionReceivedYen || 0,
           status: s.status || local?.status || "ACTIVE_PARTNER",
           logoUrl: s.logo_url || local?.logoUrl,
-          institutionType: local?.institutionType || "LANGUAGE_SCHOOL",
-          websiteUrl: local?.websiteUrl,
-          firstYearTuitionYen: local?.firstYearTuitionYen ?? 760000,
+          institutionType: s.institution_type || local?.institutionType || "LANGUAGE_SCHOOL",
+          websiteUrl: s.website_url || local?.websiteUrl,
+          firstYearTuitionYen: s.first_year_tuition_yen != null ? Number(s.first_year_tuition_yen) : (local?.firstYearTuitionYen ?? 760000),
           admissionFeeYen: local?.admissionFeeYen ?? 50000,
           hostelFeeMonthlyYen: local?.hostelFeeMonthlyYen ?? 35000,
           intakeMonths: local?.intakeMonths || ["APRIL", "OCTOBER"],
-          intakeQuota: local?.intakeQuota || 20,
+          intakeQuota: s.intake_quota != null ? Number(s.intake_quota) : (local?.intakeQuota || 20),
           documents: local?.documents || [],
           notes: local?.notes || "",
         };
@@ -1223,7 +1518,7 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
           organizationName: a.organization_name,
           agentType: a.agent_type || local?.agentType || "LOCAL_SUB_AGENT",
           contactPerson: a.contact_person,
-          phone: a.phone,
+          phone: String(a.phone || ""),
           city: a.city || local?.city || "",
           referredStudentsCount: Number(a.referred_students_count) || local?.referredStudentsCount || 0,
           successfulVisasCount: Number(a.successful_visas_count) || local?.successfulVisasCount || 0,
@@ -1249,14 +1544,18 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
         name: st.name,
         role: st.role || "COUNSELOR",
         location: st.location || "DHAKA_OFFICE",
-        phone: st.phone || "",
+        phone: String(st.phone || ""),
         email: st.email || "",
         monthlyBaseSalaryBdt: Number(st.monthly_base_salary_bdt) || 0,
+        kpiType: st.kpi_type || "CALLS",
+        kpiTarget: Number(st.kpi_target ?? st.calls_target_monthly) || 0,
+        kpiAchieved: Number(st.kpi_achieved ?? st.calls_completed) || 0,
         callsTargetMonthly: Number(st.calls_target_monthly) || 0,
         callsCompleted: Number(st.calls_completed) || 0,
         admissionsTarget: Number(st.admissions_target) || 0,
         admissionsAchieved: Number(st.admissions_achieved) || 0,
         performanceBonusBdt: Number(st.performance_bonus_bdt) || 0,
+        lastPaidMonth: st.last_paid_month || "",
         status: st.status || "ACTIVE",
       }));
       hasChanges = true;
@@ -1266,15 +1565,23 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
       store.transactions = data.transactions.map((tx: any) => ({
         id: tx.id,
         receiptNo: tx.receipt_no,
-        date: tx.date || new Date().toISOString().split("T")[0],
+        date: tx.date ? String(tx.date).slice(0, 10) : new Date().toISOString().split("T")[0],
         studentName: tx.student_name,
+        studentPhone: String(tx.student_phone || ""),
+        category: tx.category || (String(tx.type || "").startsWith("EXPENSE") ? "EXPENSE" : "INCOME"),
         type: tx.type,
         amountBdt: Number(tx.amount_bdt) || 0,
+        dueAmountBdt: Number(tx.due_amount_bdt) || 0,
         paymentMethod: tx.payment_method || "BKASH",
         referenceOrTrx: tx.reference_or_trx || "N/A",
-        branch: tx.branch || "DHK-HQ",
+        branch: normalizeSheetLeadBranch(tx.branch),
         verifiedBy: tx.verified_by || "শেখ বাসেত",
-        notes: tx.notes,
+        notes: tx.notes || "",
+        linkedLeadId: tx.linked_lead_id || "",
+        linkedVisaId: tx.linked_visa_id || "",
+        linkedSchoolId: tx.linked_school_id || "",
+        linkedAgentId: tx.linked_agent_id || "",
+        linkedStaffId: tx.linked_staff_id || "",
       }));
       hasChanges = true;
     }
@@ -1449,38 +1756,108 @@ export function updateCrmLeadProfile(id: string, updates: Partial<CrmLead>): Crm
   const index = store.crmLeads.findIndex((l) => l.id === id);
   if (index === -1) return null;
 
+  const prevLead = store.crmLeads[index];
   const updatedLead: CrmLead = {
-    ...store.crmLeads[index],
+    ...prevLead,
     ...updates,
     lastContactedAt: new Date().toISOString(),
   };
+
+  if (updatedLead.contractAmountBdt !== undefined || updatedLead.paidAmountBdt !== undefined) {
+    const contract = updatedLead.contractAmountBdt ?? 120000;
+    const paid = updatedLead.paidAmountBdt ?? 0;
+    updatedLead.dueAmountBdt = Math.max(0, contract - paid);
+  }
+
   store.crmLeads[index] = updatedLead;
   cms.leadExtendedProfiles[id] = {
     ...(cms.leadExtendedProfiles[id] || {}),
-    ...updates,
+    ...updatedLead,
   };
   store.websiteCms = [cms];
-  saveCmsStore(store);
 
-  syncToServer("UPSERT", "knltc_crm_leads", {
-    id: updatedLead.id,
-    name: updatedLead.name,
-    phone: updatedLead.phone,
-    whatsapp: updatedLead.whatsapp,
-    email: updatedLead.email,
-    city: updatedLead.city,
-    source: updatedLead.source,
-    interest: updatedLead.interest,
-    status: updatedLead.status,
-    education: updatedLead.education,
-    japanese_proficiency: updatedLead.japaneseProficiency,
-    study_gap_years: updatedLead.studyGapYears,
-    assigned_to: updatedLead.assignedTo,
-    branch: updatedLead.branch,
-    notes: updatedLead.notes,
-    follow_up_date: updatedLead.followUpDate,
-    last_contacted_at: updatedLead.lastContactedAt,
-  });
+  // Cross-module sync: If this lead is linked to a VisaApplicant, keep their fields in sync
+  const linkedVisa = store.visaApplicants.find(
+    (v) => v.leadId === id || v.linkedLeadId === id || (updatedLead.phone && v.phone === updatedLead.phone),
+  );
+  if (linkedVisa) {
+    linkedVisa.name = updatedLead.name;
+    linkedVisa.phone = updatedLead.phone;
+    linkedVisa.branch = updatedLead.branch;
+    if (updatedLead.packageType) linkedVisa.packageType = updatedLead.packageType;
+    if (updatedLead.targetSchool || updatedLead.targetSchoolName) {
+      linkedVisa.targetSchool = updatedLead.targetSchool || updatedLead.targetSchoolName || linkedVisa.targetSchool;
+      linkedVisa.targetSchoolName = linkedVisa.targetSchool;
+    }
+    if (updatedLead.partnerSchoolId || updatedLead.targetSchoolId) {
+      linkedVisa.partnerSchoolId = updatedLead.partnerSchoolId || updatedLead.targetSchoolId;
+      linkedVisa.targetSchoolId = linkedVisa.partnerSchoolId;
+    }
+    if (updatedLead.b2bAgentId || updatedLead.referredByAgentId) {
+      linkedVisa.b2bAgentId = updatedLead.b2bAgentId || updatedLead.referredByAgentId;
+      linkedVisa.referredByAgentId = linkedVisa.b2bAgentId;
+    }
+    if (updatedLead.b2bAgentName || updatedLead.referredByAgentName) {
+      linkedVisa.b2bAgentName = updatedLead.b2bAgentName || updatedLead.referredByAgentName;
+      linkedVisa.referredByAgentName = linkedVisa.b2bAgentName;
+    }
+    if (updatedLead.guardianName) linkedVisa.sponsorName = updatedLead.guardianName;
+    if (updatedLead.sponsorRelation && updatedLead.sponsorRelation !== "SELF") {
+      linkedVisa.sponsorRelation = updatedLead.sponsorRelation;
+    }
+    if (updatedLead.sponsorBankName) linkedVisa.sponsorBank = updatedLead.sponsorBankName;
+    if (updatedLead.sponsorBankBalanceBdt !== undefined) {
+      linkedVisa.sponsorBalanceBdt = updatedLead.sponsorBankBalanceBdt;
+    }
+    if (updatedLead.bankLoanRequired !== undefined) {
+      linkedVisa.bankLoanAssistance = updatedLead.bankLoanRequired;
+    }
+    if (updatedLead.preferredLoanBank) linkedVisa.bankLoanBank = updatedLead.preferredLoanBank;
+    if (updatedLead.contractAmountBdt !== undefined) linkedVisa.contractAmountBdt = updatedLead.contractAmountBdt;
+    if (updatedLead.paidAmountBdt !== undefined) linkedVisa.paidAmountBdt = updatedLead.paidAmountBdt;
+    if (updatedLead.dueAmountBdt !== undefined) linkedVisa.dueAmountBdt = updatedLead.dueAmountBdt;
+    linkedVisa.counselorName = updatedLead.assignedTo || linkedVisa.counselorName;
+    linkedVisa.updatedAt = new Date().toISOString();
+    syncToServer("UPSERT", "knltc_visa_applicants", serializeVisaToSheetRow(linkedVisa));
+  }
+
+  // Cross-module sync: If linked to an LMS bridge, keep name & phone in sync
+  const linkedLms = store.lmsBridges.find(
+    (b) => b.leadId === id || b.linkedLeadId === id || (prevLead.phone && b.phone === prevLead.phone),
+  );
+  if (linkedLms) {
+    linkedLms.studentName = updatedLead.name;
+    linkedLms.phone = updatedLead.phone;
+    if (updatedLead.enrolledBatchOrSession) linkedLms.activeBatch = updatedLead.enrolledBatchOrSession;
+    syncToServer("UPSERT", "knltc_lms_bridges", {
+      id: linkedLms.id,
+      lead_id: linkedLms.leadId || id,
+      student_name: linkedLms.studentName,
+      phone: linkedLms.phone,
+      course_level: linkedLms.courseLevel,
+      enrollment_no: linkedLms.enrollmentNo,
+      portal_username: linkedLms.portalUsername,
+      portal_password_masked: linkedLms.portalPasswordMasked,
+      portal_fee_deducted_bdt: linkedLms.portalFeeDeductedBdt,
+      net_knltc_margin_bdt: linkedLms.netKnlTcMarginBdt,
+      credentials_sent_via_wa: linkedLms.credentialsSentViaWa,
+      credentials_sent_at: linkedLms.credentialsSentAt,
+      progress_percentage: linkedLms.progressPercentage,
+      active_batch: linkedLms.activeBatch,
+      assigned_sensei_id: linkedLms.assignedSenseiId || "",
+      assigned_sensei_name: linkedLms.assignedSenseiName || "",
+    });
+  }
+
+  // If status was changed to ADMITTED inside the 360 profile drawer, trigger full admission cascade
+  if (updates.status === "ADMITTED" && prevLead.status !== "ADMITTED") {
+    saveCmsStore(store);
+    updateCrmLeadStatus(id, "ADMITTED");
+  } else {
+    saveCmsStore(store);
+  }
+
+  syncToServer("UPSERT", "knltc_crm_leads", serializeLeadToSheetRow(updatedLead));
   syncToServer("CMS_UPDATE", undefined, cms);
 
   return updatedLead;
@@ -1628,7 +2005,7 @@ export function provisionLeadLoginAndEnrollment(
 
   cms.leadExtendedProfiles[existingLead.id] = {
     ...(cms.leadExtendedProfiles[existingLead.id] || {}),
-    ...profileUpdates,
+    ...existingLead,
   };
 
   // Auto-increment Counselor KPI if newly admitted
@@ -1641,19 +2018,21 @@ export function provisionLeadLoginAndEnrollment(
     if (counselor) {
       counselor.admissionsAchieved = (counselor.admissionsAchieved || 0) + 1;
       counselor.performanceBonusBdt = (counselor.performanceBonusBdt || 0) + 1000;
+      syncToServer("UPSERT", "knltc_staff_members", serializeStaffToSheetRow(counselor));
     }
     if (matchedAgent) {
       matchedAgent.referredStudentsCount = (matchedAgent.referredStudentsCount || 0) + 1;
+      syncToServer("UPSERT", "knltc_b2b_agents", serializeAgentToSheetRow(matchedAgent));
     }
   }
 
   // If Visa File is opened, ensure a VisaApplicant card exists in pipeline and sync school seats
   if (config.isFileOpened) {
-    const existingVisa = store.visaApplicants.find(
+    let targetVisa = store.visaApplicants.find(
       (v) => v.leadId === existingLead!.id || v.phone === existingLead!.phone || v.trackingNo === trackingNo,
     );
-    if (!existingVisa) {
-      const newVisa: VisaApplicant = {
+    if (!targetVisa) {
+      targetVisa = {
         id: `visa-${Date.now()}`,
         trackingNo,
         name: existingLead.name,
@@ -1682,21 +2061,22 @@ export function provisionLeadLoginAndEnrollment(
         counselorName: existingLead.assignedTo,
         updatedAt: new Date().toISOString(),
       };
-      store.visaApplicants.unshift(newVisa);
+      store.visaApplicants.unshift(targetVisa);
       if (matchedSchool) {
         matchedSchool.activeStudentsCount = (matchedSchool.activeStudentsCount || 0) + 1;
+        syncToServer("UPSERT", "knltc_partner_schools", serializeSchoolToSheetRow(matchedSchool));
       }
     } else {
-      Object.assign(existingVisa, {
+      Object.assign(targetVisa, {
         name: existingLead.name,
         phone: existingLead.phone,
-        packageType: config.packageType || existingVisa.packageType,
+        packageType: config.packageType || targetVisa.packageType,
         targetSchool: resolvedSchoolName,
-        partnerSchoolId: matchedSchool?.id || existingVisa.partnerSchoolId,
-        b2bAgentId: matchedAgent?.id || existingVisa.b2bAgentId,
-        b2bAgentName: matchedAgent?.organizationName || existingVisa.b2bAgentName,
-        visaOfficerId: config.assignedVisaOfficerId || existingVisa.visaOfficerId,
-        visaOfficerName: config.assignedVisaOfficerName || existingVisa.visaOfficerName,
+        partnerSchoolId: matchedSchool?.id || targetVisa.partnerSchoolId,
+        b2bAgentId: matchedAgent?.id || targetVisa.b2bAgentId,
+        b2bAgentName: matchedAgent?.organizationName || targetVisa.b2bAgentName,
+        visaOfficerId: config.assignedVisaOfficerId || targetVisa.visaOfficerId,
+        visaOfficerName: config.assignedVisaOfficerName || targetVisa.visaOfficerName,
         leadId: existingLead.id,
         contractAmountBdt: defaultContract,
         paidAmountBdt: currentPaid,
@@ -1704,6 +2084,7 @@ export function provisionLeadLoginAndEnrollment(
         updatedAt: new Date().toISOString(),
       });
     }
+    syncToServer("UPSERT", "knltc_visa_applicants", serializeVisaToSheetRow(targetVisa));
   }
 
   // If Language Course is enrolled, ensure LMS bridge record exists
@@ -1711,7 +2092,7 @@ export function provisionLeadLoginAndEnrollment(
     const hasLms = store.lmsBridges.some((l) => l.phone === existingLead!.phone);
     if (!hasLms) {
       const sensei = store.staffList.find((st) => st.role === "SENIOR_SENSEI");
-      store.lmsBridges.unshift({
+      const newBridge: LmsUserBridge = {
         id: `lms-${Date.now()}`,
         leadId: existingLead.id,
         studentName: existingLead.name,
@@ -1728,13 +2109,32 @@ export function provisionLeadLoginAndEnrollment(
         activeBatch: config.enrolledBatchOrSession || "N5 Special Batch",
         assignedSenseiId: sensei?.id,
         assignedSenseiName: sensei?.name,
+      };
+      store.lmsBridges.unshift(newBridge);
+      syncToServer("UPSERT", "knltc_lms_bridges", {
+        id: newBridge.id,
+        lead_id: newBridge.leadId || "",
+        student_name: newBridge.studentName,
+        phone: newBridge.phone,
+        course_level: newBridge.courseLevel,
+        enrollment_no: newBridge.enrollmentNo,
+        portal_username: newBridge.portalUsername,
+        portal_password_masked: newBridge.portalPasswordMasked,
+        portal_fee_deducted_bdt: newBridge.portalFeeDeductedBdt,
+        net_knltc_margin_bdt: newBridge.netKnlTcMarginBdt,
+        credentials_sent_via_wa: newBridge.credentialsSentViaWa,
+        credentials_sent_at: newBridge.credentialsSentAt,
+        progress_percentage: newBridge.progressPercentage,
+        active_batch: newBridge.activeBatch,
+        assigned_sensei_id: newBridge.assignedSenseiId || "",
+        assigned_sensei_name: newBridge.assignedSenseiName || "",
       });
     }
   }
 
   // If an initial payment was entered during admission, record it in Finance Ledger
   if (config.initialPaymentBdt && Number(config.initialPaymentBdt) > 0) {
-    store.transactions.unshift({
+    const newTx: FinancialTransaction = {
       id: `trx-${Date.now()}`,
       receiptNo: `KNLTC-REC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
       date: new Date().toISOString().slice(0, 10),
@@ -1754,11 +2154,15 @@ export function provisionLeadLoginAndEnrollment(
       verifiedBy: existingLead.assignedTo,
       notes: `Initial admission payment (${config.enrolledBatchOrSession})`,
       linkedLeadId: existingLead.id,
-    });
+    };
+    store.transactions.unshift(newTx);
+    syncToServer("UPSERT", "knltc_finance_transactions", serializeTransactionToSheetRow(newTx));
   }
 
   store.websiteCms = [cms];
   saveCmsStore(store);
+
+  syncToServer("UPSERT", "knltc_crm_leads", serializeLeadToSheetRow(existingLead));
 
   const account = upsertSystemAccount({
     name: existingLead.name,
@@ -1852,31 +2256,15 @@ export function addCrmLead(lead: Omit<CrmLead, "id" | "createdAt" | "lastContact
 
   store.crmLeads.unshift(newLead);
 
-  // If referred by a B2B agent, increment their referred count
+  // If referred by a B2B agent, increment their referred count and sync to Sheet
   if (matchedAgent) {
     matchedAgent.referredStudentsCount = (matchedAgent.referredStudentsCount || 0) + 1;
+    syncToServer("UPSERT", "knltc_b2b_agents", serializeAgentToSheetRow(matchedAgent));
   }
 
   saveCmsStore(store);
 
-  syncToServer("INSERT", "knltc_crm_leads", {
-    id: newLead.id,
-    name: newLead.name,
-    phone: newLead.phone,
-    whatsapp: newLead.whatsapp,
-    email: newLead.email,
-    city: newLead.city,
-    source: newLead.source,
-    interest: newLead.interest,
-    status: newLead.status,
-    education: newLead.education,
-    japanese_proficiency: newLead.japaneseProficiency,
-    study_gap_years: newLead.studyGapYears,
-    assigned_to: newLead.assignedTo,
-    branch: newLead.branch,
-    notes: newLead.notes,
-    follow_up_date: newLead.followUpDate,
-  });
+  syncToServer("INSERT", "knltc_crm_leads", serializeLeadToSheetRow(newLead));
 
   return newLead;
 }
@@ -1910,7 +2298,7 @@ export function updateCrmLeadStatus(id: string, status: LeadStatus, notes?: stri
     lead.paidAmountBdt = lead.paidAmountBdt ?? 0;
     lead.dueAmountBdt = Math.max(0, defaultContract - lead.paidAmountBdt);
 
-    // 1. Increment assigned Counselor KPI & performance bonus
+    // 1. Increment assigned Counselor KPI & performance bonus and sync to Sheet
     const counselor = store.staffList.find(
       (st) =>
         (lead.assignedCounselorId && st.id === lead.assignedCounselorId) ||
@@ -1919,6 +2307,7 @@ export function updateCrmLeadStatus(id: string, status: LeadStatus, notes?: stri
     if (counselor) {
       counselor.admissionsAchieved = (counselor.admissionsAchieved || 0) + 1;
       counselor.performanceBonusBdt = (counselor.performanceBonusBdt || 0) + 1000;
+      syncToServer("UPSERT", "knltc_staff_members", serializeStaffToSheetRow(counselor));
     }
 
     // 2. Match Partner School & increment activeStudentsCount
@@ -1934,8 +2323,12 @@ export function updateCrmLeadStatus(id: string, status: LeadStatus, notes?: stri
         (lead.b2bAgentId && a.id === lead.b2bAgentId) ||
         (lead.b2bAgentName && a.organizationName.toLowerCase() === lead.b2bAgentName.toLowerCase()),
     );
+    if (matchedAgent) {
+      matchedAgent.referredStudentsCount = (matchedAgent.referredStudentsCount || 0) + 1;
+      syncToServer("UPSERT", "knltc_b2b_agents", serializeAgentToSheetRow(matchedAgent));
+    }
 
-    // 4. Auto-create VisaApplicant in Pipeline if not already present
+    // 4. Auto-create VisaApplicant in Pipeline if not already present and sync to Sheet
     const hasVisa = store.visaApplicants.some(
       (v) => v.leadId === lead.id || v.phone === lead.phone || v.trackingNo === trackingNo,
     );
@@ -1973,29 +2366,28 @@ export function updateCrmLeadStatus(id: string, status: LeadStatus, notes?: stri
         dueAmountBdt: lead.dueAmountBdt,
         sponsorName: lead.guardianName || "অভিভাবক (যাচাইকৃত)",
         sponsorRelation: "FATHER",
-        sponsorBank: "অগ্রণী ব্যাংক লি.",
-        sponsorBalanceBdt: 1850000,
-        bankLoanAssistance: false,
+        sponsorBank: lead.sponsorBankName || "অগ্রণী ব্যাংক লি.",
+        sponsorBalanceBdt: lead.sponsorBankBalanceBdt || 1850000,
+        bankLoanAssistance: Boolean(lead.bankLoanRequired),
+        bankLoanBank: lead.preferredLoanBank || "",
         coEStatus: "PENDING",
         visaStatus: "IN_PROCESS",
         counselorName: lead.assignedTo,
         updatedAt: new Date().toISOString(),
       };
       store.visaApplicants.unshift(newVisa);
+      syncToServer("UPSERT", "knltc_visa_applicants", serializeVisaToSheetRow(newVisa));
+
       if (matchedSchool) {
         matchedSchool.activeStudentsCount = (matchedSchool.activeStudentsCount || 0) + 1;
+        syncToServer("UPSERT", "knltc_partner_schools", serializeSchoolToSheetRow(matchedSchool));
       }
     }
   }
 
   saveCmsStore(store);
 
-  syncToServer("UPSERT", "knltc_crm_leads", {
-    id: lead.id,
-    status: status,
-    notes: lead.notes,
-    last_contacted_at: lead.lastContactedAt,
-  });
+  syncToServer("UPSERT", "knltc_crm_leads", serializeLeadToSheetRow(lead));
 
   return lead;
 }
@@ -2072,7 +2464,7 @@ export function updateVisaStage(id: string, nextStage: VisaStage): VisaApplicant
   app.stage = nextStage;
   app.updatedAt = new Date().toISOString();
 
-  // 1. Auto-increment Visa Officer KPI when progressing stages
+  // 1. Auto-increment Visa Officer KPI when progressing stages and sync to Sheet
   if (nextStage > prevStage) {
     const officer = store.staffList.find(
       (st) =>
@@ -2082,6 +2474,7 @@ export function updateVisaStage(id: string, nextStage: VisaStage): VisaApplicant
     );
     if (officer) {
       officer.kpiAchieved = (officer.kpiAchieved || 0) + 1;
+      syncToServer("UPSERT", "knltc_staff_members", serializeStaffToSheetRow(officer));
     }
   }
 
@@ -2101,6 +2494,7 @@ export function updateVisaStage(id: string, nextStage: VisaStage): VisaApplicant
         agent.pendingCommissionBdt =
           (agent.pendingCommissionBdt || 0) + (agent.agreedCommissionBdt || 30000);
         app.b2bCommissionTriggered = true;
+        syncToServer("UPSERT", "knltc_b2b_agents", serializeAgentToSheetRow(agent));
       }
     }
   }
@@ -2113,15 +2507,26 @@ export function updateVisaStage(id: string, nextStage: VisaStage): VisaApplicant
     app.visaStatus = "DEPARTED";
   }
 
+  // 4. Sync stage change into linked CrmLead activityLog
+  const linkedLead = store.crmLeads.find(
+    (l) => l.id === app.leadId || l.id === app.linkedLeadId || (app.phone && l.phone === app.phone),
+  );
+  if (linkedLead) {
+    const stageEntry: LeadActivityItem = {
+      id: `act-${Date.now()}`,
+      type: "STAGE_CHANGE",
+      summary: `Visa pipeline advanced to Stage ${nextStage} (COE: ${app.coEStatus}, Visa: ${app.visaStatus})`,
+      counselorName: app.visaOfficerName || app.counselorName || "Visa Officer",
+      createdAt: app.updatedAt,
+    };
+    linkedLead.activityLog = [stageEntry, ...(linkedLead.activityLog || [])];
+    linkedLead.lastContactedAt = app.updatedAt;
+    syncToServer("UPSERT", "knltc_crm_leads", serializeLeadToSheetRow(linkedLead));
+  }
+
   saveCmsStore(store);
 
-  syncToServer("UPSERT", "knltc_visa_applicants", {
-    id: app.id,
-    stage: nextStage,
-    coe_status: app.coEStatus,
-    visa_status: app.visaStatus,
-    updated_at: app.updatedAt,
-  });
+  syncToServer("UPSERT", "knltc_visa_applicants", serializeVisaToSheetRow(app));
 
   return app;
 }
@@ -2169,12 +2574,14 @@ export function addLmsCredentials(data: {
   if (matchedLead) {
     matchedLead.isCourseEnrolled = true;
     matchedLead.enrolledBatchOrSession = data.activeBatch;
+    syncToServer("UPSERT", "knltc_crm_leads", serializeLeadToSheetRow(matchedLead));
   }
 
   saveCmsStore(store);
 
   syncToServer("INSERT", "knltc_lms_bridges", {
     id: newBridge.id,
+    lead_id: newBridge.leadId || "",
     student_name: newBridge.studentName,
     phone: newBridge.phone,
     course_level: newBridge.courseLevel,
@@ -2187,6 +2594,8 @@ export function addLmsCredentials(data: {
     credentials_sent_at: newBridge.credentialsSentAt,
     progress_percentage: newBridge.progressPercentage,
     active_batch: newBridge.activeBatch,
+    assigned_sensei_id: newBridge.assignedSenseiId || "",
+    assigned_sensei_name: newBridge.assignedSenseiName || "",
   });
 
   return newBridge;
@@ -2234,6 +2643,15 @@ export function addFinancialTransaction(tx: Omit<FinancialTransaction, "id">): F
       matchedLead.paidAmountBdt = newPaid;
       matchedLead.dueAmountBdt = newDue;
       computedDue = newDue;
+      const payLog: LeadActivityItem = {
+        id: `act-pay-${Date.now()}`,
+        type: "PAYMENT",
+        summary: `Received ৳${Number(tx.amountBdt || 0).toLocaleString()} (${tx.type}) — Remaining Due: ৳${newDue.toLocaleString()}`,
+        counselorName: tx.verifiedBy || "Accounts",
+        createdAt: new Date().toISOString(),
+      };
+      matchedLead.activityLog = [payLog, ...(matchedLead.activityLog || [])];
+      syncToServer("UPSERT", "knltc_crm_leads", serializeLeadToSheetRow(matchedLead));
     }
 
     if (matchedVisa) {
@@ -2245,6 +2663,7 @@ export function addFinancialTransaction(tx: Omit<FinancialTransaction, "id">): F
       matchedVisa.paidAmountBdt = newPaid;
       matchedVisa.dueAmountBdt = newDue;
       computedDue = newDue;
+      syncToServer("UPSERT", "knltc_visa_applicants", serializeVisaToSheetRow(matchedVisa));
     }
   }
 
@@ -2259,19 +2678,7 @@ export function addFinancialTransaction(tx: Omit<FinancialTransaction, "id">): F
   store.transactions.unshift(newTx);
   saveCmsStore(store);
 
-  syncToServer("INSERT", "knltc_finance_transactions", {
-    id: newTx.id,
-    receipt_no: newTx.receiptNo,
-    date: newTx.date,
-    student_name: newTx.studentName,
-    type: newTx.type,
-    amount_bdt: newTx.amountBdt,
-    payment_method: newTx.paymentMethod,
-    reference_or_trx: newTx.referenceOrTrx,
-    branch: newTx.branch,
-    verified_by: newTx.verifiedBy,
-    notes: newTx.notes,
-  });
+  syncToServer("INSERT", "knltc_finance_transactions", serializeTransactionToSheetRow(newTx));
 
   return newTx;
 }
@@ -2285,7 +2692,7 @@ export function updateFinancialTransaction(
   if (!tx) return null;
   Object.assign(tx, updates);
   saveCmsStore(store);
-  syncToServer("UPSERT", "knltc_finance_transactions", tx);
+  syncToServer("UPSERT", "knltc_finance_transactions", serializeTransactionToSheetRow(tx));
   return tx;
 }
 
@@ -2305,6 +2712,7 @@ export function deleteFinancialTransaction(id: string) {
         0,
         (matchedLead.contractAmountBdt || 120000) - matchedLead.paidAmountBdt,
       );
+      syncToServer("UPSERT", "knltc_crm_leads", serializeLeadToSheetRow(matchedLead));
     }
     const matchedVisa = store.visaApplicants.find(
       (v) =>
@@ -2318,6 +2726,7 @@ export function deleteFinancialTransaction(id: string) {
         0,
         (matchedVisa.contractAmountBdt || 120000) - matchedVisa.paidAmountBdt,
       );
+      syncToServer("UPSERT", "knltc_visa_applicants", serializeVisaToSheetRow(matchedVisa));
     }
   }
   store.transactions = store.transactions.filter((t) => t.id !== id);
@@ -2344,6 +2753,7 @@ export function claimPartnerSchoolCommission(
 
   school.totalCommissionReceivedYen = (school.totalCommissionReceivedYen || 0) + yenAmount;
   saveCmsStore(store);
+  syncToServer("UPSERT", "knltc_partner_schools", serializeSchoolToSheetRow(school));
 
   return addFinancialTransaction({
     receiptNo: `JP-COM-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -2378,6 +2788,7 @@ export function settleB2bAgentCommission(
   agent.pendingCommissionBdt = Math.max(0, (agent.pendingCommissionBdt || 0) - payoutAmount);
   agent.paidCommissionBdt = (agent.paidCommissionBdt || 0) + payoutAmount;
   saveCmsStore(store);
+  syncToServer("UPSERT", "knltc_b2b_agents", serializeAgentToSheetRow(agent));
 
   return addFinancialTransaction({
     receiptNo: `B2B-PAY-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -2416,6 +2827,7 @@ export function disburseStaffPayroll(
   staff.lastPaidMonth = currentMonth;
   staff.performanceBonusBdt = 0;
   saveCmsStore(store);
+  syncToServer("UPSERT", "knltc_staff_members", serializeStaffToSheetRow(staff));
 
   return addFinancialTransaction({
     receiptNo: `PAY-${currentMonth.replace("-", "")}-${Math.floor(100 + Math.random() * 899)}`,
@@ -2483,20 +2895,7 @@ export function addPartnerSchool(school: Omit<JapanesePartnerSchool, "id">): Jap
 
   saveCmsStore(store);
 
-  syncToServer("INSERT", "knltc_partner_schools", {
-    id: newSchool.id,
-    name: newSchool.name,
-    japanese_name: newSchool.japaneseName,
-    location: newSchool.location,
-    contact_person: newSchool.contactPerson,
-    email: newSchool.email,
-    commission_per_student_yen: newSchool.commissionPerStudentYen,
-    commission_per_student_bdt: newSchool.commissionPerStudentBdt,
-    active_students_count: newSchool.activeStudentsCount,
-    total_commission_received_yen: newSchool.totalCommissionReceivedYen,
-    status: newSchool.status,
-  });
-
+  syncToServer("INSERT", "knltc_partner_schools", serializeSchoolToSheetRow(newSchool));
   syncToServer("CMS_UPDATE", undefined, cms);
 
   return newSchool;
@@ -2519,20 +2918,7 @@ export function updatePartnerSchool(id: string, updates: Partial<JapanesePartner
 
   saveCmsStore(store);
 
-  syncToServer("UPSERT", "knltc_partner_schools", {
-    id: s.id,
-    name: s.name,
-    japanese_name: s.japaneseName,
-    location: s.location,
-    contact_person: s.contactPerson,
-    email: s.email,
-    commission_per_student_yen: s.commissionPerStudentYen,
-    commission_per_student_bdt: s.commissionPerStudentBdt,
-    active_students_count: s.activeStudentsCount,
-    total_commission_received_yen: s.totalCommissionReceivedYen,
-    status: s.status,
-  });
-
+  syncToServer("UPSERT", "knltc_partner_schools", serializeSchoolToSheetRow(s));
   syncToServer("CMS_UPDATE", undefined, cms);
 
   return s;
@@ -2567,20 +2953,7 @@ export function addB2bAgent(agent: Omit<B2bAgent, "id">): B2bAgent {
 
   saveCmsStore(store);
 
-  syncToServer("INSERT", "knltc_b2b_agents", {
-    id: newAgent.id,
-    organization_name: newAgent.organizationName,
-    agent_type: newAgent.agentType,
-    contact_person: newAgent.contactPerson,
-    phone: newAgent.phone,
-    city: newAgent.city,
-    referred_students_count: newAgent.referredStudentsCount,
-    successful_visas_count: newAgent.successfulVisasCount,
-    agreed_commission_bdt: newAgent.agreedCommissionBdt,
-    pending_commission_bdt: newAgent.pendingCommissionBdt,
-    paid_commission_bdt: newAgent.paidCommissionBdt,
-  });
-
+  syncToServer("INSERT", "knltc_b2b_agents", serializeAgentToSheetRow(newAgent));
   syncToServer("CMS_UPDATE", undefined, cms);
 
   return newAgent;
@@ -2603,20 +2976,7 @@ export function updateB2bAgent(id: string, updates: Partial<B2bAgent>): B2bAgent
 
   saveCmsStore(store);
 
-  syncToServer("UPSERT", "knltc_b2b_agents", {
-    id: a.id,
-    organization_name: a.organizationName,
-    agent_type: a.agentType,
-    contact_person: a.contactPerson,
-    phone: a.phone,
-    city: a.city,
-    referred_students_count: a.referredStudentsCount,
-    successful_visas_count: a.successfulVisasCount,
-    agreed_commission_bdt: a.agreedCommissionBdt,
-    pending_commission_bdt: a.pendingCommissionBdt,
-    paid_commission_bdt: a.paidCommissionBdt,
-  });
-
+  syncToServer("UPSERT", "knltc_b2b_agents", serializeAgentToSheetRow(a));
   syncToServer("CMS_UPDATE", undefined, cms);
 
   return a;
@@ -2648,21 +3008,7 @@ export function addStaffMember(staff: Omit<StaffMember, "id">): StaffMember {
   store.staffList.unshift(newStaff);
   saveCmsStore(store);
 
-  syncToServer("INSERT", "knltc_staff_members", {
-    id: newStaff.id,
-    name: newStaff.name,
-    role: newStaff.role,
-    location: newStaff.location,
-    phone: newStaff.phone,
-    email: newStaff.email,
-    monthly_base_salary_bdt: newStaff.monthlyBaseSalaryBdt,
-    calls_target_monthly: newStaff.callsTargetMonthly,
-    calls_completed: newStaff.callsCompleted,
-    admissions_target: newStaff.admissionsTarget,
-    admissions_achieved: newStaff.admissionsAchieved,
-    performance_bonus_bdt: newStaff.performanceBonusBdt,
-    status: newStaff.status,
-  });
+  syncToServer("INSERT", "knltc_staff_members", serializeStaffToSheetRow(newStaff));
 
   return newStaff;
 }
@@ -2675,21 +3021,7 @@ export function updateStaffMember(id: string, updates: Partial<StaffMember>): St
   const s = store.staffList[idx];
   saveCmsStore(store);
 
-  syncToServer("UPSERT", "knltc_staff_members", {
-    id: s.id,
-    name: s.name,
-    role: s.role,
-    location: s.location,
-    phone: s.phone,
-    email: s.email,
-    monthly_base_salary_bdt: s.monthlyBaseSalaryBdt,
-    calls_target_monthly: s.callsTargetMonthly,
-    calls_completed: s.callsCompleted,
-    admissions_target: s.admissionsTarget,
-    admissions_achieved: s.admissionsAchieved,
-    performance_bonus_bdt: s.performanceBonusBdt,
-    status: s.status,
-  });
+  syncToServer("UPSERT", "knltc_staff_members", serializeStaffToSheetRow(s));
 
   return s;
 }
@@ -2980,7 +3312,33 @@ export function addLeadActivityLog(
 
   lead.activityLog = [newEntry, ...(lead.activityLog || [])];
   lead.lastContactedAt = newEntry.createdAt;
+
+  // Persist in websiteCms extended profiles
+  const cms = store.websiteCms?.[0] || DEFAULT_WEBSITE_CMS;
+  if (!cms.leadExtendedProfiles) cms.leadExtendedProfiles = {};
+  cms.leadExtendedProfiles[lead.id] = {
+    ...(cms.leadExtendedProfiles[lead.id] || {}),
+    ...lead,
+  };
+  store.websiteCms = [cms];
+
+  // Auto-increment counselor call KPI if this is a call or WhatsApp outreach
+  if (entry.type === "CALL" || entry.type === "WHATSAPP") {
+    const counselor = store.staffList.find(
+      (s) =>
+        s.name === entry.counselorName ||
+        s.name === lead.assignedTo ||
+        (lead.assignedTo && s.name.includes(lead.assignedTo.split(" ")[0])),
+    );
+    if (counselor) {
+      counselor.callsCompleted = (counselor.callsCompleted || 0) + 1;
+      syncToServer("UPSERT", "knltc_staff_members", serializeStaffToSheetRow(counselor));
+    }
+  }
+
   saveCmsStore(store);
+  syncToServer("UPSERT", "knltc_crm_leads", serializeLeadToSheetRow(lead));
+  syncToServer("CMS_UPDATE", undefined, cms);
   return lead;
 }
 
@@ -2994,12 +3352,39 @@ export function updateLmsProgressAndAttendance(
   const lead = store.crmLeads.find((l) => l.id === leadId || l.phone === phone);
   if (lead) {
     lead.attendancePercentage = attendancePercentage;
+    const cms = store.websiteCms?.[0] || DEFAULT_WEBSITE_CMS;
+    if (!cms.leadExtendedProfiles) cms.leadExtendedProfiles = {};
+    cms.leadExtendedProfiles[lead.id] = {
+      ...(cms.leadExtendedProfiles[lead.id] || {}),
+      ...lead,
+    };
+    store.websiteCms = [cms];
+    syncToServer("UPSERT", "knltc_crm_leads", serializeLeadToSheetRow(lead));
+    syncToServer("CMS_UPDATE", undefined, cms);
   }
   const bridge = store.lmsBridges.find(
     (b) => b.leadId === leadId || b.linkedLeadId === leadId || b.phone === phone,
   );
   if (bridge) {
     bridge.progressPercentage = progressPercentage;
+    syncToServer("UPSERT", "knltc_lms_bridges", {
+      id: bridge.id,
+      lead_id: bridge.leadId || bridge.linkedLeadId || lead?.id || "",
+      student_name: bridge.studentName,
+      phone: bridge.phone,
+      course_level: bridge.courseLevel,
+      enrollment_no: bridge.enrollmentNo,
+      portal_username: bridge.portalUsername,
+      portal_password_masked: bridge.portalPasswordMasked,
+      portal_fee_deducted_bdt: bridge.portalFeeDeductedBdt,
+      net_knltc_margin_bdt: bridge.netKnlTcMarginBdt,
+      credentials_sent_via_wa: bridge.credentialsSentViaWa,
+      credentials_sent_at: bridge.credentialsSentAt,
+      progress_percentage: bridge.progressPercentage,
+      active_batch: bridge.activeBatch,
+      assigned_sensei_id: bridge.assignedSenseiId || "",
+      assigned_sensei_name: bridge.assignedSenseiName || "",
+    });
   }
   saveCmsStore(store);
 }
@@ -3127,10 +3512,21 @@ export function assignStudentToPartnerSchool(
   if (lead) {
     lead.targetSchoolId = school.id;
     lead.targetSchoolName = school.name;
+    lead.targetSchool = school.name;
+    const cms = store.websiteCms?.[0] || DEFAULT_WEBSITE_CMS;
+    if (!cms.leadExtendedProfiles) cms.leadExtendedProfiles = {};
+    cms.leadExtendedProfiles[lead.id] = {
+      ...(cms.leadExtendedProfiles[lead.id] || {}),
+      ...lead,
+    };
+    store.websiteCms = [cms];
+    syncToServer("UPSERT", "knltc_crm_leads", serializeLeadToSheetRow(lead));
+    syncToServer("CMS_UPDATE", undefined, cms);
   }
   if (visa) {
     visa.targetSchoolId = school.id;
     visa.targetSchool = school.name;
+    syncToServer("UPSERT", "knltc_visa_applicants", serializeVisaToSheetRow(visa));
   }
 
   // Recompute activeStudentsCount for this school based on linked leads/visas
@@ -3138,7 +3534,8 @@ export function assignStudentToPartnerSchool(
   store.crmLeads.forEach((l) => {
     if (
       l.targetSchoolId === school.id ||
-      (l.targetSchoolName && l.targetSchoolName.toLowerCase() === school.name.toLowerCase())
+      (l.targetSchoolName && l.targetSchoolName.toLowerCase() === school.name.toLowerCase()) ||
+      (l.targetSchool && l.targetSchool.toLowerCase() === school.name.toLowerCase())
     ) {
       linkedStudentPhones.add(l.phone || l.id);
     }
@@ -3154,6 +3551,7 @@ export function assignStudentToPartnerSchool(
 
   school.activeStudentsCount = Math.max(school.activeStudentsCount || 0, linkedStudentPhones.size);
   saveCmsStore(store);
+  syncToServer("UPSERT", "knltc_partner_schools", serializeSchoolToSheetRow(school));
   return school;
 }
 
@@ -3174,12 +3572,22 @@ export function assignStudentToB2bAgent(
     lead.referredByAgentId = agent.id;
     lead.referredByAgentName = agent.organizationName;
     lead.source = "SUB_AGENT";
+    const cms = store.websiteCms?.[0] || DEFAULT_WEBSITE_CMS;
+    if (!cms.leadExtendedProfiles) cms.leadExtendedProfiles = {};
+    cms.leadExtendedProfiles[lead.id] = {
+      ...(cms.leadExtendedProfiles[lead.id] || {}),
+      ...lead,
+    };
+    store.websiteCms = [cms];
+    syncToServer("UPSERT", "knltc_crm_leads", serializeLeadToSheetRow(lead));
+    syncToServer("CMS_UPDATE", undefined, cms);
   }
   if (visa) {
     visa.b2bAgentId = agent.id;
     visa.referredByAgentId = agent.id;
     visa.b2bAgentName = agent.organizationName;
     visa.referredByAgentName = agent.organizationName;
+    syncToServer("UPSERT", "knltc_visa_applicants", serializeVisaToSheetRow(visa));
   }
 
   // Recompute referredStudentsCount for this agent
@@ -3208,6 +3616,7 @@ export function assignStudentToB2bAgent(
     linkedStudentPhones.size,
   );
   saveCmsStore(store);
+  syncToServer("UPSERT", "knltc_b2b_agents", serializeAgentToSheetRow(agent));
   return agent;
 }
 
@@ -3279,6 +3688,7 @@ export function bulkUpdateCrmLeads(
       ...(cms.leadExtendedProfiles![lead.id] || {}),
       ...lead,
     };
+    syncToServer("UPSERT", "knltc_crm_leads", serializeLeadToSheetRow(lead));
     updatedCount++;
   });
 
@@ -3349,7 +3759,7 @@ export function bulkImportCrmLeads(
       return;
     }
 
-    const interest: ServiceInterest = row.interest || "STUDENT_VISA_REGULAR";
+    const interest: ServiceInterest = normalizeSheetLeadInterest(row.interest);
     const defaultContract =
       row.contractAmountBdt ??
       (interest === "STUDENT_VISA_PREMIUM"
@@ -3385,12 +3795,14 @@ export function bulkImportCrmLeads(
         graduationYear: row.graduationYear || existingLead.graduationYear,
         studyGapYears:
           row.studyGapYears !== undefined ? row.studyGapYears : existingLead.studyGapYears,
-        japaneseProficiency: row.japaneseProficiency || existingLead.japaneseProficiency,
-        interest: row.interest || existingLead.interest,
-        status: row.status || existingLead.status,
+        japaneseProficiency: row.japaneseProficiency
+          ? normalizeSheetJapaneseProficiency(row.japaneseProficiency)
+          : existingLead.japaneseProficiency,
+        interest: row.interest ? normalizeSheetLeadInterest(row.interest) : existingLead.interest,
+        status: row.status ? normalizeSheetLeadStatus(row.status) : existingLead.status,
         priority: row.priority || existingLead.priority,
         assignedTo: row.assignedTo || existingLead.assignedTo,
-        branch: row.branch || existingLead.branch,
+        branch: row.branch ? normalizeSheetLeadBranch(row.branch) : existingLead.branch,
         targetSchool: row.targetSchool || existingLead.targetSchool,
         targetSchoolName: row.targetSchool || existingLead.targetSchoolName,
         contractAmountBdt: defaultContract,
@@ -3410,6 +3822,7 @@ export function bulkImportCrmLeads(
         ...(cms.leadExtendedProfiles![existingLead.id] || {}),
         ...existingLead,
       };
+      syncToServer("UPSERT", "knltc_crm_leads", serializeLeadToSheetRow(existingLead));
       updatedCount++;
       return;
     }
@@ -3434,16 +3847,16 @@ export function bulkImportCrmLeads(
           : ""),
       source: row.source || fallbackSource,
       interest,
-      status: row.status || fallbackStatus,
+      status: normalizeSheetLeadStatus(row.status || fallbackStatus),
       priority: row.priority || fallbackPriority,
       education: row.education || "HSC / Equivalent",
       sscGpa: row.sscGpa || "4.25",
       hscGpa: row.hscGpa || "4.00",
       graduationYear: row.graduationYear || "2024",
-      japaneseProficiency: row.japaneseProficiency || "NONE",
+      japaneseProficiency: normalizeSheetJapaneseProficiency(row.japaneseProficiency || "NONE"),
       studyGapYears: Number(row.studyGapYears ?? 1),
       assignedTo: row.assignedTo || fallbackAssignedTo,
-      branch: row.branch || fallbackBranch,
+      branch: normalizeSheetLeadBranch(row.branch || fallbackBranch),
       targetSchool: row.targetSchool || "",
       targetSchoolName: row.targetSchool || "",
       contractAmountBdt: defaultContract,
@@ -3472,24 +3885,7 @@ export function bulkImportCrmLeads(
     cms.leadExtendedProfiles![newLead.id] = { ...newLead };
     importedCount++;
 
-    syncToServer("INSERT", "knltc_crm_leads", {
-      id: newLead.id,
-      name: newLead.name,
-      phone: newLead.phone,
-      whatsapp: newLead.whatsapp,
-      email: newLead.email,
-      city: newLead.city,
-      source: newLead.source,
-      interest: newLead.interest,
-      status: newLead.status,
-      education: newLead.education,
-      japanese_proficiency: newLead.japaneseProficiency,
-      study_gap_years: newLead.studyGapYears,
-      assigned_to: newLead.assignedTo,
-      branch: newLead.branch,
-      notes: newLead.notes,
-      follow_up_date: newLead.followUpDate,
-    });
+    syncToServer("INSERT", "knltc_crm_leads", serializeLeadToSheetRow(newLead));
   });
 
   store.websiteCms = [cms];
