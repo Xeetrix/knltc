@@ -340,6 +340,8 @@ function purgeAllDummyDataFromSheets() {
     "knltc_visa_applicants",
     "knltc_lms_bridges",
     "knltc_b2b_agents",
+    "knltc_partner_schools",
+    "knltc_staff_members",
     "knltc_finance_transactions",
     "orders",
     "order_items",
@@ -888,232 +890,19 @@ function getOrCreateSubFolder(parentFolder, subFolderName) {
 function getInitialSeedDataForTable(tableName, nowIso) {
   switch (tableName) {
     case "categories":
-      return [
-        {
-          id: "cat-jlpt-books",
-          name: "JLPT N5 & N4 Books",
-          slug: "jlpt-books",
-          type: "product",
-          description: "Official Japanese Language Proficiency Test Textbooks, Workbooks & Kanji Guides",
-          created_at: nowIso
-        },
-        {
-          id: "cat-ssw-guides",
-          name: "SSW & Skill Test Guides",
-          slug: "ssw-skill-guides",
-          type: "product",
-          description: "Specified Skilled Worker (SSW) & JFT-Basic Preparation Materials",
-          created_at: nowIso
-        },
-        {
-          id: "cat-visa-blog",
-          name: "Japan Student & SSW Visa Guides",
-          slug: "japan-visa-guides",
-          type: "blog",
-          description: "Official COE, Embassy Interview & Study in Japan Advisories by KNLTC",
-          created_at: nowIso
-        }
-      ];
+      return [];
 
     case "products":
-      return [
-        {
-          id: "prod-minna-n5-bundle",
-          title: "Minna No Nihongo Elementary I (N5) Full 4-Book Set (Bangla Grammar & Vocabulary)",
-          slug: "minna-no-nihongo-n5-full-set-bangla",
-          description: "Complete N5 Textbook (Honsatsu), Bangla Translation & Grammatical Notes, Choukai Tasks, and Kanji Workbook.",
-          price: 1450,
-          discount_price: 1190,
-          category_id: "cat-jlpt-books",
-          stock: 85,
-          status: "published",
-          cover_image: "/images/books/minna-n5-cover.svg",
-          is_featured: true,
-          created_at: nowIso
-        },
-        {
-          id: "prod-minna-n4-bundle",
-          title: "Minna No Nihongo Elementary II (N4) Complete Set (Lessons 26–50)",
-          slug: "minna-no-nihongo-n4-complete-set",
-          description: "Official JLPT N4 & NAT-TEST 4Q preparation bundle with Bengali grammar explanation and listening workbook.",
-          price: 1550,
-          discount_price: 1290,
-          category_id: "cat-jlpt-books",
-          stock: 60,
-          status: "published",
-          cover_image: "/images/books/minna-n4-cover.svg",
-          is_featured: true,
-          created_at: nowIso
-        },
-        {
-          id: "prod-irodori-starter",
-          title: "Irodori: Japanese for Life in Japan (A1/A2 SSW & JFT-Basic Edition)",
-          slug: "irodori-japanese-life-in-japan-set",
-          description: "Japan Foundation Irodori practical communication workbook for SSW Visa & workplace fluency.",
-          price: 980,
-          discount_price: 790,
-          category_id: "cat-ssw-guides",
-          stock: 50,
-          status: "published",
-          cover_image: "/images/books/kanji-master-cover.svg",
-          is_featured: true,
-          created_at: nowIso
-        }
-      ];
+      return [];
 
     case "blog_posts":
-      return [
-        {
-          id: "blog-japan-student-visa-2027",
-          title: "জাপান স্টুডেন্ট ভিসা ২০২৭: রেগুলার (৳১,২০,০০০) বনাম প্রিমিয়াম (৳১১–১২ লক্ষ) প্যাকেজের বিস্তারিত গাইড",
-          slug: "japan-student-visa-2027-complete-guide-bangladesh",
-          summary: "জাপানে উচ্চশিক্ষার জন্য ১৫০ ঘণ্টার ভাষা কোর্স, ব্যাংক সলভেন্সি, সিওই (COE) প্রসেসিং এবং অ্যাম্বাসি ইন্টারভিউ প্রস্তুতির পূর্ণাঙ্গ রোডম্যাপ।",
-          content: "<p>জাপানে উচ্চশিক্ষা ও পার্ট-টাইম কাজের সুযোগ বাংলাদেশি শিক্ষার্থীদের জন্য অন্যতম সেরা ক্যারিয়ার পথ। KNLTC (Kurobe Nihongo Language Training Center) ঢাকা ও খুলনা শাখা থেকে সরাসরি জাপানি ভাষা প্রশিক্ষণ ও ১০ ধাপের স্বচ্ছ ভিসা প্রসেসিং সেবা প্রদান করছে।</p>",
-          featured_image: "/images/blog/japan-student-visa-guide.svg",
-          author: "Sheikh Baset (Managing Director, KNLTC)",
-          status: "published",
-          published_at: nowIso,
-          created_at: nowIso
-        },
-        {
-          id: "blog-jlpt-n5-150-hours",
-          title: "কেন জাপান ইমিগ্রেশনের জন্য ১৫০ ঘণ্টার জাপানি ভাষা সনদ ও JLPT N5/NAT-TEST বাধ্যতামূলক?",
-          slug: "why-150-hours-japanese-course-jlpt-n5-mandatory",
-          summary: "জাপান ইমিগ্রেশন ব্যুরো (ISA) কর্তৃক সিওই অনুমোদনের ক্ষেত্রে ভাষা দক্ষতার গুরুত্ব এবং KNLTC-এর ৳১২,০০০ টাকার N5 স্পেশাল ব্যাচ।",
-          content: "<p>জাপান স্টুডেন্ট ভিসার আবেদন করার পূর্বে ন্যূনতম ১৫০ ঘণ্টা জাপানি ভাষা শিক্ষা এবং JLPT N5 বা NAT-TEST 5Q পাস সার্টিফিকেট আপনার সিওই (COE) অনুমোদনের হার বহুগুণ বাড়িয়ে দেয়।</p>",
-          featured_image: "/images/blog/jlpt-n5-preparation.svg",
-          author: "Amir Hossain (Senior Japanese Sensei)",
-          status: "published",
-          published_at: nowIso,
-          created_at: nowIso
-        }
-      ];
+      return [];
 
     case "knltc_staff_members":
-      return [
-        {
-          id: "stf-01",
-          name: "শেখ বাসেত (Sheikh Baset)",
-          role: "MAIN_ADMIN",
-          location: "DHAKA_OFFICE",
-          phone: "01805013633",
-          email: "baset@knltc.com",
-          monthly_base_salary_bdt: 0,
-          kpi_type: "SALARIED_FIXED",
-          kpi_target: 0,
-          kpi_achieved: 0,
-          calls_target_monthly: 0,
-          calls_completed: 0,
-          admissions_target: 30,
-          admissions_achieved: 22,
-          performance_bonus_bdt: 0,
-          last_paid_month: "2026-10",
-          status: "ACTIVE",
-          created_at: nowIso
-        },
-        {
-          id: "stf-02",
-          name: "আমির হোসেন (Amir Hossain — Senior Sensei)",
-          role: "SENIOR_SENSEI",
-          location: "DHAKA_OFFICE",
-          phone: "01711002233",
-          email: "sensei.amir@knltc.com",
-          monthly_base_salary_bdt: 35000,
-          kpi_type: "CLASSES",
-          kpi_target: 26,
-          kpi_achieved: 24,
-          calls_target_monthly: 0,
-          calls_completed: 0,
-          admissions_target: 0,
-          admissions_achieved: 0,
-          performance_bonus_bdt: 3000,
-          last_paid_month: "2026-10",
-          status: "ACTIVE",
-          created_at: nowIso
-        },
-        {
-          id: "stf-03",
-          name: "শারমিন আক্তার (Sharmin Akter — Tele Counselor)",
-          role: "TELE_COUNSELOR",
-          location: "DHAKA_OFFICE",
-          phone: "01805013634",
-          email: "counselor.dhk@knltc.com",
-          monthly_base_salary_bdt: 18000,
-          kpi_type: "CALLS",
-          kpi_target: 600,
-          kpi_achieved: 540,
-          calls_target_monthly: 600,
-          calls_completed: 540,
-          admissions_target: 12,
-          admissions_achieved: 9,
-          performance_bonus_bdt: 4500,
-          last_paid_month: "2026-10",
-          status: "ACTIVE",
-          created_at: nowIso
-        },
-        {
-          id: "stf-04",
-          name: "মেহেদী হাসান (Mehedi Hasan — Khulna Branch Counselor)",
-          role: "TELE_COUNSELOR",
-          location: "KHULNA_OFFICE",
-          phone: "01911887766",
-          email: "khulna@knltc.com",
-          monthly_base_salary_bdt: 16000,
-          kpi_type: "CALLS",
-          kpi_target: 500,
-          kpi_achieved: 460,
-          calls_target_monthly: 500,
-          calls_completed: 460,
-          admissions_target: 10,
-          admissions_achieved: 7,
-          performance_bonus_bdt: 3500,
-          last_paid_month: "2026-10",
-          status: "ACTIVE",
-          created_at: nowIso
-        }
-      ];
+      return [];
 
     case "knltc_partner_schools":
-      return [
-        {
-          id: "sch-hla-hiroshima",
-          name: "HLA Gakuin Hiroshima (Hiroshima Language Academy)",
-          japanese_name: "HLA学院 広島日本語学校",
-          institution_type: "LANGUAGE_SCHOOL",
-          location: "Hiroshima, Japan",
-          contact_person: "Yamamoto Kenji (International Admissions)",
-          email: "admissions@hla-hiroshima.jp",
-          website_url: "https://knltc.com/study-in-japan",
-          logo_url: "/brand/knltc-logo.svg",
-          first_year_tuition_yen: 740000,
-          commission_per_student_yen: 80000,
-          commission_per_student_bdt: 64000,
-          intake_quota: 25,
-          active_students_count: 8,
-          total_commission_received_yen: 640000,
-          status: "ACTIVE_PARTNER",
-          created_at: nowIso
-        },
-        {
-          id: "sch-tokyo-central",
-          name: "Tokyo International Japanese Academy (Shinjuku)",
-          japanese_name: "東京国際日本語学院",
-          institution_type: "LANGUAGE_SCHOOL",
-          location: "Shinjuku, Tokyo",
-          contact_person: "Sato Haruka",
-          email: "intl@tokyo-ija.ac.jp",
-          website_url: "https://knltc.com/study-in-japan",
-          logo_url: "/brand/knltc-logo.svg",
-          first_year_tuition_yen: 780000,
-          commission_per_student_yen: 80000,
-          commission_per_student_bdt: 64000,
-          intake_quota: 20,
-          active_students_count: 6,
-          total_commission_received_yen: 480000,
-          status: "ACTIVE_PARTNER",
-          created_at: nowIso
-        }
-      ];
+      return [];
 
     case "knltc_b2b_agents":
       return [];

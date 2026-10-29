@@ -1013,30 +1013,7 @@ export const DEFAULT_WEBSITE_CMS: WebsiteCmsContent = {
       },
     },
   ],
-  testimonials: [
-    {
-      studentName: "তানভীর হাসান",
-      courseOrVisa: "টোকিও ল্যাঙ্গুয়েজ স্কুল (এপ্রিল ইনটেক)",
-      quote: {
-        bn: "KNLTC-র সবচেয়ে বড় সততা হলো ভিসার আগে ১ টাকাও সার্ভিস ফি নেয়নি। আর আমির সেন্সির ইন্টারভিউ ট্রেনিং আমাকে এম্বাসিতে কনফিডেন্স দিয়েছে।",
-        en: "KNLTC took zero service fee before visa. Sensei Amir's interview drills gave me immense confidence at the Embassy.",
-        ja: "ビザ取得前の事前費用が一切なく、アミール先生の丁寧な面接指導のおかげで無事にビザを取得できました。",
-      },
-      city: "ঢাকা",
-      avatarUrl: "/placeholder.svg",
-    },
-    {
-      studentName: "সাদিয়া আক্তার",
-      courseOrVisa: "SSW কেয়ারগিভার (আইচি প্রশাসনিক অঞ্চল)",
-      quote: {
-        bn: "নার্সিং ডিপ্লোমার পর KNLTC-তে N4 ও স্পেশাল কেয়ারগিভিং টার্মস শিখেছি। প্রতি মাসে এখন ২ লক্ষ টাকার বেশি বৈধ আয় করছি।",
-        en: "Learned N4 and technical caregiving terms at KNLTC after nursing diploma. Now earning over 200,000 JPY monthly in Japan.",
-        ja: "看護専門卒業後、KNLTCでN4と介護専門用語を学びました。現在は愛知県で充実した就労生活を送っています。",
-      },
-      city: "খুলনা",
-      avatarUrl: "/placeholder.svg",
-    },
-  ],
+  testimonials: [],
 };
 
 const DEFAULT_CRM_LEADS: CrmLead[] = [];
@@ -1076,9 +1053,9 @@ const DEFAULT_INVESTOR_PROJECT: InvestorProject = {
   },
   securityGuarantees: {
     stampAgreementBdt: 300,
-    bankChequeIssued: true,
-    chequeNumber: "IBBL-CHQ-9948201",
-    investorName: "প্রাইভেট ইনভেস্টর সিন্ডিকেট (১০ লক্ষ টাকা পার্টনারশিপ)",
+    bankChequeIssued: false,
+    chequeNumber: "",
+    investorName: "",
     tenureMonths: 12,
     profitSharePercentage: 10,
   },
@@ -1156,9 +1133,12 @@ export function purgeStoreOfDummyData(): MasterKnlTcStore {
   store.visaApplicants = [];
   store.lmsBridges = [];
   store.b2bAgents = [];
+  store.partnerSchools = [];
+  store.staffList = [];
   store.transactions = [];
   if (store.websiteCms?.[0]) {
     store.websiteCms[0].customerOrders = [];
+    store.websiteCms[0].testimonials = [];
   }
   saveCmsStore(store);
   return store;

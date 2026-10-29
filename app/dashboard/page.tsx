@@ -5372,7 +5372,7 @@ export default function DashboardPage() {
                       return matchedLead
                         ? v.phone === matchedLead.phone || v.trackingNo === matchedLead.fileTrackingNo
                         : false;
-                    }) || store.visaApplicants[0]
+                    })
                   }
                   lmsBridge={
                     store.lmsBridges.find((lms) => {
@@ -5383,10 +5383,10 @@ export default function DashboardPage() {
                             l.loginEmail?.toLowerCase() === currentUser.email.toLowerCase()),
                       );
                       return matchedLead ? lms.phone === matchedLead.phone : false;
-                    }) || store.lmsBridges[0]
+                    })
                   }
-                  userEmail={currentUser?.email || "student@knltc.com"}
-                  userName={currentUser?.name || tr("রাকিবুল ইসলাম", "Rakibul Islam", "ラキブル・イスラム")}
+                  userEmail={currentUser?.email || ""}
+                  userName={currentUser?.name || tr("শিক্ষার্থী", "Student Profile", "学生プロフィール")}
                 />
               )}
 

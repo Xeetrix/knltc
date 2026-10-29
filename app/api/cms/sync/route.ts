@@ -161,9 +161,12 @@ export async function POST(request: Request) {
       snapshot.visaApplicants = [];
       snapshot.lmsBridges = [];
       snapshot.b2bAgents = [];
+      snapshot.partnerSchools = [];
+      snapshot.staffList = [];
       snapshot.transactions = [];
       if (snapshot.websiteCms?.[0]) {
         snapshot.websiteCms[0].customerOrders = [];
+        snapshot.websiteCms[0].testimonials = [];
       }
       await writeServerSnapshot(snapshot);
       return NextResponse.json({ ok: true, message: "Server snapshot purged of dummy data" });

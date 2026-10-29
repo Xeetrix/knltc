@@ -226,34 +226,34 @@ export default function StudentProfileView({
               <span>{lead?.status === "ADMITTED" ? t.card1Admitted : t.card1Active}</span>
             </p>
             <p className="text-[11px] text-slate-500 mt-1">
-              {lead?.enrolledBatchOrSession || visaApplicant?.intakeSession || "APRIL_2027 Session"}
+              {lead?.enrolledBatchOrSession || visaApplicant?.intakeSession || "—"}
             </p>
           </div>
 
           <div className="rounded-2xl border border-stone-200 bg-[#fcfaf7] p-4">
             <span className="font-bold text-slate-500">{t.card2Title}</span>
             <p className="text-base font-black text-slate-900 mt-1">
-              {lead?.targetSchool || visaApplicant?.targetSchool || "HLA Gakuin (Hiroshima)"}
+              {lead?.targetSchool || visaApplicant?.targetSchool || "—"}
             </p>
             <p className="text-[11px] text-slate-500 mt-1">
-              {t.card2Package} {lead?.packageType || visaApplicant?.packageType || "REGULAR"}
+              {t.card2Package} {lead?.packageType || visaApplicant?.packageType || "—"}
             </p>
           </div>
 
           <div className="rounded-2xl border border-stone-200 bg-[#fcfaf7] p-4">
             <span className="font-bold text-slate-500">{t.card3Title}</span>
             <p className="text-base font-black text-indigo-800 mt-1">
-              {lmsBridge ? `${lmsBridge.courseLevel} (${lmsBridge.progressPercentage}%)` : lead?.japaneseProficiency || "LEARNING_N5"}
+              {lmsBridge ? `${lmsBridge.courseLevel} (${lmsBridge.progressPercentage}%)` : lead?.japaneseProficiency || "—"}
             </p>
             <p className="text-[11px] text-slate-500 mt-1">
-              {lmsBridge?.activeBatch || t.card3DefaultBatch}
+              {lmsBridge?.activeBatch || "—"}
             </p>
           </div>
 
           <div className="rounded-2xl border border-stone-200 bg-[#fcfaf7] p-4">
             <span className="font-bold text-slate-500">{t.card4Title}</span>
             <p className="text-base font-black text-slate-900 mt-1">
-              {lead?.assignedTo || visaApplicant?.counselorName || "Sheikh Baset"}
+              {lead?.assignedTo || visaApplicant?.counselorName || "—"}
             </p>
             <p className="text-[11px] text-emerald-700 font-bold mt-1">
               {t.branchPrefix} {lead?.branch === "KHULNA-01" ? t.branchKhulna : t.branchDhaka}
@@ -273,15 +273,15 @@ export default function StudentProfileView({
           <dl className="mt-4 space-y-3 text-xs">
             <div className="flex justify-between py-1.5 border-b border-stone-100">
               <dt className="text-slate-500 font-semibold">{t.fullName}</dt>
-              <dd className="font-bold text-slate-900">{lead?.name || userName}</dd>
+              <dd className="font-bold text-slate-900">{lead?.name || userName || "—"}</dd>
             </div>
             <div className="flex justify-between py-1.5 border-b border-stone-100">
               <dt className="text-slate-500 font-semibold">{t.phoneWa}</dt>
-              <dd className="font-mono font-bold text-slate-900">{lead?.phone || "N/A"}</dd>
+              <dd className="font-mono font-bold text-slate-900">{lead?.phone || "—"}</dd>
             </div>
             <div className="flex justify-between py-1.5 border-b border-stone-100">
               <dt className="text-slate-500 font-semibold">{t.cityAddress}</dt>
-              <dd className="font-bold text-slate-900">{lead?.address || lead?.city || "Dhaka"}</dd>
+              <dd className="font-bold text-slate-900">{lead?.address || lead?.city || "—"}</dd>
             </div>
             <div className="flex justify-between py-1.5 border-b border-stone-100">
               <dt className="text-slate-500 font-semibold">{t.passport}</dt>
@@ -289,7 +289,7 @@ export default function StudentProfileView({
             </div>
             <div className="flex justify-between py-1.5 border-b border-stone-100">
               <dt className="text-slate-500 font-semibold">{t.education}</dt>
-              <dd className="font-bold text-slate-900">{lead?.education || "HSC / Equivalent"}</dd>
+              <dd className="font-bold text-slate-900">{lead?.education || "—"}</dd>
             </div>
             {lead?.gpaDetails && (
               <div className="flex justify-between py-1.5 border-b border-stone-100">
@@ -300,13 +300,13 @@ export default function StudentProfileView({
             <div className="flex justify-between py-1.5 border-b border-stone-100">
               <dt className="text-slate-500 font-semibold">{t.guardianSponsor}</dt>
               <dd className="font-bold text-slate-900">
-                {lead?.guardianName || visaApplicant?.sponsorName || t.guardianDefault}
+                {lead?.guardianName || visaApplicant?.sponsorName || "—"}
               </dd>
             </div>
             <div className="pt-2">
               <dt className="text-slate-500 font-semibold mb-1">{t.counselorNotes}</dt>
               <dd className="rounded-xl bg-[#fcfaf7] border border-stone-200 p-3 text-slate-700 leading-relaxed">
-                {lead?.notes || t.defaultNote}
+                {lead?.notes || "—"}
               </dd>
             </div>
           </dl>

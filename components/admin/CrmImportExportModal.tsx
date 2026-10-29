@@ -389,11 +389,7 @@ function parseJapaneseProficiency(
   return "NONE";
 }
 
-const SAMPLE_SHEET_TSV = `Student Name\tPhone Number\tCity\tEducation\tSSC GPA\tHSC GPA\tPassing Year\tStudy Gap\tJapanese Level\tProgram Interest\tLead Status\tPriority\tCounselor\tContract Amount\tPaid Amount\tRemarks / Notes
-মাহমুদুল হাসান তানভীর\t01712345678\tঢাকা\tHSC Science\t4.88\t4.50\t2024\t1\tLEARNING_N5\tSTUDENT_VISA_REGULAR\tCOUNSELED\tHOT\tতানিয়া সুলতানা\t120000\t12000\tঅভিভাবকসহ আগামী সপ্তাহে পাসপোর্ট জমা দেবেন
-সাদিয়া আফরিন মিম\t01819876543\tখুলনা\tDiploma in Civil\t4.63\t3.75\t2023\t2\tPASSED_N5\tSTUDENT_VISA_PREMIUM\tADMITTED\tHOT\tনুসরাত জাহান\t1100000\t50000\tটোকিও অক্টোবর ইনটেক ফাইল ওপেন সম্পন্ন
-আরিফুল ইসলাম রনি\t01911223344\tগাজীপুর\tHSC Business\t4.10\t3.90\t2022\t3\tNONE\tJAPANESE_N5\tNEW\tWARM\tতানিয়া সুলতানা\t12000\t0\tGoogle Sheet পুরাতন ডাটা থেকে ইম্পোর্ট — N5 ব্যাচে আগ্রহী
-কাজী রাশেদুল করিম\t01677889900\tযশোর\tBSc Honours\t4.50\t4.25\t2023\t2\tPASSED_N4\tSSW_CONSTRUCTION_SPECIAL\tOFFICE_VISIT_BOOKED\tHOT\tশেখ বাসেত\t120000\t20000\tN4 পাস — ফ্রি থাকা-খাওয়া SSW স্কিল প্রোগ্রামে যুক্ত`;
+const SAMPLE_SHEET_TSV = `Student Name\tPhone Number\tCity\tEducation\tSSC GPA\tHSC GPA\tPassing Year\tStudy Gap\tJapanese Level\tProgram Interest\tLead Status\tPriority\tCounselor\tContract Amount\tPaid Amount\tRemarks / Notes`;
 
 export default function CrmImportExportModal({
   initialMode = "IMPORT",

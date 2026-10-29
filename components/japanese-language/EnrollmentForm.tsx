@@ -35,7 +35,7 @@ export default function EnrollmentForm() {
         subtitle:
           "Submit your details below. Our admission office will verify your application and send your official LMS portal username and password via WhatsApp.",
         labelName: "Full Name *",
-        placeholderName: "e.g. Md. Tanvir Ahmed",
+        placeholderName: "e.g. Your Full Name",
         labelPhone: "Phone Number *",
         placeholderPhone: "e.g. 01711 223344",
         labelWhatsapp: "WhatsApp Number *",
@@ -102,7 +102,7 @@ export default function EnrollmentForm() {
         subtitle:
           "নিচের ফর্মে ভর্তির আবেদন সম্পন্ন করুন। আমাদের টিম আপনার আবেদন ভেরিফাই করে সরাসরি আপনার হোয়াটসঅ্যাপে ডিজিটাল ক্লাসরুমের আইডি ও পাসওয়ার্ড বুঝিয়ে দেবে।",
         labelName: "শিক্ষার্থীর পূর্ণ নাম *",
-        placeholderName: "যেমন: মোঃ তানভীর আহমেদ",
+        placeholderName: "যেমন: আপনার পূর্ণ নাম",
         labelPhone: "মোবাইল নম্বর (Phone) *",
         placeholderPhone: "যেমন: 01711 223344",
         labelWhatsapp: "হোয়াটসঅ্যাপ নম্বর (WhatsApp) *",
@@ -169,7 +169,7 @@ export default function EnrollmentForm() {
         subtitle:
           "以下のフォームにご入力ください。受講手続確認後、公式LMSのアカウントID・パスワードをWhatsAppにてご案内します。",
         labelName: "氏名 *",
-        placeholderName: "例：Md. Tanvir Ahmed",
+        placeholderName: "例：お名前（ローマ字）",
         labelPhone: "電話番号 *",
         placeholderPhone: "例：01711 223344",
         labelWhatsapp: "WhatsApp番号 *",

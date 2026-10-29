@@ -375,6 +375,8 @@ export function purgeFallbackTables(): void {
   fallback.knltc_visa_applicants = [];
   fallback.knltc_lms_bridges = [];
   fallback.knltc_b2b_agents = [];
+  fallback.knltc_partner_schools = [];
+  fallback.knltc_staff_members = [];
   fallback.knltc_finance_transactions = [];
   fallback.orders = [];
   fallback.order_items = [];
