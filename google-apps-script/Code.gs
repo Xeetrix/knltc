@@ -512,7 +512,9 @@ function doPost(e) {
 
       var fileId = driveFile.getId();
       var directViewUrl = "https://drive.google.com/uc?export=view&id=" + fileId;
+      var cdnUrl = "https://lh3.googleusercontent.com/d/" + fileId;
       var downloadUrl = "https://drive.google.com/uc?export=download&id=" + fileId;
+      var isImage = mimeType && mimeType.indexOf("image/") === 0;
 
       return jsonResponse({
         ok: true,
@@ -520,7 +522,9 @@ function doPost(e) {
         fileId: fileId,
         fileName: fileName,
         mimeType: mimeType,
-        url: directViewUrl,
+        url: isImage ? cdnUrl : directViewUrl,
+        directViewUrl: directViewUrl,
+        cdnUrl: cdnUrl,
         downloadUrl: downloadUrl,
         webViewLink: driveFile.getUrl()
       });

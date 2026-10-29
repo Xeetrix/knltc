@@ -1,84 +1,76 @@
-# KNLTC Website — Full Revert to Previous Commit Version
+# 100% Free Google Drive Storage Architecture & Integration Plan for KNLTC
 
-This plan completely removes all changes introduced in the most recent commit/update and restores the KNLTC website, public pages, store catalog, forms, and database schema to their exact prior state.
-
-## User Review & Critical Decisions
-
-> [!IMPORTANT]
-> Both restoration preferences have been confirmed by the user and will be executed without retaining any partial changes from the latest update.
-
-- **Confirmed Decision 1 (Revert Scope)**: Completely revert all changes from the latest update across the entire application rather than keeping partial page edits.
-- **Confirmed Decision 2 (Forms, Store & Database Schema)**: Restore all public pages, form submission flows, store catalog, and Prisma database schema 100% back to the previous version's code.
+## Executive Summary
+KNLTC (`knltc.com`) operates an enterprise-grade ERP/CRM and student visa processing pipeline for Japan aspirants from Dhaka and Khulna. To eliminate recurring cloud storage costs (AWS S3, Firebase, Supabase), **100% of student visa documents, passports, solvency certificates, MOUs, book covers, and CMS media will be securely stored inside your free 15 GB Google Drive storage** linked directly to the same Google account powering `KNLTC_Master_Database` Google Sheets.
 
 ---
 
-## 1. Overview & Core Concept
+## 1. Storage Technology Analysis & Comparison
 
-- **What It Does**: Rolls back the latest update across the KNLTC platform so that the Home page, Study in Japan page, Work in Japan page, Japanese Language Course page, Book Store & Checkout flows, Header/Footer layout, Contact & Enrollment forms, global typography stylesheet, and Prisma schema match the previous commit version.
-- **Target Audience / Persona**: Bangladeshi students, job seekers, and KNLTC administrators expecting the stable pre-update version of the website.
-- **Key Value**: Guarantees immediate visual, structural, and functional parity with the previous commit by removing the newly added CMS reactive hook bindings, extra home/study page sections, and store/form bridge modifications.
-
----
-
-## 2. User Experience & Visual Design
-
-- **Key User Flows Restored**:
-  1. **Home Page Experience**: Restores the clean pre-update Home layout without the extra floating campaign popup banner, expanded guideline/after-arrival blocks, or Trustpilot/trade-license additions introduced in the last commit.
-  2. **Study in Japan & Work in Japan Flows**: Restores the original static trilingual dictionary structure, original package pricing display (`৳ ১,৫০,০০০` / `BDT 150,000` Regular Package), and original job opportunity cards without the extra calculator widget or live CMS hook overrides.
-  3. **Japanese Language Enrollment & Contact Flows**: Restores the original N4 course pricing (`৳14,500`) and original form submission handlers (`/api/contact`, `/api/orders`, and the standalone Enrollment reference confirmation flow).
-  4. **Header, Footer & Store Catalog**: Restores the static `siteConfig` contact/address bindings in the Header and Footer (removing the top CMS announcement bar) and restores `StoreCatalog` to render the server-provided `products` list directly.
-- **Visual Identity & Theme**:
-  - *Aesthetic Direction*: Clean institutional light theme (`--background: 0 0% 100%`, warm stone surfaces `#fcfaf7`, slate typography `#0f172a`).
-  - *Color Palette & Mood*: Signature Crimson Red (`--primary: 0 72% 42%` / `#b91c1c`) and Emerald Green (`--accent: 142 71% 29%` / `#15803d`) accents with balanced 60-30-10 surface contrast.
-  - *Typography & Hierarchy*: Restores the previous font configuration (`Plus Jakarta Sans`, `Noto Sans Bengali`, `Noto Sans JP`, and `JetBrains Mono`) and original line-height/tracking rules in the global stylesheet.
-- **Interactive Feedback & Motion**: Preserves the original `motion/react` entrance animations, interactive language switcher (`en` / `bn` / `ja`), and responsive navigation drawer.
+| Storage Provider | Cost | Bandwidth Limit | Security & Control | Best Suited For | Verdict for KNLTC |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Google Drive (Current Choice)** | **100% Free (15 GB)** | High (Fair Use) | **Private to your Google Account** | Student PDFs, Passports, Bank Docs, Receipts, Photos | **Optimal (Selected by User)** |
+| **Cloudinary** | Free (25 GB/mo bandwidth) | 25 Credits/mo | Hosted on 3rd party CDN | High-traffic e-commerce image CDN | Optional secondary for book images |
+| **Supabase / Firebase Storage** | Free tier capped at 1GB / 5GB | Metered egress | External vendor lock-in | Mobile apps / Auth-tied buckets | Retired in favor of Google ecosystem |
+| **Cloudflare R2 / AWS S3** | $0.015/GB (Credit card required) | Unlimited | Enterprise object storage | Millions of files / Streaming | Overkill for 15GB KNLTC requirement |
 
 ---
 
-## 3. Key Product Decisions & Trade-Offs
+## 2. Google Drive Architecture for KNLTC
 
-- **Decision 1: Complete Decoupling of Public Pages from the Reactive CMS Hook**
-  - *Chosen Approach*: Remove the reactive CMS hook and revert all public pages and layout components to use their self-contained trilingual dictionaries and `siteConfig` constants.
-  - *Why*: Matches the exact code and content behavior of the previous commit without runtime localStorage/CMS overrides altering public page copy or prices.
-  - *Alternatives Considered*: Keeping the hook while resetting default values was rejected because the user explicitly requested 100% restoration to the previous code.
-- **Decision 2: Full Restoration of Original Form, Store & Schema Code**
-  - *Chosen Approach*: Remove the newly added public-to-CRM helper calls from the Checkout, Contact, and Enrollment forms, and revert the Prisma schema and central store helper additions to their previous state.
-  - *Why*: Ensures zero residual side effects from the latest commit across both frontend components and backend definitions.
-
----
-
-## 4. Technical Architecture & Data Strategy *(Technical Reference)*
-
-### Architecture & Component Diagram (Restored Previous Commit State)
+### Folder Hierarchy inside Your Google Drive
+When files are uploaded via the KNLTC Dashboard, Google Apps Script automatically creates and organizes files in your Google Drive under:
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        Root Layout & Providers                          │
-│         LanguageProvider (en / bn / ja)  •  Static siteConfig           │
-└───────────────────┬─────────────────────────────────┬───────────────────┘
-                    │                                 │
-                    ▼                                 ▼
-┌───────────────────────────────────────┐ ┌───────────────────────────────┐
-│      Public Website & Store Pages     │ │   Dashboard & Admin Portal    │
-│  ┌─────────────────────────────────┐  │ │  ┌─────────────────────────┐  │
-│  │ Home / Study / Work / Language  │  │ │  │ 8-Module ERP / CRM /    │  │
-│  │ (Self-Contained i18n Content)   │  │ │  │ CMS Workspace           │  │
-│  └─────────────────────────────────┘  │ │  └────────────┬────────────┘  │
-│  ┌─────────────────────────────────┐  │ │               │               │
-│  │ Store Catalog / Cart / Checkout │  │ │               ▼               │
-│  │ (Server CMS Products & Orders)  │  │ │  ┌─────────────────────────┐  │
-│  └────────────────┬────────────────┘  │ │  │ Central CMS Store State │  │
-└───────────────────┼───────────────────┘ └───────────────┴───────────────┘
-                    │
-                    ▼
-┌───────────────────────────────────────┐
-│     API Routes (/api/orders,          │
-│     /api/contact, /api/cms/*)         │
-└───────────────────────────────────────┘
+My Drive (Google Drive)
+└── 📁 KNLTC_Uploads_And_Visa_Docs/
+    ├── 📁 KNLTC_Visa_Applicants/          (Passports, NID, Academic Certificates, Bank Solvency)
+    ├── 📁 KNLTC_Partner_Schools/          (HLA Gakuin & Japanese School MOUs, Licenses, Logos)
+    ├── 📁 KNLTC_B2B_Agents/               (Nexus Group, BWBS MOUs, Trade Licenses, Cheques)
+    ├── 📁 KNLTC_Finance_Receipts/         (Money Receipts, Bank Slips, Bkash/Nagad Trx Screenshots)
+    ├── 📁 KNLTC_Store_Books/              (Minna No Nihongo, JLPT Workbook Cover Images)
+    ├── 📁 KNLTC_Blog_Media/               (Japan Visa Guides & Student Thumbnails)
+    └── 📁 KNLTC_General_Uploads/          (Staff documents, miscellaneous files)
 ```
 
-### Data Model & State Restoration
-- **Public Pages & Layout**: Read directly from `translate(..., language)` dictionaries and `siteConfig` without subscribing to `useKnlTcCms`.
-- **Store & Checkout**: Render the `products` prop passed from `getPublishedProducts()` and submit checkout payloads directly to `/api/orders`.
-- **Contact & Course Enrollment**: Submit inquiries to `/api/contact` and run the original client-side enrollment confirmation workflow without invoking the newly added store mutation helpers.
-- **Build & Verification**: After reverting all modified modules and removing the extra hook created in the latest commit, run full TypeScript and Next.js production compilation to confirm a clean build.
+### Free Direct-Link & CDN Image Delivery
+- **Document Viewing & Download:**
+  - View URL: `https://drive.google.com/uc?export=view&id={fileId}`
+  - Download URL: `https://drive.google.com/uc?export=download&id={fileId}`
+- **High-Speed Image CDN (Google Usercontent):**
+  - Instant image delivery: `https://lh3.googleusercontent.com/d/{fileId}`
+  - Configured in Next.js `next.config.mjs` (`remotePatterns`) for zero-broken image rendering and high Lighthouse performance.
+
+---
+
+## 3. Step-by-Step Guide for KNLTC Admin
+
+### Step 1: Verify Google Drive Permissions in Apps Script
+1. Open your `KNLTC_Master_Database` Google Sheet.
+2. Go to **Extensions > Apps Script**.
+3. When you run `setupKNLTCDatabase()` or deploy the Web App, Google requests standard Google Drive permissions (`DriveApp` scope).
+4. Click **Review Permissions**, select your Google account (`contact.knltc@gmail.com`), and click **Allow**.
+5. Once approved, Apps Script can automatically create folders and save uploaded files without requiring any paid API key!
+
+### Step 2: How File Uploads Work in the Dashboard
+1. Go to `/dashboard` (e.g. Visa Pipeline, B2B Agents, or Partner Schools).
+2. Click the **"Drive-এ আপলোড"** button on any document or photo field.
+3. Select any file (PDF, JPG, PNG, WEBP, DOCX up to 15MB).
+4. The dashboard converts the file to base64, sends it to your Google Apps Script Web App (`UPLOAD_FILE_TO_DRIVE`), which saves it into `KNLTC_Uploads_And_Visa_Docs/{Folder}`.
+5. The direct Google Drive URL is immediately filled into the form and stored in the Google Sheet.
+
+### Step 3: Monitoring 15GB Free Storage
+- 15 GB can easily hold **10,000 to 15,000 student documents and photos** (average PDF/JPG is 1MB to 1.5MB).
+- You can check your storage anytime at [drive.google.com/drive/u/0/quota](https://drive.google.com/drive/u/0/quota).
+- If your agency ever exceeds 15,000 files in future years, Google One offers 100 GB for just ~$1.99/month (no migration needed).
+
+---
+
+## 4. Planned System Refinements
+
+1. **Google Drive CDN Image URL Enhancement (`google-apps-script/Code.gs`):**
+   - Provide `lh3.googleusercontent.com/d/{fileId}` as `cdnUrl` alongside `drive.google.com/uc?export=view&id={fileId}` so website book covers and blog thumbnails load at maximum speed.
+2. **Next.js Config Verification (`next.config.mjs`):**
+   - Ensure both `drive.google.com` and `lh3.googleusercontent.com` are whitelisted in `remotePatterns`.
+3. **Upload Feedback & Error Prevention:**
+   - Display file size and upload progress indicator on dashboard upload buttons.
