@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
 import { selectRows, upsertRow, insertRow, deleteRow } from "@/lib/supabase";
-import { bulkSyncMasterStoreToSheets } from "@/lib/google-sheets-db";
+import { bulkSyncMasterStoreToSheets, purgeFallbackTables } from "@/lib/google-sheets-db";
 import { getCmsStore, type MasterKnlTcStore } from "@/lib/knltc-cms-store";
 
 export const dynamic = "force-dynamic";
@@ -167,7 +167,9 @@ export async function POST(request: Request) {
       if (snapshot.websiteCms?.[0]) {
         snapshot.websiteCms[0].customerOrders = [];
         snapshot.websiteCms[0].testimonials = [];
+        snapshot.websiteCms[0].storeProducts = [];
       }
+      purgeFallbackTables();
       await writeServerSnapshot(snapshot);
       return NextResponse.json({ ok: true, message: "Server snapshot purged of dummy data" });
     }

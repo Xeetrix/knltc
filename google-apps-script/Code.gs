@@ -336,6 +336,9 @@ function setupKNLTCDatabase() {
 function purgeAllDummyDataFromSheets() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var dummyTables = [
+    "categories",
+    "products",
+    "blog_posts",
     "knltc_crm_leads",
     "knltc_visa_applicants",
     "knltc_lms_bridges",

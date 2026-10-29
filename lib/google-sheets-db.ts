@@ -80,111 +80,9 @@ function buildInitialFallbackTables(): Record<GoogleSheetsTableName, Record<stri
   const initialStore = getCmsStore();
   const initialCms = getWebsiteCms();
   return {
-    categories: [
-      {
-        id: "cat-jlpt-books",
-        name: "JLPT N5 & N4 Books",
-        slug: "jlpt-books",
-        type: "product",
-        description: "Official Japanese Language Proficiency Test Textbooks, Workbooks & Kanji Guides",
-        created_at: NOW_ISO,
-      },
-      {
-        id: "cat-ssw-guides",
-        name: "SSW & Skill Test Guides",
-        slug: "ssw-skill-guides",
-        type: "product",
-        description: "Specified Skilled Worker (SSW) & JFT-Basic Preparation Materials",
-        created_at: NOW_ISO,
-      },
-      {
-        id: "cat-visa-blog",
-        name: "Japan Student & SSW Visa Guides",
-        slug: "japan-visa-guides",
-        type: "blog",
-        description: "Official COE, Embassy Interview & Study in Japan Advisories by KNLTC",
-        created_at: NOW_ISO,
-      },
-    ],
-    products: [
-      {
-        id: "prod-minna-n5-bundle",
-        title: "Minna No Nihongo Elementary I (N5) Full 4-Book Set (Bangla Grammar & Vocabulary)",
-        slug: "minna-no-nihongo-n5-full-set-bangla",
-        description:
-          "Complete N5 Textbook (Honsatsu), Bangla Translation & Grammatical Notes, Choukai Tasks, and Kanji Workbook for KNLTC N5 batches.",
-        price: 1450,
-        discount_price: 1190,
-        category_id: "cat-jlpt-books",
-        stock: 85,
-        status: "published",
-        cover_image: "/images/books/minna-n5-cover.svg",
-        is_featured: true,
-        created_at: NOW_ISO,
-      },
-      {
-        id: "prod-minna-n4-bundle",
-        title: "Minna No Nihongo Elementary II (N4) Complete Set (Lessons 26–50)",
-        slug: "minna-no-nihongo-n4-complete-set",
-        description:
-          "Official JLPT N4 & NAT-TEST 4Q preparation bundle with Bengali grammar explanation and listening workbook.",
-        price: 1550,
-        discount_price: 1290,
-        category_id: "cat-jlpt-books",
-        stock: 60,
-        status: "published",
-        cover_image: "/images/books/minna-n4-cover.svg",
-        is_featured: true,
-        created_at: NOW_ISO,
-      },
-      {
-        id: "prod-irodori-starter",
-        title: "Irodori: Japanese for Life in Japan (A1/A2 SSW & JFT-Basic Edition)",
-        slug: "irodori-japanese-life-in-japan-set",
-        description:
-          "Japan Foundation Irodori practical communication workbook for SSW Visa & workplace fluency.",
-        price: 980,
-        discount_price: 790,
-        category_id: "cat-ssw-guides",
-        stock: 50,
-        status: "published",
-        cover_image: "/images/books/kanji-master-cover.svg",
-        is_featured: true,
-        created_at: NOW_ISO,
-      },
-    ],
-    blog_posts: [
-      {
-        id: "blog-japan-student-visa-2027",
-        title:
-          "জাপান স্টুডেন্ট ভিসা ২০২৭: রেগুলার (৳১,২০,০০০) বনাম প্রিমিয়াম (৳১১–১২ লক্ষ) প্যাকেজের বিস্তারিত গাইড",
-        slug: "japan-student-visa-2027-complete-guide-bangladesh",
-        summary:
-          "জাপানে উচ্চশিক্ষার জন্য ১৫০ ঘণ্টার ভাষা কোর্স, ব্যাংক সলভেন্সি, সিওই (COE) প্রসেসিং এবং অ্যাম্বাসি ইন্টারভিউ প্রস্তুতির পূর্ণাঙ্গ রোডম্যাপ।",
-        content:
-          "<p>জাপানে উচ্চশিক্ষা ও পার্ট-টাইম কাজের সুযোগ বাংলাদেশি শিক্ষার্থীদের জন্য অন্যতম সেরা ক্যারিয়ার পথ। KNLTC (Kurobe Nihongo Language Training Center) ঢাকা ও খুলনা শাখা থেকে সরাসরি জাপানি ভাষা প্রশিক্ষণ ও ১০ ধাপের স্বচ্ছ ভিসা প্রসেসিং সেবা প্রদান করছে।</p>",
-        featured_image: "/images/blog/japan-student-visa-guide.svg",
-        author: "Sheikh Baset (Managing Director, KNLTC)",
-        status: "published",
-        published_at: NOW_ISO,
-        created_at: NOW_ISO,
-      },
-      {
-        id: "blog-jlpt-n5-150-hours",
-        title:
-          "কেন জাপান ইমিগ্রেশনের জন্য ১৫০ ঘণ্টার জাপানি ভাষা সনদ ও JLPT N5/NAT-TEST বাধ্যতামূলক?",
-        slug: "why-150-hours-japanese-course-jlpt-n5-mandatory",
-        summary:
-          "জাপান ইমিগ্রেশন ব্যুরো (ISA) কর্তৃক সিওই অনুমোদনের ক্ষেত্রে ভাষা দক্ষতার গুরুত্ব এবং KNLTC-এর ৳১২,০০০ টাকার N5 স্পেশাল ব্যাচ।",
-        content:
-          "<p>জাপান স্টুডেন্ট ভিসার আবেদন করার পূর্বে ন্যূনতম ১৫০ ঘণ্টা জাপানি ভাষা শিক্ষা এবং JLPT N5 বা NAT-TEST 5Q পাস সার্টিফিকেট আপনার সিওই (COE) অনুমোদনের হার বহুগুণ বাড়িয়ে দেয়।</p>",
-        featured_image: "/images/blog/jlpt-n5-preparation.svg",
-        author: "Amir Hossain (Senior Japanese Sensei)",
-        status: "published",
-        published_at: NOW_ISO,
-        created_at: NOW_ISO,
-      },
-    ],
+    categories: [],
+    products: [],
+    blog_posts: [],
     orders: [],
     order_items: [],
     product_reviews: [],
@@ -371,6 +269,9 @@ function getFallbackTables(): Record<GoogleSheetsTableName, Record<string, any>[
 
 export function purgeFallbackTables(): void {
   const fallback = getFallbackTables();
+  fallback.categories = [];
+  fallback.products = [];
+  fallback.blog_posts = [];
   fallback.knltc_crm_leads = [];
   fallback.knltc_visa_applicants = [];
   fallback.knltc_lms_bridges = [];
@@ -382,27 +283,14 @@ export function purgeFallbackTables(): void {
   fallback.order_items = [];
   fallback.product_reviews = [];
   fallback.wishlist_items = [];
+  if (globalForSheetsFallback.knltcUploadedMedia) {
+    globalForSheetsFallback.knltcUploadedMedia = [];
+  }
 }
 
 export function getUploadedMediaList() {
   if (!globalForSheetsFallback.knltcUploadedMedia) {
-    globalForSheetsFallback.knltcUploadedMedia = [
-      {
-        name: "minna-n5-cover.svg",
-        url: "/images/books/minna-n5-cover.svg",
-        createdAt: NOW_ISO,
-      },
-      {
-        name: "minna-n4-cover.svg",
-        url: "/images/books/minna-n4-cover.svg",
-        createdAt: NOW_ISO,
-      },
-      {
-        name: "kanji-master-cover.svg",
-        url: "/images/books/kanji-master-cover.svg",
-        createdAt: NOW_ISO,
-      },
-    ];
+    globalForSheetsFallback.knltcUploadedMedia = [];
   }
   return globalForSheetsFallback.knltcUploadedMedia;
 }
@@ -467,10 +355,8 @@ export async function fetchSheetTable<T = Record<string, any>>(
 
     const json = await response.json();
     if (json && json.ok && Array.isArray(json.data)) {
-      if (json.data.length > 0 || !fallback[safeTable]?.length) {
-        fallback[safeTable] = json.data;
-        return json.data as T[];
-      }
+      fallback[safeTable] = json.data;
+      return json.data as T[];
     }
     return (fallback[safeTable] || []) as T[];
   } catch (err) {
@@ -504,7 +390,7 @@ export async function fetchAllSheetTables(): Promise<
     const json = await response.json();
     if (json && json.ok && json.data && typeof json.data === "object") {
       for (const tbl of GOOGLE_SHEETS_TABLES) {
-        if (Array.isArray(json.data[tbl]) && json.data[tbl].length > 0) {
+        if (Array.isArray(json.data[tbl])) {
           fallback[tbl] = json.data[tbl];
         }
       }

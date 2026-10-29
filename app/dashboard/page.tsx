@@ -609,6 +609,28 @@ export default function DashboardPage() {
       // 1. Purge locally in browser
       const cleanStore = purgeStoreOfDummyData();
       setStore({ ...cleanStore });
+      setAdminBundle((prev) => ({
+        ...prev,
+        products: [],
+        posts: [],
+        categories: [],
+        orders: [],
+        reviews: [],
+        crmLeads: [],
+        summary: prev.summary
+          ? {
+              ...prev.summary,
+              totalProducts: 0,
+              totalBlogPosts: 0,
+              totalDrafts: 0,
+              totalPublished: 0,
+              pendingOrders: 0,
+              pendingReviews: 0,
+              newLeads: 0,
+              lowStockProducts: 0,
+            }
+          : null,
+      }));
 
       // 2. Purge on Next.js server & Sheets backend
       await Promise.allSettled([

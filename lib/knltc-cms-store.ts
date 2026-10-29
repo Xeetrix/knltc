@@ -907,71 +907,7 @@ export const DEFAULT_WEBSITE_CMS: WebsiteCmsContent = {
       deadline: "2027-03-01",
     },
   ],
-  storeProducts: [
-    {
-      id: "prod-01",
-      name: {
-        bn: "মিন্না নো নিহোঙ্গো শোকিউ ১ (বাংলা অনুবাদ, ব্যাকরণ নোট ও ভোকাবুলারি)",
-        en: "Minna No Nihongo Shokyu 1 (Bangla Translation & Grammar Notes)",
-        ja: "みんなの日本語 初級I（ベンガル語翻訳・文法解説付き）",
-      },
-      slug: "minna-no-nihongo-shokyu-1-bangla",
-      category: "TEXTBOOK",
-      priceBdt: 450,
-      salePriceBdt: 390,
-      stockCount: 65,
-      imageUrl: "/placeholder.svg",
-      badgeBn: "বেস্টসেলার",
-      isPublished: true,
-      description: {
-        bn: "বাংলাদেশি শিক্ষার্থীদের জন্য ১-২৫ অধ্যায়ের নির্ভুল বাংলা অর্থ, গ্রামার নোট এবং প্র্যাকটিস ড্রিলস। N5 ও JFT প্রস্তুতির মূল বই।",
-        en: "Original Lessons 1-25 translated accurately into Bengali with full grammar explanations for N5 aspirants.",
-        ja: "バングラデシュの初級学習者のための第1〜25課ベンガル語解説付き標準テキスト。",
-      },
-    },
-    {
-      id: "prod-02",
-      name: {
-        bn: "JLPT N5 অফিসিয়াল প্র্যাকটিস ওয়ার্কবুক ও স্পেশাল অডিও সিডি",
-        en: "JLPT N5 Official Practice Workbook with Listening Audio CD",
-        ja: "JLPT N5 公式問題集＆リスニングCD付き",
-      },
-      slug: "jlpt-n5-official-practice-workbook",
-      category: "JLPT_PRACTICE",
-      priceBdt: 550,
-      salePriceBdt: 480,
-      stockCount: 40,
-      imageUrl: "/placeholder.svg",
-      badgeBn: "মক টেস্ট স্পেশাল",
-      isPublished: true,
-      description: {
-        bn: "JLPT এবং NAT-TEST-এর আসল পরীক্ষার প্যাটার্নে সাজানো ৫টি পূর্ণাঙ্গ প্রশ্নব্যাংক ও নেটিভ অডিও।",
-        en: "Real exam simulation with 5 full mock test papers and native Japanese speaker audio.",
-        ja: "本試験と同形式の模擬試験5回分とネイティブ音声音源を収録。",
-      },
-    },
-    {
-      id: "prod-03",
-      name: {
-        bn: "জাপানি কাঞ্জি ও ক্যালিগ্রাফি রাইটিং গ্রিড খাতা (১০৩ কাঞ্জি স্ট্রোক গাইড)",
-        en: "Japanese Kanji & Calligraphy Practice Notebook (103 Kanji Strokes)",
-        ja: "漢字・かな書き方練習帳（原稿用紙マス目仕様）",
-      },
-      slug: "kanji-calligraphy-writing-notebook",
-      category: "KANJI_SHEET",
-      priceBdt: 200,
-      salePriceBdt: 160,
-      stockCount: 110,
-      imageUrl: "/placeholder.svg",
-      badgeBn: "হাতে লেখার খাতা",
-      isPublished: true,
-      description: {
-        bn: "স্কয়ার গ্রিড সহ জাপানিজ মানুস্ক্রিপ্ট পেপার, যা হিরাগানা ও কাঞ্জির ভারসাম্যপূর্ণ স্ট্রোক অর্ডারে অপরিহার্য।",
-        en: "Special square-grid calligraphy manuscript paper designed for perfect Japanese stroke order.",
-        ja: "正しい筆順とバランスの良い文字が身につくマス目入り練習ノート。",
-      },
-    },
-  ],
+  storeProducts: [],
   customerOrders: [],
   metaPixelId: "n6w8uw179i0d0yw42u7z64xonnbmzv",
   contactHotline: "+880 1805 013633",
@@ -1139,6 +1075,7 @@ export function purgeStoreOfDummyData(): MasterKnlTcStore {
   if (store.websiteCms?.[0]) {
     store.websiteCms[0].customerOrders = [];
     store.websiteCms[0].testimonials = [];
+    store.websiteCms[0].storeProducts = [];
   }
   saveCmsStore(store);
   return store;
