@@ -1341,6 +1341,23 @@ export default function DashboardPage() {
               )}
             </div>
 
+            {/* Master Google Sheet Direct Link */}
+            {sheetsStatus.masterSheetUrl && (
+              <a
+                href={sheetsStatus.masterSheetUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition"
+                title={tr("মাস্টার গুগল শিট ওপেন করুন", "Open Master Google Sheet", "Googleスプレッドシートを開く")}
+              >
+                <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" />
+                <span className="hidden md:inline">
+                  {tr("গুগল শিট", "Google Sheet", "シート")}
+                </span>
+                <ArrowUpRight className="h-3 w-3 text-slate-400" />
+              </a>
+            )}
+
             {/* Cloud Sync */}
             <button
               type="button"
@@ -1397,113 +1414,6 @@ export default function DashboardPage() {
 
         {/* Main Animated Workspace Viewport */}
         <main className="flex-1 mx-auto w-full max-w-7xl px-4 py-6 sm:px-6">
-          {/* =====================================================================
-              GOOGLE SHEETS + GOOGLE DRIVE 1-CLICK CONNECTION & SYNC BAR
-              ===================================================================== */}
-          {(!currentUser || activeRole !== "STUDENT") && (
-            <div className="mb-6 rounded-2xl border border-emerald-900/15 bg-gradient-to-r from-[#133e29] via-[#164a31] to-[#133e29] px-4 py-3 text-white shadow-sm">
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-                <div className="flex items-start sm:items-center gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 border border-white/15 text-emerald-300">
-                    <FileSpreadsheet className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs sm:text-sm font-bold tracking-tight text-white">
-                        {tr(
-                          "KNLTC মাস্টার গুগল শিট ও গুগল ড্রাইভ ব্যাকএন্ড (১৫টি টেবিল)",
-                          "KNLTC Master Google Sheet & Drive Backend (15 Tables)",
-                          "KNLTC マスターGoogleスプレッドシート＆ドライブ基盤（全15タブ）",
-                        )}
-                      </span>
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                          sheetsStatus.connected
-                            ? "bg-emerald-400/20 text-emerald-200 border border-emerald-400/30"
-                            : "bg-amber-400/20 text-amber-200 border border-amber-400/30"
-                        }`}
-                      >
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full ${
-                            sheetsStatus.connected ? "bg-emerald-400" : "bg-amber-300"
-                          }`}
-                        />
-                        {sheetsStatus.connected
-                          ? tr("লাইভ সংযুক্ত", "Connected Live", "ライブ接続中")
-                          : tr("রেডি (সিড ও লোকাল মিরর সক্রিয়)", "Ready (Seed & Mirror Active)", "準備完了（ローカルミラー有効）")}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-emerald-100/80 mt-0.5 leading-relaxed">
-                      {tr(
-                        "১০০% ফ্রি গুগল শিট ডাটাবেজ ও গুগল ড্রাইভ ফাইল স্টোরেজ (KNLTC_Uploads_And_Visa_Docs) — কোনো পেইড ডাটাবেজ ছাড়াই সম্পূর্ণ সচল।",
-                        "100% Free Google Sheets Database + Google Drive File Storage (KNLTC_Uploads_And_Visa_Docs) with 60s edge caching.",
-                        "完全無料のGoogleスプレッドシートDB＋Googleドライブ証憑保管（KNLTC_Uploads_And_Visa_Docs）連携。",
-                      )}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 shrink-0">
-                  <button
-                    type="button"
-                    onClick={handlePushInitialDataToSheets}
-                    disabled={isPushingToSheets}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-xs font-bold text-[#133e29] hover:bg-emerald-50 transition shadow-2xs disabled:opacity-60"
-                  >
-                    <Upload className={`h-3.5 w-3.5 ${isPushingToSheets ? "animate-bounce" : ""}`} />
-                    <span>
-                      {isPushingToSheets
-                        ? tr("পুশ হচ্ছে...", "Pushing...", "送信中...")
-                        : tr(
-                            "Push Initial Data to Google Sheet",
-                            "Push Initial Data to Google Sheet",
-                            "初期データをシートへ一括送信",
-                          )}
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleManualSync}
-                    disabled={isSyncingWithDb}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/20 transition disabled:opacity-60"
-                  >
-                    <RefreshCw className={`h-3.5 w-3.5 ${isSyncingWithDb ? "animate-spin" : ""}`} />
-                    <span>
-                      {tr("Refresh Cache", "Refresh Cache", "キャッシュ更新")}
-                    </span>
-                  </button>
-
-                  <a
-                    href={sheetsStatus.masterSheetUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-400/30 bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-100 hover:bg-emerald-500/30 transition"
-                  >
-                    <span>
-                      {tr(
-                        "Open Master Google Sheet",
-                        "Open Master Google Sheet",
-                        "マスターシートを開く",
-                      )}
-                    </span>
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
-
-                  <button
-                    type="button"
-                    onClick={handlePurgeDummyData}
-                    disabled={isSyncingWithDb}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-red-400/40 bg-red-500/25 px-3 py-1.5 text-xs font-semibold text-red-100 hover:bg-red-500/40 transition disabled:opacity-60"
-                    title={tr("সমস্ত ডামি ডেটা মুছে ফেলুন", "Purge all dummy test data", "ダミーデータを削除")}
-                  >
-                    <Trash2 className="h-3.5 w-3.5 text-red-200" />
-                    <span>{tr("ডামি ডাটা মুছুন", "Purge Dummy Data", "ダミー削除")}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
 
           <AnimatePresence mode="wait">
             <motion.div
@@ -4863,6 +4773,58 @@ export default function DashboardPage() {
                       <Save className="h-4 w-4" />
                       <span>{t.cms.saveBtn}</span>
                     </button>
+                  </div>
+
+                  {/* Google Sheets & Storage Backend Integration Bar */}
+                  <div className="rounded-2xl border border-emerald-900/15 bg-gradient-to-r from-[#133e29] to-[#164a31] p-4 text-white shadow-xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-emerald-300">
+                          <FileSpreadsheet className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs sm:text-sm font-bold text-white">
+                              {tr("KNLTC মাস্টার গুগল শিট ডাটাবেজ (১৫টি টেবিল)", "KNLTC Master Google Sheet (15 Tables)", "KNLTC Googleスプレッドシート（15タブ）")}
+                            </span>
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/20 border border-emerald-400/30 px-2 py-0.5 text-[10px] font-bold text-emerald-200">
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                              {tr("লাইভ সংযুক্ত", "Live Connected", "接続中")}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-emerald-100/75 mt-0.5">
+                            {tr("গুগল ড্রাইভ ও শিটের সাথে স্বয়ংক্রিয় সিঙ্ক সক্রিয় রয়েছে।", "Auto-sync with Google Drive & Sheets is active.", "Googleドライブおよびシートとリアルタイム連携中")}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {sheetsStatus.masterSheetUrl && (
+                          <a
+                            href={sheetsStatus.masterSheetUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-400/30 bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-100 hover:bg-emerald-500/30 transition"
+                          >
+                            <span>{tr("গুগল শিট খুলুন", "Open Google Sheet", "シートを開く")}</span>
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        )}
+                        <button
+                          type="button"
+                          onClick={handlePushInitialDataToSheets}
+                          disabled={isPushingToSheets}
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-xs font-bold text-[#133e29] hover:bg-emerald-50 transition shadow-2xs disabled:opacity-60"
+                        >
+                          <Upload className="h-3.5 w-3.5" />
+                          <span>
+                            {isPushingToSheets
+                              ? tr("পুশ হচ্ছে...", "Pushing...", "送信中...")
+                              : tr("পুশ ডাটা", "Push Data", "データ送信")}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
                   {/* 1. Global Announcement & Hero Section */}
