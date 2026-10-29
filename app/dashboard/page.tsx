@@ -2105,16 +2105,6 @@ export default function DashboardPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={handlePurgeDummyData}
-                        disabled={isSyncingWithDb}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50/70 px-3 py-2.5 text-xs font-semibold text-red-700 hover:bg-red-100 transition shrink-0"
-                        title={tr("সমস্ত ডামি ডেটা মুছে ফেলুন", "Purge all dummy test data", "ダミーデータを削除")}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-600" />
-                        <span>{tr("ডামি ডাটা মুছুন", "Purge Dummy", "ダミー削除")}</span>
-                      </button>
-                      <button
-                        type="button"
                         onClick={() => setActiveModal("ADD_LEAD")}
                         className="inline-flex items-center gap-1.5 rounded-xl bg-[#b91c1c] px-4 py-2.5 text-xs font-semibold text-white hover:bg-red-800 transition shadow-2xs shrink-0"
                       >
@@ -4822,6 +4812,16 @@ export default function DashboardPage() {
                               ? tr("পুশ হচ্ছে...", "Pushing...", "送信中...")
                               : tr("পুশ ডাটা", "Push Data", "データ送信")}
                           </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handlePurgeDummyData}
+                          disabled={isSyncingWithDb}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-red-400/40 bg-red-500/20 px-3 py-1.5 text-xs font-semibold text-red-200 hover:bg-red-500/30 transition disabled:opacity-60"
+                          title="Purge Dummy Data"
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-red-300" />
+                          <span>{tr("ডামি ডাটা মুছুন", "Purge Dummy", "ダミー削除")}</span>
                         </button>
                       </div>
                     </div>
