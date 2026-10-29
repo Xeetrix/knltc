@@ -91,7 +91,7 @@ function equalsSafe(left: string, right: string) {
 export async function createAdminSession(
   email: string,
   role: UserRole = "MAIN_ADMIN",
-  name: string = "শেখ বাসেত (ব্যবস্থাপনা পরিচালক)",
+  name: string = "KNLTC Admin",
   branch: BranchCode = "ALL",
   allowedTabs?: DashboardTabId[],
   linkedLeadId?: string,
@@ -227,7 +227,7 @@ export async function verifyAdminCredentials(
   // 2. Fallback check if matches configured master admin env credentials
   const isMasterAdminEmail =
     equalsSafe(normalizedInputEmail, normalizedConfiguredEmail) ||
-    equalsSafe(normalizedInputEmail, "baset@knltc.com") ||
+    equalsSafe(normalizedInputEmail, "contact.knltc@gmail.com") ||
     equalsSafe(normalizedInputEmail, "admin@knltc.com");
   const isConfiguredPassword =
     equalsSafe(normalizedInputPassword, configuredPassword) ||
@@ -239,7 +239,7 @@ export async function verifyAdminCredentials(
         id: `admin:${normalizedInputEmail}`,
         email: normalizedInputEmail,
         role: "MAIN_ADMIN",
-        name: "শেখ বাসেত (ব্যবস্থাপনা পরিচালক)",
+        name: "KNLTC Admin",
         branch: "ALL",
         allowedTabs: ["overview", "crm", "visa", "lms", "b2b", "finance", "hr", "cms", "store_blog", "users"],
       },

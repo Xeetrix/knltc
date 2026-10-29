@@ -977,20 +977,7 @@ export const DEFAULT_WEBSITE_CMS: WebsiteCmsContent = {
 
 const DEFAULT_CRM_LEADS: CrmLead[] = [];
 
-export const DEFAULT_SYSTEM_ACCOUNTS: SystemUserAccount[] = [
-  {
-    id: "acc-admin-01",
-    name: "শেখ বাসেত (ম্যানেজিং ডিরেক্টর / Main Admin)",
-    email: "baset@knltc.com",
-    password: "admin123",
-    phone: "+880 1805 013633",
-    role: "MAIN_ADMIN",
-    branch: "ALL",
-    allowedTabs: ["overview", "crm", "visa", "lms", "b2b", "finance", "hr", "cms", "store_blog", "users"],
-    status: "ACTIVE",
-    createdAt: "2026-01-01T00:00:00.000Z",
-  },
-];
+export const DEFAULT_SYSTEM_ACCOUNTS: SystemUserAccount[] = [];
 
 const DEFAULT_VISA_APPLICANTS: VisaApplicant[] = [];
 
@@ -1099,6 +1086,11 @@ export function purgeStoreOfDummyData(): MasterKnlTcStore {
     store.websiteCms[0].customerOrders = [];
     store.websiteCms[0].testimonials = [];
     store.websiteCms[0].storeProducts = [];
+    if (Array.isArray(store.websiteCms[0].systemAccounts)) {
+      store.websiteCms[0].systemAccounts = store.websiteCms[0].systemAccounts.filter(
+        (a) => a.id !== "acc-admin-01" && a.email?.toLowerCase() !== "baset@knltc.com",
+      );
+    }
   }
   saveCmsStore(store);
   return store;
@@ -1295,9 +1287,11 @@ export function serializeLeadToSheetRow(lead: CrmLead): Record<string, any> {
     interest: lead.interest || "STUDENT_VISA_REGULAR",
     status: lead.status || "NEW",
     education: lead.education || "HSC",
+    ssc_gpa: lead.sscGpa || "",
+    hsc_gpa: lead.hscGpa || "",
     japanese_proficiency: lead.japaneseProficiency || "NONE",
     study_gap_years: Number(lead.studyGapYears) || 0,
-    assigned_to: lead.assignedTo || "শেখ বাসেত",
+    assigned_to: lead.assignedTo || "Unassigned",
     branch: lead.branch || "DHK-HQ",
     notes: lead.notes || "",
     follow_up_date: lead.followUpDate ? String(lead.followUpDate).slice(0, 10) : "",
@@ -1343,6 +1337,7 @@ export function serializeVisaToSheetRow(v: VisaApplicant): Record<string, any> {
     coe_status: v.coEStatus,
     visa_status: v.visaStatus,
     counselor_name: v.counselorName,
+    profile_json: JSON.stringify(v),
     updated_at: v.updatedAt || new Date().toISOString(),
     created_at: v.updatedAt || new Date().toISOString(),
   };
@@ -1366,6 +1361,7 @@ export function serializeSchoolToSheetRow(s: JapanesePartnerSchool): Record<stri
     active_students_count: s.activeStudentsCount ?? 0,
     total_commission_received_yen: s.totalCommissionReceivedYen ?? 0,
     status: s.status || "ACTIVE_PARTNER",
+    profile_json: JSON.stringify(s),
   };
 }
 
@@ -1388,6 +1384,7 @@ export function serializeAgentToSheetRow(a: B2bAgent): Record<string, any> {
     bank_name: a.bankName || "",
     bank_account_no: a.bankAccountNo || "",
     bkash_or_nagad_no: a.bkashOrNagadNo || "",
+    profile_json: JSON.stringify(a),
   };
 }
 
@@ -1578,6 +1575,8 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
           priority,
           passportNo: l.passport_no || parsedProfile.passportNo || local?.passportNo || "",
           education: l.education || parsedProfile.education || local?.education || "HSC",
+          sscGpa: l.ssc_gpa || parsedProfile.sscGpa || local?.sscGpa || "",
+          hscGpa: l.hsc_gpa || parsedProfile.hscGpa || local?.hscGpa || "",
           japaneseProficiency: normalizeSheetJapaneseProficiency(
             l.japanese_proficiency || parsedProfile.japaneseProficiency || local?.japaneseProficiency,
           ),
@@ -1585,7 +1584,7 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
             l.study_gap_years != null && !isNaN(Number(l.study_gap_years))
               ? Number(l.study_gap_years)
               : parsedProfile.studyGapYears ?? local?.studyGapYears ?? 0,
-          assignedTo: rawAssigned,
+          assignedTo: rawAssigned === "শেখ বাসেত" ? "Unassigned" : rawAssigned,
           branch: normalizeSheetLeadBranch(l.branch || parsedProfile.branch || local?.branch),
           targetSchool: cleanTargetSchool,
           targetSchoolName: cleanTargetSchool,
@@ -1605,46 +1604,71 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
     }
 
     if (Array.isArray(data.visaApplicants)) {
+      const existingVisaMap = new Map(store.visaApplicants.map((item) => [item.id, item]));
       store.visaApplicants = data.visaApplicants.map((v: any) => {
-        const contract = v.contract_amount_bdt != null ? Number(v.contract_amount_bdt) : 120000;
-        const paid = v.paid_amount_bdt != null ? Number(v.paid_amount_bdt) : 0;
-        const due = v.due_amount_bdt != null ? Number(v.due_amount_bdt) : Math.max(0, contract - paid);
+        const local = existingVisaMap.get(v.id);
+        let parsedProfile: Partial<VisaApplicant> = {};
+        if (v.profile_json) {
+          try {
+            parsedProfile =
+              typeof v.profile_json === "string" ? JSON.parse(v.profile_json) : v.profile_json;
+          } catch {
+            parsedProfile = {};
+          }
+        }
+        const contract =
+          v.contract_amount_bdt != null
+            ? Number(v.contract_amount_bdt)
+            : parsedProfile.contractAmountBdt ?? local?.contractAmountBdt ?? 120000;
+        const paid =
+          v.paid_amount_bdt != null
+            ? Number(v.paid_amount_bdt)
+            : parsedProfile.paidAmountBdt ?? local?.paidAmountBdt ?? 0;
+        const due =
+          v.due_amount_bdt != null
+            ? Number(v.due_amount_bdt)
+            : Math.max(0, contract - paid);
         return {
+          ...local,
+          ...parsedProfile,
           id: v.id,
-          leadId: v.lead_id || "",
-          linkedLeadId: v.lead_id || "",
-          trackingNo: v.tracking_no,
-          name: v.name,
-          phone: String(v.phone || ""),
-          branch: normalizeSheetLeadBranch(v.branch),
-          packageType: v.package_type || "REGULAR",
-          intakeSession: v.intake_session || "APRIL_2027",
-          stage: (Number(v.stage) || 1) as VisaStage,
-          targetSchool: v.target_school || "",
-          targetSchoolName: v.target_school || "",
-          partnerSchoolId: v.partner_school_id || "",
-          targetSchoolId: v.partner_school_id || "",
-          b2bAgentId: v.b2b_agent_id || "",
-          referredByAgentId: v.b2b_agent_id || "",
-          b2bAgentName: v.b2b_agent_name || "",
-          referredByAgentName: v.b2b_agent_name || "",
-          visaOfficerId: v.visa_officer_id || "",
-          assignedVisaOfficerId: v.visa_officer_id || "",
-          visaOfficerName: v.visa_officer_name || "",
-          assignedVisaOfficerName: v.visa_officer_name || "",
+          leadId: v.lead_id || parsedProfile.leadId || local?.leadId || "",
+          linkedLeadId: v.lead_id || parsedProfile.linkedLeadId || local?.linkedLeadId || "",
+          trackingNo: v.tracking_no || parsedProfile.trackingNo || local?.trackingNo,
+          name: v.name || parsedProfile.name || local?.name,
+          phone: String(v.phone || parsedProfile.phone || local?.phone || ""),
+          branch: normalizeSheetLeadBranch(v.branch || parsedProfile.branch || local?.branch),
+          packageType: v.package_type || parsedProfile.packageType || local?.packageType || "REGULAR",
+          intakeSession: v.intake_session || parsedProfile.intakeSession || local?.intakeSession || "APRIL_2027",
+          stage: (Number(v.stage || parsedProfile.stage || local?.stage) || 1) as VisaStage,
+          targetSchool: v.target_school || parsedProfile.targetSchool || local?.targetSchool || "",
+          targetSchoolName: v.target_school || parsedProfile.targetSchoolName || local?.targetSchoolName || "",
+          partnerSchoolId: v.partner_school_id || parsedProfile.partnerSchoolId || local?.partnerSchoolId || "",
+          targetSchoolId: v.partner_school_id || parsedProfile.targetSchoolId || local?.targetSchoolId || "",
+          b2bAgentId: v.b2b_agent_id || parsedProfile.b2bAgentId || local?.b2bAgentId || "",
+          referredByAgentId: v.b2b_agent_id || parsedProfile.referredByAgentId || local?.referredByAgentId || "",
+          b2bAgentName: v.b2b_agent_name || parsedProfile.b2bAgentName || local?.b2bAgentName || "",
+          referredByAgentName: v.b2b_agent_name || parsedProfile.referredByAgentName || local?.referredByAgentName || "",
+          visaOfficerId: v.visa_officer_id || parsedProfile.visaOfficerId || local?.visaOfficerId || "",
+          assignedVisaOfficerId: v.visa_officer_id || parsedProfile.assignedVisaOfficerId || local?.assignedVisaOfficerId || "",
+          visaOfficerName: v.visa_officer_name || parsedProfile.visaOfficerName || local?.visaOfficerName || "",
+          assignedVisaOfficerName: v.visa_officer_name || parsedProfile.assignedVisaOfficerName || local?.assignedVisaOfficerName || "",
           contractAmountBdt: contract,
           paidAmountBdt: paid,
           dueAmountBdt: due,
-          sponsorName: v.sponsor_name || "",
-          sponsorRelation: v.sponsor_relation || "FATHER",
-          sponsorBank: v.sponsor_bank || "",
-          sponsorBalanceBdt: Number(v.sponsor_balance_bdt) || 0,
-          bankLoanAssistance: Boolean(v.bank_loan_assistance),
-          bankLoanBank: v.bank_loan_bank || "",
-          coEStatus: v.coe_status || "PENDING",
-          visaStatus: v.visa_status || "IN_PROCESS",
-          counselorName: v.counselor_name || "শেখ বাসেত",
-          updatedAt: v.updated_at || new Date().toISOString(),
+          sponsorName: v.sponsor_name || parsedProfile.sponsorName || local?.sponsorName || "",
+          sponsorRelation: v.sponsor_relation || parsedProfile.sponsorRelation || local?.sponsorRelation || "FATHER",
+          sponsorBank: v.sponsor_bank || parsedProfile.sponsorBank || local?.sponsorBank || "",
+          sponsorBalanceBdt: Number(v.sponsor_balance_bdt ?? parsedProfile.sponsorBalanceBdt ?? local?.sponsorBalanceBdt) || 0,
+          bankLoanAssistance: Boolean(v.bank_loan_assistance ?? parsedProfile.bankLoanAssistance ?? local?.bankLoanAssistance),
+          bankLoanBank: v.bank_loan_bank || parsedProfile.bankLoanBank || local?.bankLoanBank || "",
+          coEStatus: v.coe_status || parsedProfile.coEStatus || local?.coEStatus || "PENDING",
+          visaStatus: v.visa_status || parsedProfile.visaStatus || local?.visaStatus || "IN_PROCESS",
+          counselorName:
+            v.counselor_name && v.counselor_name !== "শেখ বাসেত"
+              ? v.counselor_name
+              : parsedProfile.counselorName || local?.counselorName || "KNLTC Admin",
+          updatedAt: v.updated_at || parsedProfile.updatedAt || new Date().toISOString(),
         };
       });
       hasChanges = true;
@@ -1677,36 +1701,47 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
       const existingSchoolsMap = new Map(store.partnerSchools.map((s) => [s.id, s]));
       store.partnerSchools = data.partnerSchools.map((s: any) => {
         const local = existingSchoolsMap.get(s.id);
+        let parsedProfile: Partial<JapanesePartnerSchool> = {};
+        if (s.profile_json) {
+          try {
+            parsedProfile =
+              typeof s.profile_json === "string" ? JSON.parse(s.profile_json) : s.profile_json;
+          } catch {
+            parsedProfile = {};
+          }
+        }
         const commYen = s.commission_per_student_yen !== undefined && s.commission_per_student_yen !== null
           ? Number(s.commission_per_student_yen)
-          : (local?.commissionPerStudentYen ?? 0);
+          : (parsedProfile.commissionPerStudentYen ?? local?.commissionPerStudentYen ?? 0);
         const commBdt = s.commission_per_student_bdt !== undefined && s.commission_per_student_bdt !== null
           ? Number(s.commission_per_student_bdt)
-          : (local?.commissionPerStudentBdt ?? 0);
+          : (parsedProfile.commissionPerStudentBdt ?? local?.commissionPerStudentBdt ?? 0);
 
         return {
           ...local,
+          ...parsedProfile,
           id: s.id,
-          name: s.name,
-          japaneseName: s.japanese_name || local?.japaneseName || "",
-          location: s.location || local?.location || "",
-          contactPerson: s.contact_person || local?.contactPerson || "",
-          email: s.email || local?.email || "",
+          name: s.name || parsedProfile.name || local?.name,
+          japaneseName: s.japanese_name || parsedProfile.japaneseName || local?.japaneseName || "",
+          location: s.location || parsedProfile.location || local?.location || "",
+          contactPerson: s.contact_person || parsedProfile.contactPerson || local?.contactPerson || "",
+          email: s.email || parsedProfile.email || local?.email || "",
           commissionPerStudentYen: isNaN(commYen) ? 0 : commYen,
           commissionPerStudentBdt: isNaN(commBdt) ? 0 : commBdt,
-          activeStudentsCount: Number(s.active_students_count) || local?.activeStudentsCount || 0,
-          totalCommissionReceivedYen: Number(s.total_commission_received_yen) || local?.totalCommissionReceivedYen || 0,
-          status: s.status || local?.status || "ACTIVE_PARTNER",
-          logoUrl: s.logo_url || local?.logoUrl,
-          institutionType: s.institution_type || local?.institutionType || "LANGUAGE_SCHOOL",
-          websiteUrl: s.website_url || local?.websiteUrl,
-          firstYearTuitionYen: s.first_year_tuition_yen != null ? Number(s.first_year_tuition_yen) : (local?.firstYearTuitionYen ?? 760000),
-          admissionFeeYen: local?.admissionFeeYen ?? 50000,
-          hostelFeeMonthlyYen: local?.hostelFeeMonthlyYen ?? 35000,
-          intakeMonths: local?.intakeMonths || ["APRIL", "OCTOBER"],
-          intakeQuota: s.intake_quota != null ? Number(s.intake_quota) : (local?.intakeQuota || 20),
-          documents: local?.documents || [],
-          notes: local?.notes || "",
+          activeStudentsCount: Number(s.active_students_count) || parsedProfile.activeStudentsCount || local?.activeStudentsCount || 0,
+          totalCommissionReceivedYen: Number(s.total_commission_received_yen) || parsedProfile.totalCommissionReceivedYen || local?.totalCommissionReceivedYen || 0,
+          status: s.status || parsedProfile.status || local?.status || "ACTIVE_PARTNER",
+          logoUrl: s.logo_url || parsedProfile.logoUrl || local?.logoUrl,
+          institutionType: s.institution_type || parsedProfile.institutionType || local?.institutionType || "LANGUAGE_SCHOOL",
+          websiteUrl: s.website_url || parsedProfile.websiteUrl || local?.websiteUrl,
+          firstYearTuitionYen: s.first_year_tuition_yen != null ? Number(s.first_year_tuition_yen) : (parsedProfile.firstYearTuitionYen ?? local?.firstYearTuitionYen ?? 760000),
+          admissionFeeYen: parsedProfile.admissionFeeYen ?? local?.admissionFeeYen ?? 50000,
+          hostelFeeMonthlyYen: parsedProfile.hostelFeeMonthlyYen ?? local?.hostelFeeMonthlyYen ?? 35000,
+          intakeMonths: parsedProfile.intakeMonths || local?.intakeMonths || ["APRIL", "OCTOBER"],
+          intakeQuota: s.intake_quota != null ? Number(s.intake_quota) : (parsedProfile.intakeQuota || local?.intakeQuota || 20),
+          documents: parsedProfile.documents || local?.documents || [],
+          tasks: parsedProfile.tasks || (local as any)?.tasks || [],
+          notes: parsedProfile.notes || local?.notes || "",
         };
       });
       hasChanges = true;
@@ -1716,27 +1751,38 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
       const existingAgentsMap = new Map(store.b2bAgents.map((a) => [a.id, a]));
       store.b2bAgents = data.b2bAgents.map((a: any) => {
         const local = existingAgentsMap.get(a.id);
+        let parsedProfile: Partial<B2bAgent> = {};
+        if (a.profile_json) {
+          try {
+            parsedProfile =
+              typeof a.profile_json === "string" ? JSON.parse(a.profile_json) : a.profile_json;
+          } catch {
+            parsedProfile = {};
+          }
+        }
         return {
           ...local,
+          ...parsedProfile,
           id: a.id,
-          organizationName: a.organization_name,
-          agentType: a.agent_type || local?.agentType || "LOCAL_SUB_AGENT",
-          contactPerson: a.contact_person,
-          phone: String(a.phone || ""),
-          city: a.city || local?.city || "",
-          referredStudentsCount: Number(a.referred_students_count) || local?.referredStudentsCount || 0,
-          successfulVisasCount: Number(a.successful_visas_count) || local?.successfulVisasCount || 0,
-          agreedCommissionBdt: a.agreed_commission_bdt != null ? Number(a.agreed_commission_bdt) : (local?.agreedCommissionBdt ?? 30000),
-          pendingCommissionBdt: Number(a.pending_commission_bdt) || local?.pendingCommissionBdt || 0,
-          paidCommissionBdt: Number(a.paid_commission_bdt) || local?.paidCommissionBdt || 0,
-          logoUrl: a.logo_url || local?.logoUrl,
-          tradeLicenseNo: a.trade_license_no || local?.tradeLicenseNo,
-          nidOrPassportNo: a.nid_or_passport_no || local?.nidOrPassportNo,
-          bankName: a.bank_name || local?.bankName,
-          bankAccountNo: a.bank_account_no || local?.bankAccountNo,
-          bkashOrNagadNo: a.bkash_or_nagad_no || local?.bkashOrNagadNo,
-          documents: local?.documents || [],
-          notes: local?.notes || "",
+          organizationName: a.organization_name || parsedProfile.organizationName || local?.organizationName,
+          agentType: a.agent_type || parsedProfile.agentType || local?.agentType || "LOCAL_SUB_AGENT",
+          contactPerson: a.contact_person || parsedProfile.contactPerson || local?.contactPerson,
+          phone: String(a.phone || parsedProfile.phone || local?.phone || ""),
+          city: a.city || parsedProfile.city || local?.city || "",
+          referredStudentsCount: Number(a.referred_students_count) || parsedProfile.referredStudentsCount || local?.referredStudentsCount || 0,
+          successfulVisasCount: Number(a.successful_visas_count) || parsedProfile.successfulVisasCount || local?.successfulVisasCount || 0,
+          agreedCommissionBdt: a.agreed_commission_bdt != null ? Number(a.agreed_commission_bdt) : (parsedProfile.agreedCommissionBdt ?? local?.agreedCommissionBdt ?? 30000),
+          pendingCommissionBdt: Number(a.pending_commission_bdt) || parsedProfile.pendingCommissionBdt || local?.pendingCommissionBdt || 0,
+          paidCommissionBdt: Number(a.paid_commission_bdt) || parsedProfile.paidCommissionBdt || local?.paidCommissionBdt || 0,
+          logoUrl: a.logo_url || parsedProfile.logoUrl || local?.logoUrl,
+          tradeLicenseNo: a.trade_license_no || parsedProfile.tradeLicenseNo || local?.tradeLicenseNo,
+          nidOrPassportNo: a.nid_or_passport_no || parsedProfile.nidOrPassportNo || local?.nidOrPassportNo,
+          bankName: a.bank_name || parsedProfile.bankName || local?.bankName,
+          bankAccountNo: a.bank_account_no || parsedProfile.bankAccountNo || local?.bankAccountNo,
+          bkashOrNagadNo: a.bkash_or_nagad_no || parsedProfile.bkashOrNagadNo || local?.bkashOrNagadNo,
+          documents: parsedProfile.documents || local?.documents || [],
+          tasks: parsedProfile.tasks || (local as any)?.tasks || [],
+          notes: parsedProfile.notes || local?.notes || "",
         };
       });
       hasChanges = true;
@@ -1779,7 +1825,7 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
         paymentMethod: tx.payment_method || "BKASH",
         referenceOrTrx: tx.reference_or_trx || "N/A",
         branch: normalizeSheetLeadBranch(tx.branch),
-        verifiedBy: tx.verified_by || "শেখ বাসেত",
+        verifiedBy: tx.verified_by && tx.verified_by !== "শেখ বাসেত" ? tx.verified_by : "KNLTC Admin",
         notes: tx.notes || "",
         linkedLeadId: tx.linked_lead_id || "",
         linkedVisaId: tx.linked_visa_id || "",
@@ -1831,10 +1877,11 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
           Array.isArray(serverCms.jobCirculars) && serverCms.jobCirculars.length > 0
             ? serverCms.jobCirculars
             : DEFAULT_WEBSITE_CMS.jobCirculars,
-        systemAccounts:
-          Array.isArray(serverCms.systemAccounts) && serverCms.systemAccounts.length > 0
-            ? serverCms.systemAccounts
-            : JSON.parse(JSON.stringify(DEFAULT_SYSTEM_ACCOUNTS)),
+        systemAccounts: Array.isArray(serverCms.systemAccounts)
+          ? serverCms.systemAccounts.filter(
+              (a) => a.id !== "acc-admin-01" && a.email?.toLowerCase() !== "baset@knltc.com",
+            )
+          : [],
       };
       store.websiteCms = [mergedCms];
 
@@ -1900,18 +1947,19 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
 export function getWebsiteCms(): WebsiteCmsContent {
   const store = getCmsStore();
   const cms = store.websiteCms?.[0] || DEFAULT_WEBSITE_CMS;
-  if (!cms.systemAccounts || cms.systemAccounts.length === 0) {
-    cms.systemAccounts = JSON.parse(JSON.stringify(DEFAULT_SYSTEM_ACCOUNTS));
+  if (!Array.isArray(cms.systemAccounts)) {
+    cms.systemAccounts = [];
+  } else {
+    cms.systemAccounts = cms.systemAccounts.filter(
+      (a) => a.id !== "acc-admin-01" && a.email?.toLowerCase() !== "baset@knltc.com",
+    );
   }
   return cms;
 }
 
 export function getSystemAccounts(): SystemUserAccount[] {
   const cms = getWebsiteCms();
-  if (!cms.systemAccounts || cms.systemAccounts.length === 0) {
-    cms.systemAccounts = JSON.parse(JSON.stringify(DEFAULT_SYSTEM_ACCOUNTS));
-  }
-  return cms.systemAccounts;
+  return cms.systemAccounts || [];
 }
 
 export function upsertSystemAccount(
@@ -1919,8 +1967,12 @@ export function upsertSystemAccount(
 ): SystemUserAccount {
   const store = getCmsStore();
   const cms = store.websiteCms?.[0] || DEFAULT_WEBSITE_CMS;
-  if (!cms.systemAccounts || cms.systemAccounts.length === 0) {
-    cms.systemAccounts = JSON.parse(JSON.stringify(DEFAULT_SYSTEM_ACCOUNTS));
+  if (!Array.isArray(cms.systemAccounts)) {
+    cms.systemAccounts = [];
+  } else {
+    cms.systemAccounts = cms.systemAccounts.filter(
+      (a) => a.id !== "acc-admin-01" && a.email?.toLowerCase() !== "baset@knltc.com",
+    );
   }
 
   const normalizedEmail = accountInput.email.trim().toLowerCase();
@@ -2206,7 +2258,7 @@ export function provisionLeadLoginAndEnrollment(
       education: leadBase.education || "HSC / Equivalent",
       japaneseProficiency: "LEARNING_N5",
       studyGapYears: 1,
-      assignedTo: "শেখ বাসেত (ম্যানেজিং ডিরেক্টর)",
+      assignedTo: "KNLTC Admin",
       branch: leadBase.branch || "DHK-HQ",
       notes: leadBase.notes || "ভর্তি ও লগইন অ্যাক্সেস প্রদান করা হয়েছে।",
       followUpDate: new Date().toISOString().slice(0, 10),
@@ -3943,7 +3995,7 @@ export function bulkImportCrmLeads(
 
   const strategy = options?.duplicateStrategy || "UPDATE_EXISTING";
   const fallbackBranch = options?.defaultBranch || "DHK-HQ";
-  const fallbackAssignedTo = options?.defaultAssignedTo || "শেখ বাসেত";
+  const fallbackAssignedTo = options?.defaultAssignedTo || "Unassigned";
   const fallbackSource = options?.defaultSource || "GOOGLE_SHEET";
   const fallbackStatus = options?.defaultStatus || "NEW";
   const fallbackPriority = options?.defaultPriority || "WARM";

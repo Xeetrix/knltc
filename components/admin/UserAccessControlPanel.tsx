@@ -357,10 +357,6 @@ export default function UserAccessControlPanel({
   };
 
   const handleDelete = (acc: SystemUserAccount) => {
-    if (acc.role === "MAIN_ADMIN" && accounts.filter((a) => a.role === "MAIN_ADMIN").length <= 1) {
-      onNotify(t.cannotDeleteAdminToast);
-      return;
-    }
     deleteSystemAccount(acc.id);
     refreshAccounts();
     onNotify(`${acc.name} — ${t.deletedToast}`);
@@ -615,10 +611,19 @@ export default function UserAccessControlPanel({
                 className="rounded-2xl border border-stone-200 bg-[#fcfaf7] p-4 sm:p-5 transition hover:border-emerald-300"
               >
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-stone-200/80 pb-4">
-                  {/* User Identity & Role */}
-                  <div className="space-y-1">
+                  {/* User Identity & Role (Editable inline) */}
+                  <div className="space-y-1.5 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-sm font-black text-slate-900">{acc.name}</h3>
+                      <input
+                        type="text"
+                        defaultValue={acc.name}
+                        onBlur={(e) => {
+                          if (e.target.value.trim() && e.target.value.trim() !== acc.name) {
+                            handleUpdateRoleOrStatus(acc, { name: e.target.value.trim() });
+                          }
+                        }}
+                        className="text-sm font-black text-slate-900 bg-white border border-stone-200 rounded-lg px-2.5 py-1 focus:border-emerald-600 focus:outline-hidden"
+                      />
                       <span
                         className={`rounded-full px-2.5 py-0.5 text-[10px] font-extrabold ${
                           acc.role === "MAIN_ADMIN"
@@ -630,25 +635,53 @@ export default function UserAccessControlPanel({
                       >
                         {t.roles[acc.role] || acc.role}
                       </span>
-                      <span className="rounded-full bg-stone-200 px-2 py-0.5 text-[10px] font-bold text-slate-700">
-                        {t.branchPrefix} {acc.branch}
-                      </span>
+                      <select
+                        value={acc.branch}
+                        onChange={(e) =>
+                          handleUpdateRoleOrStatus(acc, { branch: e.target.value as BranchCode })
+                        }
+                        className="rounded-full bg-stone-200 px-2.5 py-0.5 text-[10px] font-bold text-slate-700 cursor-pointer focus:outline-hidden"
+                      >
+                        <option value="ALL">{t.branchPrefix} ALL</option>
+                        <option value="DHK-HQ">{t.branchPrefix} DHK-HQ</option>
+                        <option value="KHULNA-01">{t.branchPrefix} KHULNA-01</option>
+                      </select>
                       {acc.linkedLeadId && (
                         <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-900">
                           {t.leadProfilePrefix} {acc.linkedLeadId}
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-500 font-mono">
-                      {t.phonePrefix} {acc.phone || "N/A"}
-                    </p>
+                    <div className="flex items-center gap-1.5 text-xs text-slate-500 font-mono">
+                      <span>{t.phonePrefix}</span>
+                      <input
+                        type="text"
+                        defaultValue={acc.phone || ""}
+                        placeholder="+8801..."
+                        onBlur={(e) => {
+                          if (e.target.value.trim() !== (acc.phone || "")) {
+                            handleUpdateRoleOrStatus(acc, { phone: e.target.value.trim() });
+                          }
+                        }}
+                        className="rounded-lg border border-stone-200 bg-white px-2 py-0.5 text-xs font-mono text-slate-700 focus:border-emerald-600 focus:outline-hidden"
+                      />
+                    </div>
                   </div>
 
                   {/* Login Credentials & Quick Controls */}
                   <div className="flex flex-wrap items-center gap-2.5 text-xs">
                     <div className="rounded-xl border border-stone-300 bg-white px-3 py-1.5">
                       <span className="text-[10px] font-bold text-slate-400 block">{t.loginIdBox}</span>
-                      <span className="font-mono font-bold text-slate-900">{acc.email}</span>
+                      <input
+                        type="text"
+                        defaultValue={acc.email}
+                        onBlur={(e) => {
+                          if (e.target.value.trim() && e.target.value.trim() !== acc.email) {
+                            handleUpdateRoleOrStatus(acc, { email: e.target.value.trim() });
+                          }
+                        }}
+                        className="w-40 font-mono font-bold text-slate-900 bg-transparent focus:outline-hidden"
+                      />
                     </div>
 
                     <div className="rounded-xl border border-stone-300 bg-white px-3 py-1.5">
@@ -709,15 +742,14 @@ export default function UserAccessControlPanel({
                       <span>WhatsApp</span>
                     </a>
 
-                    {acc.role !== "MAIN_ADMIN" && (
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(acc)}
-                        className="rounded-xl border border-rose-200 bg-rose-50 p-2 text-rose-700 hover:bg-rose-100 transition"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(acc)}
+                      title="Delete Account"
+                      className="rounded-xl border border-rose-200 bg-rose-50 p-2 text-rose-700 hover:bg-rose-100 transition"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
 

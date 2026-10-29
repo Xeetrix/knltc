@@ -65,6 +65,7 @@ var TABLE_SCHEMAS = {
     "bank_name",
     "bank_account_no",
     "bkash_or_nagad_no",
+    "profile_json",
     "created_at"
   ],
   knltc_crm_leads: [
@@ -93,6 +94,8 @@ var TABLE_SCHEMAS = {
     "contract_amount_bdt",
     "paid_amount_bdt",
     "due_amount_bdt",
+    "ssc_gpa",
+    "hsc_gpa",
     "profile_json"
   ],
   knltc_finance_transactions: [
@@ -153,6 +156,7 @@ var TABLE_SCHEMAS = {
     "active_students_count",
     "total_commission_received_yen",
     "status",
+    "profile_json",
     "created_at"
   ],
   knltc_staff_members: [
@@ -203,6 +207,7 @@ var TABLE_SCHEMAS = {
     "coe_status",
     "visa_status",
     "counselor_name",
+    "profile_json",
     "updated_at",
     "created_at"
   ],

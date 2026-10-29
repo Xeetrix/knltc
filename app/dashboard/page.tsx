@@ -50,6 +50,8 @@ import {
   TrendingUp,
   TrendingDown,
   Filter,
+  SlidersHorizontal,
+  Clock,
   Search,
   ArrowDownRight,
   Coins,
@@ -462,8 +464,16 @@ export default function DashboardPage() {
             matchedLocal?.linkedLeadId || data.user.linkedLeadId;
           const resolvedRole: UserRole = matchedLocal?.role || data.user.role;
 
+          const rawSessionName = String(data.user.name || "");
+          const sanitizedName =
+            matchedLocal?.name ||
+            (rawSessionName.includes("শেখ বাসেত") || rawSessionName.includes("Sheikh Baset")
+              ? "KNLTC Admin"
+              : rawSessionName || "KNLTC Admin");
+
           setCurrentUser({
             ...data.user,
+            name: sanitizedName,
             role: resolvedRole,
             allowedTabs: resolvedAllowedTabs,
             linkedLeadId: resolvedLinkedLeadId,
@@ -1279,12 +1289,11 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between gap-2 px-2 py-1.5">
             <div className="min-w-0">
               <p className="text-xs font-semibold text-slate-900 truncate">
-                {currentUser?.name ||
-                  (language === "ja"
-                    ? "シェイク・バセット"
-                    : language === "en"
-                      ? "Sheikh Baset"
-                      : "শেখ বাসেত")}
+                {currentUser?.name &&
+                !currentUser.name.includes("শেখ বাসেত") &&
+                !currentUser.name.includes("Sheikh Baset")
+                  ? currentUser.name
+                  : "KNLTC Admin"}
               </p>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
@@ -2272,405 +2281,305 @@ export default function DashboardPage() {
                   };
 
                   return (
-                    <div className="space-y-5">
-                      {/* 1. Top Command Header & View Mode Switcher */}
-                      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
-                        <div>
-                          <div className="flex items-center gap-2.5">
-                            <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-                              {t.crm.title}
-                            </h2>
-                            <span className="rounded-lg bg-slate-900 px-2.5 py-0.5 font-mono text-xs font-bold text-white tabular-nums">
-                              {branchLeads.length}
+                    <div className="space-y-4">
+                      {/* 1. Clean Top Header Card (Abroadmate Style: | Leads) */}
+                      <div className="rounded-2xl border border-slate-200/80 bg-white px-5 py-4 shadow-2xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <span className="h-5 w-1 rounded-full bg-indigo-600" />
+                          <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
+                            {tr("লিডস (Leads)", "Leads", "リード一覧")}
+                          </h2>
+                          <span className="rounded-full bg-indigo-50 border border-indigo-200/70 px-2.5 py-0.5 font-mono text-xs font-bold text-indigo-700 tabular-nums">
+                            {branchLeads.length}
+                          </span>
+                        </div>
+
+                        {/* Workspace View Mode Switcher */}
+                        <div className="inline-flex items-center rounded-xl border border-slate-200/90 bg-slate-100/80 p-1 self-start sm:self-auto">
+                          <button
+                            type="button"
+                            onClick={() => setCrmViewMode("TABLE")}
+                            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition whitespace-nowrap ${
+                              crmViewMode === "TABLE"
+                                ? "bg-white text-slate-900 shadow-2xs"
+                                : "text-slate-600 hover:text-slate-900"
+                            }`}
+                          >
+                            <Layers className="h-3.5 w-3.5" />
+                            <span>{tr("লিস্ট ভিউ", "Leads List", "リスト表示")}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCrmViewMode("TELE_CALLER");
+                              if (!teleCallerLeadId && filteredLeads[0]) {
+                                setTeleCallerLeadId(filteredLeads[0].id);
+                              }
+                            }}
+                            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition whitespace-nowrap ${
+                              crmViewMode === "TELE_CALLER"
+                                ? "bg-white text-indigo-600 shadow-2xs"
+                                : "text-slate-600 hover:text-slate-900"
+                            }`}
+                          >
+                            <PhoneCall className="h-3.5 w-3.5" />
+                            <span>
+                              {tr("টেলি-কলিং ককপিট", "Speed-Dial Cockpit", "架電コックピット")}
                             </span>
-                          </div>
-                          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                            {t.crm.subtitle}
-                          </p>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCrmViewMode("KANBAN")}
+                            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition whitespace-nowrap ${
+                              crmViewMode === "KANBAN"
+                                ? "bg-white text-slate-900 shadow-2xs"
+                                : "text-slate-600 hover:text-slate-900"
+                            }`}
+                          >
+                            <LayoutDashboard className="h-3.5 w-3.5" />
+                            <span>{tr("কানবান বোর্ড", "Pipeline Board", "カンバン")}</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 2. Search Bar & Right Action Buttons Row */}
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        <div className="relative w-full md:max-w-sm">
+                          <Search className="h-4 w-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            value={crmSearchQuery}
+                            onChange={(e) => {
+                              setCrmSearchQuery(e.target.value);
+                              setCrmCurrentPage(1);
+                            }}
+                            placeholder={tr(
+                              "নাম, ফোন, ইমেইল দিয়ে খুঁজুন...",
+                              "Search name, phone, email...",
+                              "氏名・電話番号・メールで検索...",
+                            )}
+                            className="w-full rounded-xl border border-slate-200/90 bg-white pl-10 pr-4 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 shadow-2xs focus:border-indigo-500 focus:outline-hidden transition"
+                          />
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2">
-                          {/* 3-Mode Workspace View Switcher */}
-                          <div className="inline-flex items-center rounded-xl border border-slate-200/90 bg-slate-100/80 p-1">
-                            <button
-                              type="button"
-                              onClick={() => setCrmViewMode("TABLE")}
-                              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition whitespace-nowrap ${
-                                crmViewMode === "TABLE"
-                                  ? "bg-white text-slate-900 shadow-2xs"
-                                  : "text-slate-600 hover:text-slate-900"
-                              }`}
-                            >
-                              <Layers className="h-3.5 w-3.5" />
-                              <span>{tr("টেবিল ভিউ", "Table Grid", "一覧テーブル")}</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setCrmViewMode("TELE_CALLER");
-                                if (!teleCallerLeadId && filteredLeads[0]) {
-                                  setTeleCallerLeadId(filteredLeads[0].id);
-                                }
-                              }}
-                              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition whitespace-nowrap ${
-                                crmViewMode === "TELE_CALLER"
-                                  ? "bg-white text-[#b91c1c] shadow-2xs"
-                                  : "text-slate-600 hover:text-slate-900"
-                              }`}
-                            >
-                              <PhoneCall className="h-3.5 w-3.5" />
-                              <span>
-                                {tr("টেলি-কলিং ককপিট", "Speed-Dial Cockpit", "架電コックピット")}
-                              </span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setCrmViewMode("KANBAN")}
-                              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition whitespace-nowrap ${
-                                crmViewMode === "KANBAN"
-                                  ? "bg-white text-slate-900 shadow-2xs"
-                                  : "text-slate-600 hover:text-slate-900"
-                              }`}
-                            >
-                              <LayoutDashboard className="h-3.5 w-3.5" />
-                              <span>{tr("কানবান বোর্ড", "Pipeline Board", "カンバン")}</span>
-                            </button>
-                          </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setCrmViewMode(crmViewMode === "KANBAN" ? "TABLE" : "KANBAN")
+                            }
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs transition whitespace-nowrap"
+                          >
+                            <SlidersHorizontal className="h-3.5 w-3.5 text-slate-600" />
+                            <span>{tr("স্ট্যাটাস", "Statuses", "ステータス")}</span>
+                          </button>
 
                           <button
                             type="button"
                             onClick={() => setCrmImportExportMode("IMPORT")}
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50/80 px-3.5 py-2 text-xs font-semibold text-emerald-900 hover:bg-emerald-100 transition whitespace-nowrap shrink-0"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs transition whitespace-nowrap"
                           >
-                            <FileSpreadsheet className="h-4 w-4 text-emerald-700" />
-                            <span>
-                              {tr(
-                                "Sheet / CSV ইমপোর্ট",
-                                "Import Sheet / CSV",
-                                "シート / CSV取込",
-                              )}
-                            </span>
+                            <FileSpreadsheet className="h-3.5 w-3.5 text-slate-600" />
+                            <span>{tr("ইমপোর্ট", "Import", "インポート")}</span>
                           </button>
 
                           <button
                             type="button"
                             onClick={() => setCrmImportExportMode("EXPORT")}
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition whitespace-nowrap shrink-0"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs transition whitespace-nowrap"
                           >
-                            <Download className="h-4 w-4 text-slate-600" />
-                            <span className="tabular-nums">
-                              {tr(
-                                `এক্সপোর্ট (${filteredLeads.length})`,
-                                `Export (${filteredLeads.length})`,
-                                `出力 (${filteredLeads.length})`,
-                              )}
-                            </span>
+                            <Download className="h-3.5 w-3.5 text-slate-600" />
+                            <span>{tr("এক্সপোর্ট", "Export", "エクスポート")}</span>
                           </button>
 
                           <button
                             type="button"
                             onClick={() => setActiveModal("ADD_LEAD")}
-                            className="inline-flex items-center gap-1.5 rounded-xl bg-[#b91c1c] px-4 py-2 text-xs font-semibold text-white hover:bg-red-800 transition shadow-2xs whitespace-nowrap shrink-0"
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 shadow-xs transition whitespace-nowrap"
                           >
                             <Plus className="h-4 w-4" />
-                            <span>{t.crm.quickAddBtn}</span>
+                            <span>{tr("লিড যুক্ত করুন", "Add lead", "リード追加")}</span>
                           </button>
                         </div>
                       </div>
 
-                      {/* 2. Executive CRM Telemetry & Pipeline KPI Ribbon */}
-                      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setCrmStatusFilter("ALL");
-                            setCrmCurrentPage(1);
-                          }}
-                          className="text-left rounded-2xl border border-slate-200/80 bg-white p-4 hover:border-slate-300 transition"
-                        >
-                          <div className="flex items-center justify-between text-xs text-slate-500">
-                            <span className="font-medium">
-                              {tr("মোট সক্রিয় লিড", "Total Pipeline Leads", "総リード数")}
-                            </span>
-                            <Users className="h-4 w-4 text-slate-400" />
-                          </div>
-                          <p className="mt-2 text-2xl font-bold text-slate-900 font-mono tabular-nums">
-                            {branchLeads.length}
-                          </p>
-                          <p className="mt-1 text-[11px] text-slate-400 tabular-nums">
-                            Dhaka HQ: {dhakaCount} · Khulna: {khulnaCount}
-                          </p>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setCrmStatusFilter("NEW");
-                            setCrmCurrentPage(1);
-                          }}
-                          className="text-left rounded-2xl border border-slate-200/80 bg-white p-4 hover:border-blue-300 transition"
-                        >
-                          <div className="flex items-center justify-between text-xs text-slate-500">
-                            <span className="font-medium">
-                              {tr("নতুন কল কিউ (New)", "Uncalled New Queue", "未架電リード")}
-                            </span>
-                            <PhoneCall className="h-4 w-4 text-blue-600" />
-                          </div>
-                          <p className="mt-2 text-2xl font-bold text-blue-700 font-mono tabular-nums">
-                            {newLeadsCount}
-                          </p>
-                          <p className="mt-1 text-[11px] text-slate-400 tabular-nums">
-                            {branchLeads.length > 0
-                              ? `${Math.round((newLeadsCount / branchLeads.length) * 100)}% awaiting first call`
-                              : "Ready for outreach"}
-                          </p>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setCrmStatusFilter("CONTACTED");
-                            setCrmCurrentPage(1);
-                          }}
-                          className="text-left rounded-2xl border border-slate-200/80 bg-white p-4 hover:border-indigo-300 transition"
-                        >
-                          <div className="flex items-center justify-between text-xs text-slate-500">
-                            <span className="font-medium">
-                              {tr("যোগাযোগ ও কাউন্সেলিং", "Contacted & Assessed", "連絡済・面談中")}
-                            </span>
-                            <CheckCircle2 className="h-4 w-4 text-indigo-600" />
-                          </div>
-                          <p className="mt-2 text-2xl font-bold text-slate-900 font-mono tabular-nums">
-                            {contactedCount + counseledCount + visitBookedCount}
-                          </p>
-                          <p className="mt-1 text-[11px] text-slate-400 tabular-nums">
-                            Called: {contactedCount} · Visit: {visitBookedCount}
-                          </p>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setCrmStatusFilter("ADMITTED");
-                            setCrmCurrentPage(1);
-                          }}
-                          className="text-left rounded-2xl border border-slate-200/80 bg-white p-4 hover:border-emerald-300 transition"
-                        >
-                          <div className="flex items-center justify-between text-xs text-slate-500">
-                            <span className="font-medium">
-                              {tr("ভর্তি ও ফাইল কনফার্মড", "Confirmed Admissions", "入学・契約確定")}
-                            </span>
-                            <GraduationCap className="h-4 w-4 text-emerald-600" />
-                          </div>
-                          <p className="mt-2 text-2xl font-bold text-emerald-700 font-mono tabular-nums">
-                            {admittedCount}
-                          </p>
-                          <p className="mt-1 text-[11px] text-slate-400 tabular-nums">
-                            SSW Special:{" "}
-                            {
-                              branchLeads.filter(
-                                (l) => l.interest === "SSW_CONSTRUCTION_SPECIAL",
-                              ).length
-                            }{" "}
-                            candidates
-                          </p>
-                        </button>
-
-                        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 col-span-2 lg:col-span-1">
-                          <div className="flex items-center justify-between text-xs text-slate-500">
-                            <span className="font-medium">
-                              {tr("পাইপলাইন চুক্তি মূল্য", "Pipeline Contract Value", "パイプライン契約総額")}
-                            </span>
-                            <DollarSign className="h-4 w-4 text-[#b91c1c]" />
-                          </div>
-                          <p className="mt-2 text-xl font-bold text-slate-900 font-mono tabular-nums">
-                            ৳{(totalContractPipelineBdt / 100000).toFixed(1)}L
-                          </p>
-                          <p className="mt-1 text-[11px] text-emerald-700 font-mono tabular-nums">
-                            {tr("জমা:", "Collected:", "入金済:")} ৳
-                            {totalCollectedPipelineBdt.toLocaleString()}
-                          </p>
+                      {/* 3. Compact Filter Dropdown Pills (All time, All consultants, Programs, Sources) */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs">
+                          <Clock className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
+                          <select
+                            value={crmStatusFilter === "FOLLOWUP_DUE" ? "FOLLOWUP_DUE" : "ALL_TIME"}
+                            onChange={(e) => {
+                              if (e.target.value === "FOLLOWUP_DUE") {
+                                setCrmStatusFilter("FOLLOWUP_DUE");
+                              } else if (crmStatusFilter === "FOLLOWUP_DUE") {
+                                setCrmStatusFilter("ALL");
+                              }
+                              setCrmCurrentPage(1);
+                            }}
+                            className="bg-transparent font-semibold text-slate-700 focus:outline-hidden cursor-pointer"
+                          >
+                            <option value="ALL_TIME">
+                              {tr("সব সময় (All time)", "All time", "全期間")}
+                            </option>
+                            <option value="FOLLOWUP_DUE">
+                              {tr("আজ ফলো-আপ বাকি", "Follow-up Due", "本日フォロー予定")} (
+                              {dueFollowUpCount})
+                            </option>
+                          </select>
                         </div>
+
+                        <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs">
+                          <Users className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
+                          <select
+                            value={crmCounselorFilter}
+                            onChange={(e) => {
+                              setCrmCounselorFilter(e.target.value);
+                              setCrmCurrentPage(1);
+                            }}
+                            className="bg-transparent font-semibold text-slate-700 focus:outline-hidden cursor-pointer max-w-[160px] truncate"
+                          >
+                            <option value="ALL">
+                              {tr("সব কনসালটেন্ট", "All consultants", "全コンサルタント")}
+                            </option>
+                            {Array.from(
+                              new Set(branchLeads.map((l) => l.assignedTo).filter(Boolean)),
+                            ).map((cName) => (
+                              <option key={cName} value={cName}>
+                                {cName}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs">
+                          <GraduationCap className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
+                          <select
+                            value={crmInterestFilter}
+                            onChange={(e) => {
+                              setCrmInterestFilter(e.target.value as any);
+                              setCrmCurrentPage(1);
+                            }}
+                            className="bg-transparent font-semibold text-slate-700 focus:outline-hidden cursor-pointer"
+                          >
+                            <option value="ALL">
+                              {tr("সব প্রোগ্রাম", "All programs", "全プログラム")}
+                            </option>
+                            <option value="STUDENT_VISA_REGULAR">Student Visa • Regular</option>
+                            <option value="STUDENT_VISA_PREMIUM">Student Visa • Premium</option>
+                            <option value="SSW_CONSTRUCTION_SPECIAL">SSW • Construction</option>
+                            <option value="SSW_CAREGIVER">SSW • Nursing Care</option>
+                            <option value="SSW_AGRICULTURE">SSW • Agriculture</option>
+                            <option value="SSW_FOOD_SERVICE">SSW • Food Service</option>
+                            <option value="TITP_TECHNICAL">TITP • Technical Intern</option>
+                            <option value="JAPANESE_N5">Japanese Course • N5</option>
+                            <option value="JAPANESE_N4">Japanese Course • N4</option>
+                          </select>
+                        </div>
+
+                        <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs">
+                          <Globe className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
+                          <select
+                            value={crmSourceFilter}
+                            onChange={(e) => {
+                              setCrmSourceFilter(e.target.value);
+                              setCrmCurrentPage(1);
+                            }}
+                            className="bg-transparent font-semibold text-slate-700 focus:outline-hidden cursor-pointer max-w-[150px] truncate"
+                          >
+                            <option value="ALL">
+                              {tr("সব সোর্স", "All sources", "全流入元")}
+                            </option>
+                            {Array.from(
+                              new Set(branchLeads.map((l) => l.source).filter(Boolean)),
+                            ).map((src) => (
+                              <option key={src} value={src}>
+                                {formatLeadSourceLabel(src)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {(crmSearchQuery ||
+                          crmStatusFilter !== "ALL" ||
+                          crmPriorityFilter !== "ALL" ||
+                          crmInterestFilter !== "ALL" ||
+                          crmSourceFilter !== "ALL" ||
+                          crmCounselorFilter !== "ALL") && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCrmSearchQuery("");
+                              setCrmStatusFilter("ALL");
+                              setCrmPriorityFilter("ALL");
+                              setCrmInterestFilter("ALL");
+                              setCrmSourceFilter("ALL");
+                              setCrmCounselorFilter("ALL");
+                              setCrmCurrentPage(1);
+                            }}
+                            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                            <span>{tr("রিসেট", "Reset", "リセット")}</span>
+                          </button>
+                        )}
                       </div>
 
-                      {/* 3. Unified Filter & Search Deck */}
-                      <div className="rounded-2xl border border-slate-200/80 bg-white p-4 space-y-3.5">
-                        {/* Segmented Status Filter Pills */}
-                        <div className="flex items-center justify-between gap-3 flex-wrap border-b border-slate-100 pb-3">
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            {statusTabs.map((tab) => {
-                              const active = crmStatusFilter === tab.id;
-                              return (
-                                <button
-                                  key={tab.id}
-                                  type="button"
-                                  onClick={() => {
-                                    setCrmStatusFilter(tab.id);
-                                    setCrmCurrentPage(1);
-                                  }}
-                                  className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition whitespace-nowrap ${
-                                    active
-                                      ? "bg-slate-900 text-white shadow-2xs"
-                                      : "border border-slate-200/80 bg-slate-50/60 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                      {/* 4. Horizontal Status Pill Strip (Abroadmate Style) */}
+                      <div className="rounded-xl border border-slate-200/80 bg-white px-2.5 py-2 shadow-2xs flex items-center gap-1.5 overflow-x-auto">
+                        {statusTabs.map((tab) => {
+                          const active = crmStatusFilter === tab.id;
+                          const dotColor =
+                            tab.id === "NEW"
+                              ? "bg-blue-500"
+                              : tab.id === "CONTACTED"
+                                ? "bg-sky-500"
+                                : tab.id === "COUNSELED"
+                                  ? "bg-indigo-500"
+                                  : tab.id === "OFFICE_VISIT_BOOKED"
+                                    ? "bg-amber-500"
+                                    : tab.id === "ADMITTED"
+                                      ? "bg-emerald-500"
+                                      : tab.id === "FOLLOWUP_DUE"
+                                        ? "bg-rose-500"
+                                        : "";
+                          return (
+                            <button
+                              key={tab.id}
+                              type="button"
+                              onClick={() => {
+                                setCrmStatusFilter(tab.id);
+                                setCrmCurrentPage(1);
+                              }}
+                              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition whitespace-nowrap ${
+                                active
+                                  ? "bg-indigo-600 text-white shadow-2xs"
+                                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                              }`}
+                            >
+                              {tab.id !== "ALL" && (
+                                <span
+                                  className={`h-2 w-2 rounded-full ${
+                                    active ? "bg-white" : dotColor
                                   }`}
-                                >
-                                  <span>{tab.label}</span>
-                                  <span
-                                    className={`rounded-md px-1.5 py-0.2 font-mono text-[10px] font-bold tabular-nums ${
-                                      active
-                                        ? "bg-white/20 text-white"
-                                        : "bg-white text-slate-700 border border-slate-200/60"
-                                    }`}
-                                  >
-                                    {tab.count}
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
-
-                          <div className="text-[11px] font-medium text-slate-400 font-mono tabular-nums">
-                            {tr(
-                              `মোট ${filteredLeads.length}টি লিড পাওয়া গেছে`,
-                              `Showing ${filteredLeads.length} of ${branchLeads.length} leads`,
-                              `${branchLeads.length}件中 ${filteredLeads.length}件を表示`,
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Search & Multi-Dimensional Filter Controls (Zero Overflow Grid) */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-2.5 text-xs">
-                          <div className="sm:col-span-2 lg:col-span-4 relative">
-                            <Search className="h-3.5 w-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                            <input
-                              type="text"
-                              value={crmSearchQuery}
-                              onChange={(e) => {
-                                setCrmSearchQuery(e.target.value);
-                                setCrmCurrentPage(1);
-                              }}
-                              placeholder={tr(
-                                "নাম, মোবাইল, জেলা, নোট বা প্রোগ্রাম দিয়ে খুঁজুন...",
-                                "Search name, phone, city, notes, or program...",
-                                "氏名・電話番号・都市・メモで検索...",
+                                />
                               )}
-                              className="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-8 pr-3 py-2 text-xs text-slate-900 focus:bg-white focus:border-slate-400 focus:outline-hidden transition"
-                            />
-                          </div>
-
-                          <div className="lg:col-span-2">
-                            <select
-                              value={crmInterestFilter}
-                              onChange={(e) => {
-                                setCrmInterestFilter(e.target.value as any);
-                                setCrmCurrentPage(1);
-                              }}
-                              className="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-2 font-semibold text-slate-700 truncate"
-                            >
-                              <option value="ALL">
-                                {tr("সব প্রোগ্রাম (All Programs)", "All Programs", "全プログラム")}
-                              </option>
-                              <option value="STUDENT_VISA_REGULAR">Student Visa • Regular</option>
-                              <option value="STUDENT_VISA_PREMIUM">Student Visa • Premium</option>
-                              <option value="SSW_CONSTRUCTION_SPECIAL">SSW • Construction</option>
-                              <option value="SSW_CAREGIVER">SSW • Nursing Care</option>
-                              <option value="SSW_AGRICULTURE">SSW • Agriculture</option>
-                              <option value="SSW_FOOD_SERVICE">SSW • Food Service</option>
-                              <option value="TITP_TECHNICAL">TITP • Technical Intern</option>
-                              <option value="JAPANESE_N5">Japanese Course • N5</option>
-                              <option value="JAPANESE_N4">Japanese Course • N4</option>
-                            </select>
-                          </div>
-
-                          <div className="lg:col-span-2">
-                            <select
-                              value={crmPriorityFilter}
-                              onChange={(e) => {
-                                setCrmPriorityFilter(e.target.value as any);
-                                setCrmCurrentPage(1);
-                              }}
-                              className="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-2 font-semibold text-slate-700 truncate"
-                            >
-                              <option value="ALL">
-                                {tr("সব প্রায়োরিটি", "All Priorities", "全優先度")}
-                              </option>
-                              <option value="HOT">HOT Priority</option>
-                              <option value="WARM">WARM Lead</option>
-                              <option value="COLD">COLD Lead</option>
-                            </select>
-                          </div>
-
-                          <div className="lg:col-span-2">
-                            <select
-                              value={crmSourceFilter}
-                              onChange={(e) => {
-                                setCrmSourceFilter(e.target.value);
-                                setCrmCurrentPage(1);
-                              }}
-                              className="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-2 font-semibold text-slate-700 truncate"
-                            >
-                              <option value="ALL">
-                                {tr("সব সোর্স (All Sources)", "All Sources", "全流入元")}
-                              </option>
-                              {Array.from(
-                                new Set(branchLeads.map((l) => l.source).filter(Boolean)),
-                              ).map((src) => (
-                                <option key={src} value={src}>
-                                  {formatLeadSourceLabel(src)}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-
-                          <div className="lg:col-span-2 flex items-center gap-1.5 min-w-0">
-                            <select
-                              value={crmCounselorFilter}
-                              onChange={(e) => {
-                                setCrmCounselorFilter(e.target.value);
-                                setCrmCurrentPage(1);
-                              }}
-                              className="flex-1 min-w-0 rounded-xl border border-slate-200 bg-white px-2.5 py-2 font-semibold text-slate-700 truncate"
-                            >
-                              <option value="ALL">
-                                {tr("সব কাউন্সেলর", "All Counselors", "全担当者")}
-                              </option>
-                              {Array.from(
-                                new Set(branchLeads.map((l) => l.assignedTo).filter(Boolean)),
-                              ).map((cName) => (
-                                <option key={cName} value={cName}>
-                                  {cName}
-                                </option>
-                              ))}
-                            </select>
-
-                            {(crmSearchQuery ||
-                              crmStatusFilter !== "ALL" ||
-                              crmPriorityFilter !== "ALL" ||
-                              crmInterestFilter !== "ALL" ||
-                              crmSourceFilter !== "ALL" ||
-                              crmCounselorFilter !== "ALL") && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setCrmSearchQuery("");
-                                  setCrmStatusFilter("ALL");
-                                  setCrmPriorityFilter("ALL");
-                                  setCrmInterestFilter("ALL");
-                                  setCrmSourceFilter("ALL");
-                                  setCrmCounselorFilter("ALL");
-                                  setCrmCurrentPage(1);
-                                }}
-                                className="rounded-xl border border-slate-200 bg-slate-100 px-2.5 py-2 text-[11px] font-semibold text-slate-700 hover:bg-slate-200 shrink-0"
-                                title="Reset filters"
+                              <span>{tab.id === "ALL" ? "All" : tab.label}</span>
+                              <span
+                                className={`rounded-md px-1.5 py-0.2 font-mono text-[10px] font-bold tabular-nums ${
+                                  active
+                                    ? "bg-white/20 text-white"
+                                    : "bg-slate-100 text-slate-600"
+                                }`}
                               >
-                                <X className="h-3.5 w-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
+                                {tab.count}
+                              </span>
+                            </button>
+                          );
+                        })}
                       </div>
 
-                      {/* 4. Bulk Selection Action Bar */}
+                      {/* 5. Bulk Selection Action Bar */}
                       {selectedCrmLeadIds.length > 0 && (
                         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-slate-900 px-4 py-3 text-xs text-white shadow-md">
                           <div className="flex items-center gap-2">
@@ -2734,40 +2643,6 @@ export default function DashboardPage() {
                               defaultValue=""
                               onChange={(e) => {
                                 if (!e.target.value) return;
-                                const nextPrio = e.target.value as LeadPriority;
-                                const count = bulkUpdateCrmLeads(selectedCrmLeadIds, {
-                                  priority: nextPrio,
-                                });
-                                setStore({ ...getCmsStore() });
-                                showToast(
-                                  tr(
-                                    `${count}টি লিডের প্রায়োরিটি "${nextPrio}" করা হয়েছে`,
-                                    `Updated priority to ${nextPrio} for ${count} leads`,
-                                    `${count}件の優先度を${nextPrio}に更新しました`,
-                                  ),
-                                );
-                                e.target.value = "";
-                              }}
-                              className="rounded-xl border border-white/15 bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-white"
-                            >
-                              <option value="" className="text-slate-900">
-                                {tr("প্রায়োরিটি সেট...", "Set Priority...", "優先度変更...")}
-                              </option>
-                              <option value="HOT" className="text-slate-900">
-                                HOT Priority
-                              </option>
-                              <option value="WARM" className="text-slate-900">
-                                WARM Lead
-                              </option>
-                              <option value="COLD" className="text-slate-900">
-                                COLD Lead
-                              </option>
-                            </select>
-
-                            <select
-                              defaultValue=""
-                              onChange={(e) => {
-                                if (!e.target.value) return;
                                 const counselorName = e.target.value;
                                 const staffObj = store.staffList.find(
                                   (s) => s.name === counselorName,
@@ -2807,15 +2682,6 @@ export default function DashboardPage() {
 
                             <button
                               type="button"
-                              onClick={() => setCrmImportExportMode("EXPORT")}
-                              className="inline-flex items-center gap-1 rounded-xl bg-white/15 px-3 py-1.5 font-semibold text-white hover:bg-white/25 transition"
-                            >
-                              <Download className="h-3.5 w-3.5" />
-                              <span>{tr("এক্সপোর্ট", "Export Selected", "選択分出力")}</span>
-                            </button>
-
-                            <button
-                              type="button"
                               onClick={() => {
                                 const count = bulkDeleteCrmLeads(selectedCrmLeadIds);
                                 setSelectedCrmLeadIds([]);
@@ -2846,449 +2712,283 @@ export default function DashboardPage() {
                       )}
 
                       {/* =====================================================================
-                          VIEW MODE A: ENTERPRISE HIGH-DENSITY DATA TABLE + SMART PAGINATION
+                          VIEW MODE A: CLEAN ABROADMATE-INSPIRED HORIZONTAL CARD LIST
                           ===================================================================== */}
                       {crmViewMode === "TABLE" && (
-                        <div className="rounded-2xl border border-slate-200/80 bg-white overflow-hidden">
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-left text-xs">
-                              <thead className="border-b border-slate-200/80 bg-slate-50/90 text-[11px] font-semibold text-slate-500">
-                                <tr>
-                                  <th className="w-9 px-3 py-3.5">
+                        <div className="space-y-2.5">
+                          {/* Count & Select All Sub-bar */}
+                          <div className="flex items-center justify-between px-1 text-xs text-slate-500">
+                            <div className="flex items-center gap-2.5">
+                              <input
+                                type="checkbox"
+                                checked={
+                                  paginatedLeads.length > 0 &&
+                                  paginatedLeads.every((l) => selectedCrmLeadIds.includes(l.id))
+                                }
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedCrmLeadIds(
+                                      Array.from(
+                                        new Set([
+                                          ...selectedCrmLeadIds,
+                                          ...paginatedLeads.map((l) => l.id),
+                                        ]),
+                                      ),
+                                    );
+                                  } else {
+                                    const pageSet = new Set(paginatedLeads.map((l) => l.id));
+                                    setSelectedCrmLeadIds(
+                                      selectedCrmLeadIds.filter((id) => !pageSet.has(id)),
+                                    );
+                                  }
+                                }}
+                                className="h-3.5 w-3.5 rounded accent-indigo-600 cursor-pointer"
+                              />
+                              <span className="font-medium tabular-nums">
+                                {totalFiltered > 0
+                                  ? `${startIdx + 1}–${Math.min(startIdx + crmPageSize, totalFiltered)} of ${totalFiltered} ${totalFiltered === 1 ? "lead" : "leads"}`
+                                  : "0 leads"}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] text-slate-400 hidden sm:inline">
+                                {tr("পেজ সাইজ:", "Show:", "表示件数:")}
+                              </span>
+                              <select
+                                value={crmPageSize}
+                                onChange={(e) => {
+                                  setCrmPageSize(Number(e.target.value));
+                                  setCrmCurrentPage(1);
+                                }}
+                                className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700"
+                              >
+                                <option value={25}>25 / page</option>
+                                <option value={50}>50 / page</option>
+                                <option value={100}>100 / page</option>
+                                <option value={500}>All ({totalFiltered})</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          {/* Card List Rows */}
+                          <div className="space-y-2">
+                            {paginatedLeads.map((lead) => {
+                              const candidateName = lead.name || "Candidate";
+                              const initial = candidateName.trim().charAt(0).toUpperCase() || "A";
+                              const rawPhone = String(lead.whatsapp || lead.phone || "");
+                              const waText = encodeURIComponent(
+                                `Hello ${candidateName}, greetings from KNLTC. We would like to follow up on your Japan study & visa inquiry.`,
+                              );
+                              const waLink = `https://wa.me/${rawPhone.replace(/[^0-9]/g, "")}?text=${waText}`;
+                              const isSelected = selectedCrmLeadIds.includes(lead.id);
+
+                              const rawAssigned = lead.assignedTo || "";
+                              const counselorDisplay =
+                                !rawAssigned ||
+                                rawAssigned.includes("শেখ বাসেত") ||
+                                rawAssigned.includes("Sheikh Baset") ||
+                                rawAssigned === "Sales & Marketing Team"
+                                  ? "Unassigned"
+                                  : rawAssigned;
+
+                              const addedDateStr = lead.createdAt
+                                ? lead.createdAt.slice(0, 10) ===
+                                  new Date().toISOString().slice(0, 10)
+                                  ? "today"
+                                  : lead.createdAt.slice(0, 10)
+                                : "today";
+
+                              return (
+                                <div
+                                  key={lead.id}
+                                  onClick={() => setSelectedLeadForProfile(lead)}
+                                  className={`group rounded-2xl border bg-white px-4 py-3.5 shadow-2xs transition cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                                    isSelected
+                                      ? "border-indigo-400 bg-indigo-50/20"
+                                      : "border-slate-200/85 hover:border-indigo-300 hover:shadow-sm"
+                                  }`}
+                                >
+                                  {/* Left: Checkbox + Blue Circle Avatar + Name + Phone & Japan · Program */}
+                                  <div className="flex items-center gap-3.5 min-w-0">
                                     <input
                                       type="checkbox"
-                                      checked={
-                                        paginatedLeads.length > 0 &&
-                                        paginatedLeads.every((l) =>
-                                          selectedCrmLeadIds.includes(l.id),
-                                        )
-                                      }
+                                      checked={isSelected}
+                                      onClick={(e) => e.stopPropagation()}
                                       onChange={(e) => {
                                         if (e.target.checked) {
-                                          setSelectedCrmLeadIds(
-                                            Array.from(
-                                              new Set([
-                                                ...selectedCrmLeadIds,
-                                                ...paginatedLeads.map((l) => l.id),
-                                              ]),
-                                            ),
-                                          );
+                                          setSelectedCrmLeadIds((prev) => [...prev, lead.id]);
                                         } else {
-                                          const pageSet = new Set(paginatedLeads.map((l) => l.id));
-                                          setSelectedCrmLeadIds(
-                                            selectedCrmLeadIds.filter((id) => !pageSet.has(id)),
+                                          setSelectedCrmLeadIds((prev) =>
+                                            prev.filter((id) => id !== lead.id),
                                           );
                                         }
                                       }}
-                                      className="h-3.5 w-3.5 rounded accent-slate-900 cursor-pointer"
+                                      className="h-4 w-4 rounded accent-indigo-600 cursor-pointer shrink-0"
                                     />
-                                  </th>
-                                  <th className="px-4 py-3.5">{t.crm.colCandidate}</th>
-                                  <th className="px-4 py-3.5">
-                                    {tr("প্রোগ্রাম ও যোগ্যতা", "Program & Academic", "希望プログラム・学歴")}
-                                  </th>
-                                  <th className="px-4 py-3.5">
-                                    {tr("চুক্তি ও বকেয়া হিসাব", "Contract & Dues", "契約・未収金")}
-                                  </th>
-                                  <th className="px-4 py-3.5">
-                                    {tr("কাউন্সেলর ও সর্বশেষ নোট", "Counselor & Remarks", "担当者・最新メモ")}
-                                  </th>
-                                  <th className="px-4 py-3.5">{t.crm.colStatus}</th>
-                                  <th className="px-4 py-3.5 text-right">{t.crm.colAction}</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-100">
-                                {paginatedLeads.map((lead) => {
-                                  const candidateName = lead.name || "Candidate";
-                                  const waText = encodeURIComponent(
-                                    `Hello ${candidateName}, greetings from KNLTC. We would like to follow up on your Japan study & visa inquiry.`,
-                                  );
-                                  const rawPhone = String(lead.whatsapp || lead.phone || "");
-                                  const waLink = `https://wa.me/${rawPhone.replace(/[^0-9]/g, "")}?text=${waText}`;
-                                  const contractBdt =
-                                    lead.contractAmountBdt ||
-                                    (lead.interest === "STUDENT_VISA_PREMIUM"
-                                      ? 1100000
-                                      : lead.interest === "JAPANESE_N5" ||
-                                          lead.interest === "JAPANESE_N4"
-                                        ? 12000
-                                        : 120000);
-                                  const paidBdt = lead.paidAmountBdt || 0;
-                                  const dueBdt =
-                                    lead.dueAmountBdt ?? Math.max(0, contractBdt - paidBdt);
-                                  const paidPct = Math.min(
-                                    100,
-                                    Math.round((paidBdt / Math.max(1, contractBdt)) * 100),
-                                  );
-                                  const elig = calculateLeadEligibility(lead);
-                                  const leadPriority =
-                                    lead.priority ||
-                                    (lead.status === "ADMITTED" ? "HOT" : "WARM");
-                                  const isSelected = selectedCrmLeadIds.includes(lead.id);
 
-                                  return (
-                                    <tr
-                                      key={lead.id}
-                                      className={`transition-colors group ${
-                                        isSelected ? "bg-slate-50" : "hover:bg-slate-50/75"
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white font-bold text-sm shadow-2xs overflow-hidden">
+                                      {lead.avatarUrl ? (
+                                        <img
+                                          src={lead.avatarUrl}
+                                          alt={candidateName}
+                                          referrerPolicy="no-referrer"
+                                          className="h-full w-full object-cover"
+                                        />
+                                      ) : (
+                                        <span>{initial}</span>
+                                      )}
+                                    </div>
+
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <h3 className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition truncate">
+                                          {candidateName}
+                                        </h3>
+                                        {(lead.sscGpa || lead.hscGpa) && (
+                                          <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-slate-600">
+                                            GPA: {lead.hscGpa || lead.sscGpa}
+                                          </span>
+                                        )}
+                                      </div>
+
+                                      <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                                        <span className="inline-flex items-center gap-1 font-mono text-slate-600">
+                                          <PhoneCall className="h-3 w-3 text-slate-400" />
+                                          {lead.phone || "No phone"}
+                                        </span>
+                                        <span className="inline-flex items-center gap-1 text-slate-500">
+                                          <Globe className="h-3 w-3 text-slate-400" />
+                                          <span>
+                                            Japan · {formatLeadInterestLabel(lead.interest, "en")}
+                                          </span>
+                                        </span>
+                                        {lead.city && (
+                                          <span className="text-slate-400 hidden md:inline">
+                                            · {lead.city}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Right: Status Pill Select + Date / Consultant + Quick Actions + Chevron */}
+                                  <div
+                                    className="flex items-center justify-end gap-3 shrink-0"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <select
+                                      value={lead.status}
+                                      onChange={(e) => {
+                                        const nextStatus = e.target.value as LeadStatus;
+                                        updateCrmLeadStatus(lead.id, nextStatus);
+                                        setStore({ ...getCmsStore() });
+                                        showToast(`${lead.name} — ${nextStatus}`);
+                                      }}
+                                      className={`rounded-full border px-3 py-1 text-xs font-semibold focus:outline-hidden cursor-pointer transition ${
+                                        lead.status === "CONTACTED"
+                                          ? "border-blue-200 bg-blue-50 text-blue-700"
+                                          : lead.status === "ADMITTED"
+                                            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                            : lead.status === "COUNSELED"
+                                              ? "border-indigo-200 bg-indigo-50 text-indigo-700"
+                                              : lead.status === "OFFICE_VISIT_BOOKED"
+                                                ? "border-amber-200 bg-amber-50 text-amber-800"
+                                                : "border-slate-200 bg-slate-100 text-slate-700"
                                       }`}
                                     >
-                                      <td className="px-3 py-3.5 align-top pt-4">
-                                        <input
-                                          type="checkbox"
-                                          checked={isSelected}
-                                          onChange={(e) => {
-                                            if (e.target.checked) {
-                                              setSelectedCrmLeadIds((prev) => [...prev, lead.id]);
-                                            } else {
-                                              setSelectedCrmLeadIds((prev) =>
-                                                prev.filter((id) => id !== lead.id),
-                                              );
-                                            }
-                                          }}
-                                          className="h-3.5 w-3.5 rounded accent-slate-900 cursor-pointer"
-                                        />
-                                      </td>
+                                      <option value="NEW">New Lead</option>
+                                      <option value="CONTACTED">Contacted</option>
+                                      <option value="COUNSELED">Counseled</option>
+                                      <option value="OFFICE_VISIT_BOOKED">Office Visit</option>
+                                      <option value="ADMITTED">Admitted</option>
+                                      <option value="ARCHIVED">Archived</option>
+                                    </select>
 
-                                      {/* Col 1: Candidate Name, Contact & Visual Eligibility Meter */}
-                                      <td className="px-4 py-3.5 align-top">
-                                        <div className="flex items-start gap-3">
-                                          <button
-                                            type="button"
-                                            onClick={() => setSelectedLeadForProfile(lead)}
-                                            className={`flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl border font-bold text-xs transition mt-0.5 ${
-                                              leadPriority === "HOT"
-                                                ? "bg-red-50 border-red-200 text-[#b91c1c]"
-                                                : leadPriority === "WARM"
-                                                  ? "bg-slate-100 border-slate-200/90 text-slate-800"
-                                                  : "bg-slate-50 border-slate-200 text-slate-500"
-                                            }`}
-                                          >
-                                            {lead.avatarUrl ? (
-                                              <img
-                                                src={lead.avatarUrl}
-                                                alt={candidateName}
-                                                referrerPolicy="no-referrer"
-                                                className="h-full w-full object-cover"
-                                              />
-                                            ) : (
-                                              <span>
-                                                {(candidateName || "ST").slice(0, 2).toUpperCase()}
-                                              </span>
-                                            )}
-                                          </button>
-
-                                          <div className="min-w-0 flex-1">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                              <button
-                                                type="button"
-                                                onClick={() => setSelectedLeadForProfile(lead)}
-                                                className="text-left font-bold text-slate-900 text-xs sm:text-sm hover:text-[#b91c1c] transition-colors truncate max-w-[200px]"
-                                              >
-                                                {candidateName}
-                                              </button>
-                                              <span
-                                                className={`text-[10px] font-bold font-mono tracking-tight ${
-                                                  leadPriority === "HOT"
-                                                    ? "text-[#b91c1c]"
-                                                    : leadPriority === "WARM"
-                                                      ? "text-amber-700"
-                                                      : "text-slate-400"
-                                                }`}
-                                              >
-                                                {leadPriority}
-                                              </span>
-                                            </div>
-
-                                            <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-slate-500 font-mono tabular-nums">
-                                              <span className="text-slate-700 font-medium">
-                                                {lead.phone || "No phone"}
-                                              </span>
-                                              <span aria-hidden="true">·</span>
-                                              <span className="font-sans text-slate-500">
-                                                {lead.city || "Dhaka"}
-                                              </span>
-                                            </div>
-
-                                            {/* Mini Eligibility Bar & Docs Counter */}
-                                            <div className="mt-2 flex items-center gap-2.5 text-[11px] font-mono tabular-nums">
-                                              <div className="flex items-center gap-1.5">
-                                                <div className="h-1.5 w-14 rounded-full bg-slate-100 overflow-hidden">
-                                                  <div
-                                                    className={`h-full rounded-full ${
-                                                      elig.totalScore >= 75
-                                                        ? "bg-emerald-600"
-                                                        : elig.totalScore >= 60
-                                                          ? "bg-amber-500"
-                                                          : "bg-slate-400"
-                                                    }`}
-                                                    style={{ width: `${elig.totalScore}%` }}
-                                                  />
-                                                </div>
-                                                <span className="font-semibold text-slate-700">
-                                                  {elig.totalScore}%
-                                                </span>
-                                              </div>
-                                              <span aria-hidden="true" className="text-slate-300">
-                                                ·
-                                              </span>
-                                              <span className="text-slate-500">
-                                                {tr("ডকুমেন্ট", "Docs", "書類")}{" "}
-                                                <strong className="text-slate-700">
-                                                  {elig.verifiedDocsCount}/{elig.totalDocsCount}
-                                                </strong>
-                                              </span>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </td>
-
-                                      {/* Col 2: Program, Source & Academic Summary */}
-                                      <td className="px-4 py-3.5 align-top">
-                                        <p className="font-bold text-slate-900 text-xs">
-                                          {formatLeadInterestLabel(lead.interest, language)}
-                                        </p>
-                                        <div className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500">
-                                          <span>
-                                            {lead.referredByAgentName || lead.b2bAgentName
-                                              ? `${tr("এজেন্ট:", "Agent:", "代理店:")} ${lead.referredByAgentName || lead.b2bAgentName}`
-                                              : formatLeadSourceLabel(lead.source)}
-                                          </span>
-                                        </div>
-                                        <p className="mt-1 text-[11px] font-medium text-emerald-700 tabular-nums">
-                                          {lead.education || "HSC"} ·{" "}
-                                          {formatProficiencyLabel(
-                                            lead.japaneseProficiency,
-                                            language,
-                                          )}
-                                          {lead.studyGapYears
-                                            ? ` · ${lead.studyGapYears}y gap`
-                                            : ""}
-                                        </p>
-                                      </td>
-
-                                      {/* Col 3: Contract, Paid & Due with Mini Bar */}
-                                      <td className="px-4 py-3.5 align-top font-mono tabular-nums">
-                                        <div className="space-y-0.5">
-                                          <div className="flex items-center justify-between gap-2 text-[11px]">
-                                            <span className="font-sans text-slate-400">
-                                              {tr("চুক্তি:", "Contract:", "契約:")}
-                                            </span>
-                                            <span className="font-semibold text-slate-800">
-                                              ৳{contractBdt.toLocaleString()}
-                                            </span>
-                                          </div>
-                                          <div className="flex items-center justify-between gap-2 text-[11px]">
-                                            <span className="font-sans text-slate-400">
-                                              {tr("জমা:", "Paid:", "入金:")}
-                                            </span>
-                                            <span className="font-semibold text-emerald-700">
-                                              ৳{paidBdt.toLocaleString()}
-                                            </span>
-                                          </div>
-                                          <div className="flex items-center justify-between gap-2 text-[11px]">
-                                            <span className="font-sans text-slate-400">
-                                              {tr("বকেয়া:", "Due:", "残金:")}
-                                            </span>
-                                            <span
-                                              className={`font-bold ${
-                                                dueBdt > 0 ? "text-[#b91c1c]" : "text-emerald-700"
-                                              }`}
-                                            >
-                                              {dueBdt > 0
-                                                ? `৳${dueBdt.toLocaleString()}`
-                                                : tr("পরিশোধিত", "Paid", "完納")}
-                                            </span>
-                                          </div>
-                                          <div className="pt-1">
-                                            <div className="h-1 w-full rounded-full bg-slate-100 overflow-hidden">
-                                              <div
-                                                className="h-full bg-emerald-600 rounded-full"
-                                                style={{ width: `${paidPct}%` }}
-                                              />
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </td>
-
-                                      {/* Col 4: Counselor, Branch & Latest Note Preview */}
-                                      <td className="px-4 py-3.5 align-top max-w-[220px]">
-                                        <p className="font-semibold text-slate-800 truncate">
-                                          {lead.assignedTo || "Sales & Marketing Team"}
-                                        </p>
-                                        <p className="text-[11px] text-slate-400 mt-0.5">
-                                          {lead.branch === "KHULNA-01" ? t.khulnaBranch : t.dhakaHq}
-                                          {lead.followUpDate ? ` · ${lead.followUpDate}` : ""}
-                                        </p>
-                                        {lead.notes && (
-                                          <p
-                                            className="mt-1 text-[11px] text-slate-500 line-clamp-1 italic"
-                                            title={lead.notes}
-                                          >
-                                            “{lead.notes}”
-                                          </p>
-                                        )}
-                                      </td>
-
-                                      {/* Col 5: Status Selector */}
-                                      <td className="px-4 py-3.5 align-top">
-                                        <select
-                                          value={lead.status}
-                                          onChange={(e) => {
-                                            const nextStatus = e.target.value as LeadStatus;
-                                            updateCrmLeadStatus(lead.id, nextStatus);
-                                            setStore({ ...getCmsStore() });
-                                            showToast(
-                                              nextStatus === "ADMITTED"
-                                                ? `${lead.name} — ${tr("ভর্তি সম্পন্ন ও ভিসা পাইপলাইনে সিঙ্ক হয়েছে", "Admitted & synced to visa pipeline", "入学手続完了・ビザパイプライン連携済")}`
-                                                : `${lead.name} — ${nextStatus}`,
-                                            );
-                                          }}
-                                          className={`rounded-xl border px-2.5 py-1.5 text-xs font-semibold focus:outline-hidden cursor-pointer transition ${getStatusSelectStyle(
-                                            lead.status,
-                                          )}`}
-                                        >
-                                          <option value="NEW">{t.crm.statuses.NEW}</option>
-                                          <option value="CONTACTED">
-                                            {t.crm.statuses.CONTACTED}
-                                          </option>
-                                          <option value="COUNSELED">
-                                            {t.crm.statuses.COUNSELED}
-                                          </option>
-                                          <option value="OFFICE_VISIT_BOOKED">
-                                            {t.crm.statuses.OFFICE_VISIT_BOOKED}
-                                          </option>
-                                          <option value="ADMITTED">{t.crm.statuses.ADMITTED}</option>
-                                          <option value="ARCHIVED">{t.crm.statuses.ARCHIVED}</option>
-                                        </select>
-                                      </td>
-
-                                      {/* Col 6: Quick Actions */}
-                                      <td className="px-4 py-3.5 align-top text-right">
-                                        <div className="inline-flex items-center justify-end gap-1.5">
-                                          <button
-                                            type="button"
-                                            onClick={() => setSelectedLeadForProfile(lead)}
-                                            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition whitespace-nowrap"
-                                          >
-                                            <UserCheck className="h-3.5 w-3.5 text-[#b91c1c]" />
-                                            <span>
-                                              {tr("৩৬০° প্রোফাইল", "360° Profile", "詳細")}
-                                            </span>
-                                          </button>
-
-                                          <button
-                                            type="button"
-                                            onClick={() => openStudentPaymentModal(lead)}
-                                            className="inline-flex items-center gap-1 rounded-xl bg-emerald-50 border border-emerald-200/80 px-2.5 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 transition whitespace-nowrap"
-                                            title="Collect Fee Installment"
-                                          >
-                                            <DollarSign className="h-3 w-3 text-emerald-700" />
-                                            <span>{tr("ফি", "Fee", "入金")}</span>
-                                          </button>
-
-                                          {!lead.isFileOpened && (
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                promoteLeadToVisaPipeline({ leadId: lead.id });
-                                                setStore({ ...getCmsStore() });
-                                                showToast(
-                                                  `${lead.name} ${tr("ভিসা পাইপলাইনে যুক্ত হয়েছে", "promoted to visa pipeline", "ビザパイプラインに追加されました")}`,
-                                                );
-                                              }}
-                                              className="inline-flex items-center gap-1 rounded-xl bg-slate-900 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 transition whitespace-nowrap"
-                                              title="Promote to 10-Step Visa Pipeline"
-                                            >
-                                              <FileCheck2 className="h-3 w-3" />
-                                              <span>
-                                                {tr("পাইপলাইন", "Pipeline", "ビザ移管")}
-                                              </span>
-                                            </button>
-                                          )}
-
-                                          <a
-                                            href={waLink}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="inline-flex items-center justify-center rounded-xl bg-emerald-600 p-1.5 text-white hover:bg-emerald-700 transition"
-                                            title="Send WhatsApp Follow-up"
-                                          >
-                                            <Send className="h-3.5 w-3.5" />
-                                          </a>
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
-
-                                {filteredLeads.length === 0 && (
-                                  <tr>
-                                    <td colSpan={7} className="py-12 text-center">
-                                      <p className="text-sm font-semibold text-slate-600">
-                                        {tr(
-                                          "কোনো CRM লিড পাওয়া যায়নি",
-                                          "No matching CRM leads found",
-                                          "条件に一致するCRMリードが見つかりません",
-                                        )}
+                                    <div className="text-right min-w-[78px] hidden sm:block">
+                                      <p className="text-[11px] font-medium text-slate-500 leading-tight">
+                                        {addedDateStr}
                                       </p>
-                                      <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-                                        <button
-                                          type="button"
-                                          onClick={() => setCrmImportExportMode("IMPORT")}
-                                          className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-semibold text-emerald-900 hover:bg-emerald-100 transition"
-                                        >
-                                          <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-700" />
-                                          <span>
-                                            {tr(
-                                              "Google Sheet থেকে লিড ইমপোর্ট করুন",
-                                              "Import Leads from Google Sheet",
-                                              "Googleシートからインポート",
-                                            )}
-                                          </span>
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => setActiveModal("ADD_LEAD")}
-                                          className="inline-flex items-center gap-1.5 rounded-xl bg-[#b91c1c] px-4 py-2 text-xs font-semibold text-white hover:bg-red-800 transition"
-                                        >
-                                          <Plus className="h-3.5 w-3.5" />
-                                          <span>{t.crm.quickAddBtn}</span>
-                                        </button>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                )}
-                              </tbody>
-                            </table>
+                                      <p className="text-[11px] text-slate-400 truncate max-w-[110px] leading-tight mt-0.5">
+                                        {counselorDisplay}
+                                      </p>
+                                    </div>
+
+                                    <div className="flex items-center gap-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => openStudentPaymentModal(lead)}
+                                        className="rounded-lg p-1.5 text-slate-400 hover:bg-emerald-50 hover:text-emerald-700 transition"
+                                        title="Collect Fee / Invoice"
+                                      >
+                                        <DollarSign className="h-4 w-4" />
+                                      </button>
+                                      <a
+                                        href={waLink}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="rounded-lg p-1.5 text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 transition"
+                                        title="WhatsApp"
+                                      >
+                                        <Send className="h-3.5 w-3.5" />
+                                      </a>
+                                      <button
+                                        type="button"
+                                        onClick={() => setSelectedLeadForProfile(lead)}
+                                        className="rounded-lg p-1.5 text-slate-400 group-hover:text-slate-700 hover:bg-slate-100 transition"
+                                        title="Open 360° Profile"
+                                      >
+                                        <ChevronRight className="h-4 w-4" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+
+                            {filteredLeads.length === 0 && (
+                              <div className="rounded-2xl border border-slate-200/80 bg-white py-12 text-center">
+                                <p className="text-sm font-semibold text-slate-600">
+                                  {tr(
+                                    "কোনো CRM লিড পাওয়া যায়নি",
+                                    "No matching CRM leads found",
+                                    "条件に一致するCRMリードが見つかりません",
+                                  )}
+                                </p>
+                                <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => setCrmImportExportMode("IMPORT")}
+                                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+                                  >
+                                    <FileSpreadsheet className="h-3.5 w-3.5" />
+                                    <span>
+                                      {tr(
+                                        "Google Sheet থেকে লিড ইমপোর্ট করুন",
+                                        "Import Leads from Google Sheet",
+                                        "Googleシートからインポート",
+                                      )}
+                                    </span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setActiveModal("ADD_LEAD")}
+                                    className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 transition"
+                                  >
+                                    <Plus className="h-3.5 w-3.5" />
+                                    <span>{tr("+ লিড যুক্ত করুন", "+ Add lead", "+ リード追加")}</span>
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                           </div>
 
                           {/* Smart Pagination Footer Bar */}
-                          {filteredLeads.length > 0 && (
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-slate-100 bg-slate-50/60 px-4 py-3 text-xs">
-                              <div className="flex items-center gap-3">
-                                <span className="text-slate-500 font-mono tabular-nums">
-                                  {tr(
-                                    `${startIdx + 1}–${Math.min(startIdx + crmPageSize, totalFiltered)} দেখানো হচ্ছে (মোট ${totalFiltered}টি লিড)`,
-                                    `Showing ${startIdx + 1}–${Math.min(startIdx + crmPageSize, totalFiltered)} of ${totalFiltered} leads`,
-                                    `${totalFiltered}件中 ${startIdx + 1}–${Math.min(startIdx + crmPageSize, totalFiltered)}件を表示`,
-                                  )}
-                                </span>
-                                <select
-                                  value={crmPageSize}
-                                  onChange={(e) => {
-                                    setCrmPageSize(Number(e.target.value));
-                                    setCrmCurrentPage(1);
-                                  }}
-                                  className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700"
-                                >
-                                  <option value={25}>25 / page</option>
-                                  <option value={50}>50 / page</option>
-                                  <option value={100}>100 / page</option>
-                                  <option value={500}>Show All ({totalFiltered})</option>
-                                </select>
-                              </div>
-
+                          {filteredLeads.length > 0 && totalPages > 1 && (
+                            <div className="flex items-center justify-between rounded-2xl border border-slate-200/80 bg-white px-4 py-3 text-xs">
+                              <span className="text-slate-500 font-mono tabular-nums">
+                                Page {safePage} of {totalPages}
+                              </span>
                               <div className="flex items-center gap-1.5">
                                 <button
                                   type="button"
@@ -3298,9 +2998,6 @@ export default function DashboardPage() {
                                 >
                                   {tr("পূর্ববর্তী", "Previous", "前へ")}
                                 </button>
-                                <span className="px-2.5 py-1 font-mono font-semibold text-slate-700 tabular-nums">
-                                  {safePage} / {totalPages}
-                                </span>
                                 <button
                                   type="button"
                                   disabled={safePage >= totalPages}
@@ -7200,7 +6897,7 @@ export default function DashboardPage() {
                       education: leadForm.education,
                       japaneseProficiency: leadForm.japaneseProficiency,
                       studyGapYears: leadForm.studyGapYears,
-                      assignedTo: selectedCounselor?.name || currentUser?.name || tr("শেখ বাসেত", "Sheikh Baset", "シェイク・バセット"),
+                      assignedTo: selectedCounselor?.name || currentUser?.name || "Unassigned",
                       assignedCounselorId: leadForm.assignedCounselorId || undefined,
                       referredByAgentId: leadForm.referredByAgentId || undefined,
                       targetSchoolId: leadForm.targetSchoolId || undefined,
