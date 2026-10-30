@@ -207,6 +207,7 @@ var TABLE_SCHEMAS = {
     "coe_status",
     "visa_status",
     "counselor_name",
+    "visa_track",
     "profile_json",
     "updated_at",
     "created_at"

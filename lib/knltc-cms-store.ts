@@ -200,22 +200,317 @@ export interface CrmLead {
   loginEmail?: string;
   loginPassword?: string;
   allowedTabs?: DashboardTabId[];
+  visaTrack?: VisaTrack;
 }
 
 // ------------------------------------------------------------------------------
-// Visa Pipeline & Kanban Engine (10 Steps)
+// Visa Pipeline & Kanban Engine (Multi-Track: Student Visa, SSW, TITP)
 // ------------------------------------------------------------------------------
+export type VisaTrack = "STUDENT" | "SSW" | "TITP";
+
 export type VisaStage =
-  | 1  // ফাইল ওপেনিং (৳০ অগ্রিম)
-  | 2  // ভাষা প্রশিক্ষণ (N5/N4)
-  | 3  // ডকুমেন্ট সংগ্রহ ও নোটারি/অনুবাদ
-  | 4  // জাপানি শিক্ষা প্রতিষ্ঠান জুম ইন্টারভিউ
-  | 5  // জাপান ইমিগ্রেশনে COE আবেদন
-  | 6  // প্রি-ভিসা (COE) অনুমোদন
-  | 7  // টিউশন ফি প্রদান ও মূল COE রিলিজ
-  | 8  // এম্বাসি ইন্টারভিউ ও VFS ভিসা আবেদন
-  | 9  // ভিসা সিলমোহর ও সার্ভিস চার্জ গ্রহণ
-  | 10; // এয়ার টিকিট ও আফটার-অ্যারাইভাল সাপোর্ট (এয়ারপোর্ট পিকআপ, বাসা, পার্ট-টাইম)
+  | 1
+  | 2
+  | 3
+  | 4
+  | 5
+  | 6
+  | 7
+  | 8
+  | 9
+  | 10;
+
+export interface VisaTrackStageInfo {
+  stage: VisaStage;
+  titleEn: string;
+  titleBn: string;
+  titleJa: string;
+  subEn: string;
+  subBn: string;
+  subJa: string;
+  isCoeMilestone?: boolean;
+  isVisaStamped?: boolean;
+  isJapanLanding?: boolean;
+}
+
+export const VISA_TRACK_STAGES: Record<VisaTrack, VisaTrackStageInfo[]> = {
+  STUDENT: [
+    {
+      stage: 1,
+      titleEn: "1. File Opening",
+      titleBn: "১. ফাইল ওপেনিং",
+      titleJa: "1. ファイル開設",
+      subEn: "৳0 Advance Service Charge",
+      subBn: "৳০ অগ্রিম সার্ভিস চার্জ",
+      subJa: "初期費用0円・登録",
+    },
+    {
+      stage: 2,
+      titleEn: "2. Language Prep",
+      titleBn: "২. ভাষা প্রশিক্ষণ (N5/N4)",
+      titleJa: "2. 日本語学習（N5/N4）",
+      subEn: "N5/N4 & 150-Hr Study Cert",
+      subBn: "১৫০ ঘণ্টা কোর্স ও JLPT/NAT",
+      subJa: "150時間学習・試験対策",
+    },
+    {
+      stage: 3,
+      titleEn: "3. Translation",
+      titleBn: "৩. ডকুমেন্ট ও অনুবাদ",
+      titleJa: "3. 書類翻訳・公証",
+      subEn: "Notary & Certificate Attestation",
+      subBn: "নোটারি ও বোর্ড ভেরিফিকেশন",
+      subJa: "証明書検証・日本語翻訳",
+    },
+    {
+      stage: 4,
+      titleEn: "4. School Interview",
+      titleBn: "৪. স্কুল জুম ইন্টারভিউ",
+      titleJa: "4. 学校Zoom面接",
+      subEn: "Direct School Zoom Interview",
+      subBn: "জাপানি স্কুলের সরাসরি ইন্টারভিউ",
+      subJa: "日本語学校オンライン選考",
+    },
+    {
+      stage: 5,
+      titleEn: "5. COE Filing",
+      titleBn: "৫. ইমিগ্রেশনে COE আবেদন",
+      titleJa: "5. 入管COE申請",
+      subEn: "Submission to Japan Immigration",
+      subBn: "জাপান ইমিগ্রেশনে ফাইল জমা",
+      subJa: "出入国在留管理局へ提出",
+    },
+    {
+      stage: 6,
+      titleEn: "6. COE Approved",
+      titleBn: "৬. প্রি-ভিসা (COE) অনুমোদন",
+      titleJa: "6. COE交付承認",
+      subEn: "Pre-Visa Issued (B2B Trigger)",
+      subBn: "COE ইস্যু ও এজেন্ট কমিশন ট্রিগার",
+      subJa: "在留資格認定証明書交付",
+      isCoeMilestone: true,
+    },
+    {
+      stage: 7,
+      titleEn: "7. Tuition Wire",
+      titleBn: "৭. টিউশন ফি ও মূল COE",
+      titleJa: "7. 学費送金・原本COE",
+      subEn: "Direct Bank Transfer to School",
+      subBn: "স্কুলে টিউশন ফি প্রেরণ ও মূল COE",
+      subJa: "学費海外送金・原本発送",
+    },
+    {
+      stage: 8,
+      titleEn: "8. Embassy VFS",
+      titleBn: "৮. এম্বাসি ও VFS আবেদন",
+      titleJa: "8. 大使館・VFS申請",
+      subEn: "Final Visa Filing in Dhaka",
+      subBn: "ঢাকা জাপান এম্বাসি ও VFS জমা",
+      subJa: "日本大使館・VFS査証申請",
+    },
+    {
+      stage: 9,
+      titleEn: "9. Visa Stamped",
+      titleBn: "৯. ভিসা স্ট্যাম্পড",
+      titleJa: "9. ビザ発給完了",
+      subEn: "Passport Released & Service Fee",
+      subBn: "পাসপোর্ট রিলিজ ও সার্ভিস চার্জ",
+      subJa: "査証発給・成約精算",
+      isVisaStamped: true,
+    },
+    {
+      stage: 10,
+      titleEn: "10. Japan Landing",
+      titleBn: "১০. জাপান ল্যান্ডিং",
+      titleJa: "10. 日本入国・定着支援",
+      subEn: "Flight, Pickup & Part-Time Job",
+      subBn: "ফ্লাইট, পিকআপ ও পার্ট-টাইম জব",
+      subJa: "渡航・空港出迎え・アルバイト支援",
+      isJapanLanding: true,
+    },
+  ],
+  SSW: [
+    {
+      stage: 1,
+      titleEn: "1. File Open",
+      titleBn: "১. ফাইল ওপেন (File Open)",
+      titleJa: "1. ファイル開設",
+      subEn: "SSW Candidate Registration",
+      subBn: "SSW প্রোফাইল ও নিবন্ধন",
+      subJa: "特定技能候補者登録",
+    },
+    {
+      stage: 2,
+      titleEn: "2. Language Learning",
+      titleBn: "২. ভাষা শিক্ষা (Language Learning)",
+      titleJa: "2. 日本語学習（N4/JFT）",
+      subEn: "JLPT N4 / JFT-Basic Preparation",
+      subBn: "JLPT N4 ও JFT-Basic প্রশিক্ষণ",
+      subJa: "JLPT N4・JFT-Basic対策",
+    },
+    {
+      stage: 3,
+      titleEn: "3. Skill Test Preparation",
+      titleBn: "৩. স্কিল টেস্ট প্রস্তুতি",
+      titleJa: "3. 特定技能評価試験対策",
+      subEn: "Prometric Sector Skill Exam Prep",
+      subBn: "সেক্টরভিত্তিক প্রমেট্রিক স্কিল টেস্ট",
+      subJa: "分野別技能測定試験対策",
+    },
+    {
+      stage: 4,
+      titleEn: "4. Interview Preparation",
+      titleBn: "৪. ইন্টারভিউ প্রস্তুতি",
+      titleJa: "4. 企業面接対策・選考",
+      subEn: "Japanese Employer / TSK Interview",
+      subBn: "জাপানি কোম্পানি জব ইন্টারভিউ প্রস্তুতি",
+      subJa: "受入企業・登録支援機関面接",
+    },
+    {
+      stage: 5,
+      titleEn: "5. Selected & Waiting for Medical",
+      titleBn: "৫. নির্বাচিত ও মেডিকেলের অপেক্ষায়",
+      titleJa: "5. 内定・健康診断待機",
+      subEn: "Job Offer Confirmed & Medical Test",
+      subBn: "চাকরি নিশ্চিত ও মেডিকেল চেকআপ",
+      subJa: "内定通知・指定病院健康診断",
+    },
+    {
+      stage: 6,
+      titleEn: "6. Waiting for Demand Letter",
+      titleBn: "৬. ডিমান্ড লেটারের অপেক্ষায়",
+      titleJa: "6. 雇用契約書・支援計画待機",
+      subEn: "Employment Contract & Demand Letter",
+      subBn: "জব কন্ট্রাক্ট ও ডিমান্ড লেটার অপেক্ষা",
+      subJa: "雇用条件書・1号特定技能支援計画",
+    },
+    {
+      stage: 7,
+      titleEn: "7. Waiting for COE",
+      titleBn: "৭. COE-এর অপেক্ষায় (Waiting for COE)",
+      titleJa: "7. 入管COE申請・交付待機",
+      subEn: "Immigration COE Filing & Issuance",
+      subBn: "ইমিগ্রেশনে COE প্রসেসিং ও ইস্যু",
+      subJa: "在留資格認定証明書（COE）交付",
+      isCoeMilestone: true,
+    },
+    {
+      stage: 8,
+      titleEn: "8. Embassy & VFS",
+      titleBn: "৮. এম্বাসি ও VFS (Embassy & VFS)",
+      titleJa: "8. 大使館・VFS査証申請",
+      subEn: "BMET Clearance & VFS Visa Filing",
+      subBn: "BMET ক্লিয়ারেন্স ও VFS ভিসা আবেদন",
+      subJa: "BMET手続き・VFSビザ申請",
+    },
+    {
+      stage: 9,
+      titleEn: "9. Visa Stamped",
+      titleBn: "৯. ভিসা স্ট্যাম্পড (Visa Stamped)",
+      titleJa: "9. 特定技能ビザ発給",
+      subEn: "SSW Work Visa Stamped in Passport",
+      subBn: "পাসপোর্টে SSW ওয়ার্ক ভিসা স্ট্যাম্পিং",
+      subJa: "特定技能査証発給完了",
+      isVisaStamped: true,
+    },
+    {
+      stage: 10,
+      titleEn: "10. Japan Landing",
+      titleBn: "১০. জাপান ল্যান্ডিং (Japan Landing)",
+      titleJa: "10. 日本入国・就労開始",
+      subEn: "Departure & Employer Onboarding",
+      subBn: "জাপান যাত্রা ও কোম্পানিতে যোগদান",
+      subJa: "渡航・受入企業配属",
+      isJapanLanding: true,
+    },
+  ],
+  TITP: [
+    {
+      stage: 1,
+      titleEn: "1. File Open",
+      titleBn: "১. ফাইল ওপেন (File Open)",
+      titleJa: "1. ファイル開設",
+      subEn: "TITP Technical Intern Registration",
+      subBn: "TITP টেকনিক্যাল ইন্টার্ন নিবন্ধন",
+      subJa: "技能実習生候補者登録",
+    },
+    {
+      stage: 2,
+      titleEn: "2. Basic Language",
+      titleBn: "২. বেসিক ভাষা শিক্ষা (Basic Language)",
+      titleJa: "2. 基礎日本語講習",
+      subEn: "N5 / Basic Japanese Conversation",
+      subBn: "N5 ও বেসিক জাপানি কথোপকথন",
+      subJa: "基礎日本語・生活マナー講習",
+    },
+    {
+      stage: 3,
+      titleEn: "3. Interview Preparation",
+      titleBn: "৩. ইন্টারভিউ প্রস্তুতি",
+      titleJa: "3. 監理団体・企業面接対策",
+      subEn: "Supervising Org (Kumiai) Interview",
+      subBn: "কুমিয়াই (Kumiai) ও কোম্পানি ইন্টারভিউ",
+      subJa: "監理団体（組合）・実習実施者面接",
+    },
+    {
+      stage: 4,
+      titleEn: "4. Selected & Waiting for Medical",
+      titleBn: "৪. নির্বাচিত ও মেডিকেলের অপেক্ষায়",
+      titleJa: "4. 合格・健康診断待機",
+      subEn: "Company Selection & Medical Fitness",
+      subBn: "ইন্টারভিউ উত্তীর্ণ ও মেডিকেল পরীক্ষা",
+      subJa: "面接合格・健康診断実施",
+    },
+    {
+      stage: 5,
+      titleEn: "5. Waiting for Demand Letter",
+      titleBn: "৫. ডিমান্ড লেটারের অপেক্ষায়",
+      titleJa: "5. 技能実習計画認定・求人票待機",
+      subEn: "OTIT Training Plan & Demand Letter",
+      subBn: "OTIT অনুমোদন ও ডিমান্ড লেটার অপেক্ষা",
+      subJa: "OTIT計画認定・雇用契約書類",
+    },
+    {
+      stage: 6,
+      titleEn: "6. Waiting for COE",
+      titleBn: "৬. COE-এর অপেক্ষায় (Waiting for COE)",
+      titleJa: "6. 入管COE交付待機",
+      subEn: "Immigration COE Processing & Approval",
+      subBn: "ইমিগ্রেশন COE প্রসেসিং ও অনুমোদন",
+      subJa: "在留資格認定証明書（COE）交付",
+      isCoeMilestone: true,
+    },
+    {
+      stage: 7,
+      titleEn: "7. Embassy & VFS",
+      titleBn: "৭. এম্বাসি ও VFS (Embassy & VFS)",
+      titleJa: "7. 大使館・VFS査証申請",
+      subEn: "BMET Smart Card & VFS Visa Filing",
+      subBn: "BMET স্মার্ট কার্ড ও VFS ভিসা জমা",
+      subJa: "BMET認証・VFS査証申請",
+    },
+    {
+      stage: 8,
+      titleEn: "8. Visa Stamped",
+      titleBn: "৮. ভিসা স্ট্যাম্পড (Visa Stamped)",
+      titleJa: "8. 技能実習ビザ発給",
+      subEn: "TITP Intern Visa Stamped in Passport",
+      subBn: "পাসপোর্টে TITP ভিসা স্ট্যাম্পিং",
+      subJa: "技能実習査証発給完了",
+      isVisaStamped: true,
+    },
+    {
+      stage: 9,
+      titleEn: "9. Japan Landing",
+      titleBn: "৯. জাপান ল্যান্ডিং (Japan Landing)",
+      titleJa: "9. 日本入国・組合研修開始",
+      subEn: "Departure & Kumiai Orientation",
+      subBn: "জাপান ল্যান্ডিং ও কুমিয়াই ট্রেনিং শুরু",
+      subJa: "入国後講習・実習先配属",
+      isJapanLanding: true,
+    },
+  ],
+};
 
 export interface VisaApplicant {
   id: string;
@@ -224,12 +519,13 @@ export interface VisaApplicant {
   phone: string;
   branch: "DHK-HQ" | "KHULNA-01";
   packageType: "REGULAR" | "PREMIUM";
+  visaTrack?: VisaTrack;
   intakeSession: "APRIL_2027" | "JULY_2027" | "OCTOBER_2027" | "JANUARY_2028";
   stage: VisaStage;
   targetSchool: string;
   targetSchoolName?: string;
   sponsorName: string;
-  sponsorRelation: "FATHER" | "MOTHER" | "BROTHER" | "SISTER";
+  sponsorRelation: "FATHER" | "MOTHER" | "BROTHER" | "SISTER" | "SELF";
   sponsorBank: string;
   sponsorBalanceBdt: number;
   bankLoanAssistance: boolean;
@@ -255,6 +551,72 @@ export interface VisaApplicant {
   b2bCommissionTriggered?: boolean;
   schoolCommissionClaimed?: boolean;
   updatedAt: string;
+}
+
+export function resolveVisaTrack(
+  item?: {
+    visaTrack?: VisaTrack;
+    interest?: ServiceInterest | string;
+    targetSchool?: string;
+    targetSchoolName?: string;
+  } | null,
+  linkedLead?: Partial<CrmLead> | null,
+): VisaTrack {
+  const explicit = item?.visaTrack || linkedLead?.visaTrack;
+  if (explicit === "STUDENT" || explicit === "SSW" || explicit === "TITP") {
+    return explicit;
+  }
+
+  const interest = item?.interest || linkedLead?.interest || "";
+  if (interest === "TITP_TECHNICAL") return "TITP";
+  if (
+    interest === "SSW_CONSTRUCTION_SPECIAL" ||
+    interest === "SSW_CAREGIVER" ||
+    interest === "SSW_AGRICULTURE" ||
+    interest === "SSW_FOOD_SERVICE"
+  ) {
+    return "SSW";
+  }
+
+  const schoolStr = (
+    item?.targetSchool ||
+    item?.targetSchoolName ||
+    linkedLead?.targetSchool ||
+    linkedLead?.targetSchoolName ||
+    ""
+  ).toLowerCase();
+
+  if (schoolStr.includes("titp") || schoolStr.includes("intern") || schoolStr.includes("kumiai")) {
+    return "TITP";
+  }
+  if (
+    schoolStr.includes("ssw") ||
+    schoolStr.includes("specified skilled") ||
+    schoolStr.includes("caregiver") ||
+    schoolStr.includes("food service") ||
+    schoolStr.includes("agriculture")
+  ) {
+    return "SSW";
+  }
+
+  return "STUDENT";
+}
+
+export function getStagesForVisaTrack(track: VisaTrack): VisaTrackStageInfo[] {
+  return VISA_TRACK_STAGES[track] || VISA_TRACK_STAGES.STUDENT;
+}
+
+export function getStageLabelForTrack(
+  track: VisaTrack,
+  stage: number,
+  lang: SupportedLanguage = "en",
+): string {
+  const stages = getStagesForVisaTrack(track);
+  const clamped = Math.max(1, Math.min(stages.length, Number(stage) || 1));
+  const found = stages.find((s) => s.stage === clamped) || stages[0];
+  if (lang === "bn") return found.titleBn;
+  if (lang === "ja") return found.titleJa;
+  return found.titleEn;
 }
 
 // ------------------------------------------------------------------------------
@@ -1309,6 +1671,7 @@ export function serializeLeadToSheetRow(lead: CrmLead): Record<string, any> {
 }
 
 export function serializeVisaToSheetRow(v: VisaApplicant): Record<string, any> {
+  const resolvedTrack = resolveVisaTrack(v);
   return {
     id: v.id,
     lead_id: v.leadId || v.linkedLeadId || "",
@@ -1317,6 +1680,7 @@ export function serializeVisaToSheetRow(v: VisaApplicant): Record<string, any> {
     phone: v.phone,
     branch: v.branch,
     package_type: v.packageType,
+    visa_track: resolvedTrack,
     intake_session: v.intakeSession,
     stage: v.stage,
     target_school: v.targetSchool || v.targetSchoolName || "",
@@ -1337,7 +1701,7 @@ export function serializeVisaToSheetRow(v: VisaApplicant): Record<string, any> {
     coe_status: v.coEStatus,
     visa_status: v.visaStatus,
     counselor_name: v.counselorName,
-    profile_json: JSON.stringify(v),
+    profile_json: JSON.stringify({ ...v, visaTrack: resolvedTrack }),
     updated_at: v.updatedAt || new Date().toISOString(),
     created_at: v.updatedAt || new Date().toISOString(),
   };
@@ -1639,6 +2003,7 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
           phone: String(v.phone || parsedProfile.phone || local?.phone || ""),
           branch: normalizeSheetLeadBranch(v.branch || parsedProfile.branch || local?.branch),
           packageType: v.package_type || parsedProfile.packageType || local?.packageType || "REGULAR",
+          visaTrack: (v.visa_track || parsedProfile.visaTrack || local?.visaTrack) as VisaTrack | undefined,
           intakeSession: v.intake_session || parsedProfile.intakeSession || local?.intakeSession || "APRIL_2027",
           stage: (Number(v.stage || parsedProfile.stage || local?.stage) || 1) as VisaStage,
           targetSchool: v.target_school || parsedProfile.targetSchool || local?.targetSchool || "",
@@ -2617,6 +2982,7 @@ export function updateCrmLeadStatus(id: string, status: LeadStatus, notes?: stri
         packageType:
           lead.packageType ||
           (lead.interest === "STUDENT_VISA_PREMIUM" ? "PREMIUM" : "REGULAR"),
+        visaTrack: resolveVisaTrack(lead),
         intakeSession: "APRIL_2027",
         stage: 1,
         targetSchool: matchedSchool?.name || lead.targetSchool || lead.targetSchoolName || store.partnerSchools[0]?.name || "Unassigned School",
@@ -2670,6 +3036,7 @@ export function promoteLeadToVisaPipeline(
         targetSchool?: string;
         targetSchoolName?: string;
         packageType?: "REGULAR" | "PREMIUM";
+        visaTrack?: VisaTrack;
         b2bAgentId?: string;
         referredByAgentId?: string;
         visaOfficerId?: string;
@@ -2682,6 +3049,7 @@ export function promoteLeadToVisaPipeline(
     targetSchool?: string;
     targetSchoolName?: string;
     packageType?: "REGULAR" | "PREMIUM";
+    visaTrack?: VisaTrack;
     b2bAgentId?: string;
     referredByAgentId?: string;
     visaOfficerId?: string;
@@ -2705,6 +3073,7 @@ export function promoteLeadToVisaPipeline(
     lead.targetSchoolName = options.targetSchool || options.targetSchoolName;
   }
   if (options?.packageType) lead.packageType = options.packageType;
+  if (options?.visaTrack) lead.visaTrack = options.visaTrack;
   if (options?.b2bAgentId || options?.referredByAgentId) {
     lead.b2bAgentId = options.b2bAgentId || options.referredByAgentId;
     lead.referredByAgentId = options.b2bAgentId || options.referredByAgentId;
@@ -2717,9 +3086,54 @@ export function promoteLeadToVisaPipeline(
   saveCmsStore(store);
   updateCrmLeadStatus(leadId, "ADMITTED");
   const updatedStore = getCmsStore();
-  return (
-    updatedStore.visaApplicants.find((v) => v.leadId === leadId || v.linkedLeadId === leadId || v.phone === lead.phone) || null
+  const foundVisa = updatedStore.visaApplicants.find(
+    (v) => v.leadId === leadId || v.linkedLeadId === leadId || v.phone === lead.phone,
   );
+  if (foundVisa && options?.visaTrack && foundVisa.visaTrack !== options.visaTrack) {
+    return updateVisaApplicantTrack(foundVisa.id, options.visaTrack);
+  }
+  return foundVisa || null;
+}
+
+export function updateVisaApplicantTrack(id: string, visaTrack: VisaTrack): VisaApplicant | null {
+  const store = getCmsStore();
+  const index = store.visaApplicants.findIndex((v) => v.id === id);
+  if (index === -1) return null;
+
+  const app = store.visaApplicants[index];
+  app.visaTrack = visaTrack;
+  const maxStage = getStagesForVisaTrack(visaTrack).length as VisaStage;
+  if (app.stage > maxStage) {
+    app.stage = maxStage;
+  }
+  app.updatedAt = new Date().toISOString();
+
+  const linkedLead = store.crmLeads.find(
+    (l) => l.id === app.leadId || l.id === app.linkedLeadId || (app.phone && l.phone === app.phone),
+  );
+  if (linkedLead) {
+    linkedLead.visaTrack = visaTrack;
+    const trackLabel =
+      visaTrack === "TITP"
+        ? "TITP (Technical Intern)"
+        : visaTrack === "SSW"
+          ? "SSW (Specified Skilled Worker)"
+          : "Student Visa";
+    const stageEntry: LeadActivityItem = {
+      id: `act-${Date.now()}`,
+      type: "STAGE_CHANGE",
+      summary: `Visa pipeline track switched to ${trackLabel} — currently at ${getStageLabelForTrack(visaTrack, app.stage, "en")}`,
+      counselorName: app.visaOfficerName || app.counselorName || "Visa Officer",
+      createdAt: app.updatedAt,
+    };
+    linkedLead.activityLog = [stageEntry, ...(linkedLead.activityLog || [])];
+    linkedLead.lastContactedAt = app.updatedAt;
+    syncToServer("UPSERT", "knltc_crm_leads", serializeLeadToSheetRow(linkedLead));
+  }
+
+  saveCmsStore(store);
+  syncToServer("UPSERT", "knltc_visa_applicants", serializeVisaToSheetRow(app));
+  return app;
 }
 
 export function updateVisaStage(id: string, nextStage: VisaStage): VisaApplicant | null {
@@ -2728,12 +3142,22 @@ export function updateVisaStage(id: string, nextStage: VisaStage): VisaApplicant
   if (index === -1) return null;
 
   const app = store.visaApplicants[index];
+  const linkedLead = store.crmLeads.find(
+    (l) => l.id === app.leadId || l.id === app.linkedLeadId || (app.phone && l.phone === app.phone),
+  );
+
+  const track = resolveVisaTrack(app, linkedLead);
+  app.visaTrack = track;
+  const trackStages = getStagesForVisaTrack(track);
+  const maxStage = trackStages.length as VisaStage;
+  const clampedStage = Math.max(1, Math.min(maxStage, nextStage)) as VisaStage;
+
   const prevStage = app.stage;
-  app.stage = nextStage;
+  app.stage = clampedStage;
   app.updatedAt = new Date().toISOString();
 
   // 1. Auto-increment Visa Officer KPI when progressing stages and sync to Sheet
-  if (nextStage > prevStage) {
+  if (clampedStage > prevStage) {
     const officer = store.staffList.find(
       (st) =>
         ((app.visaOfficerId || app.assignedVisaOfficerId) && st.id === (app.visaOfficerId || app.assignedVisaOfficerId)) ||
@@ -2746,8 +3170,9 @@ export function updateVisaStage(id: string, nextStage: VisaStage): VisaApplicant
     }
   }
 
-  // 2. Stage 6 (Pre-Visa COE Approval): Trigger B2B Agent Commission & COE Status
-  if (nextStage >= 6) {
+  // 2. Track-aware COE Milestone: Stage 6 for STUDENT & TITP, Stage 7 for SSW
+  const coeStageThreshold = track === "SSW" ? 7 : 6;
+  if (clampedStage >= coeStageThreshold) {
     app.coEStatus = "APPROVED";
 
     const agentId = app.b2bAgentId || app.referredByAgentId;
@@ -2765,25 +3190,27 @@ export function updateVisaStage(id: string, nextStage: VisaStage): VisaApplicant
         syncToServer("UPSERT", "knltc_b2b_agents", serializeAgentToSheetRow(agent));
       }
     }
+  } else {
+    app.coEStatus = "PENDING";
   }
 
-  // 3. Stage 9 (Visa Stamped): Update status
-  if (nextStage >= 9) {
-    app.visaStatus = "STAMPED";
-  }
-  if (nextStage === 10) {
+  // 3. Track-aware Visa Stamped & Japan Landing statuses
+  const stampedThreshold = track === "TITP" ? 8 : 9;
+  if (clampedStage === maxStage) {
     app.visaStatus = "DEPARTED";
+  } else if (clampedStage >= stampedThreshold) {
+    app.visaStatus = "STAMPED";
+  } else {
+    app.visaStatus = "IN_PROCESS";
   }
 
   // 4. Sync stage change into linked CrmLead activityLog
-  const linkedLead = store.crmLeads.find(
-    (l) => l.id === app.leadId || l.id === app.linkedLeadId || (app.phone && l.phone === app.phone),
-  );
   if (linkedLead) {
+    const stageTitleEn = getStageLabelForTrack(track, clampedStage, "en");
     const stageEntry: LeadActivityItem = {
       id: `act-${Date.now()}`,
       type: "STAGE_CHANGE",
-      summary: `Visa pipeline advanced to Stage ${nextStage} (COE: ${app.coEStatus}, Visa: ${app.visaStatus})`,
+      summary: `[${track}] Visa pipeline advanced to ${stageTitleEn} (COE: ${app.coEStatus}, Visa: ${app.visaStatus})`,
       counselorName: app.visaOfficerName || app.counselorName || "Visa Officer",
       createdAt: app.updatedAt,
     };
@@ -3555,6 +3982,392 @@ export function calculateLeadEligibility(lead: Partial<CrmLead>): {
     tier,
     recommendationBn,
     recommendationEn,
+  };
+}
+
+// ------------------------------------------------------------------------------
+// Interactive Multi-Track Automated Eligibility Engine (Student Visa, SSW, TITP)
+// ------------------------------------------------------------------------------
+export interface EligibilityEngineInput {
+  sscGpa: number;
+  hscGpa: number;
+  age: number;
+  studyGapYears: number;
+  educationLevel: "SSC" | "HSC" | "DIPLOMA" | "BACHELOR";
+  japaneseLevel: "NONE" | "LEARNING_N5" | "N5_PASSED" | "N4_JFT_PASSED";
+  sponsorBalanceLakhs: number; // e.g. 18 = 18 Lakh BDT
+  bankLoanAssist: boolean;
+}
+
+export interface TrackAssessment {
+  track: VisaTrack;
+  trackLabelEn: string;
+  trackLabelBn: string;
+  score: number; // 0-100
+  status: "ELIGIBLE" | "CONDITIONAL" | "NOT_ELIGIBLE";
+  badgeTextEn: string;
+  badgeTextBn: string;
+  summaryEn: string;
+  summaryBn: string;
+  checklists: {
+    labelEn: string;
+    labelBn: string;
+    passed: boolean;
+    warning?: boolean;
+  }[];
+}
+
+export interface MultiTrackEligibilityResult {
+  overallScore: number;
+  bestTrack: VisaTrack;
+  headlineEn: string;
+  headlineBn: string;
+  subheadlineEn: string;
+  subheadlineBn: string;
+  tracks: {
+    STUDENT: TrackAssessment;
+    SSW: TrackAssessment;
+    TITP: TrackAssessment;
+  };
+}
+
+export function evaluateMultiTrackEligibility(
+  input: EligibilityEngineInput,
+): MultiTrackEligibilityResult {
+  const ssc = Math.max(0, Math.min(5, Number(input.sscGpa) || 0));
+  const hsc = Math.max(0, Math.min(5, Number(input.hscGpa) || 0));
+  const avgGpa = input.educationLevel === "SSC" ? ssc : Number(((ssc + hsc) / 2).toFixed(2));
+  const age = Math.max(15, Math.min(60, Number(input.age) || 22));
+  const gap = Math.max(0, Math.min(25, Number(input.studyGapYears) || 0));
+  const balanceLakhs = Math.max(0, Number(input.sponsorBalanceLakhs) || 0);
+  const has12YearsEdu = input.educationLevel !== "SSC";
+  const hasFinancialSolvency = balanceLakhs >= 18 || input.bankLoanAssist;
+
+  // ----------------------------------------------------------------------------
+  // 1. STUDENT VISA ASSESSMENT (Ministry of Justice & Language School Standards)
+  // ----------------------------------------------------------------------------
+  let studentScore = 0;
+  if (has12YearsEdu) studentScore += 25;
+  if (avgGpa >= 4.0) studentScore += 25;
+  else if (avgGpa >= 3.25) studentScore += 21;
+  else if (avgGpa >= 2.5) studentScore += 15;
+  else if (avgGpa >= 2.0) studentScore += 6;
+
+  if (gap <= 2) studentScore += 20;
+  else if (gap <= 4) studentScore += 15;
+  else if (gap <= 5) studentScore += 10;
+  else if (gap <= 7 && input.educationLevel === "BACHELOR") studentScore += 8;
+  else studentScore += 2;
+
+  if (age >= 18 && age <= 26) studentScore += 10;
+  else if (age >= 27 && age <= 30) studentScore += 6;
+  else studentScore += 2;
+
+  if (input.japaneseLevel === "N4_JFT_PASSED" || input.japaneseLevel === "N5_PASSED") {
+    studentScore += 10;
+  } else if (input.japaneseLevel === "LEARNING_N5") {
+    studentScore += 7;
+  } else {
+    studentScore += 4;
+  }
+
+  if (hasFinancialSolvency) studentScore += 10;
+  else if (balanceLakhs >= 12) studentScore += 5;
+
+  let studentStatus: TrackAssessment["status"] = "ELIGIBLE";
+  if (!has12YearsEdu || avgGpa < 2.25 || age < 18 || age > 34 || gap > 8) {
+    studentStatus = "NOT_ELIGIBLE";
+    studentScore = Math.min(studentScore, 45);
+  } else if (avgGpa < 3.0 || gap > 4 || !hasFinancialSolvency || age > 28) {
+    studentStatus = "CONDITIONAL";
+    studentScore = Math.min(Math.max(studentScore, 55), 78);
+  } else {
+    studentScore = Math.max(studentScore, 82);
+  }
+
+  const studentAssessment: TrackAssessment = {
+    track: "STUDENT",
+    trackLabelEn: "Student Visa (COE)",
+    trackLabelBn: "স্টুডেন্ট ভিসা (COE)",
+    score: Math.min(100, studentScore),
+    status: studentStatus,
+    badgeTextEn:
+      studentStatus === "ELIGIBLE"
+        ? "Direct Eligible"
+        : studentStatus === "CONDITIONAL"
+          ? "Eligible with Conditions"
+          : "Not Recommended",
+    badgeTextBn:
+      studentStatus === "ELIGIBLE"
+        ? "সরাসরি উপযুক্ত"
+        : studentStatus === "CONDITIONAL"
+          ? "শর্তসাপেক্ষে উপযুক্ত"
+          : "উপযুক্ত নয়",
+    summaryEn:
+      studentStatus === "ELIGIBLE"
+        ? `Strong profile (Avg GPA ${avgGpa.toFixed(2)}, ${gap}yr gap). Ready for direct file opening & Tokyo/Osaka school interview.`
+        : studentStatus === "CONDITIONAL"
+          ? `Requires ${gap > 3 ? "Work Experience Certificate for gap, " : ""}${!hasFinancialSolvency ? "Partner Bank Loan (৳18L), " : ""}and mandatory JLPT/NAT N5 pass.`
+          : !has12YearsEdu
+            ? "Minimum 12 years of education (HSC/Diploma) is mandatory for Japan Student Visa."
+            : `High study gap (${gap} yrs) or low GPA (${avgGpa.toFixed(2)}) makes Student Visa risky — consider SSW or TITP.`,
+    summaryBn:
+      studentStatus === "ELIGIBLE"
+        ? `চমৎকার প্রোফাইল (গড় GPA ${avgGpa.toFixed(2)}, গ্যাপ ${gap} বছর)। টোকিও/ওসাকা স্কুলে সরাসরি ফাইল ওপেনিংয়ের উপযুক্ত।`
+        : studentStatus === "CONDITIONAL"
+          ? `${gap > 3 ? "স্টাডি গ্যাপের জন্য জব এক্সপেরিয়েন্স সনদ, " : ""}${!hasFinancialSolvency ? "৳১৮ লক্ষ ব্যাংক সলভেন্সি/লোন সহায়তা, " : ""}এবং JLPT/NAT N5 পাস সনদ প্রয়োজন।`
+          : !has12YearsEdu
+            ? "জাপান স্টুডেন্ট ভিসার জন্য ন্যূনতম ১২ বছরের শিক্ষা (HSC/ডিপ্লোমা) বাধ্যতামূলক।"
+            : `অতিরিক্ত গ্যাপ (${gap} বছর) বা কম GPA (${avgGpa.toFixed(2)})-এর কারণে SSW বা TITP জব ভিসা অধিক নিরাপদ।`,
+    checklists: [
+      {
+        labelEn: has12YearsEdu ? `12+ Yrs Education (${input.educationLevel})` : "Requires HSC / Diploma (12 Yrs)",
+        labelBn: has12YearsEdu ? `১২+ বছরের শিক্ষা (${input.educationLevel})` : "HSC / ডিপ্লোমা আবশ্যক",
+        passed: has12YearsEdu,
+      },
+      {
+        labelEn: `Avg GPA ${avgGpa.toFixed(2)} (Min 2.50)`,
+        labelBn: `গড় GPA ${avgGpa.toFixed(2)} (ন্যূনতম ২.৫০)`,
+        passed: avgGpa >= 2.5,
+        warning: avgGpa >= 2.25 && avgGpa < 3.0,
+      },
+      {
+        labelEn: gap <= 4 ? `Study Gap: ${gap} Yrs (Ideal)` : `Study Gap: ${gap} Yrs (Needs Job Cert)`,
+        labelBn: gap <= 4 ? `স্টাডি গ্যাপ: ${gap} বছর (স্বাভাবিক)` : `স্টাডি গ্যাপ: ${gap} বছর (অভিজ্ঞতা সনদ লাগবে)`,
+        passed: gap <= 5,
+        warning: gap > 3 && gap <= 5,
+      },
+      {
+        labelEn: hasFinancialSolvency
+          ? `Solvency Ready (৳${balanceLakhs}L${input.bankLoanAssist ? " + Bank Loan" : ""})`
+          : `Sponsor Balance ৳${balanceLakhs}L (Needs ৳18L or Loan)`,
+        labelBn: hasFinancialSolvency
+          ? `সলভেন্সি প্রস্তুত (৳${balanceLakhs} লক্ষ${input.bankLoanAssist ? " + ব্যাংক লোন" : ""})`
+          : `সলভেন্সি ৳${balanceLakhs} লক্ষ (৳১৮ লক্ষ বা লোন প্রয়োজন)`,
+        passed: hasFinancialSolvency,
+        warning: !hasFinancialSolvency,
+      },
+    ],
+  };
+
+  // ----------------------------------------------------------------------------
+  // 2. SSW JOB VISA ASSESSMENT (Specified Skilled Worker - 10 Stages)
+  // ----------------------------------------------------------------------------
+  let sswScore = 0;
+  const sswAgeOk = age >= 18 && age <= 35;
+  const sswAgeConditional = age > 35 && age <= 38;
+
+  if (sswAgeOk) sswScore += 35;
+  else if (sswAgeConditional) sswScore += 20;
+
+  // SSW does not penalize study gap or GPA heavily, nor require 18L sponsor solvency
+  if (avgGpa >= 2.0) sswScore += 20;
+  else sswScore += 12;
+
+  if (input.japaneseLevel === "N4_JFT_PASSED") sswScore += 35;
+  else if (input.japaneseLevel === "N5_PASSED") sswScore += 26;
+  else if (input.japaneseLevel === "LEARNING_N5") sswScore += 20;
+  else sswScore += 15;
+
+  // Bonus for zero sponsor requirement advantage
+  sswScore += 10;
+
+  let sswStatus: TrackAssessment["status"] = "ELIGIBLE";
+  if (age < 18 || age > 38) {
+    sswStatus = "NOT_ELIGIBLE";
+    sswScore = 30;
+  } else if (input.japaneseLevel !== "N4_JFT_PASSED" || sswAgeConditional) {
+    sswStatus = input.japaneseLevel === "N5_PASSED" ? "ELIGIBLE" : "CONDITIONAL";
+  }
+
+  const sswAssessment: TrackAssessment = {
+    track: "SSW",
+    trackLabelEn: "SSW Job Visa (10-Step)",
+    trackLabelBn: "SSW জব ভিসা (১০ ধাপ)",
+    score: Math.min(100, sswScore),
+    status: sswStatus,
+    badgeTextEn:
+      input.japaneseLevel === "N4_JFT_PASSED" && sswAgeOk
+        ? "Ready for Job Interview"
+        : sswStatus !== "NOT_ELIGIBLE"
+          ? "Eligible (Needs N4 + Skill Test)"
+          : "Age Limit Exceeded",
+    badgeTextBn:
+      input.japaneseLevel === "N4_JFT_PASSED" && sswAgeOk
+        ? "জব ইন্টারভিউয়ের জন্য প্রস্তুত"
+        : sswStatus !== "NOT_ELIGIBLE"
+          ? "উপযুক্ত (N4 ও স্কিল টেস্ট কোর্স)"
+          : "বয়সসীমা অতিক্রান্ত",
+    summaryEn:
+      sswStatus === "NOT_ELIGIBLE"
+        ? `Candidate age (${age}) is outside the 18–38 SSW age requirement.`
+        : input.japaneseLevel === "N4_JFT_PASSED"
+          ? "Passed N4/JFT! Directly eligible for SSW Skill Test & Employer Interview (No ৳18L bank solvency needed)."
+          : `Eligible for SSW! Study gap (${gap} yrs) & GPA (${avgGpa.toFixed(2)}) are accepted. Enroll in JLPT N4 / JFT-Basic + Sector Skill Test prep.`,
+    summaryBn:
+      sswStatus === "NOT_ELIGIBLE"
+        ? `প্রার্থীর বয়স (${age} বছর) SSW ভিসার নির্ধারিত ১৮–৩৮ বছর সীমার বাইরে।`
+        : input.japaneseLevel === "N4_JFT_PASSED"
+          ? "N4/JFT উত্তীর্ণ! সরাসরি স্কিল টেস্ট ও জাপানি কোম্পানির জব ইন্টারভিউয়ের জন্য উপযুক্ত (৳১৮ লক্ষ ব্যাংক ব্যালেন্স লাগে না)।"
+          : `SSW জব ভিসার জন্য উপযুক্ত! গ্যাপ (${gap} বছর) বা কম GPA-তে সমস্যা নেই — N4 ভাষা ও স্কিল টেস্ট প্রস্তুতিতে ভর্তি করুন।`,
+    checklists: [
+      {
+        labelEn: `Age ${age} Yrs (18–35 Ideal)`,
+        labelBn: `বয়স ${age} বছর (১৮–৩৫ আদর্শ)`,
+        passed: sswAgeOk || sswAgeConditional,
+        warning: sswAgeConditional,
+      },
+      {
+        labelEn:
+          input.japaneseLevel === "N4_JFT_PASSED"
+            ? "JLPT N4 / JFT-Basic Passed"
+            : "Requires N4 / JFT + Skill Test",
+        labelBn:
+          input.japaneseLevel === "N4_JFT_PASSED"
+            ? "JLPT N4 / JFT-Basic উত্তীর্ণ"
+            : "N4 / JFT ও স্কিল টেস্ট প্রয়োজন",
+        passed: input.japaneseLevel === "N4_JFT_PASSED",
+        warning: input.japaneseLevel !== "N4_JFT_PASSED",
+      },
+      {
+        labelEn: "Study Gap & GPA Flexible",
+        labelBn: "স্টাডি গ্যাপ ও GPA শিথিলযোগ্য",
+        passed: true,
+      },
+      {
+        labelEn: "৳0 Sponsor Solvency Required",
+        labelBn: "৳১৮ লক্ষ স্পন্সর সলভেন্সি নিষ্প্রয়োজন",
+        passed: true,
+      },
+    ],
+  };
+
+  // ----------------------------------------------------------------------------
+  // 3. TITP TECHNICAL INTERN ASSESSMENT (9 Stages)
+  // ----------------------------------------------------------------------------
+  let titpScore = 0;
+  const titpAgeOk = age >= 18 && age <= 30;
+  const titpAgeConditional = age > 30 && age <= 32;
+
+  if (titpAgeOk) titpScore += 40;
+  else if (titpAgeConditional) titpScore += 22;
+
+  if (avgGpa >= 2.0) titpScore += 20;
+  else titpScore += 14;
+
+  if (input.japaneseLevel !== "NONE") titpScore += 25;
+  else titpScore += 18;
+
+  titpScore += 15; // Low financial barrier + SSC/HSC accepted
+
+  let titpStatus: TrackAssessment["status"] = "ELIGIBLE";
+  if (age < 18 || age > 32) {
+    titpStatus = "NOT_ELIGIBLE";
+    titpScore = 28;
+  } else if (titpAgeConditional || input.japaneseLevel === "NONE") {
+    titpStatus = titpAgeOk ? "ELIGIBLE" : "CONDITIONAL";
+  }
+
+  const titpAssessment: TrackAssessment = {
+    track: "TITP",
+    trackLabelEn: "TITP Intern Visa (9-Step)",
+    trackLabelBn: "TITP টেকনিক্যাল ইন্টার্ন (৯ ধাপ)",
+    score: Math.min(100, titpScore),
+    status: titpStatus,
+    badgeTextEn:
+      titpStatus === "ELIGIBLE"
+        ? "Eligible for TITP"
+        : titpStatus === "CONDITIONAL"
+          ? "Conditional (Age 30+)"
+          : "Age Limit (18–30 Yrs)",
+    badgeTextBn:
+      titpStatus === "ELIGIBLE"
+        ? "TITP ভিসার উপযুক্ত"
+        : titpStatus === "CONDITIONAL"
+          ? "শর্তসাপেক্ষ (বয়স ৩০+)"
+          : "বয়সসীমা (১৮–৩০ বছর)",
+    summaryEn:
+      titpStatus === "NOT_ELIGIBLE"
+        ? `Candidate age (${age}) exceeds TITP supervising organization limit (18–30 yrs).`
+        : "Ideal for candidates seeking fast technical internship in Construction, Agriculture, Caregiving, or Manufacturing with Basic N5 Japanese.",
+    summaryBn:
+      titpStatus === "NOT_ELIGIBLE"
+        ? `প্রার্থীর বয়স (${age} বছর) TITP ইন্টার্ন ভিসার নির্ধারিত ১৮–৩০ বছর সীমার বাইরে।`
+        : "বেসিক জাপানি ভাষা (N5) শিখে কুমিয়াই (Kumiai) ইন্টারভিউ ও মেডিকেলের মাধ্যমে দ্রুত জাপান জব ভিসায় যাওয়ার উপযুক্ত।",
+    checklists: [
+      {
+        labelEn: `Age ${age} Yrs (18–30 Required)`,
+        labelBn: `বয়স ${age} বছর (১৮–৩০ আবশ্যক)`,
+        passed: titpAgeOk || titpAgeConditional,
+        warning: titpAgeConditional,
+      },
+      {
+        labelEn: `Education: ${input.educationLevel} (SSC/HSC Accepted)`,
+        labelBn: `শিক্ষা: ${input.educationLevel} (SSC/HSC গ্রহণযোগ্য)`,
+        passed: true,
+      },
+      {
+        labelEn:
+          input.japaneseLevel !== "NONE"
+            ? "Basic Language Started"
+            : "Requires Basic N5 Language",
+        labelBn:
+          input.japaneseLevel !== "NONE"
+            ? "বেসিক ভাষা প্রশিক্ষণ চলমান/সম্পন্ন"
+            : "বেসিক জাপানি ভাষা প্রশিক্ষণ প্রয়োজন",
+        passed: input.japaneseLevel !== "NONE",
+        warning: input.japaneseLevel === "NONE",
+      },
+      {
+        labelEn: "Kumiai Interview & Medical Fit",
+        labelBn: "কুমিয়াই ইন্টারভিউ ও মেডিকেল ফিটনেস",
+        passed: true,
+      },
+    ],
+  };
+
+  // Determine Best Track & Overall Headline
+  let bestTrack: VisaTrack = "STUDENT";
+  if (studentAssessment.status === "ELIGIBLE" && studentAssessment.score >= sswAssessment.score) {
+    bestTrack = "STUDENT";
+  } else if (
+    input.japaneseLevel === "N4_JFT_PASSED" ||
+    (!has12YearsEdu && sswAssessment.status !== "NOT_ELIGIBLE") ||
+    (gap > 4 && sswAssessment.status !== "NOT_ELIGIBLE")
+  ) {
+    bestTrack = sswAssessment.score >= titpAssessment.score ? "SSW" : "TITP";
+  } else if (studentAssessment.status === "NOT_ELIGIBLE") {
+    bestTrack = titpAssessment.score >= sswAssessment.score ? "TITP" : "SSW";
+  } else {
+    const sorted = [studentAssessment, sswAssessment, titpAssessment].sort((a, b) => b.score - a.score);
+    bestTrack = sorted[0].track;
+  }
+
+  const overallScore = Math.max(
+    studentAssessment.score,
+    sswAssessment.score,
+    titpAssessment.score,
+  );
+
+  const bestObj =
+    bestTrack === "STUDENT"
+      ? studentAssessment
+      : bestTrack === "SSW"
+        ? sswAssessment
+        : titpAssessment;
+
+  return {
+    overallScore,
+    bestTrack,
+    headlineEn: `${overallScore}% Match — Best Fit: ${bestObj.trackLabelEn}`,
+    headlineBn: `${overallScore}% ম্যাচ — সেরা ট্র্যাক: ${bestObj.trackLabelBn}`,
+    subheadlineEn: bestObj.summaryEn,
+    subheadlineBn: bestObj.summaryBn,
+    tracks: {
+      STUDENT: studentAssessment,
+      SSW: sswAssessment,
+      TITP: titpAssessment,
+    },
   };
 }
 

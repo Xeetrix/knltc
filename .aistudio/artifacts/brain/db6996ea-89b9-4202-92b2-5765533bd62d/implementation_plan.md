@@ -1,49 +1,67 @@
-# Implementation Plan: Backend 360° Sheet Sync, Clean Card-List Dashboard Redesign & Access Control Fix
+# Implementation Plan: Multi-Track Visa Kanban Pipeline (Student, SSW, TITP) & Interactive 3-Track Eligibility Engine
 
-## 1. Overview & Goals
-Based on your feedback and reference screenshots, we will execute three focused upgrades across the KNLTC platform:
+## 1. Multi-Track Visa Kanban Pipeline (`STUDENT_VISA` | `SSW_JOB` | `TITP_INTERN`)
+Currently, all visa candidates are placed into a single 10-step Student Visa Kanban pipeline, making it difficult to manage Job Visa (`SSW` and `TITP`) candidates whose stages differ from Student Visa stages.
 
-1. **Full Backend & Google Sheets (`Code.gs`) Sync for 6-Tab 360° Profiles**:
-   - Ensure every field from the 6-tab 360° Profile Workspace (**Overview**, **Tasks**, **Documents**, **Matches**, **Applications**, **Invoices**) is persisted and synced in real time to Google Sheets across all four entities: **CRM Leads (`knltc_crm_leads`)**, **Visa Applicants (`knltc_visa_applicants`)**, **Partner Schools (`knltc_partner_schools`)**, and **B2B Agents (`knltc_b2b_agents`)**.
-   - Expand `lib/knltc-cms-store.ts`, `lib/google-sheets-db.ts`, and `public/KNLTC_Google_Apps_Script_Backend.js` (`Code.gs`) so that:
-     - `knltc_crm_leads` includes explicit columns for `ssc_gpa`, `hsc_gpa`, `tasks_json`, `documents_json`, `applications_json`, and `profile_json`.
-     - `knltc_visa_applicants`, `knltc_partner_schools`, and `knltc_b2b_agents` also store `profile_json` (preserving all tasks, uploaded documents, timeline updates, and invoices) and automatically re-hydrate `profile_json` when loading from Google Sheets.
+### A. Track Switcher Tabs & Auto-Assignment
+- **Track Switcher Header on Visa Kanban**: Add a prominent segmented track switcher at the top of the Visa Kanban board with live applicant counts per track:
+  1. **Student Visa Pipeline (10 Stages)**
+  2. **SSW Specified Skilled Worker Pipeline (10 Stages)**
+  3. **TITP Technical Intern Pipeline (9 Stages)**
+- **Auto-Detection + Manual Track Switching**:
+  - Add `visaTrack?: "STUDENT" | "SSW" | "TITP"` to `VisaApplicant` (and `CrmLead`).
+  - Automatically infer the track from the candidate's `interest` (`SSW_*` → `SSW`, `TITP_TECHNICAL` → `TITP`, `STUDENT_VISA_*` → `STUDENT`) or `targetSchool` name (e.g., if `targetSchool` contains `TITP` or `SSW`, such as *Abdur Rahman* in `TITP Construction Center`, automatically classify as `TITP` or `SSW`).
+  - Provide a quick track selector dropdown on each Kanban card and inside the 360° Profile **Applications** tab so admins can switch a candidate's visa track at any time.
 
-2. **Clean Card-List CRM & Dashboard Redesign (Inspired by Reference Screenshot)**:
-   - Replace the heavy multi-card header and cluttered multi-column table in **CRM & Counseling** with the clean, modern SaaS layout from your reference screenshot:
-     - **Minimal Page Header Card**: White rounded header bar with vertical accent indicator (`| Leads`) and clean action buttons (`Statuses`, `Import`, `Export`, `+ Add lead`).
-     - **Compact Filter Pills & Status Strip**: Streamlined `All time`, `All consultants`, and program/source filter pills, paired with a clean horizontal status pill bar (`All`, `New Lead`, `Contacted`, `Counseled`, `Office Visit`, `Admitted`, `+ more`).
-     - **Single-Row Horizontal Lead Cards**: Each lead is displayed as an interactive, clean horizontal card row with an initial avatar circle, candidate name, phone number, `Japan · Program` subtitle, status pill badge, relative timestamp & assigned consultant, quick `⋮` action menu (WhatsApp, Fee Collection, Pipeline, Delete), and `>` chevron that opens the full-page 6-tab 360° Profile.
-     - **Clean Sidebar & Top Bar**: Refine the left sidebar and top navigation bar to match the airy, high-contrast aesthetic of the reference screenshot.
+### B. Dedicated Stage Definitions per Track
+Each track will render its exact workflow columns and stage subtitles on the Kanban board and in the 360° Profile **Applications** tab:
 
-3. **Remove Hardcoded Dummy Account (`শেখ বাসেত / baset@knltc.com`) & Enable Full Access Control**:
-   - Remove the hardcoded `শেখ বাসেত (baset@knltc.com / admin123)` dummy seed from `DEFAULT_SYSTEM_ACCOUNTS` in `lib/knltc-cms-store.ts`, `purgeStoreOfDummyData()`, and all fallback initializers so it is never auto-injected again.
-   - Remove all hardcoded `"শেখ বাসেত"` fallback strings from the dashboard sidebar footer, lead assignment defaults, and transaction verifiers (using `"KNLTC Admin"` or the active logged-in user instead).
-   - Upgrade **Access Control (`UserAccessControlPanel.tsx`)** so any account (including `MAIN_ADMIN` accounts) can have its **Name**, **Email/Login ID**, **Phone**, **Password**, **Role**, and **Branch** edited directly, and any unwanted/dummy account can be deleted cleanly with a single click.
+1. **Student Visa Track (10 Stages)**:
+   - `1. File Opening` → `2. Language Prep` → `3. Translation` → `4. School Interview` → `5. COE Filing` → `6. COE Approved` → `7. Tuition Wire` → `8. Embassy VFS` → `9. Visa Stamped` → `10. Japan Landing`
+2. **SSW Job Visa Track (10 Stages)**:
+   - `1. File Open` → `2. Language Learning` → `3. Skill Test Preparation` → `4. Interview Preparation` → `5. Selected & Waiting for Medical` → `6. Waiting for Demand Letter` → `7. Waiting for COE` → `8. Embassy & VFS` → `9. Visa Stamped` → `10. Japan Landing`
+3. **TITP Job Visa Track (9 Stages)**:
+   - `1. File Open` → `2. Basic Language` → `3. Interview Preparation` → `4. Selected & Waiting for Medical` → `5. Waiting for Demand Letter` → `6. Waiting for COE` → `7. Embassy & VFS` → `8. Visa Stamped` → `9. Japan Landing`
+
+### C. Track-Aware Stage Automation & Milestones
+- **COE Milestone & B2B Commission Trigger**:
+  - Student Visa: Stage 6 (`COE Approved`)
+  - SSW: Stage 7 (`Waiting for COE` / COE Issued)
+  - TITP: Stage 6 (`Waiting for COE` / COE Issued)
+- **Visa Stamped & Japan Landing Status Updates**:
+  - Automatically mark `visaStatus = "STAMPED"` at Stage 9 (Student/SSW) or Stage 8 (TITP), and `visaStatus = "DEPARTED"` at the final stage (`Japan Landing`: Stage 10 for Student/SSW, Stage 9 for TITP).
+- **Direct Stage Selector & Next/Previous Controls**:
+  - Allow moving candidates forward/backward or jumping directly to any stage in their assigned track directly from the Kanban card or the 360° Profile.
 
 ---
 
-## 2. Technical Changes by File
+## 2. Upgraded Interactive Automated Eligibility Engine
+Currently, the **Automated Eligibility Engine** card on the Visa Kanban tab has static, uncontrolled inputs that do not recalculate when edited.
 
-### A. Backend & Google Apps Script Synchronization
-- **`/lib/knltc-cms-store.ts`**:
-  - Update `serializeLeadToSheetRow`, `serializeVisaToSheetRow`, `serializeSchoolToSheetRow`, and `serializeAgentToSheetRow` to include `ssc_gpa`, `hsc_gpa`, and full `profile_json` (capturing `tasks`, `documentChecklist` / `documents`, `activityLog`, `applications`, and `invoices`).
-  - Update `fetchAndSyncFromServer` so that when `visaApplicants`, `partnerSchools`, and `b2bAgents` are loaded from `/api/sheets`, their `profile_json` column is parsed and merged seamlessly (just like `crmLeads`).
-  - Set `DEFAULT_SYSTEM_ACCOUNTS = []` and update `getSystemAccounts()` / `purgeStoreOfDummyData()` so deleted or purged dummy accounts never reappear.
-- **`/lib/google-sheets-db.ts`**:
-  - Add `ssc_gpa`, `hsc_gpa`, and `profile_json` mappings to `buildInitialFallbackTables()` and `bulkSyncMasterStoreToSheets()` across `knltc_crm_leads`, `knltc_visa_applicants`, `knltc_partner_schools`, and `knltc_b2b_agents`.
-- **`/public/KNLTC_Google_Apps_Script_Backend.js`**:
-  - Update the `TABLE_HEADERS` schema in `Code.gs` for `knltc_crm_leads`, `knltc_visa_applicants`, `knltc_partner_schools`, and `knltc_b2b_agents` to include `ssc_gpa`, `hsc_gpa`, and `profile_json` so Google Sheets columns stay 100% aligned.
+### A. Candidate Selector + Live Parameter Controls
+- **CRM Lead / Applicant Quick-Load Dropdown**: Select any existing CRM Lead or Visa Applicant to automatically populate their real academic, age, study gap, language, and financial solvency data into the engine—or use **Custom Manual Input** mode for walk-in counseling.
+- **Controlled Interactive Inputs**:
+  - **SSC GPA** & **HSC / Diploma GPA** (1.00 – 5.00)
+  - **Candidate Age** (18 – 40 years)
+  - **Study Gap** (0 – 15 years)
+  - **Education Level** (`SSC / Below HSC`, `HSC / Alim`, `Diploma`, `Bachelor / Master's`)
+  - **Japanese Proficiency** (`None / Beginner`, `Learning N5`, `JLPT N5 / NAT 5Q`, `JLPT N4 / JFT-Basic`)
+  - **Sponsor Bank Solvency** (Amount in BDT + Bank Loan Needed toggle)
 
-### B. CRM Leads & Dashboard UI Redesign
-- **`/app/dashboard/page.tsx`**:
-  - Redesign the `activeTab === "crm"` view to match the reference screenshot:
-    - Top `| Leads` header card with count and clean toolbar (`Statuses`, `Import`, `Export`, `+ Add lead`).
-    - Compact filter pills (`All time / Follow-up`, `All consultants`, `All programs`) and horizontal status pill bar.
-    - Clean horizontal card-row list for leads (with checkbox selection support, avatar circle, name, phone, country & program label, status badge, relative date & consultant, quick action buttons, and `>` arrow to open the full-page 360° profile).
-  - Replace hardcoded `"শেখ বাসেত"` fallback strings in the sidebar profile bar and default form handlers with dynamic user identity (`currentUser?.name || "KNLTC Admin"`).
+### B. Simultaneous 3-Track Eligibility Assessment
+The engine will dynamically calculate an overall eligibility score (`0–100%`) and display individual readiness cards for all three pathways side-by-side:
+1. **Student Visa Eligibility**:
+   - Evaluates HSC/Degree completion, GPA ($\ge 2.50$ minimum, $\ge 3.50$ preferred), Study Gap ($\le 5$ years ideal, or requires job experience justification), N5/150-hour study requirement, and Sponsor Bank Solvency ($\ge \text{৳18 Lakh}$ or partner bank loan).
+2. **SSW (Specified Skilled Worker) Eligibility**:
+   - Evaluates Age ($18–35$ years), JLPT N4 / JFT-Basic readiness, Sector Skill Test readiness (Caregiver, Construction, Agriculture, Food Service), and zero-sponsor-solvency advantage.
+3. **TITP (Technical Intern Training Program) Eligibility**:
+   - Evaluates Age ($18–30$ years), minimum SSC/HSC education, Basic Japanese readiness, physical/medical readiness, and tolerant study gap / GPA thresholds.
+- **Actionable Next Step**: Includes a 1-click button to apply the recommended track to the selected candidate or promote them directly into that track's Visa Pipeline.
 
-### C. Access Control Account Management Fix
-- **`/components/admin/UserAccessControlPanel.tsx`**:
-  - Allow editing **Name**, **Email / Login ID**, **Phone**, and **Password** directly on every account card.
-  - Enable the **Delete (`Trash2`)** button on all accounts (including `MAIN_ADMIN` dummy accounts) and add a "Clear All Dummy Accounts" or direct delete action that permanently syncs the removal to the backend.
+---
+
+## 3. 360° Profile & Google Sheets Sync Integration
+- **360° Profile (`LeadProfileModal.tsx` & `StudentProfileView.tsx`)**:
+  - Update the **Applications** tab and **Matches** tab to display the candidate's active Visa Track (`Student Visa`, `SSW`, or `TITP`), render the exact 9-step or 10-step progress bar for that track, and allow switching tracks or stages seamlessly.
+- **Google Sheets & Apps Script Sync (`lib/google-sheets-db.ts` & `google-apps-script/Code.gs`)**:
+  - Persist `visa_track` and `stage_label` in `knltc_visa_applicants` (and `profile_json`) so track assignments and stage movements sync cleanly with Google Sheets.

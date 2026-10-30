@@ -50,6 +50,9 @@ import {
   provisionLeadLoginAndEnrollment,
   promoteLeadToVisaPipeline,
   updateVisaStage,
+  updateVisaApplicantTrack,
+  resolveVisaTrack,
+  getStagesForVisaTrack,
   addFinancialTransaction,
   getLeadDocumentChecklist,
   calculateLeadEligibility,
@@ -66,6 +69,7 @@ import {
   type ProfileTaskItem,
   type ServiceInterest,
   type VisaStage,
+  type VisaTrack,
   type TransactionType,
   type FinancialTransaction,
   type JapanesePartnerSchool,
@@ -1929,118 +1933,186 @@ export default function LeadProfileModal({
       )}
 
       {/* =====================================================================
-          TAB 5: APPLICATIONS (10-Stage Visa Pipeline + LMS & Student Login)
+          TAB 5: APPLICATIONS (Multi-Track Visa Pipeline + LMS & Student Login)
           ===================================================================== */}
-      {activeTab === "applications" && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* 10-Stage Visa Application Tracker */}
-          <div className="lg:col-span-7 rounded-2xl border border-slate-200/90 bg-white p-6 shadow-2xs space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <h2 className="text-base font-bold text-slate-900">
-                  {tr(
-                    "জাপান ভিসা ও COE ১০-ধাপের অ্যাপ্লিকেশন ট্র্যাকার",
-                    "Japan Visa & COE 10-Stage Application Pipeline",
-                    "日本ビザ・COE 10段階申請トラッカー"
+      {activeTab === "applications" &&
+        (() => {
+          const activeCandidateTrack = resolveVisaTrack(
+            linkedVisa || undefined,
+            { ...lead, interest, targetSchool },
+          );
+          const candidateTrackStages = getStagesForVisaTrack(activeCandidateTrack);
+
+          return (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Multi-Track Visa Application Tracker */}
+              <div className="lg:col-span-7 rounded-2xl border border-slate-200/90 bg-white p-6 shadow-2xs space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900">
+                      {activeCandidateTrack === "TITP"
+                        ? tr(
+                            "TITP টেকনিক্যাল ইন্টার্ন ভিসা ট্র্যাকার (৯ ধাপ)",
+                            "TITP Technical Intern Visa Pipeline (9 Stages)",
+                            "技能実習（TITP）ビザ9段階トラッカー",
+                          )
+                        : activeCandidateTrack === "SSW"
+                          ? tr(
+                              "SSW জব ভিসা অ্যাপ্লিকেশন ট্র্যাকার (১০ ধাপ)",
+                              "SSW Job Visa Application Pipeline (10 Stages)",
+                              "特定技能（SSW）ビザ10段階トラッカー",
+                            )
+                          : tr(
+                              "স্টুডেন্ট ভিসা ও COE অ্যাপ্লিকেশন ট্র্যাকার (১০ ধাপ)",
+                              "Student Visa & COE Application Pipeline (10 Stages)",
+                              "留学ビザ・COE 10段階申請トラッカー",
+                            )}
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {linkedVisa
+                        ? `Tracking ID: ${linkedVisa.trackingNo} · Institution: ${linkedVisa.targetSchool}`
+                        : tr(
+                            "এখনো ভিসা ফাইল ওপেন করা হয়নি — নিচে ক্লিক করে ভিসা পাইপলাইনে যুক্ত করুন",
+                            "Not yet in Visa Pipeline — click below to open Visa File",
+                          )}
+                    </p>
+                  </div>
+
+                  {!linkedVisa && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        promoteLeadToVisaPipeline({
+                          leadId: lead.id,
+                          targetSchool: targetSchool || "Tokyo International Japanese School",
+                          partnerSchoolId,
+                          b2bAgentId,
+                          packageType:
+                            interest === "STUDENT_VISA_PREMIUM" ? "PREMIUM" : "REGULAR",
+                          visaTrack: activeCandidateTrack,
+                          contractAmountBdt,
+                        });
+                        setStatus("ADMITTED");
+                        setStoreTick((t) => t + 1);
+                        onSaved(
+                          tr(
+                            `ভিসা ফাইল ওপেন হয়েছে (${activeCandidateTrack} পাইপলাইন)`,
+                            `Visa file opened in ${activeCandidateTrack} Kanban pipeline`,
+                          ),
+                        );
+                      }}
+                      className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 transition cursor-pointer"
+                    >
+                      {tr("+ ভিসা ফাইল ওপেন করুন", "+ Open Visa Application File")}
+                    </button>
                   )}
-                </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  {linkedVisa
-                    ? `Tracking ID: ${linkedVisa.trackingNo} · School: ${linkedVisa.targetSchool}`
-                    : tr(
-                        "এখনো ভিসা ফাইল ওপেন করা হয়নি — ১ ক্লিকে ভিসা পাইপলাইনে যুক্ত করুন",
-                        "Not yet in Visa Pipeline — click below to open Visa File"
-                      )}
-                </p>
-              </div>
+                </div>
 
-              {!linkedVisa && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    promoteLeadToVisaPipeline({
-                      leadId: lead.id,
-                      targetSchool: targetSchool || "Tokyo International Japanese School",
-                      partnerSchoolId,
-                      b2bAgentId,
-                      packageType:
-                        interest === "STUDENT_VISA_PREMIUM" ? "PREMIUM" : "REGULAR",
-                      contractAmountBdt,
-                    });
-                    setStatus("ADMITTED");
-                    setStoreTick((t) => t + 1);
-                    onSaved(
-                      tr(
-                        "ভিসা ফাইল ওপেন হয়েছে এবং Visa Kanban-এ যুক্ত হয়েছে",
-                        "Visa file opened & synced to Visa Kanban"
-                      )
-                    );
-                  }}
-                  className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 transition cursor-pointer"
-                >
-                  {tr("+ ভিসা ফাইল ওপেন করুন", "+ Open Visa Application File")}
-                </button>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              {([1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as VisaStage[]).map((st) => {
-                const currentStage = linkedVisa?.stage || 0;
-                const isCompleted = currentStage > st;
-                const isCurrent = currentStage === st;
-                return (
-                  <div
-                    key={st}
-                    className={`flex items-center justify-between rounded-xl border px-4 py-2.5 text-xs transition ${
-                      isCurrent
-                        ? "border-indigo-500 bg-indigo-50/60 font-bold text-indigo-950"
-                        : isCompleted
-                          ? "border-emerald-200 bg-emerald-50/40 text-emerald-800"
-                          : "border-slate-200/80 bg-white text-slate-600"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <span
-                        className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
-                          isCompleted
-                            ? "bg-emerald-600 text-white"
-                            : isCurrent
-                              ? "bg-indigo-600 text-white"
-                              : "bg-slate-100 text-slate-500"
-                        }`}
-                      >
-                        {isCompleted ? "✓" : st}
-                      </span>
-                      <span>
-                        {isBn
-                          ? VISA_STAGE_LABELS[st].bn
-                          : VISA_STAGE_LABELS[st].en}
-                      </span>
-                    </div>
-
-                    {linkedVisa && currentStage !== st && (
+                {/* Track Switcher inside 360 Profile */}
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-100 p-1.5">
+                  <span className="px-2 text-[11px] font-semibold text-slate-600">
+                    {tr("ভিসা পাইপলাইন ট্র্যাক:", "Pipeline Track:")}
+                  </span>
+                  <div className="flex flex-wrap items-center gap-1">
+                    {(
+                      [
+                        { id: "STUDENT", labelBn: "স্টুডেন্ট ভিসা (১০ ধাপ)", labelEn: "Student Visa (10)" },
+                        { id: "SSW", labelBn: "SSW জব ভিসা (১০ ধাপ)", labelEn: "SSW Job Visa (10)" },
+                        { id: "TITP", labelBn: "TITP ইন্টার্ন ভিসা (৯ ধাপ)", labelEn: "TITP Intern (9)" },
+                      ] as { id: VisaTrack; labelBn: string; labelEn: string }[]
+                    ).map((tOpt) => (
                       <button
+                        key={tOpt.id}
                         type="button"
                         onClick={() => {
-                          updateVisaStage(linkedVisa.id, st);
-                          setStoreTick((t) => t + 1);
-                          onSaved(
+                          if (linkedVisa) {
+                            updateVisaApplicantTrack(linkedVisa.id, tOpt.id);
+                          }
+                          persistLeadChanges(
+                            { visaTrack: tOpt.id },
                             tr(
-                              `ভিসা ধাপ ${st}-এ উন্নীত করা হয়েছে`,
-                              `Updated Visa Application to Stage ${st}`
-                            )
+                              `ভিসা ট্র্যাক ${tOpt.labelBn}-এ পরিবর্তন করা হয়েছে`,
+                              `Switched Visa Pipeline track to ${tOpt.labelEn}`,
+                            ),
                           );
+                          setStoreTick((t) => t + 1);
                         }}
-                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                        className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
+                          activeCandidateTrack === tOpt.id
+                            ? "bg-white text-slate-900 shadow-2xs"
+                            : "text-slate-600 hover:text-slate-900"
+                        }`}
                       >
-                        {tr("সেট করুন", "Set Stage")}
+                        {isBn ? tOpt.labelBn : tOpt.labelEn}
                       </button>
-                    )}
+                    ))}
                   </div>
-                );
-              })}
-            </div>
-          </div>
+                </div>
+
+                <div className="space-y-2">
+                  {candidateTrackStages.map((stgInfo) => {
+                    const st = stgInfo.stage;
+                    const currentStage = linkedVisa
+                      ? Math.min(candidateTrackStages.length, linkedVisa.stage || 1)
+                      : 0;
+                    const isCompleted = currentStage > st;
+                    const isCurrent = currentStage === st;
+                    return (
+                      <div
+                        key={`${activeCandidateTrack}-${st}`}
+                        className={`flex items-center justify-between rounded-xl border px-4 py-2.5 text-xs transition ${
+                          isCurrent
+                            ? "border-indigo-500 bg-indigo-50/60 font-bold text-indigo-950"
+                            : isCompleted
+                              ? "border-emerald-200 bg-emerald-50/40 text-emerald-800"
+                              : "border-slate-200/80 bg-white text-slate-600"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span
+                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                              isCompleted
+                                ? "bg-emerald-600 text-white"
+                                : isCurrent
+                                  ? "bg-indigo-600 text-white"
+                                  : "bg-slate-100 text-slate-500"
+                            }`}
+                          >
+                            {isCompleted ? "✓" : st}
+                          </span>
+                          <div>
+                            <p className="leading-snug">
+                              {isBn ? stgInfo.titleBn : stgInfo.titleEn}
+                            </p>
+                            <p className="text-[10px] font-normal text-slate-400">
+                              {isBn ? stgInfo.subBn : stgInfo.subEn}
+                            </p>
+                          </div>
+                        </div>
+
+                        {linkedVisa && currentStage !== st && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              updateVisaStage(linkedVisa.id, st);
+                              setStoreTick((t) => t + 1);
+                              onSaved(
+                                tr(
+                                  `ভিসা ধাপ "${stgInfo.titleBn}"-এ উন্নীত করা হয়েছে`,
+                                  `Updated Visa Application to ${stgInfo.titleEn}`,
+                                ),
+                              );
+                            }}
+                            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer shrink-0"
+                          >
+                            {tr("সেট করুন", "Set Stage")}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
 
           {/* LMS Language Course & Student Portal Login Provisioning */}
           <div className="lg:col-span-5 rounded-2xl border border-slate-200/90 bg-white p-6 shadow-2xs space-y-4">
@@ -2181,9 +2253,10 @@ export default function LeadProfileModal({
                 </button>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+              </div>
+            </div>
+          );
+        })()}
 
       {/* =====================================================================
           TAB 6: INVOICES (Contract Summary, Fee Collection & Receipts)

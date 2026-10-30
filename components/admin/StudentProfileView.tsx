@@ -8,7 +8,13 @@ import {
   ExternalLink,
   CheckCircle2,
 } from "lucide-react";
-import type { CrmLead, VisaApplicant, LmsUserBridge } from "@/lib/knltc-cms-store";
+import {
+  resolveVisaTrack,
+  getStagesForVisaTrack,
+  type CrmLead,
+  type VisaApplicant,
+  type LmsUserBridge,
+} from "@/lib/knltc-cms-store";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
 
@@ -26,7 +32,9 @@ export default function StudentProfileView({
   userName: string;
 }) {
   const { language } = useLanguage();
-  const currentStage = visaApplicant?.stage || 1;
+  const activeTrack = resolveVisaTrack(visaApplicant || undefined, lead || undefined);
+  const trackStages = getStagesForVisaTrack(activeTrack);
+  const currentStage = Math.min(trackStages.length, visaApplicant?.stage || 1);
 
   const t = useMemo(
     () =>
@@ -312,25 +320,41 @@ export default function StudentProfileView({
           </dl>
         </div>
 
-        {/* Right: 10-Step Visa File Progress */}
+        {/* Right: Multi-Track Visa File Progress */}
         <div className="lg:col-span-7 rounded-3xl border border-stone-200 bg-white p-6 shadow-xs">
           <div className="flex items-center justify-between border-b border-stone-100 pb-3">
             <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
               <FileCheck2 className="h-4 w-4 text-[#b91c1c]" />
-              <span>{t.visaHeading}</span>
+              <span>
+                {activeTrack === "TITP"
+                  ? language === "bn"
+                    ? "আপনার TITP টেকনিক্যাল ইন্টার্ন ভিসা অগ্রগতি (৯ ধাপ)"
+                    : "Your TITP Technical Intern Visa Progress (9 Stages)"
+                  : activeTrack === "SSW"
+                    ? language === "bn"
+                      ? "আপনার SSW জব ভিসা প্রসেসিং অগ্রগতি (১০ ধাপ)"
+                      : "Your SSW Job Visa Processing Progress (10 Stages)"
+                    : t.visaHeading}
+              </span>
             </h2>
             <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-extrabold text-emerald-800">
-              {t.currentStageLabel} {currentStage} / 10
+              {t.currentStageLabel} {currentStage} / {trackStages.length}
             </span>
           </div>
 
           <div className="mt-4 space-y-2.5">
-            {t.steps.map((item) => {
-              const isCompleted = item.step < currentStage;
-              const isCurrent = item.step === currentStage;
+            {trackStages.map((item) => {
+              const isCompleted = item.stage < currentStage;
+              const isCurrent = item.stage === currentStage;
+              const stepTitle =
+                language === "bn"
+                  ? `${item.titleBn} — ${item.subBn}`
+                  : language === "ja"
+                    ? `${item.titleJa} — ${item.subJa}`
+                    : `${item.titleEn} — ${item.subEn}`;
               return (
                 <div
-                  key={item.step}
+                  key={`${activeTrack}-${item.stage}`}
                   className={`flex items-center justify-between rounded-xl border p-3 text-xs transition ${
                     isCurrent
                       ? "border-[#b91c1c] bg-red-50/50 font-black text-slate-900"
@@ -341,7 +365,7 @@ export default function StudentProfileView({
                 >
                   <div className="flex items-center gap-3">
                     <span
-                      className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-extrabold ${
+                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-extrabold ${
                         isCurrent
                           ? "bg-[#b91c1c] text-white"
                           : isCompleted
@@ -349,11 +373,11 @@ export default function StudentProfileView({
                             : "bg-stone-200 text-slate-600"
                       }`}
                     >
-                      {isCompleted ? "✓" : item.step}
+                      {isCompleted ? "✓" : item.stage}
                     </span>
-                    <span>{item.title}</span>
+                    <span>{stepTitle}</span>
                   </div>
-                  <span className="text-[10px] font-bold">
+                  <span className="text-[10px] font-bold shrink-0">
                     {isCurrent ? t.statusCurrent : isCompleted ? t.statusCompleted : t.statusPending}
                   </span>
                 </div>

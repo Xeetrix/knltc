@@ -87,6 +87,11 @@ import {
   disburseStaffPayroll,
   disburseAllActivePayroll,
   calculateLeadEligibility,
+  evaluateMultiTrackEligibility,
+  resolveVisaTrack,
+  getStagesForVisaTrack,
+  getStageLabelForTrack,
+  updateVisaApplicantTrack,
   getSchoolDocumentVault,
   getB2bAgentDocumentVault,
   formatLeadInterestLabel,
@@ -103,6 +108,8 @@ import {
   type DashboardTabId,
   type CrmLead,
   type VisaStage,
+  type VisaTrack,
+  type EligibilityEngineInput,
   type LeadStatus,
   type LeadPriority,
   type LeadSource,
@@ -771,13 +778,143 @@ export default function DashboardPage() {
     crmSearchQuery,
   ]);
 
+  // Multi-Track Visa Kanban & Interactive 3-Track Eligibility Engine states
+  const [activeVisaTrack, setActiveVisaTrack] = useState<VisaTrack>("STUDENT");
+  const [hasAutoFocusedVisaTrack, setHasAutoFocusedVisaTrack] = useState(false);
+  const [visaSearchQuery, setVisaSearchQuery] = useState("");
+  const [quickPromoteLeadId, setQuickPromoteLeadId] = useState("");
+  const [eligSelectedLeadId, setEligSelectedLeadId] = useState("");
+  const [eligForm, setEligForm] = useState<EligibilityEngineInput>({
+    sscGpa: 3.8,
+    hscGpa: 3.5,
+    age: 23,
+    studyGapYears: 2,
+    educationLevel: "HSC",
+    japaneseLevel: "LEARNING_N5",
+    sponsorBalanceLakhs: 18,
+    bankLoanAssist: false,
+  });
+
+  const eligibilityResult = useMemo(
+    () => evaluateMultiTrackEligibility(eligForm),
+    [eligForm],
+  );
+
+  const handleSelectLeadForEligibility = (leadId: string) => {
+    setEligSelectedLeadId(leadId);
+    if (!leadId || !store) return;
+    const lead = store.crmLeads.find((l) => l.id === leadId);
+    if (!lead) return;
+
+    const parsedSsc = parseFloat(lead.sscGpa || "");
+    const parsedHsc = parseFloat(lead.hscGpa || "");
+    const eduUpper = (lead.education || "").toUpperCase();
+    const eduLevel: EligibilityEngineInput["educationLevel"] = eduUpper.includes("BACHELOR") ||
+      eduUpper.includes("HONORS") ||
+      eduUpper.includes("DEGREE") ||
+      eduUpper.includes("MASTER")
+      ? "BACHELOR"
+      : eduUpper.includes("DIPLOMA")
+        ? "DIPLOMA"
+        : eduUpper.includes("SSC") && !eduUpper.includes("HSC")
+          ? "SSC"
+          : "HSC";
+
+    const jpLevel: EligibilityEngineInput["japaneseLevel"] =
+      lead.japaneseProficiency === "PASSED_N4" ||
+      lead.japaneseExamType === "JLPT_N4" ||
+      lead.japaneseExamType === "NAT_4Q" ||
+      lead.japaneseExamType === "JFT_BASIC"
+        ? "N4_JFT_PASSED"
+        : lead.japaneseProficiency === "PASSED_N5" ||
+            lead.japaneseProficiency === "NAT_JFT" ||
+            lead.japaneseExamStatus === "PASSED"
+          ? "N5_PASSED"
+          : lead.japaneseProficiency === "LEARNING_N5" || lead.isCourseEnrolled
+            ? "LEARNING_N5"
+            : "NONE";
+
+    let computedAge = 23;
+    if (lead.dateOfBirth && /^\d{4}/.test(lead.dateOfBirth)) {
+      const birthYear = parseInt(lead.dateOfBirth.slice(0, 4), 10);
+      const currentYear = new Date().getFullYear();
+      if (birthYear > 1970 && birthYear < currentYear - 14) {
+        computedAge = currentYear - birthYear;
+      }
+    } else if (lead.studyGapYears !== undefined) {
+      computedAge = Math.min(38, Math.max(18, 19 + Number(lead.studyGapYears || 0)));
+    }
+
+    const sponsorLakhs = lead.sponsorBankBalanceBdt
+      ? Math.round((lead.sponsorBankBalanceBdt / 100000) * 10) / 10
+      : 18;
+
+    setEligForm({
+      sscGpa: !isNaN(parsedSsc) && parsedSsc > 0 ? parsedSsc : 3.8,
+      hscGpa: !isNaN(parsedHsc) && parsedHsc > 0 ? parsedHsc : 3.5,
+      age: computedAge,
+      studyGapYears: Number(lead.studyGapYears ?? 1),
+      educationLevel: eduLevel,
+      japaneseLevel: jpLevel,
+      sponsorBalanceLakhs: sponsorLakhs,
+      bankLoanAssist: Boolean(lead.bankLoanRequired),
+    });
+  };
+
   const filteredVisaApplicants = useMemo(() => {
     if (!store) return [];
     return store.visaApplicants.filter((v) => {
-      if (activeBranch === "ALL") return true;
-      return v.branch === activeBranch;
+      if (activeBranch !== "ALL" && v.branch !== activeBranch) return false;
+      if (visaSearchQuery.trim()) {
+        const q = visaSearchQuery.trim().toLowerCase();
+        const hay = [v.name, v.phone, v.trackingNo, v.targetSchool, v.b2bAgentName, v.counselorName]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
     });
-  }, [store, activeBranch]);
+  }, [store, activeBranch, visaSearchQuery]);
+
+  const visaTrackCounts = useMemo(() => {
+    const counts: Record<VisaTrack, number> = { STUDENT: 0, SSW: 0, TITP: 0 };
+    if (!store) return counts;
+    for (const v of filteredVisaApplicants) {
+      const linkedLead = store.crmLeads.find(
+        (l) => l.id === v.leadId || l.id === v.linkedLeadId || (v.phone && l.phone === v.phone),
+      );
+      const track = resolveVisaTrack(v, linkedLead);
+      counts[track] = (counts[track] || 0) + 1;
+    }
+    return counts;
+  }, [store, filteredVisaApplicants]);
+
+  // If STUDENT has 0 applicants on initial load but TITP or SSW has applicants, focus that track automatically
+  useEffect(() => {
+    if (!hasAutoFocusedVisaTrack && store && store.visaApplicants.length > 0) {
+      if (visaTrackCounts.STUDENT === 0) {
+        if (visaTrackCounts.TITP > 0) setActiveVisaTrack("TITP");
+        else if (visaTrackCounts.SSW > 0) setActiveVisaTrack("SSW");
+      }
+      setHasAutoFocusedVisaTrack(true);
+    }
+  }, [hasAutoFocusedVisaTrack, store, visaTrackCounts]);
+
+  const activeTrackApplicants = useMemo(() => {
+    if (!store) return [];
+    return filteredVisaApplicants.filter((v) => {
+      const linkedLead = store.crmLeads.find(
+        (l) => l.id === v.leadId || l.id === v.linkedLeadId || (v.phone && l.phone === v.phone),
+      );
+      return resolveVisaTrack(v, linkedLead) === activeVisaTrack;
+    });
+  }, [store, filteredVisaApplicants, activeVisaTrack]);
+
+  const activeTrackStages = useMemo(
+    () => getStagesForVisaTrack(activeVisaTrack),
+    [activeVisaTrack],
+  );
 
   if (!store) {
     return (
@@ -3364,165 +3501,737 @@ export default function DashboardPage() {
                 })()}
 
               {/* =========================================================================
-                  MODULE 3: VISA PROCESSING ENGINE & 10-STEP KANBAN
+                  MODULE 3: VISA PROCESSING ENGINE & MULTI-TRACK KANBAN (STUDENT, SSW, TITP)
                   ========================================================================= */}
               {activeTab === "visa" && (
                 <div className="space-y-6">
-                  <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-                    <div className="hover-spotlight rounded-2xl border border-slate-200/80 bg-white p-5">
-                      <div className="flex items-center gap-2">
-                        <Calculator className="h-4 w-4 text-[#b91c1c]" />
-                        <h3 className="text-sm font-bold text-slate-900">{t.visa.calcTitle}</h3>
-                      </div>
-                      <p className="text-xs text-slate-400 mt-0.5">{t.visa.calcSubtitle}</p>
+                  {/* Top Row: Interactive 3-Track Automated Eligibility Engine + Sponsor Guidelines */}
+                  <div className="grid grid-cols-1 gap-5 xl:grid-cols-12">
+                    {/* Interactive 3-Track Eligibility Engine (8 columns on XL) */}
+                    <div className="hover-spotlight rounded-2xl border border-slate-200/80 bg-white p-5 xl:col-span-8 shadow-2xs">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <Calculator className="h-4 w-4 text-[#b91c1c]" />
+                            <h3 className="text-sm font-bold text-slate-900">
+                              {tr(
+                                "অটোমেটেড এলিজিবিলিটি ইঞ্জিন (স্টুডেন্ট, SSW ও TITP)",
+                                "Automated Eligibility Engine (Student, SSW & TITP)",
+                                "自動適格性判定エンジン（留学・特定技能SSW・技能実習TITP）",
+                              )}
+                            </h3>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            {tr(
+                              "প্রার্থীর GPA, বয়স, স্টাডি গ্যাপ, ভাষা দক্ষতা ও সলভেন্সি অনুযায়ী ৩টি ভিসা ট্র্যাকের রিয়েল-টাইম মূল্যায়ন",
+                              "Real-time eligibility calculator across Student Visa, SSW Job Visa, and TITP Intern tracks",
+                              "GPA・年齢・空白期間・日本語力・資金力から3つのビザトラックを同時にリアルタイム判定",
+                            )}
+                          </p>
+                        </div>
 
-                      <div className="mt-4 space-y-3 text-xs">
-                        <div className="grid grid-cols-3 gap-2">
-                          <div>
-                            <label className="text-[11px] font-medium text-slate-500">GPA</label>
+                        {/* Quick-Load CRM Lead Selector */}
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={eligSelectedLeadId}
+                            onChange={(e) => handleSelectLeadForEligibility(e.target.value)}
+                            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 focus:border-slate-900 focus:bg-white focus:outline-none max-w-[240px]"
+                          >
+                            <option value="">
+                              {tr(
+                                "⚡ ম্যানুয়াল ক্যালকুলেটর / প্রার্থী নির্বাচন...",
+                                "⚡ Manual Input / Load CRM Candidate...",
+                                "⚡ 手動入力 / 候補者データ読込...",
+                              )}
+                            </option>
+                            {branchLeads.map((l) => (
+                              <option key={l.id} value={l.id}>
+                                {l.name} ({l.phone})
+                              </option>
+                            ))}
+                          </select>
+                          {eligSelectedLeadId && (
+                            <button
+                              type="button"
+                              onClick={() => setEligSelectedLeadId("")}
+                              className="rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-medium text-slate-500 hover:bg-slate-100"
+                              title="Reset to manual"
+                            >
+                              {tr("রিসেট", "Reset", "リセット")}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Interactive Parameter Controls */}
+                      <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 text-xs">
+                        <div>
+                          <label className="text-[11px] font-medium text-slate-500 block">
+                            {tr("SSC GPA", "SSC GPA", "SSC GPA")}
+                          </label>
+                          <input
+                            type="number"
+                            step="0.05"
+                            min="1"
+                            max="5"
+                            value={eligForm.sscGpa}
+                            onChange={(e) =>
+                              setEligForm((prev) => ({
+                                ...prev,
+                                sscGpa: parseFloat(e.target.value) || 0,
+                              }))
+                            }
+                            className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-semibold text-slate-900 tabular-nums focus:border-slate-900 focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-medium text-slate-500 block">
+                            {tr("HSC / ডিপ্লোমা GPA", "HSC / Dip GPA", "HSC GPA")}
+                          </label>
+                          <input
+                            type="number"
+                            step="0.05"
+                            min="1"
+                            max="5"
+                            disabled={eligForm.educationLevel === "SSC"}
+                            value={eligForm.educationLevel === "SSC" ? 0 : eligForm.hscGpa}
+                            onChange={(e) =>
+                              setEligForm((prev) => ({
+                                ...prev,
+                                hscGpa: parseFloat(e.target.value) || 0,
+                              }))
+                            }
+                            className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-semibold text-slate-900 tabular-nums disabled:bg-slate-100 disabled:text-slate-400 focus:border-slate-900 focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-medium text-slate-500 block">
+                            {tr("বয়স (বছর)", "Age (Yrs)", "年齢")}
+                          </label>
+                          <input
+                            type="number"
+                            min="16"
+                            max="50"
+                            value={eligForm.age}
+                            onChange={(e) =>
+                              setEligForm((prev) => ({
+                                ...prev,
+                                age: parseInt(e.target.value, 10) || 18,
+                              }))
+                            }
+                            className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-semibold text-slate-900 tabular-nums focus:border-slate-900 focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-medium text-slate-500 block">
+                            {tr("গ্যাপ (বছর)", "Gap (Yrs)", "空白年数")}
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="20"
+                            value={eligForm.studyGapYears}
+                            onChange={(e) =>
+                              setEligForm((prev) => ({
+                                ...prev,
+                                studyGapYears: Math.max(0, parseInt(e.target.value, 10) || 0),
+                              }))
+                            }
+                            className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-semibold text-slate-900 tabular-nums focus:border-slate-900 focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-medium text-slate-500 block">
+                            {tr("সর্বোচ্চ শিক্ষা", "Education", "最終学歴")}
+                          </label>
+                          <select
+                            value={eligForm.educationLevel}
+                            onChange={(e) =>
+                              setEligForm((prev) => ({
+                                ...prev,
+                                educationLevel: e.target.value as EligibilityEngineInput["educationLevel"],
+                              }))
+                            }
+                            className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 font-semibold text-slate-900 focus:border-slate-900 focus:outline-none"
+                          >
+                            <option value="SSC">SSC (10 Yrs)</option>
+                            <option value="HSC">HSC / Alim (12 Yrs)</option>
+                            <option value="DIPLOMA">Diploma (4 Yrs)</option>
+                            <option value="BACHELOR">Bachelor / Honors</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-medium text-slate-500 block">
+                            {tr("জাপানি ভাষা", "Japanese Level", "日本語レベル")}
+                          </label>
+                          <select
+                            value={eligForm.japaneseLevel}
+                            onChange={(e) =>
+                              setEligForm((prev) => ({
+                                ...prev,
+                                japaneseLevel: e.target.value as EligibilityEngineInput["japaneseLevel"],
+                              }))
+                            }
+                            className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 font-semibold text-slate-900 focus:border-slate-900 focus:outline-none"
+                          >
+                            <option value="NONE">{tr("শুরু করেনি", "Beginner / None", "未学習")}</option>
+                            <option value="LEARNING_N5">{tr("N5 চলমান", "Learning N5", "N5学習中")}</option>
+                            <option value="N5_PASSED">{tr("N5 / NAT পাস", "N5 / NAT Passed", "N5合格")}</option>
+                            <option value="N4_JFT_PASSED">{tr("N4 / JFT পাস", "N4 / JFT Passed", "N4/JFT合格")}</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-medium text-slate-500 block">
+                            {tr("সলভেন্সি (লক্ষ ৳)", "Solvency (Lakh)", "残高 (Lakh)")}
+                          </label>
+                          <div className="mt-1 flex items-center gap-1.5">
                             <input
                               type="number"
-                              step="0.1"
-                              defaultValue="2.5"
-                              className="mt-1 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold tabular-nums"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[11px] font-medium text-slate-500">Age</label>
-                            <input
-                              type="number"
-                              defaultValue="24"
-                              className="mt-1 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold tabular-nums"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[11px] font-medium text-slate-500">Gap (Yrs)</label>
-                            <input
-                              type="number"
-                              defaultValue="2"
-                              className="mt-1 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold tabular-nums"
+                              min="0"
+                              max="100"
+                              value={eligForm.sponsorBalanceLakhs}
+                              onChange={(e) =>
+                                setEligForm((prev) => ({
+                                  ...prev,
+                                  sponsorBalanceLakhs: Math.max(0, parseFloat(e.target.value) || 0),
+                                }))
+                              }
+                              className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 font-semibold text-slate-900 tabular-nums focus:border-slate-900 focus:outline-none"
                             />
                           </div>
                         </div>
-                        <div className="rounded-xl bg-emerald-50/70 p-3 border border-emerald-200/70 text-emerald-900">
-                          <p className="font-bold text-xs flex items-center gap-1.5">
-                            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                            <span>{t.visa.eligibleTitle}</span>
-                          </p>
-                          <p className="text-[11px] mt-1 text-emerald-700 leading-relaxed">
-                            {t.visa.eligibleDesc}
-                          </p>
+                      </div>
+
+                      {/* Bank Loan Toggle + Overall Recommendation Banner */}
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200/80 bg-slate-50/70 px-3.5 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2
+                            className={`h-4 w-4 shrink-0 ${
+                              eligibilityResult.overallScore >= 80
+                                ? "text-emerald-600"
+                                : eligibilityResult.overallScore >= 60
+                                  ? "text-amber-600"
+                                  : "text-[#b91c1c]"
+                            }`}
+                          />
+                          <div>
+                            <p className="text-xs font-bold text-slate-900">
+                              {language === "bn"
+                                ? eligibilityResult.headlineBn
+                                : eligibilityResult.headlineEn}
+                            </p>
+                            <p className="text-[11px] text-slate-600">
+                              {language === "bn"
+                                ? eligibilityResult.subheadlineBn
+                                : eligibilityResult.subheadlineEn}
+                            </p>
+                          </div>
                         </div>
+
+                        <div className="flex items-center gap-3">
+                          <label className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-700 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={eligForm.bankLoanAssist}
+                              onChange={(e) =>
+                                setEligForm((prev) => ({
+                                  ...prev,
+                                  bankLoanAssist: e.target.checked,
+                                }))
+                              }
+                              className="h-3.5 w-3.5 rounded border-slate-300 text-slate-900 focus:ring-0"
+                            />
+                            <span>
+                              {tr("ব্যাংক লোন সহায়তা (৳১৮ লক্ষ)", "Partner Bank Loan (৳18L)", "提携銀行ローン利用")}
+                            </span>
+                          </label>
+
+                          {eligSelectedLeadId && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                promoteLeadToVisaPipeline(eligSelectedLeadId, {
+                                  visaTrack: eligibilityResult.bestTrack,
+                                });
+                                setActiveVisaTrack(eligibilityResult.bestTrack);
+                                setStore({ ...getCmsStore() });
+                                showToast(
+                                  tr(
+                                    `প্রার্থীকে ${eligibilityResult.bestTrack} ভিসা পাইপলাইনে যুক্ত করা হয়েছে!`,
+                                    `Candidate promoted to ${eligibilityResult.bestTrack} Visa Pipeline!`,
+                                    `候補者を${eligibilityResult.bestTrack}パイプラインへ登録しました`,
+                                  ),
+                                );
+                              }}
+                              className="inline-flex items-center gap-1 rounded-lg bg-slate-900 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-slate-800 transition cursor-pointer"
+                            >
+                              <span>
+                                {tr(
+                                  `${eligibilityResult.bestTrack} পাইপলাইনে পাঠান`,
+                                  `Assign to ${eligibilityResult.bestTrack} Pipeline`,
+                                  `${eligibilityResult.bestTrack}へ登録`,
+                                )}
+                              </span>
+                              <ChevronRight className="h-3 w-3" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 3-Track Side-by-Side Comparison Cards */}
+                      <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {(["STUDENT", "SSW", "TITP"] as VisaTrack[]).map((trkKey) => {
+                          const trk = eligibilityResult.tracks[trkKey];
+                          const isBest = eligibilityResult.bestTrack === trkKey;
+                          const statusColor =
+                            trk.status === "ELIGIBLE"
+                              ? "border-emerald-200 bg-emerald-50/40"
+                              : trk.status === "CONDITIONAL"
+                                ? "border-amber-200 bg-amber-50/40"
+                                : "border-slate-200 bg-slate-50/60 opacity-85";
+
+                          return (
+                            <div
+                              key={trkKey}
+                              className={`rounded-xl border p-3.5 transition flex flex-col justify-between ${statusColor} ${
+                                isBest ? "ring-1 ring-slate-900/15" : ""
+                              }`}
+                            >
+                              <div>
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-xs font-bold text-slate-900">
+                                    {language === "bn" ? trk.trackLabelBn : trk.trackLabelEn}
+                                  </span>
+                                  <span
+                                    className={`text-xs font-extrabold tabular-nums ${
+                                      trk.status === "ELIGIBLE"
+                                        ? "text-emerald-700"
+                                        : trk.status === "CONDITIONAL"
+                                          ? "text-amber-700"
+                                          : "text-rose-700"
+                                    }`}
+                                  >
+                                    {trk.score}%
+                                  </span>
+                                </div>
+
+                                <p
+                                  className={`mt-0.5 text-[11px] font-semibold ${
+                                    trk.status === "ELIGIBLE"
+                                      ? "text-emerald-700"
+                                      : trk.status === "CONDITIONAL"
+                                        ? "text-amber-700"
+                                        : "text-rose-600"
+                                  }`}
+                                >
+                                  {language === "bn" ? trk.badgeTextBn : trk.badgeTextEn}
+                                  {isBest ? (language === "bn" ? " · ★ সেরা ট্র্যাক" : " · ★ Best Fit") : ""}
+                                </p>
+
+                                <div className="mt-2.5 space-y-1 border-t border-slate-200/60 pt-2">
+                                  {trk.checklists.map((item, idx) => (
+                                    <div
+                                      key={idx}
+                                      className="flex items-center gap-1.5 text-[11px] text-slate-700"
+                                    >
+                                      <span
+                                        className={`h-1.5 w-1.5 rounded-full shrink-0 ${
+                                          item.passed
+                                            ? "bg-emerald-500"
+                                            : item.warning
+                                              ? "bg-amber-500"
+                                              : "bg-rose-500"
+                                        }`}
+                                      />
+                                      <span className="truncate">
+                                        {language === "bn" ? item.labelBn : item.labelEn}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div className="mt-3 pt-2 border-t border-slate-200/60 flex items-center justify-between">
+                                <button
+                                  type="button"
+                                  onClick={() => setActiveVisaTrack(trkKey)}
+                                  className={`text-[11px] font-semibold transition cursor-pointer ${
+                                    activeVisaTrack === trkKey
+                                      ? "text-slate-900 underline"
+                                      : "text-slate-600 hover:text-slate-900"
+                                  }`}
+                                >
+                                  {activeVisaTrack === trkKey
+                                    ? tr("✓ বর্তমান বোর্ড", "✓ Active Board", "✓ 表示中")
+                                    : tr("পাইপলাইন দেখুন →", "Switch to Board →", "ボードを表示 →")}
+                                </button>
+
+                                {eligSelectedLeadId && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      promoteLeadToVisaPipeline(eligSelectedLeadId, {
+                                        visaTrack: trkKey,
+                                      });
+                                      setActiveVisaTrack(trkKey);
+                                      setStore({ ...getCmsStore() });
+                                      showToast(
+                                        tr(
+                                          `প্রার্থীকে ${trkKey} ভিসা ট্র্যাকে যুক্ত করা হয়েছে`,
+                                          `Assigned candidate to ${trkKey} track`,
+                                          `${trkKey}トラックに割り当てました`,
+                                        ),
+                                      );
+                                    }}
+                                    className="rounded-md bg-white border border-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-800 hover:bg-slate-900 hover:text-white transition cursor-pointer"
+                                  >
+                                    {tr("+ ফাইল ওপেন", "+ Assign Track", "+ 登録")}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
 
-                    <div className="hover-spotlight rounded-2xl border border-slate-200/80 bg-white p-5 lg:col-span-2">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="text-sm font-bold text-slate-900">{t.visa.sponsorTitle}</h3>
-                          <p className="text-xs text-slate-400 mt-0.5">{t.visa.sponsorSubtitle}</p>
+                    {/* Sponsor & Job Visa Guidelines Card (4 columns on XL) */}
+                    <div className="hover-spotlight rounded-2xl border border-slate-200/80 bg-white p-5 xl:col-span-4 flex flex-col justify-between shadow-2xs">
+                      <div>
+                        <div className="flex items-center justify-between gap-2">
+                          <div>
+                            <h3 className="text-sm font-bold text-slate-900">{t.visa.sponsorTitle}</h3>
+                            <p className="text-xs text-slate-400 mt-0.5">{t.visa.sponsorSubtitle}</p>
+                          </div>
+                          <span className="text-[11px] font-semibold text-emerald-700">
+                            {t.visa.bankSupportBadge}
+                          </span>
                         </div>
-                        <span className="text-[11px] font-semibold text-emerald-700">
-                          {t.visa.bankSupportBadge}
-                        </span>
-                      </div>
 
-                      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                        <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3.5">
-                          <p className="font-semibold text-slate-900">{t.visa.sponsorApprovedTitle}</p>
-                          <p className="mt-1 text-slate-500">{t.visa.sponsorApprovedDesc}</p>
-                          <p className="mt-2 font-semibold text-slate-800">{t.visa.sponsorPhoneReq}</p>
-                        </div>
-                        <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3.5">
-                          <p className="font-semibold text-slate-900">{t.visa.bankSolvencyTitle}</p>
-                          <p className="mt-1 text-slate-500">{t.visa.bankSolvencyDesc}</p>
-                          <p className="mt-2 font-semibold text-emerald-700">{t.visa.approvedBanksDesc}</p>
+                        <div className="mt-4 space-y-3 text-xs">
+                          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3.5">
+                            <p className="font-semibold text-slate-900">{t.visa.sponsorApprovedTitle}</p>
+                            <p className="mt-1 text-slate-500">{t.visa.sponsorApprovedDesc}</p>
+                            <p className="mt-1.5 font-semibold text-slate-800">{t.visa.sponsorPhoneReq}</p>
+                          </div>
+                          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3.5">
+                            <p className="font-semibold text-slate-900">{t.visa.bankSolvencyTitle}</p>
+                            <p className="mt-1 text-slate-500">{t.visa.bankSolvencyDesc}</p>
+                            <p className="mt-1.5 font-semibold text-emerald-700">{t.visa.approvedBanksDesc}</p>
+                          </div>
+                          <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3.5">
+                            <p className="font-semibold text-indigo-950">
+                              {tr(
+                                "SSW ও TITP জব ভিসা গাইডলাইন",
+                                "SSW & TITP Job Visa Guidelines",
+                                "特定技能（SSW）・技能実習（TITP）基準",
+                              )}
+                            </p>
+                            <p className="mt-1 text-slate-600 leading-relaxed">
+                              {tr(
+                                "SSW ভিসায় N4/JFT ও স্কিল টেস্ট পাস হতে হয় (১০ ধাপ) এবং TITP ভিসায় বেসিক ভাষা ও কুমিয়াই ইন্টারভিউয়ের মাধ্যমে ৯ ধাপে ভিসা সম্পন্ন হয়। কোনো ১৮ লক্ষ টাকার স্পন্সর লাগে না।",
+                                "SSW (10 stages) requires N4/JFT + Skill Test; TITP (9 stages) requires Basic Language + Kumiai Interview. Neither requires ৳18L bank solvency.",
+                                "SSW（全10段階）はN4/JFT＋技能試験、TITP（全9段階）は基礎日本語＋組合面接で進行します。",
+                              )}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* 10-Step Visa Kanban Pipeline */}
-                  <div className="rounded-2xl border border-slate-200/80 bg-white p-5">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
+                  {/* Multi-Track Visa Kanban Pipeline Board */}
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-2xs">
+                    {/* Header + Track Switcher Tabs */}
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                       <div>
-                        <h3 className="text-base font-bold text-slate-900">{t.visa.pipelineTitle}</h3>
-                        <p className="text-xs text-slate-400 mt-0.5">{t.visa.pipelineSubtitle}</p>
+                        <h3 className="text-base font-bold text-slate-900">
+                          {activeVisaTrack === "STUDENT"
+                            ? tr(
+                                "স্টুডেন্ট ভিসা ক্যানবান পাইপলাইন (১০ ধাপ)",
+                                "Student Visa Kanban Pipeline (10 Stages)",
+                                "留学ビザ進捗パイプライン（全10ステップ）",
+                              )
+                            : activeVisaTrack === "SSW"
+                              ? tr(
+                                  "SSW স্পেসিফাইড স্কিলড জব ভিসা পাইপলাইন (১০ ধাপ)",
+                                  "SSW Specified Skilled Job Visa Pipeline (10 Stages)",
+                                  "特定技能（SSW）就労ビザパイプライン（全10ステップ）",
+                                )
+                              : tr(
+                                  "TITP টেকনিক্যাল ইন্টার্ন ভিসা পাইপলাইন (৯ ধাপ)",
+                                  "TITP Technical Intern Visa Pipeline (9 Stages)",
+                                  "技能実習（TITP）ビザパイプライン（全9ステップ）",
+                                )}
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {activeVisaTrack === "STUDENT"
+                            ? tr(
+                                "ফাইল ওপেনিং → ভাষা প্রশিক্ষণ → অনুবাদ → স্কুল ইন্টারভিউ → COE আবেদন → COE অনুমোদন → টিউশন ফি → এম্বাসি VFS → ভিসা স্ট্যাম্পড → জাপান ল্যান্ডিং",
+                                "File Opening → Language Prep → Translation → School Interview → COE Filing → COE Approved → Tuition Wire → Embassy VFS → Visa Stamped → Japan Landing",
+                              )
+                            : activeVisaTrack === "SSW"
+                              ? tr(
+                                  "ফাইল ওপেন → ভাষা শিক্ষা → স্কিল টেস্ট প্রস্তুতি → ইন্টারভিউ প্রস্তুতি → নির্বাচিত ও মেডিকেল → ডিমান্ড লেটার → COE অপেক্ষা → এম্বাসি ও VFS → ভিসা স্ট্যাম্পড → জাপান ল্যান্ডিং",
+                                  "File Open → Language Learning → Skill Test Prep → Interview Prep → Selected & Waiting for Medical → Waiting for Demand Letter → Waiting for COE → Embassy & VFS → Visa Stamped → Japan Landing",
+                                )
+                              : tr(
+                                  "ফাইল ওপেন → বেসিক ভাষা → ইন্টারভিউ প্রস্তুতি → নির্বাচিত ও মেডিকেল → ডিমান্ড লেটার → COE অপেক্ষা → এম্বাসি ও VFS → ভিসা স্ট্যাম্পড → জাপান ল্যান্ডিং",
+                                  "File Open → Basic Language → Interview Prep → Selected & Waiting for Medical → Waiting for Demand Letter → Waiting for COE → Embassy & VFS → Visa Stamped → Japan Landing",
+                                )}
+                        </p>
                       </div>
-                      <span className="text-xs font-medium text-emerald-700">{t.visa.dragActive}</span>
+
+                      {/* Segmented Track Switcher Tabs */}
+                      <div className="flex flex-wrap items-center gap-1.5 rounded-xl bg-slate-100 p-1">
+                        <button
+                          type="button"
+                          onClick={() => setActiveVisaTrack("STUDENT")}
+                          className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-semibold transition cursor-pointer ${
+                            activeVisaTrack === "STUDENT"
+                              ? "bg-white text-slate-900 shadow-2xs"
+                              : "text-slate-600 hover:text-slate-900"
+                          }`}
+                        >
+                          <GraduationCap className="h-3.5 w-3.5 text-[#b91c1c]" />
+                          <span>{tr("স্টুডেন্ট ভিসা (১০ ধাপ)", "Student Visa (10)", "留学ビザ (10)")}</span>
+                          <span className="font-bold tabular-nums text-slate-500">
+                            ({visaTrackCounts.STUDENT})
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setActiveVisaTrack("SSW")}
+                          className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-semibold transition cursor-pointer ${
+                            activeVisaTrack === "SSW"
+                              ? "bg-white text-slate-900 shadow-2xs"
+                              : "text-slate-600 hover:text-slate-900"
+                          }`}
+                        >
+                          <Briefcase className="h-3.5 w-3.5 text-indigo-600" />
+                          <span>{tr("SSW জব ভিসা (১০ ধাপ)", "SSW Job Visa (10)", "特定技能 SSW (10)")}</span>
+                          <span className="font-bold tabular-nums text-slate-500">
+                            ({visaTrackCounts.SSW})
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setActiveVisaTrack("TITP")}
+                          className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-semibold transition cursor-pointer ${
+                            activeVisaTrack === "TITP"
+                              ? "bg-white text-slate-900 shadow-2xs"
+                              : "text-slate-600 hover:text-slate-900"
+                          }`}
+                        >
+                          <Layers className="h-3.5 w-3.5 text-emerald-600" />
+                          <span>{tr("TITP জব ভিসা (৯ ধাপ)", "TITP Intern Visa (9)", "技能実習 TITP (9)")}</span>
+                          <span className="font-bold tabular-nums text-slate-500">
+                            ({visaTrackCounts.TITP})
+                          </span>
+                        </button>
+                      </div>
                     </div>
 
+                    {/* Sub-Toolbar: Search + Quick Promote CRM Lead into Current Track */}
+                    <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="relative flex-1 max-w-sm">
+                        <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                        <input
+                          type="text"
+                          value={visaSearchQuery}
+                          onChange={(e) => setVisaSearchQuery(e.target.value)}
+                          placeholder={tr(
+                            "প্রার্থীর নাম, ফোন, ট্র্যাকিং নং বা প্রতিষ্ঠান খুঁজুন...",
+                            "Search applicant name, phone, tracking ID, or school/org...",
+                            "氏名・電話番号・追跡番号・受入機関で検索...",
+                          )}
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-8 pr-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        <select
+                          value={quickPromoteLeadId}
+                          onChange={(e) => setQuickPromoteLeadId(e.target.value)}
+                          className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-700 focus:border-slate-900 focus:bg-white focus:outline-none max-w-[230px]"
+                        >
+                          <option value="">
+                            {tr(
+                              `+ ${activeVisaTrack} পাইপলাইনে লিড যুক্ত করুন...`,
+                              `+ Add CRM Lead to ${activeVisaTrack} Pipeline...`,
+                              `+ ${activeVisaTrack}パイプラインへ候補者追加...`,
+                            )}
+                          </option>
+                          {branchLeads.map((l) => (
+                            <option key={l.id} value={l.id}>
+                              {l.name} ({l.phone})
+                            </option>
+                          ))}
+                        </select>
+                        {quickPromoteLeadId && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              promoteLeadToVisaPipeline(quickPromoteLeadId, {
+                                visaTrack: activeVisaTrack,
+                              });
+                              setQuickPromoteLeadId("");
+                              setStore({ ...getCmsStore() });
+                              showToast(
+                                tr(
+                                  `প্রার্থীকে ${activeVisaTrack} পাইপলাইনের ধাপ ১-এ যুক্ত করা হয়েছে!`,
+                                  `Added candidate to ${activeVisaTrack} Pipeline Stage 1!`,
+                                  `${activeVisaTrack}パイプラインのステップ1に追加しました`,
+                                ),
+                              );
+                            }}
+                            className="inline-flex items-center gap-1 rounded-xl bg-[#b91c1c] px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-800 transition cursor-pointer"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                            <span>{tr("পাইপলাইনে যুক্ত করুন", "Add to Pipeline", "追加する")}</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Kanban Columns for Active Track */}
                     <div className="mt-4 flex gap-3.5 overflow-x-auto pb-3">
-                      {t.visa.stages.map((col) => {
-                        const applicantsInStage = filteredVisaApplicants.filter(
-                          (v) => v.stage === col.stage,
-                        );
+                      {activeTrackStages.map((col) => {
+                        const maxStageForTrack = activeTrackStages.length;
+                        const applicantsInStage = activeTrackApplicants.filter((v) => {
+                          const clamped = Math.max(1, Math.min(maxStageForTrack, Number(v.stage) || 1));
+                          return clamped === col.stage;
+                        });
+                        const colTitle =
+                          language === "bn"
+                            ? col.titleBn
+                            : language === "ja"
+                              ? col.titleJa
+                              : col.titleEn;
+                        const colSub =
+                          language === "bn"
+                            ? col.subBn
+                            : language === "ja"
+                              ? col.subJa
+                              : col.subEn;
+
                         return (
                           <div
-                            key={col.stage}
-                            className="min-w-[245px] shrink-0 rounded-xl border border-slate-200/70 bg-slate-50/60 p-3"
+                            key={`${activeVisaTrack}-${col.stage}`}
+                            className={`min-w-[260px] max-w-[280px] shrink-0 rounded-xl border p-3 ${
+                              col.isCoeMilestone
+                                ? "border-indigo-200/80 bg-indigo-50/30"
+                                : col.isVisaStamped || col.isJapanLanding
+                                  ? "border-emerald-200/80 bg-emerald-50/30"
+                                  : "border-slate-200/70 bg-slate-50/60"
+                            }`}
                           >
-                            <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
+                            <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-slate-200/60">
                               <div>
-                                <p className="font-bold text-xs text-slate-900">{col.name}</p>
-                                <p className="text-[10px] text-slate-400">{col.desc}</p>
+                                <p className="font-bold text-xs text-slate-900 leading-snug">
+                                  {colTitle}
+                                </p>
+                                <p className="text-[10px] text-slate-500 mt-0.5">{colSub}</p>
                               </div>
-                              <span className="text-xs font-bold text-slate-500 tabular-nums">
+                              <span className="text-xs font-bold text-slate-600 tabular-nums shrink-0">
                                 {applicantsInStage.length}
                               </span>
                             </div>
 
-                            <div className="mt-2.5 space-y-2">
+                            <div className="mt-2.5 space-y-2.5">
                               {applicantsInStage.map((app) => {
-                                const linkedAgent = app.referredByAgentId
-                                  ? store.b2bAgents.find((a) => a.id === app.referredByAgentId)
-                                  : null;
-                                const linkedOfficer = app.assignedVisaOfficerId
-                                  ? store.staffList.find((s) => s.id === app.assignedVisaOfficerId)
-                                  : null;
+                                const linkedLead = store.crmLeads.find(
+                                  (l) =>
+                                    l.id === app.leadId ||
+                                    l.id === app.linkedLeadId ||
+                                    l.phone === app.phone ||
+                                    l.name.toLowerCase() === app.name.toLowerCase(),
+                                );
+                                const currentTrack = resolveVisaTrack(app, linkedLead);
+                                const linkedAgent =
+                                  app.referredByAgentId || app.b2bAgentId
+                                    ? store.b2bAgents.find(
+                                        (a) =>
+                                          a.id === (app.referredByAgentId || app.b2bAgentId),
+                                      )
+                                    : null;
+                                const linkedOfficer =
+                                  app.assignedVisaOfficerId || app.visaOfficerId
+                                    ? store.staffList.find(
+                                        (s) =>
+                                          s.id ===
+                                          (app.assignedVisaOfficerId || app.visaOfficerId),
+                                      )
+                                    : null;
                                 const dueAmt =
                                   app.dueAmountBdt ??
-                                  Math.max(0, (app.contractAmountBdt || 120000) - (app.paidAmountBdt || 0));
+                                  Math.max(
+                                    0,
+                                    (app.contractAmountBdt || 120000) - (app.paidAmountBdt || 0),
+                                  );
 
                                 return (
                                   <div
                                     key={app.id}
-                                    className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-2xs hover:border-slate-300 transition"
+                                    className="rounded-xl border border-slate-200/90 bg-white p-3 shadow-2xs hover:border-slate-300 transition"
                                   >
-                                    <div className="flex justify-between items-center">
-                                      <span className="text-[10px] font-mono text-slate-400">
+                                    {/* Top Row: Tracking ID + Track Switcher Dropdown */}
+                                    <div className="flex justify-between items-center gap-1.5">
+                                      <span className="text-[10px] font-mono text-slate-400 truncate">
                                         {app.trackingNo}
                                       </span>
-                                      <span className="text-[10px] font-semibold text-slate-600">
-                                        {app.packageType === "PREMIUM"
-                                          ? t.visa.packagePremium
-                                          : t.visa.packageRegular}
-                                      </span>
+                                      <select
+                                        value={currentTrack}
+                                        onChange={(e) => {
+                                          const newTrack = e.target.value as VisaTrack;
+                                          updateVisaApplicantTrack(app.id, newTrack);
+                                          setStore({ ...getCmsStore() });
+                                          showToast(
+                                            tr(
+                                              `${app.name}-এর ভিসা ট্র্যাক ${newTrack}-এ পরিবর্তন করা হয়েছে`,
+                                              `Moved ${app.name} to ${newTrack} pipeline`,
+                                              `${app.name}を${newTrack}トラックへ変更しました`,
+                                            ),
+                                          );
+                                        }}
+                                        className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 hover:border-slate-300 focus:outline-none cursor-pointer"
+                                        title="Switch Visa Pipeline Track"
+                                      >
+                                        <option value="STUDENT">Student Visa</option>
+                                        <option value="SSW">SSW Job</option>
+                                        <option value="TITP">TITP Intern</option>
+                                      </select>
                                     </div>
+
+                                    {/* Candidate Name (Opens 360 Profile) */}
                                     <button
                                       type="button"
                                       onClick={() => {
-                                        const matched = store.crmLeads.find(
-                                          (l) =>
-                                            l.id === app.leadId ||
-                                            l.id === app.linkedLeadId ||
-                                            l.phone === app.phone ||
-                                            l.name.toLowerCase() === app.name.toLowerCase()
-                                        );
-                                        if (matched) {
-                                          setSelectedLeadForProfile(matched);
+                                        if (linkedLead) {
+                                          setSelectedLeadForProfile(linkedLead);
                                         }
                                       }}
-                                      className="font-bold text-xs text-slate-900 hover:text-indigo-600 transition text-left mt-1 cursor-pointer block"
+                                      className="font-bold text-xs text-slate-900 hover:text-indigo-600 transition text-left mt-1.5 cursor-pointer block w-full truncate"
                                     >
                                       {app.name}
                                     </button>
-                                    <p className="text-[11px] font-medium text-slate-600 truncate">
-                                      🏫 {app.targetSchool}
+
+                                    <p className="text-[11px] font-medium text-slate-600 truncate mt-0.5">
+                                      🏫 {app.targetSchool || "Unassigned Institution"}
                                     </p>
+
                                     {linkedAgent && (
                                       <p className="text-[10px] text-amber-700 font-medium mt-0.5 truncate">
-                                        {tr("এজেন্ট:", "Agent:", "代理店:")} {linkedAgent.organizationName}
+                                        {tr("এজেন্ট:", "Agent:", "代理店:")}{" "}
+                                        {linkedAgent.organizationName}
                                       </p>
                                     )}
                                     {linkedOfficer && (
@@ -3530,9 +4239,11 @@ export default function DashboardPage() {
                                         {tr("অফিসার:", "Officer:", "担当官:")} {linkedOfficer.name}
                                       </p>
                                     )}
-                                    <div className="mt-1.5 flex items-center justify-between text-[10px] tabular-nums">
+
+                                    <div className="mt-2 flex items-center justify-between text-[10px] tabular-nums">
                                       <span className="text-emerald-700 font-semibold">
-                                        {tr("জমা:", "Paid:", "入金:")} ৳{(app.paidAmountBdt || 0).toLocaleString()}
+                                        {tr("জমা:", "Paid:", "入金:")} ৳
+                                        {(app.paidAmountBdt || 0).toLocaleString()}
                                       </span>
                                       {dueAmt > 0 && (
                                         <span className="text-[#b91c1c] font-semibold">
@@ -3540,31 +4251,79 @@ export default function DashboardPage() {
                                         </span>
                                       )}
                                     </div>
-                                    <div className="mt-2.5 flex items-center justify-between pt-2 border-t border-slate-100">
-                                      <span className="text-[10px] text-slate-400 truncate max-w-[110px]">
-                                        {app.intakeSession}
-                                      </span>
-                                      {col.stage < 10 && (
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const nextStage = (col.stage + 1) as VisaStage;
-                                            updateVisaStage(app.id, nextStage);
-                                            setStore({ ...getCmsStore() });
-                                            if (nextStage === 6 && linkedAgent) {
+
+                                    {/* Stage Jump Selector + Prev / Next Stage Buttons */}
+                                    <div className="mt-2.5 flex items-center justify-between gap-1.5 pt-2 border-t border-slate-100">
+                                      <select
+                                        value={col.stage}
+                                        onChange={(e) => {
+                                          const targetStg = Number(e.target.value) as VisaStage;
+                                          updateVisaStage(app.id, targetStg);
+                                          setStore({ ...getCmsStore() });
+                                          const stgName = getStageLabelForTrack(
+                                            currentTrack,
+                                            targetStg,
+                                            language,
+                                          );
+                                          showToast(`${app.name} → ${stgName}`);
+                                        }}
+                                        className="rounded-lg border border-slate-200 bg-slate-50 px-1.5 py-1 text-[10px] font-medium text-slate-700 max-w-[125px] truncate focus:outline-none cursor-pointer"
+                                        title="Jump to Stage"
+                                      >
+                                        {activeTrackStages.map((s) => (
+                                          <option key={s.stage} value={s.stage}>
+                                            {language === "bn" ? s.titleBn : s.titleEn}
+                                          </option>
+                                        ))}
+                                      </select>
+
+                                      <div className="flex items-center gap-1">
+                                        {col.stage > 1 && (
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const prevStage = (col.stage - 1) as VisaStage;
+                                              updateVisaStage(app.id, prevStage);
+                                              setStore({ ...getCmsStore() });
                                               showToast(
-                                                `${app.name} → COE অনুমোদিত! (${linkedAgent.organizationName}-এর কমিশন যুক্ত হয়েছে)`,
+                                                `${app.name} → ${getStageLabelForTrack(currentTrack, prevStage, language)}`,
                                               );
-                                            } else {
-                                              showToast(`${app.name} → Step ${nextStage}`);
-                                            }
-                                          }}
-                                          className="inline-flex items-center gap-0.5 rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-semibold text-white hover:bg-emerald-700 transition"
-                                        >
-                                          <span>{t.visa.nextStageBtn}</span>
-                                          <ChevronRight className="h-3 w-3" />
-                                        </button>
-                                      )}
+                                            }}
+                                            className="rounded-lg border border-slate-200 px-1.5 py-1 text-[10px] font-semibold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                                            title="Previous Stage"
+                                          >
+                                            ‹
+                                          </button>
+                                        )}
+                                        {col.stage < maxStageForTrack && (
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const nextStage = (col.stage + 1) as VisaStage;
+                                              updateVisaStage(app.id, nextStage);
+                                              setStore({ ...getCmsStore() });
+                                              const nextTitle = getStageLabelForTrack(
+                                                currentTrack,
+                                                nextStage,
+                                                language,
+                                              );
+                                              const coeThreshold =
+                                                currentTrack === "SSW" ? 7 : 6;
+                                              if (nextStage === coeThreshold && linkedAgent) {
+                                                showToast(
+                                                  `${app.name} → ${nextTitle} (${linkedAgent.organizationName}-এর কমিশন যুক্ত হয়েছে)`,
+                                                );
+                                              } else {
+                                                showToast(`${app.name} → ${nextTitle}`);
+                                              }
+                                            }}
+                                            className="inline-flex items-center gap-0.5 rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-semibold text-white hover:bg-emerald-700 transition cursor-pointer"
+                                          >
+                                            <span>{t.visa.nextStageBtn}</span>
+                                            <ChevronRight className="h-3 w-3" />
+                                          </button>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
                                 );

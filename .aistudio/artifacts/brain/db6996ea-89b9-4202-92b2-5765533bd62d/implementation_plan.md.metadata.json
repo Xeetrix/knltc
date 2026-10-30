@@ -1,6 +1,6 @@
 {
-  "summary":  "Implementation plan for (1) Full Backend & Google Apps Script (Code.gs) synchronization for all 6-tab 360° profile data across CRM Leads, Visa Applicants, Partner Schools, and B2B Agents, (2) Abroadmate-inspired ultra-clean CRM Leads & Dashboard workspace redesign with single-row card list, compact filter pills, and minimal header/sidebar, and (3) Complete removal of the hardcoded Sheikh Baset dummy account in Access Control and sidebar with full account edit/delete capabilities.",
-  "updatedAt":  "2026-10-29T18:24:20.477465787Z",
+  "summary":  "Implementation plan for upgrading the Automated Eligibility Engine to evaluate Student Visa, SSW, and TITP tracks dynamically (with a CRM Lead selector and manual calculator), and introducing a Multi-Track Visa Kanban Pipeline with track switcher tabs and dedicated 10-step Student Visa, 10-step SSW, and 9-step TITP stage progressions.",
+  "updatedAt":  "2026-10-29T20:10:04.021189450Z",
   "requestFeedback":  true,
   "userFacing":  true
 }
