@@ -60,6 +60,7 @@ import {
   formatLeadInterestLabel,
   formatLeadSourceLabel,
   formatProficiencyLabel,
+  STANDARD_DEGREE_OPTIONS,
   type CrmLead,
   type DashboardTabId,
   type LeadStatus,
@@ -348,9 +349,35 @@ export default function LeadProfileModal({
     lead.guardianName || linkedVisa?.sponsorName || ""
   );
   const [guardianPhone, setGuardianPhone] = useState(lead.guardianPhone || "");
-  const [education, setEducation] = useState(lead.education || "HSC");
-  const [sscGpa, setSscGpa] = useState(lead.sscGpa || "4.00");
-  const [hscGpa, setHscGpa] = useState(lead.hscGpa || "3.70");
+  const [education, setEducation] = useState(lead.education || "HSC / Alim");
+  const [sscGpa, setSscGpa] = useState(() => {
+    const rawSsc = String(lead.sscGpa ?? "").trim();
+    const rawHsc = String(lead.hscGpa ?? "").trim();
+    if (
+      ((rawSsc === "4.00" && (rawHsc === "3.70" || rawHsc === "3.7")) ||
+        (rawSsc === "4.25" && rawHsc === "4.00")) &&
+      !lead.gpaDetails
+    ) {
+      return "";
+    }
+    if (rawSsc) return rawSsc;
+    const match = (lead.gpaDetails || "").match(/ssc\s*[:=-]?\s*(\d+(?:\.\d+)?)/i);
+    return match ? match[1] : "";
+  });
+  const [hscGpa, setHscGpa] = useState(() => {
+    const rawSsc = String(lead.sscGpa ?? "").trim();
+    const rawHsc = String(lead.hscGpa ?? "").trim();
+    if (
+      ((rawSsc === "4.00" && (rawHsc === "3.70" || rawHsc === "3.7")) ||
+        (rawSsc === "4.25" && rawHsc === "4.00")) &&
+      !lead.gpaDetails
+    ) {
+      return "";
+    }
+    if (rawHsc) return rawHsc;
+    const match = (lead.gpaDetails || "").match(/hsc\s*[:=-]?\s*(\d+(?:\.\d+)?)/i);
+    return match ? match[1] : "";
+  });
   const [studyGapYears, setStudyGapYears] = useState<number>(lead.studyGapYears ?? 0);
   const [japaneseProficiency, setJapaneseProficiency] = useState<
     CrmLead["japaneseProficiency"]
@@ -502,10 +529,17 @@ export default function LeadProfileModal({
             ? "conduct the in-office assessment, finalize partner school selection, and open the COE file."
             : "complete COE documentation verification and track Japanese language batch progress.";
 
+    const hasGpa = Boolean(sscGpa.trim() || hscGpa.trim());
     if (isBn) {
-      return `${name}-এর একটি শক্তিশালী একাডেমিক প্রোফাইল রয়েছে (HSC GPA ${hscGpa || "N/A"} এবং SSC GPA ${sscGpa || "N/A"})। তিনি জাপানের ${programLabel} প্রোগ্রামে আগ্রহী এবং এখন পর্যন্ত ${uploadedDocsCount}/${documents.length}টি ডকুমেন্ট জমা দিয়েছেন। ${recentNote ? `সাম্প্রতিক নোটে উল্লেখ আছে: "${recentNote}"।` : ""} কাউন্সেলরের জন্য পরবর্তী সবচেয়ে কার্যকর পদক্ষেপ হবে নির্বাচিত প্রোগ্রামের আবেদন প্রক্রিয়া ও প্রয়োজনীয় ডকুমেন্টগুলো সম্পর্কে তাকে গাইড করা।`;
+      const gpaSentenceBn = hasGpa
+        ? `${name}-এর একাডেমিক প্রোফাইলে HSC GPA ${hscGpa || "—"} এবং SSC GPA ${sscGpa || "—"} এন্ট্রি করা আছে (${education || "HSC / Alim"})।`
+        : `${name}-এর সর্বোচ্চ শিক্ষা ${education || "HSC / Alim"} (SSC ও HSC GPA এখনো যুক্ত করা হয়নি)।`;
+      return `${gpaSentenceBn} তিনি জাপানের ${programLabel} প্রোগ্রামে আগ্রহী এবং এখন পর্যন্ত ${uploadedDocsCount}/${documents.length}টি ডকুমেন্ট জমা দিয়েছেন। ${recentNote ? `সাম্প্রতিক নোটে উল্লেখ আছে: "${recentNote}"।` : ""} কাউন্সেলরের জন্য পরবর্তী সবচেয়ে কার্যকর পদক্ষেপ হবে নির্বাচিত প্রোগ্রামের আবেদন প্রক্রিয়া ও প্রয়োজনীয় ডকুমেন্টগুলো সম্পর্কে তাকে গাইড করা।`;
     }
-    return `${name} has a strong academic profile with a high school GPA of ${hscGpa || "3.7"} and an SSC GPA of ${sscGpa || "4.00"}. The candidate is interested in ${programLabel} in Japan but ${docPhrase}. ${notePhrase} The most useful next action for the counselor would be to ${nextAction}`;
+    const gpaSentenceEn = hasGpa
+      ? `${name} has an academic profile (${education || "HSC / Alim"}) with an HSC GPA of ${hscGpa || "—"} and an SSC GPA of ${sscGpa || "—"}.`
+      : `${name} holds a ${education || "HSC / Alim"} qualification (SSC & HSC GPA not yet recorded).`;
+    return `${gpaSentenceEn} The candidate is interested in ${programLabel} in Japan and ${docPhrase}. ${notePhrase} The most useful next action for the counselor would be to ${nextAction}`;
   }, [
     aiSummary,
     interest,
@@ -516,16 +550,24 @@ export default function LeadProfileModal({
     notes,
     status,
     name,
+    education,
     hscGpa,
     sscGpa,
   ]);
 
   // Smart School & Program Matches
   const schoolMatches = useMemo(() => {
-    const candidateGpa = Math.min(
-      5,
-      (parseFloat(sscGpa || "4.0") + parseFloat(hscGpa || "3.7")) / 2 || 3.8
-    );
+    const pSsc = parseFloat(sscGpa);
+    const pHsc = parseFloat(hscGpa);
+    const rawAvg =
+      !isNaN(pSsc) && !isNaN(pHsc)
+        ? (pSsc + pHsc) / 2
+        : !isNaN(pHsc)
+          ? pHsc
+          : !isNaN(pSsc)
+            ? pSsc
+            : 3.5;
+    const candidateGpa = Math.min(5, rawAvg);
     const baseSchools: JapanesePartnerSchool[] =
       partnerSchools.length > 0
         ? partnerSchools
@@ -626,6 +668,12 @@ export default function LeadProfileModal({
     toastMsg?: string
   ) => {
     const due = Math.max(0, contractAmountBdt - paidAmountBdt);
+    const resolvedSsc = (overrides?.sscGpa !== undefined ? overrides.sscGpa : sscGpa).trim();
+    const resolvedHsc = (overrides?.hscGpa !== undefined ? overrides.hscGpa : hscGpa).trim();
+    const resolvedGpaDetails =
+      resolvedSsc || resolvedHsc
+        ? `SSC: ${resolvedSsc || "N/A"}, HSC: ${resolvedHsc || "N/A"}`
+        : "";
     const payload: Partial<CrmLead> = {
       name,
       phone,
@@ -638,8 +686,9 @@ export default function LeadProfileModal({
       guardianName,
       guardianPhone,
       education,
-      sscGpa,
-      hscGpa,
+      sscGpa: resolvedSsc,
+      hscGpa: resolvedHsc,
+      gpaDetails: resolvedGpaDetails,
       studyGapYears,
       japaneseProficiency,
       interest,
@@ -1262,7 +1311,7 @@ export default function LeadProfileModal({
               </div>
             </div>
 
-            {/* ACADEMIC PROFILE CARD (Soft Indigo Tinted Card Like Screenshot) */}
+            {/* ACADEMIC PROFILE CARD (Soft Indigo Tinted Card with Inline Degree Dropdown & Real GPA Sync) */}
             <div className="rounded-2xl border border-indigo-100/90 bg-[#EEF2FF]/75 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-[11px] font-bold uppercase tracking-wider text-indigo-700">
@@ -1273,39 +1322,87 @@ export default function LeadProfileModal({
                   onClick={() => setIsEditingModalOpen(true)}
                   className="text-[11px] font-semibold text-indigo-600 hover:underline cursor-pointer"
                 >
-                  {tr("আপডেট", "Edit GPA", "編集")}
+                  {tr("সম্পূর্ণ এডিট", "Full Edit", "編集")}
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-y-4 gap-x-6">
+              <div className="grid grid-cols-2 gap-y-4 gap-x-4">
                 <div>
-                  <div className="text-xs text-slate-500">SSC GPA</div>
-                  <div className="text-base font-bold text-slate-900 tabular-nums mt-0.5">
-                    {sscGpa || "4.00"}
-                  </div>
+                  <label className="text-xs text-slate-500 block">SSC GPA</label>
+                  <input
+                    type="text"
+                    value={sscGpa}
+                    onChange={(e) => setSscGpa(e.target.value)}
+                    onBlur={() =>
+                      persistLeadChanges(
+                        { sscGpa: sscGpa.trim() },
+                        tr(
+                          "SSC GPA গুগল শিটে সংরক্ষিত হয়েছে",
+                          "SSC GPA saved & synced to Google Sheet"
+                        )
+                      )
+                    }
+                    placeholder={tr("যুক্ত করুন (যেমন 4.50)", "Add GPA (e.g. 4.50)")}
+                    className="mt-1 w-full rounded-lg border border-indigo-200/80 bg-white/90 px-2.5 py-1.5 text-sm font-bold text-slate-900 tabular-nums placeholder:text-xs placeholder:font-normal placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none"
+                  />
                 </div>
 
                 <div>
-                  <div className="text-xs text-slate-500">HSC GPA</div>
-                  <div className="text-base font-bold text-slate-900 tabular-nums mt-0.5">
-                    {hscGpa || "3.70"}
-                  </div>
+                  <label className="text-xs text-slate-500 block">HSC / Dip. GPA</label>
+                  <input
+                    type="text"
+                    value={hscGpa}
+                    onChange={(e) => setHscGpa(e.target.value)}
+                    onBlur={() =>
+                      persistLeadChanges(
+                        { hscGpa: hscGpa.trim() },
+                        tr(
+                          "HSC GPA গুগল শিটে সংরক্ষিত হয়েছে",
+                          "HSC GPA saved & synced to Google Sheet"
+                        )
+                      )
+                    }
+                    placeholder={tr("যুক্ত করুন (যেমন 4.25)", "Add GPA (e.g. 4.25)")}
+                    className="mt-1 w-full rounded-lg border border-indigo-200/80 bg-white/90 px-2.5 py-1.5 text-sm font-bold text-slate-900 tabular-nums placeholder:text-xs placeholder:font-normal placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none"
+                  />
                 </div>
 
-                <div>
-                  <div className="text-xs text-slate-500">
-                    {tr("প্রোগ্রাম লেভেল", "Program Level", "課程レベル")}
-                  </div>
-                  <div className="text-sm font-bold text-slate-900 mt-0.5">
-                    {education || "Foundation"}
-                  </div>
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="text-xs text-slate-500 block">
+                    {tr("সর্বোচ্চ ডিগ্রি", "Highest Degree", "最終学歴")}
+                  </label>
+                  <select
+                    value={education}
+                    onChange={(e) => {
+                      const nextEdu = e.target.value;
+                      setEducation(nextEdu);
+                      persistLeadChanges(
+                        { education: nextEdu },
+                        tr(
+                          `সর্বোচ্চ ডিগ্রি "${nextEdu}" গুগল শিটে সেভ হয়েছে`,
+                          `Highest Degree updated to "${nextEdu}"`
+                        )
+                      );
+                    }}
+                    className="mt-1 w-full rounded-lg border border-indigo-200/80 bg-white/90 px-2 py-1.5 text-xs font-bold text-slate-900 focus:border-indigo-500 focus:bg-white focus:outline-none cursor-pointer"
+                  >
+                    {education &&
+                      !(STANDARD_DEGREE_OPTIONS as readonly string[]).includes(education) && (
+                        <option value={education}>{education}</option>
+                      )}
+                    {STANDARD_DEGREE_OPTIONS.map((deg) => (
+                      <option key={deg} value={deg}>
+                        {deg}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
-                <div>
+                <div className="col-span-2 sm:col-span-1">
                   <div className="text-xs text-slate-500">
                     {tr("ভাষা ও যোগ্যতা", "Language & Score", "日本語・適格率")}
                   </div>
-                  <div className="text-sm font-bold text-indigo-700 tabular-nums mt-0.5">
+                  <div className="text-sm font-bold text-indigo-700 tabular-nums mt-2">
                     {formatProficiencyLabel(japaneseProficiency, isBn)} ·{" "}
                     {eligibility.totalScore}%
                   </div>
@@ -2515,33 +2612,41 @@ export default function LeadProfileModal({
                   type="text"
                   value={sscGpa}
                   onChange={(e) => setSscGpa(e.target.value)}
-                  placeholder="4.00"
+                  placeholder="e.g. 4.50"
                   className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
                 />
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700">HSC GPA</label>
+                <label className="font-semibold text-slate-700">HSC / Diploma GPA</label>
                 <input
                   type="text"
                   value={hscGpa}
                   onChange={(e) => setHscGpa(e.target.value)}
-                  placeholder="3.70"
+                  placeholder="e.g. 4.25"
                   className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
                 />
               </div>
 
               <div>
                 <label className="font-semibold text-slate-700">
-                  Program Level / Highest Degree
+                  {tr("সর্বোচ্চ ডিগ্রি / শিক্ষাগত যোগ্যতা", "Highest Degree / Qualification")}
                 </label>
-                <input
-                  type="text"
+                <select
                   value={education}
                   onChange={(e) => setEducation(e.target.value)}
-                  placeholder="Foundation / HSC / BSc"
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
-                />
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium cursor-pointer"
+                >
+                  {education &&
+                    !(STANDARD_DEGREE_OPTIONS as readonly string[]).includes(education) && (
+                      <option value={education}>{education}</option>
+                    )}
+                  {STANDARD_DEGREE_OPTIONS.map((deg) => (
+                    <option key={deg} value={deg}>
+                      {deg}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>

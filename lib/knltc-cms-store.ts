@@ -1405,12 +1405,44 @@ function getFreshDefaultStore(): MasterKnlTcStore {
   };
 }
 
+export const STANDARD_DEGREE_OPTIONS = [
+  "HSC / Alim",
+  "SSC / Dakhil",
+  "Diploma in Engineering",
+  "Honours / Bachelor's",
+  "BSc in Engineering",
+  "BBA",
+  "Masters / MBA / MSc",
+  "Foundation",
+  "Fazil / Kamil",
+  "JSC / 8th Pass",
+] as const;
+
+function sanitizeDummyGpaPair(ssc?: string, hsc?: string, gpaDetails?: string): { ssc: string; hsc: string } {
+  const cleanSsc = String(ssc ?? "").trim();
+  const cleanHsc = String(hsc ?? "").trim();
+  // Strip legacy automatic dummy fallbacks ("4.00" + "3.70" or "4.25" + "4.00") when not backed by explicit gpaDetails
+  const isLegacyModalDummy = cleanSsc === "4.00" && (cleanHsc === "3.70" || cleanHsc === "3.7");
+  const isLegacyImportDummy = cleanSsc === "4.25" && cleanHsc === "4.00";
+  if ((isLegacyModalDummy || isLegacyImportDummy) && !gpaDetails) {
+    return { ssc: "", hsc: "" };
+  }
+  return { ssc: cleanSsc, hsc: cleanHsc };
+}
+
 export function getCmsStore(): MasterKnlTcStore {
   if (typeof window !== "undefined") {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        return JSON.parse(saved);
+        const parsed: MasterKnlTcStore = JSON.parse(saved);
+        if (Array.isArray(parsed.crmLeads)) {
+          parsed.crmLeads = parsed.crmLeads.map((l) => {
+            const { ssc, hsc } = sanitizeDummyGpaPair(l.sscGpa, l.hscGpa, l.gpaDetails);
+            return { ...l, sscGpa: ssc, hscGpa: hsc };
+          });
+        }
+        return parsed;
       }
     } catch {
       // ignore JSON parse error in browser
@@ -1938,9 +1970,24 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
           status,
           priority,
           passportNo: l.passport_no || parsedProfile.passportNo || local?.passportNo || "",
-          education: l.education || parsedProfile.education || local?.education || "HSC",
-          sscGpa: l.ssc_gpa || parsedProfile.sscGpa || local?.sscGpa || "",
-          hscGpa: l.hsc_gpa || parsedProfile.hscGpa || local?.hscGpa || "",
+          education: l.education || parsedProfile.education || local?.education || "HSC / Alim",
+          ...(() => {
+            const sheetSscRaw =
+              l.ssc_gpa ?? l.sscGpa ?? l["SSC GPA"] ?? l["ssc gpa"] ?? l.SSC ?? l.ssc;
+            const sheetHscRaw =
+              l.hsc_gpa ?? l.hscGpa ?? l["HSC GPA"] ?? l["hsc gpa"] ?? l.HSC ?? l.hsc;
+            const hasSheetSsc = sheetSscRaw !== undefined && sheetSscRaw !== null && String(sheetSscRaw).trim() !== "";
+            const hasSheetHsc = sheetHscRaw !== undefined && sheetHscRaw !== null && String(sheetHscRaw).trim() !== "";
+            const fallbackPair = sanitizeDummyGpaPair(
+              parsedProfile.sscGpa || local?.sscGpa,
+              parsedProfile.hscGpa || local?.hscGpa,
+              parsedProfile.gpaDetails || local?.gpaDetails,
+            );
+            return {
+              sscGpa: hasSheetSsc ? String(sheetSscRaw).trim() : fallbackPair.ssc,
+              hscGpa: hasSheetHsc ? String(sheetHscRaw).trim() : fallbackPair.hsc,
+            };
+          })(),
           japaneseProficiency: normalizeSheetJapaneseProficiency(
             l.japanese_proficiency || parsedProfile.japaneseProficiency || local?.japaneseProficiency,
           ),
@@ -2255,9 +2302,12 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
         store.crmLeads = store.crmLeads.map((lead) => {
           const ext = serverCms.leadExtendedProfiles?.[lead.id];
           if (!ext) return lead;
+          const sanitizedExtGpa = sanitizeDummyGpaPair(ext.sscGpa, ext.hscGpa, ext.gpaDetails);
           return {
             ...ext,
             ...lead,
+            sscGpa: lead.sscGpa || sanitizedExtGpa.ssc || "",
+            hscGpa: lead.hscGpa || sanitizedExtGpa.hsc || "",
             b2bAgentName: isIsoDateLike(lead.b2bAgentName || ext.b2bAgentName)
               ? ""
               : lead.b2bAgentName || ext.b2bAgentName || "",
@@ -4936,10 +4986,10 @@ export function bulkImportCrmLeads(
       interest,
       status: normalizeSheetLeadStatus(row.status || fallbackStatus),
       priority: row.priority || fallbackPriority,
-      education: row.education || "HSC / Equivalent",
-      sscGpa: row.sscGpa || "4.25",
-      hscGpa: row.hscGpa || "4.00",
-      graduationYear: row.graduationYear || "2024",
+      education: row.education || "HSC / Alim",
+      sscGpa: row.sscGpa ? String(row.sscGpa).trim() : "",
+      hscGpa: row.hscGpa ? String(row.hscGpa).trim() : "",
+      graduationYear: row.graduationYear || "",
       japaneseProficiency: normalizeSheetJapaneseProficiency(row.japaneseProficiency || "NONE"),
       studyGapYears: Number(row.studyGapYears ?? 1),
       assignedTo: row.assignedTo || fallbackAssignedTo,

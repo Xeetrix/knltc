@@ -148,14 +148,14 @@ const CRM_FIELD_DEFINITIONS: {
     labelBn: "SSC GPA",
     labelEn: "SSC GPA",
     labelJa: "SSC GPA",
-    aliases: ["ssc", "ssc gpa", "ssc result", "এসএসসি"],
+    aliases: ["ssc_gpa", "ssc gpa", "ssc", "ssc result", "ssc point", "dakhil", "এসএসসি"],
   },
   {
     key: "hscGpa",
     labelBn: "HSC / Diploma GPA",
     labelEn: "HSC / Diploma GPA",
     labelJa: "HSC GPA",
-    aliases: ["hsc", "hsc gpa", "gpa", "cgpa", "result", "এইচএসসি", "জিপিএ"],
+    aliases: ["hsc_gpa", "hsc gpa", "hsc", "hsc result", "diploma gpa", "alim", "gpa", "cgpa", "result", "এইচএসসি", "জিপিএ"],
   },
   {
     key: "graduationYear",
@@ -559,16 +559,33 @@ export default function CrmImportExportModal({
       const rawContract = parseFloat(getCell(row, "contractAmountBdt").replace(/[^0-9.]/g, ""));
       const rawPaid = parseFloat(getCell(row, "paidAmountBdt").replace(/[^0-9.]/g, ""));
 
+      let rawSsc = getCell(row, "sscGpa");
+      let rawHsc = getCell(row, "hscGpa");
+      // If a single GPA column contains two numbers like "4.50 / 4.00" or "SSC: 4.5, HSC: 4.0"
+      if (!rawSsc && rawHsc && /[/|,&]/.test(rawHsc)) {
+        const nums = rawHsc.match(/\d+(?:\.\d+)?/g);
+        if (nums && nums.length >= 2) {
+          rawSsc = nums[0];
+          rawHsc = nums[1];
+        }
+      } else if (rawSsc && !rawHsc && /[/|,&]/.test(rawSsc)) {
+        const nums = rawSsc.match(/\d+(?:\.\d+)?/g);
+        if (nums && nums.length >= 2) {
+          rawSsc = nums[0];
+          rawHsc = nums[1];
+        }
+      }
+
       const candidate: Partial<CrmLead> = {
         name: rawName,
         phone: normPhone || rawPhone,
         whatsapp: getCell(row, "whatsapp") || normPhone || rawPhone,
         email: getCell(row, "email"),
         city: getCell(row, "city") || "ঢাকা",
-        education: getCell(row, "education") || "HSC / Equivalent",
-        sscGpa: getCell(row, "sscGpa") || "4.25",
-        hscGpa: getCell(row, "hscGpa") || "4.00",
-        graduationYear: getCell(row, "graduationYear") || "2024",
+        education: getCell(row, "education") || "HSC / Alim",
+        sscGpa: rawSsc,
+        hscGpa: rawHsc,
+        graduationYear: getCell(row, "graduationYear") || "",
         studyGapYears: !isNaN(rawGap) ? rawGap : 1,
         japaneseProficiency: parseJapaneseProficiency(getCell(row, "japaneseProficiency")),
         interest: getCell(row, "interest")

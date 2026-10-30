@@ -643,7 +643,7 @@ function doPost(e) {
     }
 
     var sheet = ensureSheetWithHeaders(ss, table);
-    var headers = TABLE_SCHEMAS[table];
+    var headers = getActualSheetHeaders(sheet, TABLE_SCHEMAS[table]);
 
     // ------------------------------------------------------------------------
     // ACTION: CREATE / INSERT
@@ -930,9 +930,20 @@ function deleteRowById(sheet, headers, targetId) {
   return false;
 }
 
+function getActualSheetHeaders(sheet, fallbackHeaders) {
+  var lastCol = sheet.getLastColumn();
+  if (lastCol <= 0) return fallbackHeaders || [];
+  var row1 = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  var headers = [];
+  for (var i = 0; i < row1.length; i++) {
+    headers.push(String(row1[i]).trim());
+  }
+  return headers.length > 0 ? headers : (fallbackHeaders || []);
+}
+
 function replaceOrMergeTableRows(ss, tableName, records, replaceAll) {
   var sheet = ensureSheetWithHeaders(ss, tableName);
-  var headers = TABLE_SCHEMAS[tableName];
+  var headers = getActualSheetHeaders(sheet, TABLE_SCHEMAS[tableName]);
 
   if (replaceAll && sheet.getLastRow() > 1) {
     sheet.deleteRows(2, sheet.getLastRow() - 1);
