@@ -354,83 +354,6 @@ function setupKNLTCDatabase() {
   };
 }
 
-/**
- * ============================================================================
- * 1B. LIVE MASTER EXECUTIVE DASHBOARD TAB (`MASTER_EXECUTIVE_DASHBOARD`)
- * Automatically keeps the live Google Sheet telemetry dashboard synchronized
- * with all 15 database tabs using real-time spreadsheet formulas.
- * ============================================================================
- */
-function setupMasterExecutiveDashboard(ss) {
-  var spreadsheet = ss || SpreadsheetApp.getActiveSpreadsheet();
-  var dashName = "MASTER_EXECUTIVE_DASHBOARD";
-  var dash = spreadsheet.getSheetByName(dashName);
-  if (!dash) {
-    dash = spreadsheet.insertSheet(dashName, 0);
-  }
-
-  // Update timestamp if row 2 exists, or initialize summary telemetry block if empty
-  if (dash.getLastRow() <= 1) {
-    dash.getRange("A1:K2").mergeAcross();
-    dash.getRange("A1").setValue("KNLTC GLOBAL EDUCATION & CAREER • MASTER EXECUTIVE DASHBOARD");
-    dash.getRange("A2").setValue(
-      "Real-time synchronization across CRM, Visa Processing, Partner Schools, Finance, LMS, Staff, and E-Commerce operations.   Last Refreshed: " +
-        Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm")
-    );
-    dash.getRange("A1:K2")
-      .setBackground("#0f4c3a")
-      .setFontColor("#ffffff")
-      .setFontWeight("bold")
-      .setFontFamily("Inter, Arial, sans-serif");
-  }
-}
-
-/**
- * ============================================================================
- * ONE-CLICK PURGE FUNCTION FOR GOOGLE APPS SCRIPT
- * Run this function directly inside Apps Script editor to clear all dummy
- * test data from your Google Sheet while keeping Row 1 headers intact!
- * ============================================================================
- */
-function purgeAllDummyDataFromSheets() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var dummyTables = [
-    "categories",
-    "products",
-    "blog_posts",
-    "knltc_crm_leads",
-    "knltc_visa_applicants",
-    "knltc_lms_bridges",
-    "knltc_b2b_agents",
-    "knltc_partner_schools",
-    "knltc_staff_members",
-    "knltc_finance_transactions",
-    "orders",
-    "order_items",
-    "product_reviews",
-    "wishlist_items"
-  ];
-
-  var purged = {};
-  for (var i = 0; i < dummyTables.length; i++) {
-    var tName = dummyTables[i];
-    var sheet = ss.getSheetByName(tName);
-    if (sheet) {
-      var lastRow = sheet.getLastRow();
-      if (lastRow > 1) {
-        var numRowsToDelete = lastRow - 1;
-        sheet.deleteRows(2, numRowsToDelete);
-        purged[tName] = numRowsToDelete + " rows deleted";
-      } else {
-        purged[tName] = "Already clean (0 rows)";
-      }
-    }
-  }
-
-  Logger.log("✅ All dummy test data successfully purged from Google Sheet!");
-  Logger.log(JSON.stringify(purged, null, 2));
-  return { ok: true, message: "All dummy data purged successfully", purged: purged };
-}
 
 /**
  * ============================================================================
@@ -1033,23 +956,7 @@ function getInitialSeedDataForTable(tableName, nowIso) {
       return [];
 
     case "knltc_website_cms":
-      return [
-        {
-          id: "cms-master-01",
-          section_key: "master_cms",
-          data: JSON.stringify({
-            heroHeadlineBn: "জাপানে উচ্চশিক্ষা ও দক্ষ ক্যারিয়ারের বিশ্বস্ত সেতুবন্ধন",
-            heroHeadlineEn: "Your Trusted Gateway to Higher Study & Skilled Careers in Japan",
-            hotlinePhone: "+880 1805 013633",
-            whatsappNumber: "8801805013633",
-            lmsPortalUrl: "https://npw.bd/knltc",
-            regularVisaPackageBdt: 120000,
-            premiumVisaPackageBdt: 1150000,
-            n5CourseFeeBdt: 12000
-          }),
-          updated_at: nowIso
-        }
-      ];
+      return [];
 
     default:
       return [];
