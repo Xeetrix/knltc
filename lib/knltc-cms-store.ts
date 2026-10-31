@@ -763,8 +763,10 @@ export type TransactionType =
   | "SERVICE_CHARGE_COE"
   | "PREMIUM_PACKAGE"
   | "REGULAR_SERVICE_CHARGE"
+  | "REGISTRATION_FEE"
   | "PREMIUM_PACKAGE_ADVANCE"
   | "BOOK_STORE_SALE"
+  | "BOOK_PURCHASE"
   | "SCHOOL_COMMISSION_JPY"
   | "EXPENSE_RENT"
   | "EXPENSE_PAYROLL"
@@ -1430,6 +1432,17 @@ function sanitizeDummyGpaPair(ssc?: string, hsc?: string, gpaDetails?: string): 
   return { ssc: cleanSsc, hsc: cleanHsc };
 }
 
+export function isDummyPersonName(raw?: string): boolean {
+  if (!raw) return false;
+  return /sheikh\s*baset|shaikh\s*baset|baset|শেখ\s*বাসেত|amir\s*hossain|আমির\s*হোসেন/i.test(raw);
+}
+
+export function sanitizeAuthorizerName(raw?: string, fallback = "KNLTC Accounts"): string {
+  const s = String(raw || "").trim();
+  if (!s || isDummyPersonName(s)) return fallback;
+  return s;
+}
+
 export function getCmsStore(): MasterKnlTcStore {
   if (typeof window !== "undefined") {
     try {
@@ -1439,8 +1452,34 @@ export function getCmsStore(): MasterKnlTcStore {
         if (Array.isArray(parsed.crmLeads)) {
           parsed.crmLeads = parsed.crmLeads.map((l) => {
             const { ssc, hsc } = sanitizeDummyGpaPair(l.sscGpa, l.hscGpa, l.gpaDetails);
-            return { ...l, sscGpa: ssc, hscGpa: hsc };
+            return {
+              ...l,
+              sscGpa: ssc,
+              hscGpa: hsc,
+              assignedTo: isDummyPersonName(l.assignedTo) ? "KNLTC Admin" : l.assignedTo,
+            };
           });
+        }
+        if (Array.isArray(parsed.visaApplicants)) {
+          parsed.visaApplicants = parsed.visaApplicants.map((v) => ({
+            ...v,
+            counselorName: isDummyPersonName(v.counselorName) ? "KNLTC Admin" : v.counselorName,
+            visaOfficerName: isDummyPersonName(v.visaOfficerName) ? "KNLTC Visa Team" : v.visaOfficerName,
+          }));
+        }
+        if (Array.isArray(parsed.transactions)) {
+          parsed.transactions = parsed.transactions.map((tx) => ({
+            ...tx,
+            verifiedBy: sanitizeAuthorizerName(tx.verifiedBy, "KNLTC Accounts"),
+          }));
+        }
+        if (Array.isArray(parsed.lmsBridges)) {
+          parsed.lmsBridges = parsed.lmsBridges.map((b) => ({
+            ...b,
+            assignedSenseiName: isDummyPersonName(b.assignedSenseiName)
+              ? "KNLTC Academic Team"
+              : b.assignedSenseiName,
+          }));
         }
         return parsed;
       }
@@ -1995,7 +2034,7 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
             l.study_gap_years != null && !isNaN(Number(l.study_gap_years))
               ? Number(l.study_gap_years)
               : parsedProfile.studyGapYears ?? local?.studyGapYears ?? 0,
-          assignedTo: rawAssigned === "শেখ বাসেত" ? "Unassigned" : rawAssigned,
+          assignedTo: isDummyPersonName(rawAssigned) ? "Unassigned" : rawAssigned,
           branch: normalizeSheetLeadBranch(l.branch || parsedProfile.branch || local?.branch),
           targetSchool: cleanTargetSchool,
           targetSchoolName: cleanTargetSchool,
@@ -2076,10 +2115,10 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
           bankLoanBank: v.bank_loan_bank || parsedProfile.bankLoanBank || local?.bankLoanBank || "",
           coEStatus: v.coe_status || parsedProfile.coEStatus || local?.coEStatus || "PENDING",
           visaStatus: v.visa_status || parsedProfile.visaStatus || local?.visaStatus || "IN_PROCESS",
-          counselorName:
-            v.counselor_name && v.counselor_name !== "শেখ বাসেত"
-              ? v.counselor_name
-              : parsedProfile.counselorName || local?.counselorName || "KNLTC Admin",
+          counselorName: sanitizeAuthorizerName(
+            v.counselor_name || parsedProfile.counselorName || local?.counselorName,
+            "KNLTC Admin",
+          ),
           updatedAt: v.updated_at || parsedProfile.updatedAt || new Date().toISOString(),
         };
       });
@@ -2237,7 +2276,7 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
         paymentMethod: tx.payment_method || "BKASH",
         referenceOrTrx: tx.reference_or_trx || "N/A",
         branch: normalizeSheetLeadBranch(tx.branch),
-        verifiedBy: tx.verified_by && tx.verified_by !== "শেখ বাসেত" ? tx.verified_by : "KNLTC Admin",
+        verifiedBy: sanitizeAuthorizerName(tx.verified_by, "KNLTC Accounts"),
         notes: tx.notes || "",
         linkedLeadId: tx.linked_lead_id || "",
         linkedVisaId: tx.linked_visa_id || "",
@@ -3486,7 +3525,7 @@ export function claimPartnerSchoolCommission(
   schoolId: string,
   studentCount = 1,
   jpyToBdtRate = 0.8,
-  verifiedBy = "Sheikh Baset (MD)",
+  verifiedBy = "KNLTC Accounts",
 ): FinancialTransaction | null {
   const store = getCmsStore();
   const school = store.partnerSchools.find((s) => s.id === schoolId);
@@ -3510,7 +3549,7 @@ export function claimPartnerSchoolCommission(
     paymentMethod: "BANK_TRANSFER",
     referenceOrTrx: `JPY-${yenAmount.toLocaleString()}`,
     branch: "DHK-HQ",
-    verifiedBy,
+    verifiedBy: sanitizeAuthorizerName(verifiedBy, "KNLTC Accounts"),
     notes: `Japanese Partner School Commission: ¥${yenAmount.toLocaleString()} JPY @ ${jpyToBdtRate} BDT`,
     linkedSchoolId: school.id,
   });
@@ -3521,7 +3560,7 @@ export function settleB2bAgentCommission(
   amountBdt?: number,
   paymentMethod: FinancialTransaction["paymentMethod"] = "BKASH",
   branch: "DHK-HQ" | "KHULNA-01" = "DHK-HQ",
-  verifiedBy = "Sheikh Baset (MD)",
+  verifiedBy = "KNLTC Accounts",
 ): FinancialTransaction | null {
   const store = getCmsStore();
   const agent = store.b2bAgents.find((a) => a.id === agentId);
@@ -3546,7 +3585,7 @@ export function settleB2bAgentCommission(
     paymentMethod,
     referenceOrTrx: `B2B-${Date.now().toString().slice(-6)}`,
     branch,
-    verifiedBy,
+    verifiedBy: sanitizeAuthorizerName(verifiedBy, "KNLTC Accounts"),
     notes: `B2B Referral Commission Settlement for ${agent.organizationName}`,
     linkedAgentId: agent.id,
   });
@@ -3555,7 +3594,7 @@ export function settleB2bAgentCommission(
 export function disburseStaffPayroll(
   staffId: string,
   branchOrVerifiedBy: string = "DHK-HQ",
-  verifiedByArg = "Sheikh Baset (MD)",
+  verifiedByArg = "KNLTC Accounts",
 ): FinancialTransaction | null {
   const store = getCmsStore();
   const staff = store.staffList.find((s) => s.id === staffId);
@@ -3563,7 +3602,7 @@ export function disburseStaffPayroll(
 
   const isBranch = branchOrVerifiedBy === "DHK-HQ" || branchOrVerifiedBy === "KHULNA-01";
   const branch: "DHK-HQ" | "KHULNA-01" = isBranch ? branchOrVerifiedBy : "DHK-HQ";
-  const verifiedBy = isBranch ? verifiedByArg : branchOrVerifiedBy;
+  const verifiedBy = sanitizeAuthorizerName(isBranch ? verifiedByArg : branchOrVerifiedBy, "KNLTC Accounts");
 
   const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
   const totalPay = (staff.monthlyBaseSalaryBdt || 0) + (staff.performanceBonusBdt || 0);
@@ -3593,7 +3632,7 @@ export function disburseStaffPayroll(
 
 export function disburseAllActivePayroll(
   branchOrVerifiedBy: string = "DHK-HQ",
-  verifiedByArg = "Sheikh Baset (MD)",
+  verifiedByArg = "KNLTC Accounts",
 ): { count: number; totalAmountBdt: number; totalBdt: number } {
   const store = getCmsStore();
   const currentMonth = new Date().toISOString().slice(0, 7);

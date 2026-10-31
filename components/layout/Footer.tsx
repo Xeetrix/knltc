@@ -28,7 +28,7 @@ export default function Footer() {
   const t = translate(
     {
       en: {
-        desc: "KNLTC (Japan Gateway) — Japan Education & Career Consultancy. Dedicated pathways for Higher Education, SSW & TITP employment, and professional Japanese language certification.",
+        desc: "Kurobe Nihongo Language Training Center (KNLTC) — Japan Education & Career Consultancy. Dedicated pathways for Higher Education, SSW & TITP employment, and professional Japanese language certification.",
         quick: "Quick Navigation",
         contact: "Official Office & Contact",
         address: "Sky View Trade Valley (8th Floor), 66/1 VIP Road, Naya Paltan, Dhaka",
@@ -47,10 +47,10 @@ export default function Footer() {
         ],
       },
       bn: {
-        desc: "KNLTC (জাপান গেটওয়ে) — জাপান এডুকেশন অ্যান্ড ক্যারিয়ার কনসালটেন্সি। জাপানে উচ্চশিক্ষা, SSW ও TITP জব ভিসা এবং মানসম্মত জাপানি ভাষা শিক্ষার পূর্ণাঙ্গ নির্ভরযোগ্য প্রতিষ্ঠান।",
+        desc: "Kurobe Nihongo Language Training Center (KNLTC) — জাপান এডুকেশন অ্যান্ড ক্যারিয়ার কনসালটেন্সি। জাপানে উচ্চশিক্ষা, SSW ও TITP জব ভিসা এবং মানসম্মত জাপানি ভাষা শিক্ষার পূর্ণাঙ্গ নির্ভরযোগ্য প্রতিষ্ঠান।",
         quick: "প্রয়োজনীয় লিংক",
         contact: "অফিস ও সরাসরি যোগাযোগ",
-        address: "স্কাই ভিউ ট্রেড ভ্যালি (৯ম তলা), ৬৬/১ ভিআইপি রোড, নয়া পল্টন, ঢাকা",
+        address: "স্কাই ভিউ ট্রেড ভ্যালি (৮ম তলা), ৬৬/১ ভিআইপি রোড, নয়া পল্টন, ঢাকা",
         rights: "সর্বস্বত্ব সংরক্ষিত।",
         lmsTitle: "অনলাইন LMS ক্লাসরুম",
         lmsDesc: "ভর্তিকৃত শিক্ষার্থীরা সরাসরি KNLTC ডিজিটাল লার্নিং পোর্টালে লগইন করে লাইভ ক্লাস ও লেকচার শিট এক্সেস করতে পারবেন।",
@@ -66,7 +66,7 @@ export default function Footer() {
         ],
       },
       ja: {
-        desc: "KNLTC（ジャパンゲートウェイ）— 日本留学・就労・在留資格総合支援センター。留学ビザ、特定技能就労、日本語教育のトータルサポート。",
+        desc: "Kurobe Nihongo Language Training Center (KNLTC) — 日本留学・就労・在留資格総合支援センター。留学ビザ、特定技能就労、日本語教育のトータルサポート。",
         quick: "主なリンク",
         contact: "オフィス・お問い合わせ",
         address: "Sky View Trade Valley (8th Floor), 66/1 VIP Road, Naya Paltan, Dhaka",
@@ -218,7 +218,7 @@ export default function Footer() {
         {/* Bottom copyright line */}
         <div className="mt-12 pt-6 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
           <div>
-            © {new Date().getFullYear()} KNLTC (Japan Gateway). {t.rights}
+            © {new Date().getFullYear()} Kurobe Nihongo Language Training Center (KNLTC). {t.rights}
           </div>
           <div className="flex items-center gap-4">
             <Link href="/privacy-policy" className="hover:text-slate-400 transition">

@@ -22,7 +22,7 @@ import { translate } from "@/lib/i18n";
 import { trackLead } from "@/lib/meta-pixel";
 
 type CourseOption = "N5_COURSE" | "N4_COURSE" | "IRODORI_JAPANESE" | "ADVANCED_LEVELS";
-type ClassModeOption = "ONLINE_LIVE" | "OFFLINE_PALTAN" | "OFFLINE_DHANMONDI";
+type ClassModeOption = "ONLINE_LIVE" | "OFFLINE_PALTAN" | "OFFLINE_KHULNA";
 type VisaPurposeOption = "STUDENT_VISA" | "SSW_JOB" | "TITP_INTERN" | "CAREER_SKILLS";
 
 export default function EnrollmentForm() {
@@ -44,8 +44,8 @@ export default function EnrollmentForm() {
         labelClassMode: "Class Delivery Mode *",
         labelPurpose: "Target Visa / Career Purpose *",
         modeOnline: "Online Live Class (Zoom)",
-        modePaltan: "Paltan Head Office (Offline)",
-        modeDhanmondi: "Dhanmondi Branch (Offline)",
+        modePaltan: "Naya Paltan Head Office (Offline)",
+        modeKhulna: "Khulna Branch (Offline)",
         purposeStudent: "Student Visa (Higher Study in Japan)",
         purposeSSW: "SSW Specified Skilled Worker (Job Visa)",
         purposeTITP: "TITP Technical Intern Training",
@@ -111,8 +111,8 @@ export default function EnrollmentForm() {
         labelClassMode: "ক্লাসের মাধ্যম *",
         labelPurpose: "জাপান গমনের উদ্দেশ্য *",
         modeOnline: "অনলাইন লাইভ ক্লাস (Zoom)",
-        modePaltan: "পল্টন হেড অফিস (অফলাইন)",
-        modeDhanmondi: "ধানমন্ডি শাখা (অফলাইন)",
+        modePaltan: "নয়া পল্টন হেড অফিস (অফলাইন)",
+        modeKhulna: "খুলনা শাখা (অফলাইন)",
         purposeStudent: "Student Visa (জাপানে উচ্চশিক্ষা)",
         purposeSSW: "SSW দক্ষ কর্মী (Job Visa)",
         purposeTITP: "TITP টেকনিক্যাল ইন্টার্ন",
@@ -178,8 +178,8 @@ export default function EnrollmentForm() {
         labelClassMode: "受講形式 *",
         labelPurpose: "渡航・学習目的 *",
         modeOnline: "オンラインLIVE講義（Zoom）",
-        modePaltan: "パルタン本部校舎（対面）",
-        modeDhanmondi: "ダンモンディ校舎（対面）",
+        modePaltan: "ナヤ・パルタン本部校舎（対面）",
+        modeKhulna: "クルナ支部校舎（対面）",
         purposeStudent: "留学ビザ（大学・大学院・専門学校）",
         purposeSSW: "特定技能（SSW就労ビザ）",
         purposeTITP: "技能実習生プログラム",
@@ -303,7 +303,7 @@ export default function EnrollmentForm() {
         ? t.modeOnline
         : classMode === "OFFLINE_PALTAN"
         ? t.modePaltan
-        : t.modeDhanmondi;
+        : t.modeKhulna;
 
     const purposeLabel =
       purpose === "STUDENT_VISA"
@@ -496,7 +496,7 @@ export default function EnrollmentForm() {
                 {[
                   { id: "ONLINE_LIVE" as ClassModeOption, label: t.modeOnline },
                   { id: "OFFLINE_PALTAN" as ClassModeOption, label: t.modePaltan },
-                  { id: "OFFLINE_DHANMONDI" as ClassModeOption, label: t.modeDhanmondi },
+                  { id: "OFFLINE_KHULNA" as ClassModeOption, label: t.modeKhulna },
                 ].map((item) => {
                   const isChecked = classMode === item.id;
                   return (

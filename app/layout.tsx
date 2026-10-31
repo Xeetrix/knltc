@@ -12,7 +12,7 @@ import { siteConfig } from "@/lib/site";
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.knltc.com"),
   title: {
-    default: "KNLTC | Japan Gateway Dhaka — Study, Work & Japanese Language",
+    default: "Kurobe Nihongo Language Training Center (KNLTC) | Japan Gateway Dhaka",
     template: "%s | KNLTC Japan Gateway",
   },
   description: siteConfig.description,
@@ -32,7 +32,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   const organizationJsonLd = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: siteConfig.name,
+    name: siteConfig.fullName,
+    alternateName: siteConfig.name,
     description: siteConfig.description,
     email: siteConfig.email,
     telephone: siteConfig.phoneDisplay,

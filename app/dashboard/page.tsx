@@ -6064,37 +6064,53 @@ export default function DashboardPage() {
                                         {isExpense ? <TrendingDown className="h-2.5 w-2.5" /> : <TrendingUp className="h-2.5 w-2.5" />}
                                         <span>
                                           {tx.type === "COURSE_FEE"
-                                            ? tr("ভাষা কোর্স ফি", "Course Fee", "語学コース受講料")
+                                            ? tr("ভাষা কোর্স ফি", "Language Course Tuition Fee", "語学コース受講料")
                                             : tx.type === "SERVICE_CHARGE_COE"
-                                              ? tr("COE সার্ভিস চার্জ", "COE Service Charge", "COE申請手数料")
+                                              ? tr("COE সার্ভিস চার্জ", "COE & Visa Service Charge", "COE申請手数料")
                                               : tx.type === "REGULAR_SERVICE_CHARGE"
-                                                ? tr("রেগুলার সার্ভিস চার্জ", "Regular Service Charge", "レギュラー手続手数料")
-                                                : tx.type === "PREMIUM_PACKAGE" || tx.type === "PREMIUM_PACKAGE_ADVANCE"
-                                                  ? tr("প্রিমিয়াম প্যাকেজ ফি", "Premium Package Fee", "プレミアムパッケージ料")
-                                                  : tx.type === "BOOK_STORE_SALE"
-                                                    ? tr("মিন্না নো নিহোঙ্গো বই সেল", "Bookstore Sale", "教材・テキスト売上")
-                                                    : tx.type === "SCHOOL_COMMISSION_JPY"
-                                                      ? tr("জাপানি স্কুল কমিশন (JPY➔BDT)", "School Commission (JPY➔BDT)", "提携校手数料 (JPY➔BDT)")
-                                                      : tx.type === "EXPENSE_RENT"
-                                                        ? tr("অফিস ভাড়া ও ইউটিলিটি", "Office Rent & Utilities", "オフィス賃料・光熱費")
-                                                        : tx.type === "EXPENSE_PAYROLL"
-                                                          ? tr("শিক্ষক/স্টাফ সম্মানী", "Sensei & Staff Salary", "講師・スタッフ給与")
-                                                          : tx.type === "EXPENSE_MARKETING"
-                                                            ? tr("মেটা অ্যাডস খরচ", "Meta Digital Ads", "Meta広告宣伝費")
-                                                            : tx.type === "EXPENSE_EMBASSY_NOTARY"
-                                                              ? tr("নোটারি ও পররাষ্ট্র মন্ত্রণালয়", "Notary & MOFA Attestation", "公証・外務省認証・郵送費")
-                                                              : tx.type === "EXPENSE_EXAM_FEE"
-                                                                ? tr("JLPT / NAT-TEST ফি", "JLPT / NAT Exam Fee", "JLPT・NAT-TEST受験料")
-                                                                : tx.type === "EXPENSE_B2B_COMMISSION"
-                                                                  ? tr("এজেন্ট কমিশন প্রদান", "B2B Agent Commission", "B2B代理店手数料支払")
-                                                                  : tx.type === "EXPENSE_MISC"
-                                                                    ? tr("বিবিধ অফিস খরচ", "Office Misc & Refreshments", "雑費・消耗品・接待費")
-                                                                    : tx.type}
+                                                ? tr("রেগুলার ভিসা প্রসেসিং ও সার্ভিস চার্জ", "Regular Visa Processing & Service Charge", "レギュラー手続手数料")
+                                                : tx.type === "REGISTRATION_FEE"
+                                                  ? tr("ভর্তি ও ফাইল ওপেনিং ফি", "Registration & File Opening Fee", "登録・ファイル開設費")
+                                                  : tx.type === "PREMIUM_PACKAGE" || tx.type === "PREMIUM_PACKAGE_ADVANCE"
+                                                    ? tr("প্রিমিয়াম প্যাকেজ ফি", "All-Inclusive Premium Package Fee", "プレミアムパッケージ料")
+                                                    : tx.type === "BOOK_STORE_SALE" || tx.type === "BOOK_PURCHASE"
+                                                      ? tr("মিন্না নো নিহোঙ্গো বই ও শিক্ষা উপকরণ", "Bookstore & Study Materials", "教材・テキスト売上")
+                                                      : tx.type === "SCHOOL_COMMISSION_JPY"
+                                                        ? tr("জাপানি স্কুল কমিশন (JPY➔BDT)", "Partner School Commission (JPY➔BDT)", "提携校手数料 (JPY➔BDT)")
+                                                        : tx.type === "EXPENSE_RENT"
+                                                          ? tr("অফিস ভাড়া ও ইউটিলিটি", "Office Rent & Utilities", "オフィス賃料・光熱費")
+                                                          : tx.type === "EXPENSE_PAYROLL"
+                                                            ? tr("শিক্ষক/স্টাফ সম্মানী", "Sensei & Staff Salary", "講師・スタッフ給与")
+                                                            : tx.type === "EXPENSE_MARKETING"
+                                                              ? tr("মেটা অ্যাডস খরচ", "Meta Digital Ads", "Meta広告宣伝費")
+                                                              : tx.type === "EXPENSE_EMBASSY_NOTARY"
+                                                                ? tr("নোটারি ও পররাষ্ট্র মন্ত্রণালয়", "Notary & MOFA Attestation", "公証・外務省認証・郵送費")
+                                                                : tx.type === "EXPENSE_EXAM_FEE"
+                                                                  ? tr("JLPT / NAT-TEST ফি", "JLPT / NAT Exam Fee", "JLPT・NAT-TEST受験料")
+                                                                  : tx.type === "EXPENSE_B2B_COMMISSION"
+                                                                    ? tr("এজেন্ট কমিশন প্রদান", "B2B Agent Commission", "B2B代理店手数料支払")
+                                                                    : tx.type === "EXPENSE_MISC"
+                                                                      ? tr("বিবিধ অফিস খরচ", "Office Misc & Refreshments", "雑費・消耗品・接待費")
+                                                                      : String(tx.type || "").replace(/_/g, " ")}
                                         </span>
                                       </span>
                                     </td>
                                     <td className="px-4 py-3.5">
-                                      <span className="font-medium text-slate-800">{tx.paymentMethod}</span>
+                                      <span className="font-semibold text-slate-800">
+                                        {tx.paymentMethod === "CASH_OFFICE"
+                                          ? tr("নগদ (অফিস কাউন্টার)", "Cash (Office Counter)", "窓口現金")
+                                          : tx.paymentMethod === "BKASH"
+                                            ? "bKash Merchant"
+                                            : tx.paymentMethod === "NAGAD"
+                                              ? "Nagad Merchant"
+                                              : tx.paymentMethod === "BANK_TRANSFER"
+                                                ? tr("ব্যাংক ট্রান্সফার / একাউন্ট", "Bank Transfer / A/C", "銀行振込")
+                                                : tx.paymentMethod === "AAMARPAY"
+                                                  ? "aamarPay Gateway"
+                                                  : tx.paymentMethod === "SSLCOMMERZ"
+                                                    ? "SSLCOMMERZ Gateway"
+                                                    : String(tx.paymentMethod || "").replace(/_/g, " ")}
+                                      </span>
                                       <p className="font-mono text-[10px] text-slate-400">{tx.referenceOrTrx || "N/A"}</p>
                                     </td>
                                     <td className="px-4 py-3.5 text-slate-500">
@@ -6365,7 +6381,7 @@ export default function DashboardPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          const res = disburseAllActivePayroll(currentUser?.name || "Sheikh Baset (MD)");
+                          const res = disburseAllActivePayroll(currentUser?.name || "KNLTC Accounts");
                           setStore({ ...getCmsStore() });
                           if (res.count > 0) {
                             showToast(
@@ -6625,7 +6641,7 @@ export default function DashboardPage() {
                                       <button
                                         type="button"
                                         onClick={() => {
-                                          const tx = disburseStaffPayroll(stf.id, currentUser?.name || "Sheikh Baset (MD)");
+                                          const tx = disburseStaffPayroll(stf.id, currentUser?.name || "KNLTC Accounts");
                                           if (tx) {
                                             setStore({ ...getCmsStore() });
                                             showToast(
@@ -7405,7 +7421,9 @@ export default function DashboardPage() {
               exit={{ opacity: 0, scale: 0.95, y: 12 }}
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl"
+              className={`w-full ${
+                activeModal === "VIEW_RECEIPT" ? "max-w-2xl" : "max-w-lg"
+              } rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl`}
             >
               {/* 1. ADD / EDIT B2B AGENT MODAL */}
               {activeModal === "ADD_B2B_AGENT" && (
@@ -8678,7 +8696,7 @@ export default function DashboardPage() {
                       referenceOrTrx:
                         paymentForm.referenceOrTrx.trim() || `TRX-${Date.now().toString().slice(-6)}`,
                       branch: paymentForm.branch || (activeBranch === "KHULNA-01" ? "KHULNA-01" : "DHK-HQ"),
-                      verifiedBy: currentUser?.name || "Sheikh Baset (MD)",
+                      verifiedBy: currentUser?.name || "KNLTC Accounts",
                       notes: paymentForm.notes,
                       linkedLeadId: paymentForm.linkedLeadId || undefined,
                     });
@@ -8944,7 +8962,7 @@ export default function DashboardPage() {
                       referenceOrTrx:
                         expenseForm.referenceOrTrx.trim() || `EXP-${Date.now().toString().slice(-6)}`,
                       branch: expenseForm.branch,
-                      verifiedBy: currentUser?.name || "Sheikh Baset (MD)",
+                      verifiedBy: currentUser?.name || "KNLTC Accounts",
                       notes: expenseForm.notes,
                     });
                     setStore({ ...getCmsStore() });
@@ -9138,59 +9156,87 @@ export default function DashboardPage() {
                   {/* Printable Receipt Card */}
                   <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 text-slate-900 shadow-sm print:border-0 print:p-0">
                     {/* Header */}
-                    <div className="flex items-start justify-between border-b-2 border-slate-900 pb-4">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <div className="h-8 w-8 rounded-lg bg-[#b91c1c] text-white font-bold flex items-center justify-center text-sm">
-                            KN
-                          </div>
-                          <div>
-                            <h2 className="text-base font-black tracking-tight uppercase">
-                              Kamrul Nippon Language & Training Center (KNLTC)
-                            </h2>
-                            <p className="text-[11px] text-slate-500 font-medium">
-                              {tr(
-                                "সরকারি অনুমোদন ও ট্রেড লাইসেন্স নং: ১৭৭৯২৬ • জাপান স্টাডি ও এসএসডব্লিউ গেটওয়ে",
-                                "Govt Reg & Trade License No: 177926 • Japan Study & SSW Gateway",
-                                "政府公認・貿易ライセンス番号: 177926 • 日本留学・特定技能ゲートウェイ"
-                              )}
-                            </p>
-                          </div>
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 border-b-2 border-slate-900 pb-5">
+                      <div className="flex items-start gap-3.5 min-w-0">
+                        <div className="h-12 w-12 shrink-0 rounded-xl border border-slate-200 bg-white p-1.5 shadow-2xs flex items-center justify-center">
+                          <img
+                            src="/brand/knltc-logo.svg"
+                            alt="KNLTC Logo"
+                            className="h-full w-full object-contain"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <h2 className="text-base sm:text-lg font-extrabold tracking-tight text-slate-950 leading-snug">
+                            Kurobe Nihongo Language Training Center (KNLTC)
+                          </h2>
+                          <p className="text-[11px] text-slate-600 font-medium mt-0.5 leading-relaxed">
+                            {tr(
+                              "স্কাই ভিউ ট্রেড ভ্যালি (৮ম তলা), ৬৬/১ ভিআইপি রোড, নয়া পল্টন, ঢাকা-১০০০",
+                              "Sky View Trade Valley (8th Floor), 66/1 V.I.P Road, Naya Paltan, Dhaka-1000",
+                              "Sky View Trade Valley (8th Floor), 66/1 V.I.P Road, Naya Paltan, Dhaka-1000"
+                            )}
+                          </p>
+                          <p className="text-[11px] text-slate-500 font-medium">
+                            {tr(
+                              "খুলনা শাখা: শিববাড়ি মোড়, খুলনা • হটলাইন: +880 1805 013633 • www.knltc.com",
+                              "Khulna Branch: Shibbari More, Khulna • Hotline: +880 1805 013633 • www.knltc.com",
+                              "クルナ支店: Shibbari More, Khulna • Hotline: +880 1805 013633 • www.knltc.com"
+                            )}
+                          </p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <span className="rounded bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-white uppercase tracking-wider">
+                      <div className="sm:text-right shrink-0 flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 border-t sm:border-t-0 border-slate-100 pt-3 sm:pt-0">
+                        <span className="inline-flex items-center rounded-md bg-slate-900 px-2.5 py-1 text-[10px] font-extrabold text-white uppercase tracking-wider whitespace-nowrap">
                           {tr("মানি রসিদ", "Money Receipt", "領収証")}
                         </span>
-                        <p className="font-mono text-xs font-bold text-slate-900 mt-1">
-                          {selectedTxForReceipt.receiptNo}
-                        </p>
-                        <p className="text-[11px] text-slate-500 font-medium">
-                          {tr("তারিখ", "Date", "発行日")}: {selectedTxForReceipt.date}
-                        </p>
+                        <div className="text-right">
+                          <p className="font-mono text-xs font-bold text-slate-900 whitespace-nowrap">
+                            {selectedTxForReceipt.receiptNo}
+                          </p>
+                          <p className="text-[11px] text-slate-500 font-medium whitespace-nowrap mt-0.5">
+                            {tr("তারিখ", "Date", "発行日")}: {selectedTxForReceipt.date}
+                          </p>
+                        </div>
                       </div>
                     </div>
 
                     {/* Student & Payment Details */}
-                    <div className="mt-5 grid grid-cols-2 gap-4 text-xs">
-                      <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3.5 space-y-1">
-                        <span className="text-[10px] uppercase font-bold text-slate-400">
+                    <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                      <div className="rounded-xl border border-slate-200/80 bg-slate-50/60 p-4 space-y-1">
+                        <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 block">
                           {tr("অর্থ প্রদানকারী (শিক্ষার্থী / ক্লায়েন্ট)", "Received From (Student / Client)", "支払者（受講生・申請者）")}
                         </span>
                         <p className="text-sm font-bold text-slate-900">{selectedTxForReceipt.studentName}</p>
                         {selectedTxForReceipt.studentPhone && (
                           <p className="text-slate-600 font-mono">{tr("মোবাইল", "Mobile", "連絡先")}: {selectedTxForReceipt.studentPhone}</p>
                         )}
-                        <p className="text-slate-500">
-                          {tr("ব্রাঞ্চ", "Branch", "支店")}: {selectedTxForReceipt.branch === "DHK-HQ" ? tr("ঢাকা প্রধান কার্যালয় (ধানমন্ডি)", "Dhaka HQ (Dhanmondi)", "ダッカ本社（Dhanmondi）") : tr("খুলনা শাখা", "Khulna Branch", "クルナ支店")}
+                        <p className="text-slate-600 font-medium">
+                          {tr("ব্রাঞ্চ", "Branch", "支店")}:{" "}
+                          {selectedTxForReceipt.branch === "DHK-HQ"
+                            ? tr("ঢাকা প্রধান কার্যালয় (নয়া পল্টন)", "Dhaka HQ (Naya Paltan)", "ダッカ本社（ナヤ・パルタン）")
+                            : tr("খুলনা শাখা (শিববাড়ি মোড়)", "Khulna Branch (Shibbari More)", "クルナ支店（シッバリ・モール）")}
                         </p>
                       </div>
 
-                      <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3.5 space-y-1">
-                        <span className="text-[10px] uppercase font-bold text-slate-400">
+                      <div className="rounded-xl border border-slate-200/80 bg-slate-50/60 p-4 space-y-1">
+                        <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 block">
                           {tr("পেমেন্ট মাধ্যম / একাউন্ট", "Payment Gateway / Account", "受取口座・決済手段")}
                         </span>
-                        <p className="text-sm font-bold text-slate-900">{selectedTxForReceipt.paymentMethod}</p>
+                        <p className="text-sm font-bold text-slate-900">
+                          {selectedTxForReceipt.paymentMethod === "CASH_OFFICE"
+                            ? tr("নগদ (অফিস কাউন্টার)", "Cash (Office Counter)", "事務所窓口現金")
+                            : selectedTxForReceipt.paymentMethod === "BKASH"
+                              ? "bKash Merchant / Personal"
+                              : selectedTxForReceipt.paymentMethod === "NAGAD"
+                                ? "Nagad Merchant / Personal"
+                                : selectedTxForReceipt.paymentMethod === "BANK_TRANSFER"
+                                  ? tr("ব্যাংক ট্রান্সফার / একাউন্ট", "Bank Transfer / A/C", "銀行振込")
+                                  : selectedTxForReceipt.paymentMethod === "AAMARPAY"
+                                    ? "aamarPay Online Gateway"
+                                    : selectedTxForReceipt.paymentMethod === "SSLCOMMERZ"
+                                      ? "SSLCOMMERZ Online Gateway"
+                                      : String(selectedTxForReceipt.paymentMethod || "").replace(/_/g, " ")}
+                        </p>
                         <p className="font-mono text-slate-600">
                           {tr("রেফারেন্স / Trx", "Trx / Ref", "取引番号 / 照会")}: {selectedTxForReceipt.referenceOrTrx || tr("যাচাইকৃত নগদ", "Verified Cash", "現金受領済")}
                         </p>
@@ -9206,46 +9252,72 @@ export default function DashboardPage() {
                         <thead className="bg-slate-100 font-bold text-slate-700">
                           <tr>
                             <th className="px-4 py-2.5">{tr("সেবা / ফি বিবরণ", "Item / Service Particulars", "受領項目・明細")}</th>
-                            <th className="px-4 py-2.5 text-right">{tr("পরিমাণ (BDT)", "Amount (BDT)", "金額 (BDT)")}</th>
+                            <th className="px-4 py-2.5 text-right whitespace-nowrap">{tr("পরিমাণ (BDT)", "Amount (BDT)", "金額 (BDT)")}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                           <tr>
-                            <td className="px-4 py-3">
+                            <td className="px-4 py-3.5">
                               <p className="font-bold text-slate-900">
                                 {selectedTxForReceipt.type === "SERVICE_CHARGE_COE"
                                   ? tr(
-                                      "জাপান স্টুডেন্ট ভিসা সার্ভিস চার্জ (COE অনুমোদনের পর প্রযোজ্য)",
-                                      "Japan Student Visa Service Charge (Payable strictly AFTER COE Approval)",
-                                      "日本留学ビザ申請手数料（COE交付後のみ請求）"
+                                      "জাপান ভিসা ও COE সার্ভিস চার্জ",
+                                      "Japan Visa & COE Processing Service Charge",
+                                      "日本ビザ・COE申請代行手数料"
                                     )
-                                  : selectedTxForReceipt.type === "COURSE_FEE"
+                                  : selectedTxForReceipt.type === "REGULAR_SERVICE_CHARGE"
                                     ? tr(
-                                        "৩ মাসের নিবিড় জাপানি ভাষা প্রশিক্ষণ কোর্স (N5/N4)",
-                                        "3-Month Intensive Japanese Language Course (N5/N4)",
-                                        "3ヶ月集中日本語講習コース（N5/N4）"
+                                        "রেগুলার ভিসা প্রসেসিং ও সার্ভিস চার্জ",
+                                        "Regular Visa Processing & Service Charge",
+                                        "通常ビザ申請・手続サービス料"
                                       )
-                                    : selectedTxForReceipt.type === "PREMIUM_PACKAGE"
+                                    : selectedTxForReceipt.type === "REGISTRATION_FEE"
                                       ? tr(
-                                          "অল-ইন-ওয়ান জাপান স্টাডি সমন্বিত প্যাকেজ কিস্তি",
-                                          "All-in-One Comprehensive Japan Study Package Installment",
-                                          "日本留学オールインワン包括パッケージ分割納入"
+                                          "শিক্ষার্থী ভর্তি ও ফাইল ওপেনিং ফি",
+                                          "Student Registration & File Opening Fee",
+                                          "受講生登録・申請ファイル開設費"
                                         )
-                                      : selectedTxForReceipt.type}
+                                      : selectedTxForReceipt.type === "COURSE_FEE"
+                                        ? tr(
+                                            "জাপানি ভাষা প্রশিক্ষণ কোর্স ফি (N5 / N4 / Irodori)",
+                                            "Japanese Language Training Course Fee (N5 / N4 / Irodori)",
+                                            "日本語講習コース受講料（N5 / N4 / いろどり）"
+                                          )
+                                        : selectedTxForReceipt.type === "PREMIUM_PACKAGE" ||
+                                            selectedTxForReceipt.type === "PREMIUM_PACKAGE_ADVANCE"
+                                          ? tr(
+                                              "অল-ইন-ওয়ান জাপান স্টাডি সমন্বিত প্যাকেজ কিস্তি",
+                                              "All-in-One Comprehensive Japan Study Package Installment",
+                                              "日本留学オールインワン包括パッケージ分割納入"
+                                            )
+                                          : selectedTxForReceipt.type === "BOOK_STORE_SALE" ||
+                                              selectedTxForReceipt.type === "BOOK_PURCHASE"
+                                            ? tr(
+                                                "জাপানি ভাষা পাঠ্যবই ও শিক্ষা উপকরণ ক্রয়",
+                                                "Japanese Language Books & Study Materials Purchase",
+                                                "日本語教材・テキスト購入代金"
+                                              )
+                                            : selectedTxForReceipt.type === "SCHOOL_COMMISSION_JPY"
+                                              ? tr(
+                                                  "জাপানি পার্টনার প্রতিষ্ঠান কমিশন রেমিট্যান্স",
+                                                  "Japanese Partner Institution Commission Remittance",
+                                                  "日本提携教育機関手数料送金"
+                                                )
+                                              : String(selectedTxForReceipt.type || "").replace(/_/g, " ")}
                               </p>
                               {selectedTxForReceipt.notes && (
                                 <p className="text-[11px] text-slate-500 mt-0.5">{selectedTxForReceipt.notes}</p>
                               )}
                             </td>
-                            <td className="px-4 py-3 text-right font-bold text-slate-900 tabular-nums">
+                            <td className="px-4 py-3.5 text-right font-bold text-slate-900 tabular-nums whitespace-nowrap">
                               ৳{selectedTxForReceipt.amountBdt.toLocaleString()}
                             </td>
                           </tr>
                         </tbody>
                         <tfoot className="bg-slate-50 font-bold border-t border-slate-200">
                           <tr>
-                            <td className="px-4 py-2.5 text-slate-700">{tr("মোট গৃহীত অর্থ", "Total Received Amount", "合計受領金額")}</td>
-                            <td className="px-4 py-2.5 text-right text-emerald-800 text-sm tabular-nums">
+                            <td className="px-4 py-3 text-slate-700">{tr("মোট গৃহীত অর্থ", "Total Received Amount", "合計受領金額")}</td>
+                            <td className="px-4 py-3 text-right text-emerald-800 text-sm tabular-nums whitespace-nowrap">
                               ৳{selectedTxForReceipt.amountBdt.toLocaleString()} BDT
                             </td>
                           </tr>
@@ -9254,17 +9326,22 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Seal & Authorization */}
-                    <div className="mt-8 pt-4 border-t border-slate-200 flex items-center justify-between text-xs">
+                    <div className="mt-8 pt-4 border-t border-slate-200 flex items-center justify-between gap-4 text-xs">
                       <div>
                         <div className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-emerald-800 font-bold">
-                          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                          <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
                           <span>{tr("KNLTC অ্যাকাউন্টস ভেরিফাইড", "KNLTC ACCOUNTS VERIFIED", "KNLTC会計監査認証済")}</span>
                         </div>
                         <p className="text-[10px] text-slate-400 mt-1">{tr("কম্পিউটার জেনারেটেড অফিসিয়াল অডিট রসিদ", "Computer-generated official audit receipt.", "システム自動発行・公式監査証憑")}</p>
                       </div>
-                      <div className="text-right">
-                        <div className="w-36 border-b border-slate-400 pb-1 font-semibold text-slate-800">
-                          {selectedTxForReceipt.verifiedBy || "Sheikh Baset (MD)"}
+                      <div className="text-right shrink-0">
+                        <div className="min-w-40 border-b border-slate-400 pb-1 font-semibold text-slate-800">
+                          {selectedTxForReceipt.verifiedBy &&
+                          !/sheikh\s*baset|shaikh\s*baset|baset|শেখ\s*বাসেত|amir\s*hossain|আমির\s*হোসেন/i.test(
+                            selectedTxForReceipt.verifiedBy
+                          )
+                            ? selectedTxForReceipt.verifiedBy
+                            : "KNLTC Accounts"}
                         </div>
                         <p className="text-[10px] text-slate-400 mt-0.5">{tr("অনুমোদিত স্বাক্ষরকারী", "Authorized Signatory", "代表署名・認印")}</p>
                       </div>

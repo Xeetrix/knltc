@@ -1,6 +1,6 @@
 {
-  "summary":  "Implementation plan for upgrading the Automated Eligibility Engine to evaluate Student Visa, SSW, and TITP tracks dynamically (with a CRM Lead selector and manual calculator), and introducing a Multi-Track Visa Kanban Pipeline with track switcher tabs and dedicated 10-step Student Visa, 10-step SSW, and 9-step TITP stage progressions.",
-  "updatedAt":  "2026-10-29T20:10:04.021189450Z",
+  "summary":  "Implementation plan to set the official full name to Kurobe Nihongo Language Training Center (KNLTC) everywhere, redesign the Official Money Receipt modal with the official logo and clean labels, and scrub all remaining hardcoded dummy names (Sheikh Baset, Shaikh Baset, Amir Hossain), fake Dhanmondi/Chattogram branches, and placeholder license numbers across the application.",
+  "updatedAt":  "2026-10-30T17:15:25.880081559Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

@@ -76,8 +76,8 @@ export async function POST(req: NextRequest) {
           credentials_sent_at: new Date().toISOString(),
           progress_percentage: 5,
           active_batch: `${enrollment.courseTitle} (${deliveryMode} — https://npw.bd/knltc)`,
-          assigned_sensei_id: "stf-02",
-          assigned_sensei_name: "আমির হোসেন (Amir Hossain — Senior Sensei)",
+          assigned_sensei_id: "",
+          assigned_sensei_name: "KNLTC Academic Team (Senior Sensei)",
           created_at: new Date().toISOString(),
         },
       });

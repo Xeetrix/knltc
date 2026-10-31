@@ -1,7 +1,8 @@
 export const siteConfig = {
   name: "KNLTC",
+  fullName: "Kurobe Nihongo Language Training Center (KNLTC)",
   description:
-    "Bangladesh-based Japan recruiting and training agency for language learning, study support, and career placement guidance.",
+    "Kurobe Nihongo Language Training Center (KNLTC) — Bangladesh-based Japan education, language training, and SSW/TITP career placement center.",
   phoneDisplay: "+880 1805 013633",
   phoneHref: "tel:+8801805013633",
   whatsappDisplay: "+8801805013633",
