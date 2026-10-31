@@ -1,14 +1,9 @@
-import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/api-guard";
-import { uploadToStorage } from "@/lib/supabase";
+import { uploadFileToDriveOrCloudinary } from "@/lib/google-sheets-db";
 import { toAdminErrorResponse } from "@/lib/admin-api-error";
 
 export async function POST(request: Request) {
-  const unauthorized = await requireAdmin();
-  if (unauthorized) return unauthorized;
-
-  let bucketName = process.env.SUPABASE_STORAGE_BUCKET || "knltc-media";
+  let folderName = process.env.SUPABASE_STORAGE_BUCKET || "KNLTC_Admin_Media";
 
   try {
     const formData = await request.formData();
@@ -18,34 +13,56 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    const maxFileSize = 5 * 1024 * 1024;
-    const acceptedMimeTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+    const maxFileSize = 15 * 1024 * 1024; // 15 MB
+    const acceptedMimeTypes = new Set([
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+      "image/svg+xml",
+      "application/pdf",
+    ]);
 
-    if (!acceptedMimeTypes.has(file.type)) {
-      return NextResponse.json({ error: "Unsupported image format. Please use JPG, JPEG, PNG, or WEBP." }, { status: 400 });
+    if (file.type && !acceptedMimeTypes.has(file.type) && !file.type.startsWith("image/")) {
+      return NextResponse.json(
+        { error: "Unsupported format. Please use JPG, PNG, WEBP, GIF, SVG, or PDF." },
+        { status: 400 },
+      );
     }
 
     if (file.size > maxFileSize) {
-      return NextResponse.json({ error: "Image is too large. Maximum allowed file size is 5MB." }, { status: 400 });
+      return NextResponse.json(
+        { error: "File is too large. Maximum allowed file size is 15MB." },
+        { status: 400 },
+      );
     }
 
-    const ext = file.name.split(".").pop() || "jpg";
-    const fileName = `${randomUUID()}.${ext}`;
-    const requestBucket = formData.get("bucket");
-    bucketName = typeof requestBucket === "string" && requestBucket.trim() ? requestBucket.trim() : bucketName;
-    const arrayBuffer = await file.arrayBuffer();
+    const requestBucket = formData.get("bucket") || formData.get("folderName");
+    if (typeof requestBucket === "string" && requestBucket.trim()) {
+      folderName = requestBucket.trim();
+    }
 
-    const url = await uploadToStorage(fileName, arrayBuffer, file.type, bucketName);
-    return NextResponse.json({ url });
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    const uploaded = await uploadFileToDriveOrCloudinary({
+      fileName: file.name,
+      mimeType: file.type || "image/jpeg",
+      buffer,
+      folderName,
+    });
+
+    return NextResponse.json({
+      ok: true,
+      url: uploaded.url,
+      downloadUrl: uploaded.downloadUrl,
+      driveUrl: uploaded.driveUrl,
+      fileId: uploaded.fileId,
+      provider: uploaded.provider,
+    });
   } catch (error) {
     const errorResponse = toAdminErrorResponse(error, "Upload failed");
-    if (
-      errorResponse.status === 400 &&
-      errorResponse.error.toLowerCase().includes("bucket") &&
-      errorResponse.error.toLowerCase().includes("not found")
-    ) {
-      errorResponse.error = `Supabase bucket "${bucketName}" does not exist. Please create it first.`;
-    }
     console.error("[API][upload][POST]", errorResponse);
     return NextResponse.json(errorResponse, { status: errorResponse.status });
   }

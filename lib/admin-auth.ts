@@ -241,7 +241,7 @@ export async function verifyAdminCredentials(
         role: "MAIN_ADMIN",
         name: "KNLTC Admin",
         branch: "ALL",
-        allowedTabs: ["overview", "crm", "visa", "lms", "b2b", "finance", "hr", "cms", "store_blog", "users"],
+        allowedTabs: ["overview", "crm", "visa", "lms", "b2b", "finance", "hr", "cms", "store_blog", "media_storage", "users"],
       },
       error: null,
     };

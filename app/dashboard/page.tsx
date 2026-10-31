@@ -136,6 +136,7 @@ import PartnerProfileModal from "@/components/admin/PartnerProfileModal";
 import UserAccessControlPanel from "@/components/admin/UserAccessControlPanel";
 import StudentProfileView from "@/components/admin/StudentProfileView";
 import DriveFileUploadButton from "@/components/admin/DriveFileUploadButton";
+import MediaStorageManager from "@/components/dashboard/MediaStorageManager";
 import type {
   AdminSummary,
   BlogPost,
@@ -441,6 +442,7 @@ export default function DashboardPage() {
           "hr",
           "cms",
           "store_blog",
+          "media_storage",
           "users",
         ].includes(tabParam)
       ) {
@@ -1052,6 +1054,18 @@ export default function DashboardPage() {
       group: language === "bn" ? "কনটেন্ট ও স্টোর" : language === "ja" ? "ストア・CMS" : "Content & Store",
       label: t.tabs.cms,
       icon: Globe2,
+      badge: 0,
+    },
+    {
+      id: "media_storage",
+      group: language === "bn" ? "কনটেন্ট ও স্টোর" : language === "ja" ? "ストア・CMS" : "Content & Store",
+      label:
+        language === "ja"
+          ? "メディア・ストレージ管理"
+          : language === "en"
+            ? "Media & Storage"
+            : "মিডিয়া ও স্টোরেজ",
+      icon: Database,
       badge: 0,
     },
     {
@@ -6748,8 +6762,17 @@ export default function DashboardPage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={async () => {
                         saveCmsStore(store);
+                        try {
+                          await fetch("/api/cms/sync", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ type: "CMS_UPDATE", payload: cms }),
+                          });
+                        } catch {
+                          // fallback already saved locally
+                        }
                         showToast(t.toastSuccess);
                       }}
                       className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-5 py-2.5 text-xs font-semibold text-white hover:bg-emerald-800 transition shadow-2xs shrink-0"
@@ -7017,6 +7040,11 @@ export default function DashboardPage() {
                                 store.websiteCms[0] = cms;
                                 saveCmsStore(store);
                                 setStore({ ...store });
+                                fetch("/api/cms/sync", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ type: "CMS_UPDATE", payload: cms }),
+                                }).catch(() => {});
                                 showToast(circ.isPublished ? t.cms.liveActive : t.cms.draft);
                               }}
                               className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition shrink-0 ${
@@ -7238,91 +7266,16 @@ export default function DashboardPage() {
                   )}
 
                   {storeSubTab === "uploads" && (
-                    <div className="rounded-2xl border border-slate-200/80 bg-white p-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center">
-                          <FileCheck2 className="h-7 w-7 text-emerald-600 mx-auto mb-2" />
-                          <h4 className="text-xs font-bold text-slate-900">
-                            Visa Documents (knltc-documents)
-                          </h4>
-                          <p className="text-[11px] text-slate-400 mt-1 mb-3">
-                            PDF, DOC, Scanned Copies (Max 15MB)
-                          </p>
-                          <label className="cursor-pointer inline-flex items-center gap-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 text-xs font-semibold transition">
-                            <span>Select File</span>
-                            <input
-                              type="file"
-                              className="hidden"
-                              onChange={async (e) => {
-                                const file = e.target.files?.[0];
-                                if (!file) return;
-                                const fd = new FormData();
-                                fd.append("file", file);
-                                fd.append("trackingNo", "DOC-" + Date.now().toString().slice(-4));
-                                fd.append("docType", "verified_doc");
-                                showToast("Uploading document...");
-                                try {
-                                  const res = await fetch("/api/cms/documents", {
-                                    method: "POST",
-                                    body: fd,
-                                  });
-                                  const json = await res.json();
-                                  if (json.ok) {
-                                    showToast("Document uploaded!", json.url);
-                                  } else {
-                                    showToast(json.error || "Upload failed");
-                                  }
-                                } catch {
-                                  showToast("Upload connection error");
-                                }
-                              }}
-                            />
-                          </label>
-                        </div>
-
-                        <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center">
-                          <ShoppingBag className="h-7 w-7 text-[#b91c1c] mx-auto mb-2" />
-                          <h4 className="text-xs font-bold text-slate-900">
-                            Book Covers &amp; Media (knltc-media)
-                          </h4>
-                          <p className="text-[11px] text-slate-400 mt-1 mb-3">
-                            JPG, PNG, WEBP (Max 5MB)
-                          </p>
-                          <label className="cursor-pointer inline-flex items-center gap-1.5 rounded-xl bg-[#b91c1c] hover:bg-red-800 text-white px-4 py-2 text-xs font-semibold transition">
-                            <span>Select Image</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={async (e) => {
-                                const file = e.target.files?.[0];
-                                if (!file) return;
-                                const fd = new FormData();
-                                fd.append("file", file);
-                                fd.append("bucket", "knltc-media");
-                                showToast("Uploading image...");
-                                try {
-                                  const res = await fetch("/api/admin/upload", {
-                                    method: "POST",
-                                    body: fd,
-                                  });
-                                  const json = await res.json();
-                                  if (json.url) {
-                                    showToast("Image uploaded!", json.url);
-                                  } else {
-                                    showToast(json.error || "Upload failed");
-                                  }
-                                } catch {
-                                  showToast("Upload connection error");
-                                }
-                              }}
-                            />
-                          </label>
-                        </div>
-                      </div>
-                    </div>
+                    <MediaStorageManager language={language} onShowToast={showToast} />
                   )}
                 </div>
+              )}
+
+              {/* =========================================================================
+                  MODULE 9B: CENTRALIZED MEDIA LIBRARY & STORAGE MANAGER
+                  ========================================================================= */}
+              {activeTab === "media_storage" && (
+                <MediaStorageManager language={language} onShowToast={showToast} />
               )}
 
               {/* =========================================================================
@@ -9378,8 +9331,14 @@ export default function DashboardPage() {
                       deadline: circularForm.deadline,
                     };
                     cms.jobCirculars.unshift(newCirc);
+                    store.websiteCms[0] = cms;
                     saveCmsStore(store);
                     setStore({ ...store });
+                    fetch("/api/cms/sync", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ type: "CMS_UPDATE", payload: cms }),
+                    }).catch(() => {});
                     setActiveModal(null);
                     showToast(t.toastSuccess);
                   }}

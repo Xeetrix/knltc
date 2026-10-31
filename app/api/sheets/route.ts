@@ -5,8 +5,10 @@ import {
   fetchAllSheetTables,
   fetchSheetTable,
   getGoogleSheetsConfig,
+  getStorageStatusSummary,
   invalidateSheetsCache,
   mutateSheetTable,
+  optimizeAllTablesMedia,
   uploadFileToDriveOrCloudinary,
   type GoogleSheetsTableName,
 } from "@/lib/google-sheets-db";
@@ -16,7 +18,7 @@ import {
  * UNIFIED GOOGLE SHEETS + GOOGLE DRIVE / CLOUDINARY API ROUTE (`/api/sheets`)
  * ============================================================================
  * GET:
- * - `/api/sheets?action=status` -> Connection status, masterSheetUrl, tables
+ * - `/api/sheets?action=status` -> Connection status, masterSheetUrl, tables, storageSummary
  * - `/api/sheets?table=all`     -> All 15 Google Sheets tables
  * - `/api/sheets?table=<name>`  -> Rows for a specific table
  *
@@ -24,7 +26,8 @@ import {
  * - `action: "CREATE" | "INSERT" | "UPDATE" | "UPSERT" | "DELETE" | "UPSERT_CMS"`
  * - `action: "BULK_SYNC"`       -> Push full MasterKnlTcStore & bookstore tables to Google Sheets
  * - `action: "REFRESH_CACHE"`   -> Revalidate Next.js 15 cache tags (`knltc-db`)
- * - `action: "UPLOAD_FILE_TO_DRIVE"` -> Upload base64 file/image to Google Drive / Cloudinary
+ * - `action: "UPLOAD_FILE_TO_DRIVE"` -> Upload base64 file/image to Google Drive / Cloudinary / Persistent Disk
+ * - `action: "OPTIMIZE_MEDIA_STORAGE"` -> Offload inline base64 strings across all 15 tables
  * ============================================================================
  */
 export async function GET(request: Request) {
@@ -44,6 +47,7 @@ export async function GET(request: Request) {
         masterSheetUrl: config.masterSheetUrl,
         webAppConfigured: config.isConfigured,
         cloudinaryConfigured: Boolean(config.cloudinaryCloudName && config.cloudinaryUploadPreset),
+        storageSummary: getStorageStatusSummary(),
         tables: GOOGLE_SHEETS_TABLES,
         timestamp: new Date().toISOString(),
       });
@@ -100,6 +104,11 @@ export async function POST(request: Request) {
         revalidated: true,
         timestamp: new Date().toISOString(),
       });
+    }
+
+    if (action === "OPTIMIZE_MEDIA_STORAGE") {
+      const result = await optimizeAllTablesMedia();
+      return NextResponse.json(result);
     }
 
     if (action === "UPLOAD_FILE_TO_DRIVE") {

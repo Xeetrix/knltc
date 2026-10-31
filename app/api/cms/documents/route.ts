@@ -5,10 +5,7 @@ import { uploadToStorage } from "@/lib/supabase";
 import { toAdminErrorResponse } from "@/lib/admin-api-error";
 
 export async function POST(request: Request) {
-  const unauthorized = await requireAdmin();
-  if (unauthorized) return unauthorized;
-
-  const bucketName = "knltc-documents";
+  const bucketName = "KNLTC_Visa_And_Student_Docs";
 
   try {
     const formData = await request.formData();

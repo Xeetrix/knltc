@@ -40,8 +40,8 @@ const initialForm: ProductInput = {
   sku: "",
 };
 
-const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const ACCEPTED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif", "image/svg+xml"];
+const MAX_FILE_SIZE = 15 * 1024 * 1024;
 
 export default function ProductManager({ initialProducts, categories }: { initialProducts: Product[]; categories: Category[] }) {
   const { language } = useLanguage();
@@ -76,12 +76,12 @@ export default function ProductManager({ initialProducts, categories }: { initia
   };
 
   const validateImage = (file: File) => {
-    if (!ACCEPTED_TYPES.includes(file.type)) {
-      return "Unsupported image format. Please use JPG, JPEG, PNG, or WEBP.";
+    if (!ACCEPTED_TYPES.includes(file.type) && !file.type.startsWith("image/")) {
+      return "Unsupported image format. Please use JPG, JPEG, PNG, WEBP, GIF, or SVG.";
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      return "Image is too large. Maximum allowed file size is 5MB.";
+      return "Image is too large. Maximum allowed file size is 15MB.";
     }
 
     return null;
@@ -105,7 +105,10 @@ export default function ProductManager({ initialProducts, categories }: { initia
 
     setIsUploadingImage(true);
     try {
-      const res = await uploadMediaImage(selectedImage, { bucket: "knltc-media", maxDimension: 1000 });
+      const res = await uploadMediaImage(selectedImage, {
+        folderName: "KNLTC_Bookstore_Products",
+        maxDimension: 1000,
+      });
       return res.url;
     } finally {
       setIsUploadingImage(false);
@@ -163,7 +166,7 @@ export default function ProductManager({ initialProducts, categories }: { initia
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       console.error("[Admin][products][delete]", data);
-const msg = data.error || "Failed to delete product";
+      const msg = data.error || "Failed to delete product";
       setError(msg);
       notify("error", "Delete failed", msg);
       setDeleting(false);
@@ -217,22 +220,35 @@ const msg = data.error || "Failed to delete product";
           onDragLeave={() => setIsDragActive(false)}
           onDrop={onDrop}
         >
-          <p className="text-sm font-medium">Product image</p>
-          <p className="text-xs text-muted-foreground">Choose image or drag and drop (JPG, JPEG, PNG, WEBP. Max 5MB)</p>
+          <p className="text-sm font-medium">Product Cover Image (File Upload or Media URL)</p>
+          <p className="text-xs text-muted-foreground">Choose image, drag & drop (JPG, PNG, WEBP up to 15MB), or paste a URL from Media Library</p>
           <input
             ref={fileInputRef}
             className="hidden"
             type="file"
-            accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+            accept="image/*"
             onChange={(event) => handleImageSelection(event.target.files?.[0] ?? null)}
           />
           <div className="flex flex-wrap items-center gap-2">
-            <button type="button" onClick={() => fileInputRef.current?.click()} className="rounded-md border px-3 py-2 text-sm">
-              Choose image
+            <button type="button" onClick={() => fileInputRef.current?.click()} className="rounded-md border bg-slate-50 hover:bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700">
+              Choose Image File
             </button>
-            {selectedImage || previewUrl ? (
-              <button type="button" onClick={clearImageState} className="rounded-md border px-3 py-2 text-sm text-red-600">
-                Remove image
+            <input
+              className="flex-1 min-w-[220px] rounded-md border px-3 py-1.5 text-xs"
+              placeholder="Or paste image URL (/api/media/file/... or https://...)"
+              value={form.featured_image}
+              onChange={(e) => setForm({ ...form, featured_image: e.target.value })}
+            />
+            {selectedImage || previewUrl || form.featured_image ? (
+              <button
+                type="button"
+                onClick={() => {
+                  clearImageState();
+                  setForm((prev) => ({ ...prev, featured_image: "" }));
+                }}
+                className="rounded-md border px-3 py-1.5 text-xs font-semibold text-red-600"
+              >
+                Clear
               </button>
             ) : null}
           </div>
@@ -245,7 +261,7 @@ const msg = data.error || "Failed to delete product";
           ) : null}
 
           {selectedImage ? <p className="text-xs text-muted-foreground">Selected: {selectedImage.name}</p> : null}
-          {isUploadingImage ? <p className="text-sm text-muted-foreground">Uploading image...</p> : null}
+          {isUploadingImage ? <p className="text-sm text-muted-foreground">Uploading image to persistent vault...</p> : null}
         </div>
 
         <input className="rounded-md border px-3 py-2 md:col-span-2" placeholder="Gallery URLs (comma separated)" value={form.gallery} onChange={(e) => setForm({ ...form, gallery: e.target.value })} />

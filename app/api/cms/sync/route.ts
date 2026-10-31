@@ -2,12 +2,21 @@ import { NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
 import { selectRows, upsertRow, insertRow, deleteRow } from "@/lib/supabase";
-import { bulkSyncMasterStoreToSheets, purgeFallbackTables } from "@/lib/google-sheets-db";
+import {
+  bulkSyncMasterStoreToSheets,
+  getPersistentDataDir,
+  offloadEmbeddedBase64Strings,
+  purgeFallbackTables,
+} from "@/lib/google-sheets-db";
 import { getCmsStore, type MasterKnlTcStore } from "@/lib/knltc-cms-store";
 
 export const dynamic = "force-dynamic";
 
-const SNAPSHOT_FILE = path.join("/tmp", "knltc-cms-server-snapshot-v3.json");
+function getSnapshotFilePath(): string {
+  return path.join(getPersistentDataDir(), "knltc-cms-server-snapshot-v4.json");
+}
+
+const LEGACY_TMP_SNAPSHOT = path.join("/tmp", "knltc-cms-server-snapshot-v3.json");
 
 const globalForServerSync = globalThis as unknown as {
   __knltc_server_snapshot?: MasterKnlTcStore;
@@ -17,28 +26,34 @@ async function readServerSnapshot(): Promise<MasterKnlTcStore> {
   if (globalForServerSync.__knltc_server_snapshot) {
     return globalForServerSync.__knltc_server_snapshot;
   }
-  try {
-    const raw = await fs.readFile(SNAPSHOT_FILE, "utf-8");
-    const parsed = JSON.parse(raw) as MasterKnlTcStore;
-    if (parsed && Array.isArray(parsed.crmLeads)) {
-      globalForServerSync.__knltc_server_snapshot = parsed;
-      return parsed;
+  const primaryPath = getSnapshotFilePath();
+  for (const candidatePath of [primaryPath, LEGACY_TMP_SNAPSHOT]) {
+    try {
+      const raw = await fs.readFile(candidatePath, "utf-8");
+      const parsed = JSON.parse(raw) as MasterKnlTcStore;
+      if (parsed && Array.isArray(parsed.crmLeads)) {
+        const cleaned = offloadEmbeddedBase64Strings(parsed, "KNLTC_Snapshot", "snapshot").value;
+        globalForServerSync.__knltc_server_snapshot = cleaned;
+        return cleaned;
+      }
+    } catch {
+      // Try next candidate
     }
-  } catch {
-    // Snapshot file does not exist yet; initialize from default store
   }
   const initial = getCmsStore();
   globalForServerSync.__knltc_server_snapshot = initial;
   return initial;
 }
 
-async function writeServerSnapshot(store: MasterKnlTcStore): Promise<void> {
-  globalForServerSync.__knltc_server_snapshot = store;
+async function writeServerSnapshot(store: MasterKnlTcStore): Promise<MasterKnlTcStore> {
+  const cleaned = offloadEmbeddedBase64Strings(store, "KNLTC_Snapshot", "snapshot").value;
+  globalForServerSync.__knltc_server_snapshot = cleaned;
   try {
-    await fs.writeFile(SNAPSHOT_FILE, JSON.stringify(store), "utf-8");
+    await fs.writeFile(getSnapshotFilePath(), JSON.stringify(cleaned), "utf-8");
   } catch {
     // Ignore file write errors in read-only environments
   }
+  return cleaned;
 }
 
 export async function GET() {
@@ -151,9 +166,13 @@ export async function POST(request: Request) {
     }
 
     if (type === "FULL_STORE_SYNC" && fullStore) {
-      await writeServerSnapshot(fullStore);
-      await bulkSyncMasterStoreToSheets(fullStore, false);
-      return NextResponse.json({ ok: true, message: "Full store synced to Google Sheets" });
+      const cleanedStore = await writeServerSnapshot(fullStore);
+      await bulkSyncMasterStoreToSheets(cleanedStore, false);
+      return NextResponse.json({
+        ok: true,
+        message: "Full store synced to Google Sheets & Persistent Disk",
+        store: cleanedStore,
+      });
     }
 
     if ((type as string) === "PURGE_ALL_DUMMY" || entity === "PURGE_ALL_DUMMY") {
@@ -175,30 +194,41 @@ export async function POST(request: Request) {
     }
 
     if (type === "CMS_UPDATE" && payload) {
-      snapshot.websiteCms = [payload];
+      const cleanedCms = offloadEmbeddedBase64Strings(payload, "KNLTC_Website_CMS", "cms").value;
+      snapshot.websiteCms = [cleanedCms];
       await writeServerSnapshot(snapshot);
       await upsertRow(
         "knltc_website_cms",
         {
           id: "cms-master-01",
           section_key: "master_cms",
-          data: payload,
+          data: cleanedCms,
           updated_at: new Date().toISOString(),
         },
         "section_key",
       );
-      return NextResponse.json({ ok: true, message: "CMS updated in Google Sheets" });
+      return NextResponse.json({
+        ok: true,
+        message: "CMS updated in Google Sheets & Persistent Disk",
+        data: cleanedCms,
+      });
     }
 
     if (entity && payload) {
-      if (type === "DELETE" && payload.id) {
-        await deleteRow(entity, String(payload.id));
-        return NextResponse.json({ ok: true, deletedId: payload.id });
+      const cleanedPayload = offloadEmbeddedBase64Strings(
+        payload,
+        `KNLTC_${entity}`,
+        entity,
+      ).value;
+
+      if (type === "DELETE" && cleanedPayload.id) {
+        await deleteRow(entity, String(cleanedPayload.id));
+        return NextResponse.json({ ok: true, deletedId: cleanedPayload.id });
       } else if (type === "UPSERT") {
-        const saved = await upsertRow(entity, payload);
+        const saved = await upsertRow(entity, cleanedPayload);
         return NextResponse.json({ ok: true, data: saved });
       } else {
-        const saved = await insertRow(entity, payload);
+        const saved = await insertRow(entity, cleanedPayload);
         return NextResponse.json({ ok: true, data: saved });
       }
     }

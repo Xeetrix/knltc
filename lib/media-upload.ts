@@ -3,9 +3,9 @@
  *
  * Provides:
  * 1. Automatic client-side canvas compression for images (logos, avatars, brochures, covers)
- * 2. 100% Free Upload to Google Drive (`KNLTC_Uploads_And_Visa_Docs`) or Cloudinary via `/api/sheets`
- * 3. Graceful offline/fallback: if remote upload is not configured yet, returns an ultra-compact
- *    compressed data URL so user edits, logos, and documents are 100% preserved.
+ * 2. Hybrid Upload to Google Drive (`KNLTC_Uploads_And_Visa_Docs`) + Persistent Server Storage via `/api/media`
+ * 3. Returns short, permanent `/api/media/file/<id>/<filename>` URLs so Google Sheets cells
+ *    never exceed the 50,000-character limit and browser `localStorage` never overflows!
  */
 
 export interface UploadOptions {
@@ -20,8 +20,44 @@ export interface UploadOptions {
 export interface UploadResult {
   url: string;
   downloadUrl?: string;
+  driveUrl?: string;
+  fileId?: string;
   fileName?: string;
-  source: "google-drive" | "cloudinary" | "supabase-storage" | "compressed-data-url";
+  source: "google-drive" | "cloudinary" | "persistent-disk" | "supabase-storage" | "compressed-data-url";
+}
+
+export interface MediaVaultClientItem {
+  id: string;
+  name: string;
+  safeFileName: string;
+  folderName: string;
+  mimeType: string;
+  size: number;
+  url: string;
+  downloadUrl: string;
+  driveUrl?: string;
+  driveFileId?: string;
+  provider: "google-drive" | "cloudinary" | "persistent-disk";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StorageStatusSummary {
+  ok: boolean;
+  googleSheetsConnected: boolean;
+  googleDriveConnected: boolean;
+  cloudinaryConnected: boolean;
+  persistentDiskActive: boolean;
+  persistentDir: string;
+  totalFiles: number;
+  totalBytes: number;
+  imageCount: number;
+  pdfCount: number;
+  driveSyncedCount: number;
+  folderCounts: Record<string, number>;
+  inlineBase64Count: number;
+  maxCellLength: number;
+  sheetsCellHealthOk: boolean;
 }
 
 function fileToBase64DataUrl(file: File | Blob): Promise<string> {
@@ -38,7 +74,7 @@ function fileToBase64DataUrl(file: File | Blob): Promise<string> {
  */
 export async function compressImageToDataUrl(
   file: File,
-  maxDimension: number = 800,
+  maxDimension: number = 960,
   quality: number = 0.85,
 ): Promise<{ dataUrl: string; blob: Blob }> {
   return new Promise((resolve, reject) => {
@@ -95,7 +131,7 @@ export async function compressImageToDataUrl(
 }
 
 /**
- * Upload an image (logo, avatar, product photo, blog cover) to Google Drive / Cloudinary via `/api/sheets`.
+ * Upload an image (logo, avatar, product photo, blog cover) to `/api/media` (Google Drive + Persistent Disk).
  */
 export async function uploadMediaImage(
   file: File,
@@ -105,13 +141,13 @@ export async function uploadMediaImage(
     typeof rawOptions === "string"
       ? { bucket: rawOptions, folderName: rawOptions }
       : rawOptions;
-  const maxDim = options?.maxDimension || 800;
+  const maxDim = options?.maxDimension || 960;
   const quality = options?.quality || 0.85;
   const folderName = options?.folderName || options?.bucket || "KNLTC_Images";
 
   let compressed: { dataUrl: string; blob: Blob } | null = null;
   try {
-    if (file.type.startsWith("image/")) {
+    if (file.type.startsWith("image/") && file.type !== "image/svg+xml" && file.type !== "image/gif") {
       compressed = await compressImageToDataUrl(file, maxDim, quality);
     }
   } catch (err) {
@@ -119,16 +155,17 @@ export async function uploadMediaImage(
   }
 
   const base64Payload = compressed?.dataUrl || (await fileToBase64DataUrl(file));
+  const mimeType = compressed?.blob?.type || file.type || "image/jpeg";
 
-  // Upload to Google Drive / Cloudinary via `/api/sheets`
+  // 1. Primary upload via `/api/media` (Persistent Disk + Google Drive + Cloudinary)
   try {
-    const res = await fetch("/api/sheets", {
+    const res = await fetch("/api/media", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        action: "UPLOAD_FILE_TO_DRIVE",
+        action: "UPLOAD",
         fileName: file.name,
-        mimeType: compressed?.blob?.type || file.type || "image/jpeg",
+        mimeType,
         base64Data: base64Payload,
         folderName,
       }),
@@ -140,13 +177,46 @@ export async function uploadMediaImage(
         return {
           url: data.url,
           downloadUrl: data.downloadUrl || data.url,
+          driveUrl: data.driveUrl,
+          fileId: data.fileId,
           fileName: file.name,
-          source: data.provider === "cloudinary" ? "cloudinary" : "google-drive",
+          source: data.provider || "persistent-disk",
         };
       }
     }
   } catch (err) {
-    console.warn("[MediaUpload] Google Drive / Cloudinary upload failed, using local compressed store:", err);
+    console.warn("[MediaUpload] /api/media upload error, trying /api/sheets:", err);
+  }
+
+  // 2. Secondary fallback via `/api/sheets`
+  try {
+    const res = await fetch("/api/sheets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "UPLOAD_FILE_TO_DRIVE",
+        fileName: file.name,
+        mimeType,
+        base64Data: base64Payload,
+        folderName,
+      }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.url) {
+        return {
+          url: data.url,
+          downloadUrl: data.downloadUrl || data.url,
+          driveUrl: data.driveUrl,
+          fileId: data.fileId,
+          fileName: file.name,
+          source: data.provider || "google-drive",
+        };
+      }
+    }
+  } catch (err) {
+    console.warn("[MediaUpload] /api/sheets upload failed:", err);
   }
 
   return {
@@ -169,17 +239,47 @@ export async function uploadDocumentFile(
       ? { bucket: rawOptions, folderName: rawOptions }
       : rawOptions;
   const trackingNo = options?.trackingNo || "knltc-doc";
-  const docType = options?.docType || "visa_document";
-  const folderName = options?.folderName || "KNLTC_Visa_And_Student_Docs";
+  const docType = options?.docType || "document";
+  const folderName = options?.folderName || options?.bucket || "KNLTC_Visa_And_Student_Docs";
 
   if (file.type.startsWith("image/")) {
     return uploadMediaImage(file, { ...options, folderName });
   }
 
+  const cleanFileName = `${trackingNo}_${docType}_${file.name}`;
+
+  // 1. Primary multipart upload via `/api/media` for binary PDFs/docs
+  try {
+    const formData = new FormData();
+    const renamedFile = new File([file], cleanFileName, { type: file.type || "application/pdf" });
+    formData.append("file", renamedFile);
+    formData.append("folderName", folderName);
+
+    const res = await fetch("/api/media", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.url) {
+        return {
+          url: data.url,
+          downloadUrl: data.downloadUrl || data.url,
+          driveUrl: data.driveUrl,
+          fileId: data.fileId,
+          fileName: cleanFileName,
+          source: data.provider || "persistent-disk",
+        };
+      }
+    }
+  } catch (err) {
+    console.warn("[DocUpload] Multipart /api/media upload error, trying JSON fallback:", err);
+  }
+
+  // 2. Secondary JSON upload via `/api/sheets`
   try {
     const base64Data = await fileToBase64DataUrl(file);
-    const cleanFileName = `${trackingNo}_${docType}_${file.name}`;
-
     const res = await fetch("/api/sheets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -198,8 +298,10 @@ export async function uploadDocumentFile(
         return {
           url: data.url,
           downloadUrl: data.downloadUrl || data.url,
+          driveUrl: data.driveUrl,
+          fileId: data.fileId,
           fileName: cleanFileName,
-          source: "google-drive",
+          source: data.provider || "google-drive",
         };
       }
     }
@@ -214,4 +316,68 @@ export async function uploadDocumentFile(
     fileName: file.name,
     source: "compressed-data-url",
   };
+}
+
+/**
+ * Client helpers for the Dashboard Media Library & Storage Status Manager.
+ */
+export async function fetchMediaLibrary(params?: {
+  folder?: string;
+  type?: "ALL" | "IMAGE" | "PDF" | "OTHER";
+  search?: string;
+}): Promise<{ items: MediaVaultClientItem[]; summary: StorageStatusSummary | null }> {
+  try {
+    const qs = new URLSearchParams();
+    if (params?.folder) qs.set("folder", params.folder);
+    if (params?.type) qs.set("type", params.type);
+    if (params?.search) qs.set("search", params.search);
+
+    const res = await fetch(`/api/media?${qs.toString()}`, { cache: "no-store" });
+    if (!res.ok) return { items: [], summary: null };
+    const data = await res.json();
+    return {
+      items: Array.isArray(data.items) ? data.items : [],
+      summary: data.summary || null,
+    };
+  } catch {
+    return { items: [], summary: null };
+  }
+}
+
+export async function deleteMediaVaultItem(id: string): Promise<{
+  ok: boolean;
+  items?: MediaVaultClientItem[];
+  summary?: StorageStatusSummary;
+}> {
+  try {
+    const res = await fetch("/api/media", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "DELETE", id }),
+    });
+    if (!res.ok) return { ok: false };
+    return await res.json();
+  } catch {
+    return { ok: false };
+  }
+}
+
+export async function optimizeMediaStorage(): Promise<{
+  ok: boolean;
+  optimizedCount: number;
+  freedBytes: number;
+  items?: MediaVaultClientItem[];
+  summary?: StorageStatusSummary;
+}> {
+  try {
+    const res = await fetch("/api/media", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "OPTIMIZE_ALL" }),
+    });
+    if (!res.ok) return { ok: false, optimizedCount: 0, freedBytes: 0 };
+    return await res.json();
+  } catch {
+    return { ok: false, optimizedCount: 0, freedBytes: 0 };
+  }
 }

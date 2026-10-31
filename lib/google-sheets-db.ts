@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import path from "node:path";
+import crypto from "node:crypto";
 import { revalidateTag } from "next/cache";
 import {
   getCmsStore,
@@ -7,14 +10,14 @@ import {
 
 /**
  * ============================================================================
- * KNLTC GOOGLE SHEETS + GOOGLE DRIVE / CLOUDINARY UNIFIED ADAPTER
+ * KNLTC GOOGLE SHEETS + GOOGLE DRIVE + PERSISTENT SERVER STORAGE ADAPTER
  * ============================================================================
- * Replaces Supabase across the entire Next.js 15 application.
  * - Supports all 15 Google Sheets tabs (`GOOGLE_SHEETS_TABLES`)
- * - Uses Next.js `fetch` with `next: { tags: ['knltc-db', tableName], revalidate: 60 }`
- * - Automatically invalidates cache via `revalidateTag('knltc-db')` on mutations
- * - Provides 100% Zero-Crash In-Memory + Seed Fallback when `GOOGLE_SHEETS_WEB_APP_URL`
- *   is not configured yet, ensuring `npm run build` and preview always succeed.
+ * - Persists all tables & uploaded media files to `.data/` on disk (with `/tmp` fallback)
+ *   so page refreshes and server restarts NEVER lose data or uploaded files.
+ * - Automatically offloads embedded `data:<mime>;base64,...` strings into short
+ *   `/api/media/file/<id>/<filename>` URLs so Google Sheets cells never exceed
+ *   the 50,000-character limit and browser `localStorage` never overflows.
  * ============================================================================
  */
 
@@ -37,6 +40,22 @@ export const GOOGLE_SHEETS_TABLES = [
 ] as const;
 
 export type GoogleSheetsTableName = (typeof GOOGLE_SHEETS_TABLES)[number];
+
+export interface MediaVaultItem {
+  id: string;
+  name: string;
+  safeFileName: string;
+  folderName: string;
+  mimeType: string;
+  size: number;
+  url: string;
+  downloadUrl: string;
+  driveUrl?: string;
+  driveFileId?: string;
+  provider: "google-drive" | "cloudinary" | "persistent-disk";
+  createdAt: string;
+  updatedAt: string;
+}
 
 export function getGoogleSheetsConfig() {
   const webAppUrl = (
@@ -70,8 +89,322 @@ export function getGoogleSheetsConfig() {
 
 /**
  * ============================================================================
- * SERVER-SIDE IN-MEMORY FALLBACK STORE (Pre-seeded with realistic KNLTC data)
- * Used seamlessly when GOOGLE_SHEETS_WEB_APP_URL is not configured or unreachable
+ * PERSISTENT DISK STORAGE DIRECTORY & MEDIA VAULT ENGINE
+ * ============================================================================
+ */
+let cachedDataDir: string | null = null;
+
+export function getPersistentDataDir(): string {
+  if (cachedDataDir) return cachedDataDir;
+  const primaryDir = path.join(process.cwd(), ".data");
+  try {
+    fs.mkdirSync(path.join(primaryDir, "media-files"), { recursive: true });
+    cachedDataDir = primaryDir;
+    return primaryDir;
+  } catch {
+    const fallbackDir = path.join("/tmp", "knltc-persistent-data");
+    try {
+      fs.mkdirSync(path.join(fallbackDir, "media-files"), { recursive: true });
+    } catch {
+      // Ignore if already exists
+    }
+    cachedDataDir = fallbackDir;
+    return fallbackDir;
+  }
+}
+
+function getTablesMirrorFilePath(): string {
+  return path.join(getPersistentDataDir(), "sheets-db-mirror.json");
+}
+
+function getMediaIndexFilePath(): string {
+  return path.join(getPersistentDataDir(), "media-index.json");
+}
+
+function getMediaBinaryFilePath(fileId: string): string {
+  const cleanId = fileId.replace(/[^a-zA-Z0-9_-]/g, "");
+  return path.join(getPersistentDataDir(), "media-files", cleanId);
+}
+
+function sanitizeFileName(rawName: string, mimeType = "application/octet-stream"): string {
+  const trimmed = String(rawName || "file").trim();
+  const cleaned = trimmed
+    .replace(/[^a-zA-Z0-9._-]/g, "_")
+    .replace(/_+/g, "_")
+    .slice(0, 80);
+
+  if (cleaned.includes(".")) return cleaned;
+
+  const extMap: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/jpg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif",
+    "image/svg+xml": "svg",
+    "application/pdf": "pdf",
+    "application/msword": "doc",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+  };
+  const ext = extMap[mimeType.toLowerCase()] || "bin";
+  return `${cleaned || "knltc_file"}.${ext}`;
+}
+
+const globalForSheetsFallback = globalThis as unknown as {
+  knltcFallbackTables?: Record<GoogleSheetsTableName, Record<string, any>[]>;
+  knltcUploadedMedia?: MediaVaultItem[];
+  knltcDiskLoaded?: boolean;
+};
+
+function loadMediaIndexFromDisk(): MediaVaultItem[] {
+  try {
+    const file = getMediaIndexFilePath();
+    if (fs.existsSync(file)) {
+      const raw = fs.readFileSync(file, "utf-8");
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.warn("[GoogleSheetsDB] Failed to read media-index.json:", err);
+  }
+  return [];
+}
+
+function saveMediaIndexToDisk(items: MediaVaultItem[]): void {
+  try {
+    const file = getMediaIndexFilePath();
+    fs.writeFileSync(file, JSON.stringify(items, null, 2), "utf-8");
+  } catch (err) {
+    console.warn("[GoogleSheetsDB] Failed to write media-index.json:", err);
+  }
+}
+
+export function getUploadedMediaList(filters?: {
+  folder?: string;
+  type?: "ALL" | "IMAGE" | "PDF" | "OTHER";
+  search?: string;
+}): MediaVaultItem[] {
+  if (!globalForSheetsFallback.knltcUploadedMedia) {
+    globalForSheetsFallback.knltcUploadedMedia = loadMediaIndexFromDisk();
+  }
+  let list = globalForSheetsFallback.knltcUploadedMedia;
+
+  if (!filters) return list;
+
+  if (filters.folder && filters.folder !== "ALL") {
+    list = list.filter((item) => item.folderName === filters.folder);
+  }
+  if (filters.type && filters.type !== "ALL") {
+    if (filters.type === "IMAGE") {
+      list = list.filter((item) => item.mimeType.startsWith("image/"));
+    } else if (filters.type === "PDF") {
+      list = list.filter((item) => item.mimeType === "application/pdf" || item.name.toLowerCase().endsWith(".pdf"));
+    } else {
+      list = list.filter(
+        (item) => !item.mimeType.startsWith("image/") && item.mimeType !== "application/pdf",
+      );
+    }
+  }
+  if (filters.search && filters.search.trim()) {
+    const q = filters.search.trim().toLowerCase();
+    list = list.filter(
+      (item) =>
+        item.name.toLowerCase().includes(q) ||
+        item.folderName.toLowerCase().includes(q) ||
+        item.id.toLowerCase().includes(q),
+    );
+  }
+  return list;
+}
+
+export function saveBinaryToMediaVault(options: {
+  fileName: string;
+  mimeType: string;
+  buffer: Buffer;
+  folderName?: string;
+  customId?: string;
+  driveUrl?: string;
+  driveFileId?: string;
+  cloudinaryUrl?: string;
+  provider?: "google-drive" | "cloudinary" | "persistent-disk";
+}): MediaVaultItem {
+  const list = getUploadedMediaList();
+  const hash = crypto.createHash("sha1").update(options.buffer).digest("hex").slice(0, 16);
+  const fileId = options.customId || `med-${hash}`;
+  const safeFileName = sanitizeFileName(options.fileName, options.mimeType);
+  const folderName = options.folderName || "KNLTC_General_Uploads";
+  const nowIso = new Date().toISOString();
+
+  try {
+    const binPath = getMediaBinaryFilePath(fileId);
+    if (!fs.existsSync(binPath)) {
+      fs.writeFileSync(binPath, options.buffer);
+    }
+  } catch (err) {
+    console.warn("[GoogleSheetsDB] Failed to write media binary:", err);
+  }
+
+  const localServeUrl = `/api/media/file/${fileId}/${encodeURIComponent(safeFileName)}`;
+  const primaryUrl = options.cloudinaryUrl || localServeUrl;
+  const downloadUrl = `${localServeUrl}?download=1`;
+
+  const existingIdx = list.findIndex((m) => m.id === fileId);
+  const item: MediaVaultItem = {
+    id: fileId,
+    name: options.fileName || safeFileName,
+    safeFileName,
+    folderName,
+    mimeType: options.mimeType || "application/octet-stream",
+    size: options.buffer.byteLength,
+    url: primaryUrl,
+    downloadUrl,
+    driveUrl: options.driveUrl || ( existingIdx >= 0 ? list[existingIdx].driveUrl : undefined ),
+    driveFileId: options.driveFileId || ( existingIdx >= 0 ? list[existingIdx].driveFileId : undefined ),
+    provider:
+      options.provider ||
+      (options.cloudinaryUrl
+        ? "cloudinary"
+        : options.driveUrl
+          ? "google-drive"
+          : existingIdx >= 0
+            ? list[existingIdx].provider
+            : "persistent-disk"),
+    createdAt: existingIdx >= 0 ? list[existingIdx].createdAt : nowIso,
+    updatedAt: nowIso,
+  };
+
+  if (existingIdx >= 0) {
+    list[existingIdx] = item;
+  } else {
+    list.unshift(item);
+  }
+
+  saveMediaIndexToDisk(list);
+  return item;
+}
+
+export function getMediaFileById(fileId: string): {
+  meta: MediaVaultItem | null;
+  buffer: Buffer | null;
+} {
+  const cleanId = fileId.replace(/[^a-zA-Z0-9_-]/g, "");
+  const list = getUploadedMediaList();
+  const meta = list.find((m) => m.id === cleanId) || null;
+  try {
+    const binPath = getMediaBinaryFilePath(cleanId);
+    if (fs.existsSync(binPath)) {
+      const buffer = fs.readFileSync(binPath);
+      return { meta, buffer };
+    }
+  } catch (err) {
+    console.warn("[GoogleSheetsDB] Failed to read media file buffer:", err);
+  }
+  return { meta, buffer: null };
+}
+
+export function deleteUploadedMedia(fileId: string): boolean {
+  const cleanId = fileId.replace(/[^a-zA-Z0-9_-]/g, "");
+  const list = getUploadedMediaList();
+  const idx = list.findIndex((m) => m.id === cleanId);
+  if (idx === -1) return false;
+
+  list.splice(idx, 1);
+  saveMediaIndexToDisk(list);
+
+  try {
+    const binPath = getMediaBinaryFilePath(cleanId);
+    if (fs.existsSync(binPath)) {
+      fs.unlinkSync(binPath);
+    }
+  } catch {
+    // Ignore unlink errors
+  }
+  return true;
+}
+
+/**
+ * Automatically inspects any value (string, array, object, or serialized JSON string like `profile_json`)
+ * and converts any embedded `data:<mime>;base64,...` (> 500 chars) into a persistent file in `.data/media-files/`
+ * returning a short `/api/media/file/<id>/<name>` URL.
+ * Prevents Google Sheets 50,000-char cell limit errors and browser localStorage QuotaExceededError!
+ */
+export function offloadEmbeddedBase64Strings<T = any>(
+  input: T,
+  folderHint = "KNLTC_Auto_Offloaded",
+  nameHint = "embedded_media",
+): { value: T; offloadedCount: number; freedBytes: number } {
+  let offloadedCount = 0;
+  let freedBytes = 0;
+
+  function transform(val: any, keyHint: string): any {
+    if (typeof val === "string") {
+      // Case 1: Direct data:...;base64,... URI
+      if (val.startsWith("data:") && val.includes(";base64,") && val.length > 500) {
+        const markerIdx = val.indexOf(";base64,");
+        if (markerIdx > 5) {
+          const mimeType = val.slice(5, markerIdx).trim() || "image/jpeg";
+          const b64 = val.slice(markerIdx + 8).trim();
+          try {
+            const buffer = Buffer.from(b64, "base64");
+            const saved = saveBinaryToMediaVault({
+              fileName: sanitizeFileName(keyHint || nameHint, mimeType),
+              mimeType,
+              buffer,
+              folderName: folderHint,
+            });
+            offloadedCount++;
+            freedBytes += Math.max(0, val.length - saved.url.length);
+            return saved.url;
+          } catch {
+            return val;
+          }
+        }
+      }
+
+      // Case 2: Serialized JSON string (e.g. `profile_json` or `data`) that contains `"data:...;base64,`
+      if (
+        (val.startsWith("{") || val.startsWith("[")) &&
+        val.includes(";base64,") &&
+        val.length > 800
+      ) {
+        try {
+          const parsed = JSON.parse(val);
+          const transformedParsed = transform(parsed, keyHint);
+          return JSON.stringify(transformedParsed);
+        } catch {
+          return val;
+        }
+      }
+
+      return val;
+    }
+
+    if (Array.isArray(val)) {
+      return val.map((item, idx) => transform(item, `${keyHint}_${idx}`));
+    }
+
+    if (val && typeof val === "object") {
+      const out: Record<string, any> = {};
+      const recordName =
+        val.fileName || val.name || val.titleEn || val.organizationName || val.id || keyHint;
+      for (const [k, v] of Object.entries(val)) {
+        out[k] = transform(v, `${recordName}_${k}`);
+      }
+      return out;
+    }
+
+    return val;
+  }
+
+  const value = transform(input, nameHint) as T;
+  return { value, offloadedCount, freedBytes };
+}
+
+/**
+ * ============================================================================
+ * SERVER-SIDE PERSISTENT MIRROR + SEED FALLBACK STORE
  * ============================================================================
  */
 const NOW_ISO = "2026-10-28T10:00:00.000Z";
@@ -263,20 +596,39 @@ function buildInitialFallbackTables(): Record<GoogleSheetsTableName, Record<stri
   };
 }
 
-const globalForSheetsFallback = globalThis as unknown as {
-  knltcFallbackTables?: Record<GoogleSheetsTableName, Record<string, any>[]>;
-  knltcUploadedMedia?: Array<{
-    name: string;
-    url: string;
-    size?: number;
-    createdAt?: string;
-    updatedAt?: string;
-  }>;
-};
+function saveFallbackTablesToDisk(
+  tables: Record<GoogleSheetsTableName, Record<string, any>[]>,
+): void {
+  try {
+    const file = getTablesMirrorFilePath();
+    fs.writeFileSync(file, JSON.stringify(tables), "utf-8");
+  } catch (err) {
+    console.warn("[GoogleSheetsDB] Failed to persist sheets-db-mirror.json:", err);
+  }
+}
 
 function getFallbackTables(): Record<GoogleSheetsTableName, Record<string, any>[]> {
   if (!globalForSheetsFallback.knltcFallbackTables) {
-    globalForSheetsFallback.knltcFallbackTables = buildInitialFallbackTables();
+    const initial = buildInitialFallbackTables();
+    try {
+      const file = getTablesMirrorFilePath();
+      if (fs.existsSync(file)) {
+        const raw = fs.readFileSync(file, "utf-8");
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object") {
+          for (const tbl of GOOGLE_SHEETS_TABLES) {
+            if (Array.isArray(parsed[tbl])) {
+              initial[tbl] = parsed[tbl];
+            }
+          }
+        }
+      } else {
+        saveFallbackTablesToDisk(initial);
+      }
+    } catch (err) {
+      console.warn("[GoogleSheetsDB] Using default tables (mirror read error):", err);
+    }
+    globalForSheetsFallback.knltcFallbackTables = initial;
   }
   return globalForSheetsFallback.knltcFallbackTables;
 }
@@ -297,16 +649,7 @@ export function purgeFallbackTables(): void {
   fallback.order_items = [];
   fallback.product_reviews = [];
   fallback.wishlist_items = [];
-  if (globalForSheetsFallback.knltcUploadedMedia) {
-    globalForSheetsFallback.knltcUploadedMedia = [];
-  }
-}
-
-export function getUploadedMediaList() {
-  if (!globalForSheetsFallback.knltcUploadedMedia) {
-    globalForSheetsFallback.knltcUploadedMedia = [];
-  }
-  return globalForSheetsFallback.knltcUploadedMedia;
+  saveFallbackTablesToDisk(fallback);
 }
 
 function camelToSnake(str: string): string {
@@ -325,6 +668,95 @@ function normalizeRowRecord(record: Record<string, any>): Record<string, any> {
   return out;
 }
 
+/**
+ * Merges remote Google Sheets rows with our persistent local mirror rows so that:
+ * 1. Any rich `profile_json`, `documents`, `logo_url`, or newly created local records
+ *    that haven't finished writing or were truncated in Sheets are NEVER lost on refresh!
+ */
+function mergeRemoteAndMirrorRows(
+  tableName: GoogleSheetsTableName,
+  remoteRows: Record<string, any>[],
+  mirrorRows: Record<string, any>[],
+): Record<string, any>[] {
+  if (!Array.isArray(remoteRows) || remoteRows.length === 0) {
+    return mirrorRows;
+  }
+  if (!Array.isArray(mirrorRows) || mirrorRows.length === 0) {
+    return remoteRows;
+  }
+
+  const mirrorMap = new Map<string, Record<string, any>>();
+  for (const m of mirrorRows) {
+    const key = String(m.id || m.section_key || "");
+    if (key) mirrorMap.set(key, m);
+  }
+
+  const mergedRemote = remoteRows.map((remote) => {
+    const key = String(remote.id || remote.section_key || "");
+    const localMirror = key ? mirrorMap.get(key) : undefined;
+    if (!localMirror) return remote;
+
+    const merged = { ...localMirror, ...remote };
+
+    // Preserve logo_url, cover_image, featured_image if remote is empty
+    if (!remote.logo_url && localMirror.logo_url) merged.logo_url = localMirror.logo_url;
+    if (!remote.cover_image && localMirror.cover_image) merged.cover_image = localMirror.cover_image;
+    if (!remote.featured_image && localMirror.featured_image) merged.featured_image = localMirror.featured_image;
+
+    // Deep-merge profile_json so uploaded documents, tasks, and checklists never vanish
+    if (localMirror.profile_json) {
+      try {
+        const localProf =
+          typeof localMirror.profile_json === "string"
+            ? JSON.parse(localMirror.profile_json)
+            : localMirror.profile_json;
+        const remoteProf = remote.profile_json
+          ? typeof remote.profile_json === "string"
+            ? JSON.parse(remote.profile_json)
+            : remote.profile_json
+          : {};
+
+        const combinedProf = {
+          ...localProf,
+          ...remoteProf,
+          logoUrl: remoteProf.logoUrl || localProf.logoUrl || merged.logo_url,
+          documents:
+            Array.isArray(remoteProf.documents) && remoteProf.documents.some((d: any) => d.fileUrl)
+              ? remoteProf.documents
+              : localProf.documents || remoteProf.documents,
+          documentChecklist:
+            Array.isArray(remoteProf.documentChecklist) &&
+            remoteProf.documentChecklist.some((d: any) => d.fileUrl)
+              ? remoteProf.documentChecklist
+              : localProf.documentChecklist || remoteProf.documentChecklist,
+          tasks:
+            Array.isArray(remoteProf.tasks) && remoteProf.tasks.length > 0
+              ? remoteProf.tasks
+              : localProf.tasks || remoteProf.tasks,
+          activityLog:
+            Array.isArray(remoteProf.activityLog) && remoteProf.activityLog.length > 0
+              ? remoteProf.activityLog
+              : localProf.activityLog || remoteProf.activityLog,
+        };
+        merged.profile_json = JSON.stringify(combinedProf);
+      } catch {
+        if (!remote.profile_json) {
+          merged.profile_json = localMirror.profile_json;
+        }
+      }
+    }
+
+    return merged;
+  });
+
+  // For knltc_website_cms, return mergedRemote directly
+  if (tableName === "knltc_website_cms") {
+    return mergedRemote;
+  }
+
+  return mergedRemote;
+}
+
 export function invalidateSheetsCache(tableName?: string) {
   try {
     revalidateTag("knltc-db");
@@ -338,7 +770,7 @@ export function invalidateSheetsCache(tableName?: string) {
 
 /**
  * ============================================================================
- * READ OPERATIONS (Google Sheets Web App + 60s Next.js Tag Cache + Fallback)
+ * READ OPERATIONS (Google Sheets Web App + Persistent Disk Mirror)
  * ============================================================================
  */
 export async function fetchSheetTable<T = Record<string, any>>(
@@ -359,7 +791,7 @@ export async function fetchSheetTable<T = Record<string, any>>(
       redirect: "follow",
       next: {
         tags: ["knltc-db", tableName],
-        revalidate: 60,
+        revalidate: 30,
       },
     });
 
@@ -369,8 +801,12 @@ export async function fetchSheetTable<T = Record<string, any>>(
 
     const json = await response.json();
     if (json && json.ok && Array.isArray(json.data)) {
-      fallback[safeTable] = json.data;
-      return json.data as T[];
+      if (json.data.length > 0 || (fallback[safeTable] || []).length === 0) {
+        const merged = mergeRemoteAndMirrorRows(safeTable, json.data, fallback[safeTable] || []);
+        fallback[safeTable] = merged;
+        saveFallbackTablesToDisk(fallback);
+      }
+      return (fallback[safeTable] || []) as T[];
     }
     return (fallback[safeTable] || []) as T[];
   } catch (err) {
@@ -396,7 +832,7 @@ export async function fetchAllSheetTables(): Promise<
       redirect: "follow",
       next: {
         tags: ["knltc-db"],
-        revalidate: 60,
+        revalidate: 30,
       },
     });
 
@@ -404,10 +840,11 @@ export async function fetchAllSheetTables(): Promise<
     const json = await response.json();
     if (json && json.ok && json.data && typeof json.data === "object") {
       for (const tbl of GOOGLE_SHEETS_TABLES) {
-        if (Array.isArray(json.data[tbl])) {
-          fallback[tbl] = json.data[tbl];
+        if (Array.isArray(json.data[tbl]) && json.data[tbl].length > 0) {
+          fallback[tbl] = mergeRemoteAndMirrorRows(tbl, json.data[tbl], fallback[tbl] || []);
         }
       }
+      saveFallbackTablesToDisk(fallback);
       return fallback;
     }
     return fallback;
@@ -418,7 +855,6 @@ export async function fetchAllSheetTables(): Promise<
 
 /**
  * Supports PostgREST-style query filter strings used by `lib/cms.ts`
- * e.g. `selectRows("products", "slug=eq.foo&status=eq.published&order=created_at.desc&limit=1")`
  */
 export async function querySheetTable<T = Record<string, any>>(
   tableName: string,
@@ -484,7 +920,7 @@ export async function querySheetTable<T = Record<string, any>>(
 
 /**
  * ============================================================================
- * WRITE OPERATIONS (Google Sheets Web App + Local Fallback Mirror + Cache Revalidate)
+ * WRITE OPERATIONS (Auto-Offload Base64 + Persistent Disk Mirror + Google Sheets)
  * ============================================================================
  */
 export async function mutateSheetTable<T = Record<string, any>>(options: {
@@ -501,7 +937,24 @@ export async function mutateSheetTable<T = Record<string, any>>(options: {
   const tableName = (options.table || "knltc_website_cms") as GoogleSheetsTableName;
   const nowIso = new Date().toISOString();
 
-  // 1. Update local fallback mirror immediately so reads are always instant & consistent
+  // Automatically offload any embedded base64 strings in payload or tables
+  // so Google Sheets 50,000-character cell limit is NEVER exceeded!
+  if (options.payload) {
+    options.payload = offloadEmbeddedBase64Strings(
+      options.payload,
+      `KNLTC_${tableName}`,
+      tableName,
+    ).value;
+  }
+  if (options.tables) {
+    const cleanedTables: Record<string, any[]> = {};
+    for (const [tbl, rows] of Object.entries(options.tables)) {
+      cleanedTables[tbl] = offloadEmbeddedBase64Strings(rows, `KNLTC_${tbl}`, tbl).value;
+    }
+    options.tables = cleanedTables;
+  }
+
+  // 1. Update local persistent mirror immediately so reads are always instant & durable
   if (options.action === "PURGE_DUMMY_DATA") {
     purgeFallbackTables();
   } else if (options.action === "BULK_SYNC" && options.tables) {
@@ -510,6 +963,7 @@ export async function mutateSheetTable<T = Record<string, any>>(options: {
         fallback[tbl as GoogleSheetsTableName] = rows.map((r) => normalizeRowRecord(r));
       }
     }
+    saveFallbackTablesToDisk(fallback);
   } else if (options.action === "UPSERT_CMS") {
     const sectionKey = options.payload?.section_key || "master_cms";
     const cmsData = options.payload?.data !== undefined ? options.payload.data : options.payload;
@@ -520,6 +974,7 @@ export async function mutateSheetTable<T = Record<string, any>>(options: {
       updated_at: nowIso,
     };
     fallback.knltc_website_cms = [cmsRow];
+    saveFallbackTablesToDisk(fallback);
   } else if (GOOGLE_SHEETS_TABLES.includes(tableName)) {
     const currentRows = fallback[tableName] || [];
     if (options.action === "CREATE" || options.action === "INSERT") {
@@ -555,6 +1010,7 @@ export async function mutateSheetTable<T = Record<string, any>>(options: {
       const targetId = options.id || options.payload?.id;
       fallback[tableName] = currentRows.filter((r) => String(r.id) !== String(targetId));
     }
+    saveFallbackTablesToDisk(fallback);
   }
 
   // 2. Forward write to Google Apps Script Web App if configured
@@ -583,7 +1039,7 @@ export async function mutateSheetTable<T = Record<string, any>>(options: {
         }
       }
     } catch (err) {
-      console.warn(`[GoogleSheetsDB] Remote POST (${options.action}) failed, saved in fallback mirror:`, err);
+      console.warn(`[GoogleSheetsDB] Remote POST (${options.action}) failed, saved in persistent disk mirror:`, err);
     }
   }
 
@@ -593,24 +1049,30 @@ export async function mutateSheetTable<T = Record<string, any>>(options: {
 
 /**
  * ============================================================================
- * GOOGLE DRIVE & CLOUDINARY MEDIA UPLOAD ENGINE
+ * HYBRID GOOGLE DRIVE + CLOUDINARY + PERSISTENT DISK MEDIA UPLOAD ENGINE
  * ============================================================================
- * 1. If Cloudinary env vars are set & file is an image, uploads to Cloudinary CDN.
- * 2. Else if GOOGLE_SHEETS_WEB_APP_URL is set, sends `UPLOAD_FILE_TO_DRIVE` to
- *    Apps Script, saving in `KNLTC_Uploads_And_Visa_Docs/<folderName>` on Google Drive!
- * 3. Else falls back to a safe data URL so local testing works with zero crashes.
+ * 1. Decodes the uploaded file binary and ALWAYS saves it to `.data/media-files/<id>`
+ *    on persistent server disk.
+ * 2. Also uploads to Cloudinary (if configured) or Google Drive (`UPLOAD_FILE_TO_DRIVE`
+ *    in `KNLTC_Uploads_And_Visa_Docs/<folderName>`).
+ * 3. Returns a clean, short `/api/media/file/<id>/<filename>` URL (< 70 chars) so
+ *    images/PDFs load instantaneously without Google Drive cookie blocks and NEVER
+ *    overflow Google Sheets' 50,000-character cell limit or browser `localStorage`!
  */
 export async function uploadFileToDriveOrCloudinary(options: {
   fileName: string;
   mimeType: string;
-  base64Data: string;
+  base64Data?: string;
+  buffer?: Buffer;
   folderName?: string;
 }): Promise<{
   success: boolean;
   url: string;
-  downloadUrl?: string;
-  fileId?: string;
-  provider: "google-drive" | "cloudinary" | "local-fallback";
+  downloadUrl: string;
+  driveUrl?: string;
+  fileId: string;
+  provider: "google-drive" | "cloudinary" | "persistent-disk";
+  size: number;
 }> {
   const {
     webAppUrl,
@@ -620,24 +1082,38 @@ export async function uploadFileToDriveOrCloudinary(options: {
     isConfigured,
   } = getGoogleSheetsConfig();
 
-  const cleanBase64 = options.base64Data.includes("base64,")
-    ? options.base64Data.split("base64,")[1]
-    : options.base64Data;
-  const dataUri = `data:${options.mimeType};base64,${cleanBase64}`;
+  let buffer: Buffer;
+  let cleanBase64: string;
 
-  // Option A: Optional Cloudinary optimization for images
+  if (options.buffer) {
+    buffer = options.buffer;
+    cleanBase64 = buffer.toString("base64");
+  } else {
+    const rawB64 = options.base64Data || "";
+    cleanBase64 = rawB64.includes("base64,") ? rawB64.split("base64,")[1] : rawB64;
+    buffer = Buffer.from(cleanBase64, "base64");
+  }
+
+  const mimeType = options.mimeType || "application/octet-stream";
+  const folderName = options.folderName || "KNLTC_General_Uploads";
+  const dataUri = `data:${mimeType};base64,${cleanBase64}`;
+
+  let cloudinaryUrl: string | undefined;
+  let driveUrl: string | undefined;
+  let driveFileId: string | undefined;
+  let provider: "google-drive" | "cloudinary" | "persistent-disk" = "persistent-disk";
+
+  // Step 1: Optional Cloudinary CDN upload for images
   if (
     cloudinaryCloudName &&
     cloudinaryUploadPreset &&
-    options.mimeType.startsWith("image/")
+    mimeType.startsWith("image/")
   ) {
     try {
       const form = new FormData();
       form.append("file", dataUri);
       form.append("upload_preset", cloudinaryUploadPreset);
-      if (options.folderName) {
-        form.append("folder", `knltc/${options.folderName}`);
-      }
+      form.append("folder", `knltc/${folderName}`);
       const res = await fetch(
         `https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/image/upload`,
         {
@@ -648,26 +1124,16 @@ export async function uploadFileToDriveOrCloudinary(options: {
       if (res.ok) {
         const data = await res.json();
         if (data.secure_url) {
-          getUploadedMediaList().unshift({
-            name: options.fileName,
-            url: data.secure_url,
-            createdAt: new Date().toISOString(),
-          });
-          return {
-            success: true,
-            url: data.secure_url,
-            downloadUrl: data.secure_url,
-            fileId: data.public_id,
-            provider: "cloudinary",
-          };
+          cloudinaryUrl = data.secure_url;
+          provider = "cloudinary";
         }
       }
     } catch (err) {
-      console.warn("[GoogleSheetsDB] Cloudinary upload failed, falling back to Google Drive:", err);
+      console.warn("[GoogleSheetsDB] Cloudinary upload failed, continuing with Drive + Persistent Disk:", err);
     }
   }
 
-  // Option B: Google Drive (`KNLTC_Uploads_And_Visa_Docs`) via Google Apps Script `doPost`
+  // Step 2: Upload to Google Drive (`KNLTC_Uploads_And_Visa_Docs`) via Google Apps Script `doPost`
   if (isConfigured) {
     try {
       const res = await fetch(webAppUrl, {
@@ -678,60 +1144,161 @@ export async function uploadFileToDriveOrCloudinary(options: {
           apiKey,
           action: "UPLOAD_FILE_TO_DRIVE",
           fileName: options.fileName,
-          mimeType: options.mimeType,
+          mimeType,
           base64Data: cleanBase64,
-          folderName: options.folderName || "KNLTC_General_Uploads",
+          folderName,
         }),
       });
 
       if (res.ok) {
         const json = await res.json();
         if (json?.ok && json?.url) {
-          getUploadedMediaList().unshift({
-            name: options.fileName,
-            url: json.url,
-            createdAt: new Date().toISOString(),
-          });
-          return {
-            success: true,
-            url: json.url,
-            downloadUrl: json.downloadUrl || json.url,
-            fileId: json.fileId,
-            provider: "google-drive",
-          };
+          driveUrl = json.url;
+          driveFileId = json.fileId;
+          if (!cloudinaryUrl) {
+            provider = "google-drive";
+          }
         }
       }
     } catch (err) {
-      console.warn("[GoogleSheetsDB] Google Drive upload failed, using local data URI fallback:", err);
+      console.warn("[GoogleSheetsDB] Google Drive upload failed, using persistent server disk:", err);
     }
   }
 
-  // Option C: Zero-crash local data URI fallback
-  getUploadedMediaList().unshift({
-    name: options.fileName,
-    url: dataUri,
-    createdAt: new Date().toISOString(),
+  // Step 3: Save binary & metadata into Persistent Server Media Vault (`.data/media-files/<id>`)
+  const vaultItem = saveBinaryToMediaVault({
+    fileName: options.fileName,
+    mimeType,
+    buffer,
+    folderName,
+    driveUrl,
+    driveFileId,
+    cloudinaryUrl,
+    provider,
   });
 
   return {
     success: true,
-    url: dataUri,
-    downloadUrl: dataUri,
-    fileId: `local-${Date.now()}`,
-    provider: "local-fallback",
+    url: vaultItem.url,
+    downloadUrl: vaultItem.downloadUrl,
+    driveUrl: vaultItem.driveUrl,
+    fileId: vaultItem.id,
+    provider: vaultItem.provider,
+    size: vaultItem.size,
   };
 }
 
 /**
- * Converts a full client `MasterKnlTcStore` + bookstore tables into a 15-table payload
- * and pushes it to Google Sheets via `BULK_SYNC`.
+ * Returns storage health & diagnostic metrics for the Dashboard Media & Storage Manager.
+ */
+export function getStorageStatusSummary() {
+  const config = getGoogleSheetsConfig();
+  const mediaList = getUploadedMediaList();
+  const fallback = getFallbackTables();
+
+  const totalBytes = mediaList.reduce((acc, m) => acc + (m.size || 0), 0);
+  const imageCount = mediaList.filter((m) => m.mimeType.startsWith("image/")).length;
+  const pdfCount = mediaList.filter(
+    (m) => m.mimeType === "application/pdf" || m.name.toLowerCase().endsWith(".pdf"),
+  ).length;
+  const driveSyncedCount = mediaList.filter((m) => Boolean(m.driveUrl || m.provider === "google-drive")).length;
+
+  const folderCounts: Record<string, number> = {};
+  for (const item of mediaList) {
+    folderCounts[item.folderName] = (folderCounts[item.folderName] || 0) + 1;
+  }
+
+  // Check if any table row still has un-offloaded inline base64 strings
+  let inlineBase64Count = 0;
+  let maxCellLength = 0;
+  for (const tbl of GOOGLE_SHEETS_TABLES) {
+    const rows = fallback[tbl] || [];
+    for (const row of rows) {
+      for (const val of Object.values(row || {})) {
+        if (typeof val === "string") {
+          if (val.length > maxCellLength) maxCellLength = val.length;
+          if (val.includes(";base64,") && val.length > 1000) {
+            inlineBase64Count++;
+          }
+        }
+      }
+    }
+  }
+
+  return {
+    ok: true,
+    googleSheetsConnected: config.isConfigured,
+    googleDriveConnected: config.isConfigured,
+    cloudinaryConnected: Boolean(config.cloudinaryCloudName && config.cloudinaryUploadPreset),
+    persistentDiskActive: true,
+    persistentDir: getPersistentDataDir(),
+    totalFiles: mediaList.length,
+    totalBytes,
+    imageCount,
+    pdfCount,
+    driveSyncedCount,
+    folderCounts,
+    inlineBase64Count,
+    maxCellLength,
+    sheetsCellHealthOk: maxCellLength < 45000 && inlineBase64Count === 0,
+  };
+}
+
+/**
+ * Scans all 15 tables in the persistent mirror, converts any remaining inline base64 strings
+ * into short `/api/media/file/...` URLs, saves to disk, and triggers a Google Sheets sync.
+ */
+export async function optimizeAllTablesMedia() {
+  const fallback = getFallbackTables();
+  let totalOffloaded = 0;
+  let totalFreedBytes = 0;
+
+  for (const tbl of GOOGLE_SHEETS_TABLES) {
+    const rows = fallback[tbl] || [];
+    const { value, offloadedCount, freedBytes } = offloadEmbeddedBase64Strings(
+      rows,
+      `KNLTC_${tbl}`,
+      tbl,
+    );
+    fallback[tbl] = value;
+    totalOffloaded += offloadedCount;
+    totalFreedBytes += freedBytes;
+  }
+
+  saveFallbackTablesToDisk(fallback);
+
+  const { isConfigured } = getGoogleSheetsConfig();
+  if (isConfigured && totalOffloaded > 0) {
+    try {
+      await mutateSheetTable({
+        action: "BULK_SYNC",
+        tables: fallback,
+        replaceAll: false,
+      });
+    } catch {
+      // Ignore remote sync error
+    }
+  }
+
+  return {
+    ok: true,
+    optimizedCount: totalOffloaded,
+    freedBytes: totalFreedBytes,
+    summary: getStorageStatusSummary(),
+  };
+}
+
+/**
+ * Converts a full client `MasterKnlTcStore` + bookstore tables into a 15-table payload,
+ * offloads any embedded base64 data to `.data/media-files/`, and pushes to Google Sheets via `BULK_SYNC`.
  */
 export async function bulkSyncMasterStoreToSheets(
   store?: MasterKnlTcStore,
   replaceAll = false,
 ) {
   const fallback = getFallbackTables();
-  const s = store || getCmsStore();
+  const rawStore = store || getCmsStore();
+  const s = offloadEmbeddedBase64Strings(rawStore, "KNLTC_MasterStore", "store").value;
   const nowIso = new Date().toISOString();
 
   const tablesPayload: Record<GoogleSheetsTableName, Record<string, any>[]> = {

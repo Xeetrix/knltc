@@ -27,6 +27,7 @@ export type DashboardTabId =
   | "hr"
   | "cms"
   | "store_blog"
+  | "media_storage"
   | "users";
 
 export interface SystemUserAccount {
@@ -1494,15 +1495,56 @@ export function getCmsStore(): MasterKnlTcStore {
   return globalForStore.__knltc_master_store;
 }
 
+function mergeDocumentLists<T extends { id: string; fileUrl?: string; fileName?: string; status?: string }>(
+  remoteDocs?: T[],
+  localDocs?: T[],
+): T[] | undefined {
+  if (!Array.isArray(remoteDocs) && !Array.isArray(localDocs)) return undefined;
+  if (!Array.isArray(remoteDocs) || remoteDocs.length === 0) return localDocs;
+  if (!Array.isArray(localDocs) || localDocs.length === 0) return remoteDocs;
+
+  const localMap = new Map(localDocs.map((d) => [d.id, d]));
+  const merged = remoteDocs.map((rDoc) => {
+    const lDoc = localMap.get(rDoc.id);
+    if (!lDoc) return rDoc;
+    if (!rDoc.fileUrl && lDoc.fileUrl) {
+      return {
+        ...rDoc,
+        fileUrl: lDoc.fileUrl,
+        fileName: lDoc.fileName || rDoc.fileName,
+        status: lDoc.status !== "MISSING" ? lDoc.status : rDoc.status,
+      };
+    }
+    return rDoc;
+  });
+
+  // Append any custom local docs not in remoteDocs
+  for (const lDoc of localDocs) {
+    if (!merged.some((m) => m.id === lDoc.id)) {
+      merged.push(lDoc);
+    }
+  }
+  return merged;
+}
+
 export function saveCmsStore(updated: MasterKnlTcStore) {
   globalForStore.__knltc_master_store = updated;
   if (typeof window !== "undefined") {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      window.dispatchEvent(new CustomEvent("knltc-cms-updated", { detail: updated }));
     } catch (e) {
-      console.warn("Could not save to localStorage:", e);
+      console.warn("localStorage quota reached, compacting inline base64 strings:", e);
+      try {
+        const compacted = JSON.stringify(updated).replace(
+          /"data:[^";]+;base64,[A-Za-z0-9+/=]{2000,}"/g,
+          '""',
+        );
+        localStorage.setItem(STORAGE_KEY, compacted);
+      } catch {
+        // Ignore if still full
+      }
     }
+    window.dispatchEvent(new CustomEvent("knltc-cms-updated", { detail: updated }));
   }
 }
 
@@ -2045,6 +2087,18 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
           dueAmountBdt: due,
           notes: rawNotes,
           followUpDate: cleanFollowUp,
+          documentChecklist: mergeDocumentLists(
+            parsedProfile.documentChecklist,
+            local?.documentChecklist,
+          ),
+          tasks:
+            Array.isArray(parsedProfile.tasks) && parsedProfile.tasks.length > 0
+              ? parsedProfile.tasks
+              : local?.tasks,
+          activityLog:
+            Array.isArray(parsedProfile.activityLog) && parsedProfile.activityLog.length > 0
+              ? parsedProfile.activityLog
+              : local?.activityLog,
           lastContactedAt:
             l.last_contacted_at || parsedProfile.lastContactedAt || l.created_at || new Date().toISOString(),
           createdAt: l.created_at || parsedProfile.createdAt || new Date().toISOString(),
@@ -2190,7 +2244,7 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
           hostelFeeMonthlyYen: parsedProfile.hostelFeeMonthlyYen ?? local?.hostelFeeMonthlyYen ?? 35000,
           intakeMonths: parsedProfile.intakeMonths || local?.intakeMonths || ["APRIL", "OCTOBER"],
           intakeQuota: s.intake_quota != null ? Number(s.intake_quota) : (parsedProfile.intakeQuota || local?.intakeQuota || 20),
-          documents: parsedProfile.documents || local?.documents || [],
+          documents: mergeDocumentLists(parsedProfile.documents, local?.documents) || [],
           tasks: parsedProfile.tasks || (local as any)?.tasks || [],
           notes: parsedProfile.notes || local?.notes || "",
         };
@@ -2231,7 +2285,7 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
           bankName: a.bank_name || parsedProfile.bankName || local?.bankName,
           bankAccountNo: a.bank_account_no || parsedProfile.bankAccountNo || local?.bankAccountNo,
           bkashOrNagadNo: a.bkash_or_nagad_no || parsedProfile.bkashOrNagadNo || local?.bkashOrNagadNo,
-          documents: parsedProfile.documents || local?.documents || [],
+          documents: mergeDocumentLists(parsedProfile.documents, local?.documents) || [],
           tasks: parsedProfile.tasks || (local as any)?.tasks || [],
           notes: parsedProfile.notes || local?.notes || "",
         };
@@ -2353,7 +2407,7 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
             referredByAgentName: isIsoDateLike(lead.referredByAgentName || ext.referredByAgentName)
               ? ""
               : lead.referredByAgentName || ext.referredByAgentName || "",
-            documentChecklist: lead.documentChecklist || ext.documentChecklist,
+            documentChecklist: mergeDocumentLists(lead.documentChecklist, ext.documentChecklist),
             activityLog: lead.activityLog || ext.activityLog,
           };
         });
@@ -2363,7 +2417,13 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
       if (serverCms.schoolExtendedProfiles) {
         store.partnerSchools = store.partnerSchools.map((sch) => {
           const ext = serverCms.schoolExtendedProfiles?.[sch.id];
-          return ext ? { ...sch, ...ext } : sch;
+          if (!ext) return sch;
+          return {
+            ...sch,
+            ...ext,
+            logoUrl: ext.logoUrl || sch.logoUrl,
+            documents: mergeDocumentLists(ext.documents, sch.documents) || [],
+          };
         });
         Object.entries(serverCms.schoolExtendedProfiles).forEach(([schId, ext]) => {
           if (!store.partnerSchools.some((s) => s.id === schId) && ext.name) {
@@ -2376,7 +2436,13 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
       if (serverCms.b2bAgentExtendedProfiles) {
         store.b2bAgents = store.b2bAgents.map((agent) => {
           const ext = serverCms.b2bAgentExtendedProfiles?.[agent.id];
-          return ext ? { ...agent, ...ext } : agent;
+          if (!ext) return agent;
+          return {
+            ...agent,
+            ...ext,
+            logoUrl: ext.logoUrl || agent.logoUrl,
+            documents: mergeDocumentLists(ext.documents, agent.documents) || [],
+          };
         });
         Object.entries(serverCms.b2bAgentExtendedProfiles).forEach(([agentId, ext]) => {
           if (!store.b2bAgents.some((a) => a.id === agentId) && ext.organizationName) {
