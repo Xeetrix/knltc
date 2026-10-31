@@ -339,12 +339,6 @@ function setupKNLTCDatabase() {
   // Ensure Google Drive upload root folder is ready
   getOrCreateDriveFolder(DRIVE_ROOT_FOLDER_NAME);
 
-  // Build or refresh the live MASTER_EXECUTIVE_DASHBOARD telemetry tab
-  try {
-    setupMasterExecutiveDashboard(ss);
-  } catch (dashErr) {
-    Logger.log("Dashboard sheet update warning: " + dashErr);
-  }
 
   Logger.log("✅ KNLTC Master Database Setup Complete! All 15 tables + Executive Dashboard created, styled, and ready.");
   return {
