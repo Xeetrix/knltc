@@ -53,6 +53,7 @@ export interface MediaVaultItem {
   driveUrl?: string;
   driveFileId?: string;
   provider: "google-drive" | "cloudinary" | "persistent-disk";
+  base64Backup?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -181,15 +182,19 @@ function saveMediaIndexToDisk(items: MediaVaultItem[]): void {
   }
 }
 
+function getRawMediaStore(): MediaVaultItem[] {
+  if (!globalForSheetsFallback.knltcUploadedMedia) {
+    globalForSheetsFallback.knltcUploadedMedia = loadMediaIndexFromDisk();
+  }
+  return globalForSheetsFallback.knltcUploadedMedia;
+}
+
 export function getUploadedMediaList(filters?: {
   folder?: string;
   type?: "ALL" | "IMAGE" | "PDF" | "OTHER";
   search?: string;
 }): MediaVaultItem[] {
-  if (!globalForSheetsFallback.knltcUploadedMedia) {
-    globalForSheetsFallback.knltcUploadedMedia = loadMediaIndexFromDisk();
-  }
-  let list = globalForSheetsFallback.knltcUploadedMedia;
+  let list = getRawMediaStore().map(({ base64Backup: _b64, ...rest }) => rest);
 
   if (!filters) return list;
 
@@ -230,7 +235,7 @@ export function saveBinaryToMediaVault(options: {
   cloudinaryUrl?: string;
   provider?: "google-drive" | "cloudinary" | "persistent-disk";
 }): MediaVaultItem {
-  const list = getUploadedMediaList();
+  const list = getRawMediaStore();
   const hash = crypto.createHash("sha1").update(options.buffer).digest("hex").slice(0, 16);
   const fileId = options.customId || `med-${hash}`;
   const safeFileName = sanitizeFileName(options.fileName, options.mimeType);
@@ -239,9 +244,7 @@ export function saveBinaryToMediaVault(options: {
 
   try {
     const binPath = getMediaBinaryFilePath(fileId);
-    if (!fs.existsSync(binPath)) {
-      fs.writeFileSync(binPath, options.buffer);
-    }
+    fs.writeFileSync(binPath, options.buffer);
   } catch (err) {
     console.warn("[GoogleSheetsDB] Failed to write media binary:", err);
   }
@@ -249,6 +252,10 @@ export function saveBinaryToMediaVault(options: {
   const localServeUrl = `/api/media/file/${fileId}/${encodeURIComponent(safeFileName)}`;
   const primaryUrl = options.cloudinaryUrl || localServeUrl;
   const downloadUrl = `${localServeUrl}?download=1`;
+  const base64Backup =
+    options.buffer.byteLength <= 5 * 1024 * 1024
+      ? options.buffer.toString("base64")
+      : undefined;
 
   const existingIdx = list.findIndex((m) => m.id === fileId);
   const item: MediaVaultItem = {
@@ -260,8 +267,8 @@ export function saveBinaryToMediaVault(options: {
     size: options.buffer.byteLength,
     url: primaryUrl,
     downloadUrl,
-    driveUrl: options.driveUrl || ( existingIdx >= 0 ? list[existingIdx].driveUrl : undefined ),
-    driveFileId: options.driveFileId || ( existingIdx >= 0 ? list[existingIdx].driveFileId : undefined ),
+    driveUrl: options.driveUrl || (existingIdx >= 0 ? list[existingIdx].driveUrl : undefined),
+    driveFileId: options.driveFileId || (existingIdx >= 0 ? list[existingIdx].driveFileId : undefined),
     provider:
       options.provider ||
       (options.cloudinaryUrl
@@ -271,6 +278,7 @@ export function saveBinaryToMediaVault(options: {
           : existingIdx >= 0
             ? list[existingIdx].provider
             : "persistent-disk"),
+    base64Backup: base64Backup || (existingIdx >= 0 ? list[existingIdx].base64Backup : undefined),
     createdAt: existingIdx >= 0 ? list[existingIdx].createdAt : nowIso,
     updatedAt: nowIso,
   };
@@ -282,7 +290,8 @@ export function saveBinaryToMediaVault(options: {
   }
 
   saveMediaIndexToDisk(list);
-  return item;
+  const { base64Backup: _omit, ...publicItem } = item;
+  return publicItem;
 }
 
 export function getMediaFileById(fileId: string): {
@@ -290,13 +299,22 @@ export function getMediaFileById(fileId: string): {
   buffer: Buffer | null;
 } {
   const cleanId = fileId.replace(/[^a-zA-Z0-9_-]/g, "");
-  const list = getUploadedMediaList();
+  const list = getRawMediaStore();
   const meta = list.find((m) => m.id === cleanId) || null;
   try {
     const binPath = getMediaBinaryFilePath(cleanId);
     if (fs.existsSync(binPath)) {
       const buffer = fs.readFileSync(binPath);
       return { meta, buffer };
+    }
+    if (meta?.base64Backup) {
+      const restored = Buffer.from(meta.base64Backup, "base64");
+      try {
+        fs.writeFileSync(binPath, restored);
+      } catch {
+        // Ignore write error if read-only
+      }
+      return { meta, buffer: restored };
     }
   } catch (err) {
     console.warn("[GoogleSheetsDB] Failed to read media file buffer:", err);
@@ -306,7 +324,7 @@ export function getMediaFileById(fileId: string): {
 
 export function deleteUploadedMedia(fileId: string): boolean {
   const cleanId = fileId.replace(/[^a-zA-Z0-9_-]/g, "");
-  const list = getUploadedMediaList();
+  const list = getRawMediaStore();
   const idx = list.findIndex((m) => m.id === cleanId);
   if (idx === -1) return false;
 
@@ -409,6 +427,14 @@ export function offloadEmbeddedBase64Strings<T = any>(
  */
 const NOW_ISO = "2026-10-28T10:00:00.000Z";
 
+function formatSheetDocumentsUrls(docs?: Array<{ titleEn?: string; title?: string; fileUrl?: string; fileName?: string }>): string {
+  if (!Array.isArray(docs) || docs.length === 0) return "";
+  return docs
+    .filter((d) => Boolean(d?.fileUrl))
+    .map((d) => `${d.titleEn || d.title || d.fileName || "Document"}: ${d.fileUrl}`)
+    .join("\n");
+}
+
 function buildInitialFallbackTables(): Record<GoogleSheetsTableName, Record<string, any>[]> {
   const initialStore = getCmsStore();
   const initialCms = getWebsiteCms();
@@ -447,42 +473,49 @@ function buildInitialFallbackTables(): Record<GoogleSheetsTableName, Record<stri
       last_contacted_at: l.lastContactedAt,
       ssc_gpa: l.sscGpa || "",
       hsc_gpa: l.hscGpa || "",
+      avatar_url: l.avatarUrl || "",
+      documents_urls: formatSheetDocumentsUrls(l.documentChecklist),
       profile_json: JSON.stringify(l),
       created_at: l.createdAt,
     })),
-    knltc_visa_applicants: initialStore.visaApplicants.map((v) => ({
-      id: v.id,
-      lead_id: v.leadId || "",
-      tracking_no: v.trackingNo,
-      name: v.name,
-      phone: v.phone,
-      branch: v.branch,
-      package_type: v.packageType,
-      visa_track: v.visaTrack || "",
-      intake_session: v.intakeSession,
-      stage: v.stage,
-      target_school: v.targetSchool,
-      partner_school_id: v.partnerSchoolId || "",
-      b2b_agent_id: v.b2bAgentId || "",
-      b2b_agent_name: v.b2bAgentName || "",
-      visa_officer_id: v.visaOfficerId || "",
-      visa_officer_name: v.visaOfficerName || "",
-      contract_amount_bdt: v.contractAmountBdt || 120000,
-      paid_amount_bdt: v.paidAmountBdt || 0,
-      due_amount_bdt: v.dueAmountBdt || 0,
-      sponsor_name: v.sponsorName,
-      sponsor_relation: v.sponsorRelation,
-      sponsor_bank: v.sponsorBank,
-      sponsor_balance_bdt: v.sponsorBalanceBdt,
-      bank_loan_assistance: v.bankLoanAssistance,
-      bank_loan_bank: v.bankLoanBank || "",
-      coe_status: v.coEStatus,
-      visa_status: v.visaStatus,
-      counselor_name: v.counselorName,
-      profile_json: JSON.stringify(v),
-      updated_at: v.updatedAt,
-      created_at: v.updatedAt,
-    })),
+    knltc_visa_applicants: initialStore.visaApplicants.map((v) => {
+      const linkedLead = initialStore.crmLeads.find((l) => l.id === v.leadId || l.phone === v.phone);
+      return {
+        id: v.id,
+        lead_id: v.leadId || "",
+        tracking_no: v.trackingNo,
+        name: v.name,
+        phone: v.phone,
+        branch: v.branch,
+        package_type: v.packageType,
+        visa_track: v.visaTrack || "",
+        intake_session: v.intakeSession,
+        stage: v.stage,
+        target_school: v.targetSchool,
+        partner_school_id: v.partnerSchoolId || "",
+        b2b_agent_id: v.b2bAgentId || "",
+        b2b_agent_name: v.b2bAgentName || "",
+        visa_officer_id: v.visaOfficerId || "",
+        visa_officer_name: v.visaOfficerName || "",
+        contract_amount_bdt: v.contractAmountBdt || 120000,
+        paid_amount_bdt: v.paidAmountBdt || 0,
+        due_amount_bdt: v.dueAmountBdt || 0,
+        sponsor_name: v.sponsorName,
+        sponsor_relation: v.sponsorRelation,
+        sponsor_bank: v.sponsorBank,
+        sponsor_balance_bdt: v.sponsorBalanceBdt,
+        bank_loan_assistance: v.bankLoanAssistance,
+        bank_loan_bank: v.bankLoanBank || "",
+        coe_status: v.coEStatus,
+        visa_status: v.visaStatus,
+        counselor_name: v.counselorName,
+        avatar_url: (v as any).avatarUrl || linkedLead?.avatarUrl || "",
+        documents_urls: (v as any).documentsUrls || formatSheetDocumentsUrls(linkedLead?.documentChecklist),
+        profile_json: JSON.stringify(v),
+        updated_at: v.updatedAt,
+        created_at: v.updatedAt,
+      };
+    }),
     knltc_lms_bridges: initialStore.lmsBridges.map((b) => ({
       id: b.id,
       lead_id: b.leadId || "",
@@ -512,6 +545,7 @@ function buildInitialFallbackTables(): Record<GoogleSheetsTableName, Record<stri
       email: s.email,
       website_url: s.websiteUrl || "",
       logo_url: s.logoUrl || "",
+      documents_urls: formatSheetDocumentsUrls(s.documents),
       first_year_tuition_yen: s.firstYearTuitionYen ?? 760000,
       commission_per_student_yen: s.commissionPerStudentYen,
       commission_per_student_bdt: s.commissionPerStudentBdt,
@@ -535,6 +569,7 @@ function buildInitialFallbackTables(): Record<GoogleSheetsTableName, Record<stri
       pending_commission_bdt: a.pendingCommissionBdt,
       paid_commission_bdt: a.paidCommissionBdt,
       logo_url: a.logoUrl || "",
+      documents_urls: formatSheetDocumentsUrls(a.documents),
       trade_license_no: a.tradeLicenseNo || "",
       nid_or_passport_no: a.nidOrPassportNo || "",
       bank_name: a.bankName || "",
@@ -550,6 +585,7 @@ function buildInitialFallbackTables(): Record<GoogleSheetsTableName, Record<stri
       location: st.location,
       phone: st.phone,
       email: st.email,
+      avatar_url: (st as any).avatarUrl || "",
       monthly_base_salary_bdt: st.monthlyBaseSalaryBdt,
       kpi_type: st.kpiType || "CALLS",
       kpi_target: st.kpiTarget ?? st.callsTargetMonthly,
@@ -670,7 +706,7 @@ function normalizeRowRecord(record: Record<string, any>): Record<string, any> {
 
 /**
  * Merges remote Google Sheets rows with our persistent local mirror rows so that:
- * 1. Any rich `profile_json`, `documents`, `logo_url`, or newly created local records
+ * 1. Any rich `profile_json`, `documents`, `logo_url`, `avatar_url`, `documents_urls`, or newly created local records
  *    that haven't finished writing or were truncated in Sheets are NEVER lost on refresh!
  */
 function mergeRemoteAndMirrorRows(
@@ -698,12 +734,14 @@ function mergeRemoteAndMirrorRows(
 
     const merged = { ...localMirror, ...remote };
 
-    // Preserve logo_url, cover_image, featured_image if remote is empty
+    // Preserve media & document link columns if remote is empty
     if (!remote.logo_url && localMirror.logo_url) merged.logo_url = localMirror.logo_url;
+    if (!remote.avatar_url && localMirror.avatar_url) merged.avatar_url = localMirror.avatar_url;
+    if (!remote.documents_urls && localMirror.documents_urls) merged.documents_urls = localMirror.documents_urls;
     if (!remote.cover_image && localMirror.cover_image) merged.cover_image = localMirror.cover_image;
     if (!remote.featured_image && localMirror.featured_image) merged.featured_image = localMirror.featured_image;
 
-    // Deep-merge profile_json so uploaded documents, tasks, and checklists never vanish
+    // Deep-merge profile_json so uploaded documents, avatars, logos, tasks, and checklists never vanish
     if (localMirror.profile_json) {
       try {
         const localProf =
@@ -720,6 +758,7 @@ function mergeRemoteAndMirrorRows(
           ...localProf,
           ...remoteProf,
           logoUrl: remoteProf.logoUrl || localProf.logoUrl || merged.logo_url,
+          avatarUrl: remoteProf.avatarUrl || localProf.avatarUrl || merged.avatar_url,
           documents:
             Array.isArray(remoteProf.documents) && remoteProf.documents.some((d: any) => d.fileUrl)
               ? remoteProf.documents
@@ -1336,42 +1375,49 @@ export async function bulkSyncMasterStoreToSheets(
       last_contacted_at: l.lastContactedAt,
       ssc_gpa: l.sscGpa || "",
       hsc_gpa: l.hscGpa || "",
+      avatar_url: l.avatarUrl || "",
+      documents_urls: formatSheetDocumentsUrls(l.documentChecklist),
       profile_json: JSON.stringify(l),
       created_at: l.createdAt || nowIso,
     })),
-    knltc_visa_applicants: (s.visaApplicants || []).map((v) => ({
-      id: v.id,
-      lead_id: v.leadId || "",
-      tracking_no: v.trackingNo,
-      name: v.name,
-      phone: v.phone,
-      branch: v.branch,
-      package_type: v.packageType,
-      visa_track: v.visaTrack || "",
-      intake_session: v.intakeSession,
-      stage: v.stage,
-      target_school: v.targetSchool,
-      partner_school_id: v.partnerSchoolId || "",
-      b2b_agent_id: v.b2bAgentId || "",
-      b2b_agent_name: v.b2bAgentName || "",
-      visa_officer_id: v.visaOfficerId || "",
-      visa_officer_name: v.visaOfficerName || "",
-      contract_amount_bdt: v.contractAmountBdt || 120000,
-      paid_amount_bdt: v.paidAmountBdt || 0,
-      due_amount_bdt: v.dueAmountBdt || 0,
-      sponsor_name: v.sponsorName,
-      sponsor_relation: v.sponsorRelation,
-      sponsor_bank: v.sponsorBank,
-      sponsor_balance_bdt: v.sponsorBalanceBdt,
-      bank_loan_assistance: v.bankLoanAssistance,
-      bank_loan_bank: v.bankLoanBank || "",
-      coe_status: v.coEStatus,
-      visa_status: v.visaStatus,
-      counselor_name: v.counselorName,
-      profile_json: JSON.stringify(v),
-      updated_at: v.updatedAt || nowIso,
-      created_at: v.updatedAt || nowIso,
-    })),
+    knltc_visa_applicants: (s.visaApplicants || []).map((v) => {
+      const linkedLead = (s.crmLeads || []).find((l) => l.id === v.leadId || l.phone === v.phone);
+      return {
+        id: v.id,
+        lead_id: v.leadId || "",
+        tracking_no: v.trackingNo,
+        name: v.name,
+        phone: v.phone,
+        branch: v.branch,
+        package_type: v.packageType,
+        visa_track: v.visaTrack || "",
+        intake_session: v.intakeSession,
+        stage: v.stage,
+        target_school: v.targetSchool,
+        partner_school_id: v.partnerSchoolId || "",
+        b2b_agent_id: v.b2bAgentId || "",
+        b2b_agent_name: v.b2bAgentName || "",
+        visa_officer_id: v.visaOfficerId || "",
+        visa_officer_name: v.visaOfficerName || "",
+        contract_amount_bdt: v.contractAmountBdt || 120000,
+        paid_amount_bdt: v.paidAmountBdt || 0,
+        due_amount_bdt: v.dueAmountBdt || 0,
+        sponsor_name: v.sponsorName,
+        sponsor_relation: v.sponsorRelation,
+        sponsor_bank: v.sponsorBank,
+        sponsor_balance_bdt: v.sponsorBalanceBdt,
+        bank_loan_assistance: v.bankLoanAssistance,
+        bank_loan_bank: v.bankLoanBank || "",
+        coe_status: v.coEStatus,
+        visa_status: v.visaStatus,
+        counselor_name: v.counselorName,
+        avatar_url: (v as any).avatarUrl || linkedLead?.avatarUrl || "",
+        documents_urls: (v as any).documentsUrls || formatSheetDocumentsUrls(linkedLead?.documentChecklist),
+        profile_json: JSON.stringify(v),
+        updated_at: v.updatedAt || nowIso,
+        created_at: v.updatedAt || nowIso,
+      };
+    }),
     knltc_lms_bridges: (s.lmsBridges || []).map((b) => ({
       id: b.id,
       lead_id: b.leadId || "",
@@ -1401,6 +1447,7 @@ export async function bulkSyncMasterStoreToSheets(
       email: sch.email,
       website_url: sch.websiteUrl || "",
       logo_url: sch.logoUrl || "",
+      documents_urls: formatSheetDocumentsUrls(sch.documents),
       first_year_tuition_yen: sch.firstYearTuitionYen ?? 760000,
       commission_per_student_yen: sch.commissionPerStudentYen,
       commission_per_student_bdt: sch.commissionPerStudentBdt,
@@ -1424,6 +1471,7 @@ export async function bulkSyncMasterStoreToSheets(
       pending_commission_bdt: a.pendingCommissionBdt,
       paid_commission_bdt: a.paidCommissionBdt,
       logo_url: a.logoUrl || "",
+      documents_urls: formatSheetDocumentsUrls(a.documents),
       trade_license_no: a.tradeLicenseNo || "",
       nid_or_passport_no: a.nidOrPassportNo || "",
       bank_name: a.bankName || "",
@@ -1439,6 +1487,7 @@ export async function bulkSyncMasterStoreToSheets(
       location: st.location,
       phone: st.phone,
       email: st.email,
+      avatar_url: (st as any).avatarUrl || "",
       monthly_base_salary_bdt: st.monthlyBaseSalaryBdt,
       kpi_type: st.kpiType || "CALLS",
       kpi_target: st.kpiTarget ?? st.callsTargetMonthly,

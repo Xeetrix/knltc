@@ -1,22 +1,27 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   UserCheck,
   FileCheck2,
   GraduationCap,
   ExternalLink,
   CheckCircle2,
+  Eye,
+  Download,
+  FolderOpen,
 } from "lucide-react";
 import {
   resolveVisaTrack,
   getStagesForVisaTrack,
+  getLeadDocumentChecklist,
   type CrmLead,
   type VisaApplicant,
   type LmsUserBridge,
 } from "@/lib/knltc-cms-store";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
+import DocumentPreviewModal from "@/components/admin/DocumentPreviewModal";
 
 export default function StudentProfileView({
   lead,
@@ -35,6 +40,21 @@ export default function StudentProfileView({
   const activeTrack = resolveVisaTrack(visaApplicant || undefined, lead || undefined);
   const trackStages = getStagesForVisaTrack(activeTrack);
   const currentStage = Math.min(trackStages.length, visaApplicant?.stage || 1);
+  const [previewDoc, setPreviewDoc] = useState<{
+    title: string;
+    subtitle?: string;
+    fileUrl: string;
+    fileName?: string;
+  } | null>(null);
+
+  const studentDocs = useMemo(
+    () => getLeadDocumentChecklist(lead || {}),
+    [lead]
+  );
+  const uploadedDocs = useMemo(
+    () => studentDocs.filter((d) => Boolean(d.fileUrl)),
+    [studentDocs]
+  );
 
   const t = useMemo(
     () =>
@@ -73,6 +93,8 @@ export default function StudentProfileView({
             statusCurrent: "In Progress",
             statusCompleted: "Completed",
             statusPending: "Upcoming",
+            docsHeading: "Uploaded Documents & Certificates",
+            viewFile: "View File",
             steps: [
               { step: 1, title: "File Opening & Profile Registration (৳0 Advance)" },
               { step: 2, title: "Japanese Language Training (JLPT N5 / N4)" },
@@ -119,6 +141,8 @@ export default function StudentProfileView({
             statusCurrent: "চলমান ধাপ",
             statusCompleted: "সম্পন্ন",
             statusPending: "অপেক্ষমাণ",
+            docsHeading: "আপলোডকৃত ডকুমেন্ট ও সনদসমূহ",
+            viewFile: "ফাইল দেখুন",
             steps: [
               { step: 1, title: "ফাইল ওপেনিং ও প্রোফাইল নিবন্ধন (৳০ অগ্রিম)" },
               { step: 2, title: "জাপানি ভাষা প্রশিক্ষণ (JLPT N5 / N4)" },
@@ -165,6 +189,8 @@ export default function StudentProfileView({
             statusCurrent: "進行中",
             statusCompleted: "完了",
             statusPending: "待機中",
+            docsHeading: "提出済み書類一覧",
+            viewFile: "ファイル表示",
             steps: [
               { step: 1, title: "ファイル開設・プロフィール登録 (前金 ৳0)" },
               { step: 2, title: "日本語トレーニング (JLPT N5 / N4)" },
@@ -184,14 +210,31 @@ export default function StudentProfileView({
     [language],
   );
 
+  const avatarSrc = lead?.avatarUrl || visaApplicant?.avatarUrl || "";
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Top Personal Banner */}
       <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#133e29] text-white font-black text-2xl shadow-md">
-              {(lead?.name || userName || "KN").slice(0, 2).toUpperCase()}
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#133e29] text-white font-black text-2xl shadow-md">
+              {avatarSrc ? (
+                <img
+                  src={avatarSrc}
+                  alt={lead?.name || userName}
+                  className="h-full w-full object-cover cursor-pointer"
+                  onClick={() =>
+                    setPreviewDoc({
+                      title: lead?.name || userName,
+                      subtitle: "Profile Photo",
+                      fileUrl: avatarSrc,
+                    })
+                  }
+                />
+              ) : (
+                (lead?.name || userName || "KN").slice(0, 2).toUpperCase()
+              )}
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
@@ -273,51 +316,103 @@ export default function StudentProfileView({
       {/* Detailed Bio & 10-Step Visa Progress */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: Personal & Academic Information */}
-        <div className="lg:col-span-5 rounded-3xl border border-stone-200 bg-white p-6 shadow-xs">
-          <h2 className="text-base font-black text-slate-900 flex items-center gap-2 border-b border-stone-100 pb-3">
-            <UserCheck className="h-4 w-4 text-emerald-700" />
-            <span>{t.bioHeading}</span>
-          </h2>
-          <dl className="mt-4 space-y-3 text-xs">
-            <div className="flex justify-between py-1.5 border-b border-stone-100">
-              <dt className="text-slate-500 font-semibold">{t.fullName}</dt>
-              <dd className="font-bold text-slate-900">{lead?.name || userName || "—"}</dd>
-            </div>
-            <div className="flex justify-between py-1.5 border-b border-stone-100">
-              <dt className="text-slate-500 font-semibold">{t.phoneWa}</dt>
-              <dd className="font-mono font-bold text-slate-900">{lead?.phone || "—"}</dd>
-            </div>
-            <div className="flex justify-between py-1.5 border-b border-stone-100">
-              <dt className="text-slate-500 font-semibold">{t.cityAddress}</dt>
-              <dd className="font-bold text-slate-900">{lead?.address || lead?.city || "—"}</dd>
-            </div>
-            <div className="flex justify-between py-1.5 border-b border-stone-100">
-              <dt className="text-slate-500 font-semibold">{t.passport}</dt>
-              <dd className="font-mono font-bold text-slate-900">{lead?.passportNo || t.passportProcessing}</dd>
-            </div>
-            <div className="flex justify-between py-1.5 border-b border-stone-100">
-              <dt className="text-slate-500 font-semibold">{t.education}</dt>
-              <dd className="font-bold text-slate-900">{lead?.education || "—"}</dd>
-            </div>
-            {lead?.gpaDetails && (
+        <div className="lg:col-span-5 rounded-3xl border border-stone-200 bg-white p-6 shadow-xs space-y-6">
+          <div>
+            <h2 className="text-base font-black text-slate-900 flex items-center gap-2 border-b border-stone-100 pb-3">
+              <UserCheck className="h-4 w-4 text-emerald-700" />
+              <span>{t.bioHeading}</span>
+            </h2>
+            <dl className="mt-4 space-y-3 text-xs">
               <div className="flex justify-between py-1.5 border-b border-stone-100">
-                <dt className="text-slate-500 font-semibold">{t.gpaResult}</dt>
-                <dd className="font-bold text-slate-900">{lead.gpaDetails}</dd>
+                <dt className="text-slate-500 font-semibold">{t.fullName}</dt>
+                <dd className="font-bold text-slate-900">{lead?.name || userName || "—"}</dd>
               </div>
-            )}
-            <div className="flex justify-between py-1.5 border-b border-stone-100">
-              <dt className="text-slate-500 font-semibold">{t.guardianSponsor}</dt>
-              <dd className="font-bold text-slate-900">
-                {lead?.guardianName || visaApplicant?.sponsorName || "—"}
-              </dd>
+              <div className="flex justify-between py-1.5 border-b border-stone-100">
+                <dt className="text-slate-500 font-semibold">{t.phoneWa}</dt>
+                <dd className="font-mono font-bold text-slate-900">{lead?.phone || "—"}</dd>
+              </div>
+              <div className="flex justify-between py-1.5 border-b border-stone-100">
+                <dt className="text-slate-500 font-semibold">{t.cityAddress}</dt>
+                <dd className="font-bold text-slate-900">{lead?.address || lead?.city || "—"}</dd>
+              </div>
+              <div className="flex justify-between py-1.5 border-b border-stone-100">
+                <dt className="text-slate-500 font-semibold">{t.passport}</dt>
+                <dd className="font-mono font-bold text-slate-900">{lead?.passportNo || t.passportProcessing}</dd>
+              </div>
+              <div className="flex justify-between py-1.5 border-b border-stone-100">
+                <dt className="text-slate-500 font-semibold">{t.education}</dt>
+                <dd className="font-bold text-slate-900">{lead?.education || "—"}</dd>
+              </div>
+              {lead?.gpaDetails && (
+                <div className="flex justify-between py-1.5 border-b border-stone-100">
+                  <dt className="text-slate-500 font-semibold">{t.gpaResult}</dt>
+                  <dd className="font-bold text-slate-900">{lead.gpaDetails}</dd>
+                </div>
+              )}
+              <div className="flex justify-between py-1.5 border-b border-stone-100">
+                <dt className="text-slate-500 font-semibold">{t.guardianSponsor}</dt>
+                <dd className="font-bold text-slate-900">
+                  {lead?.guardianName || visaApplicant?.sponsorName || "—"}
+                </dd>
+              </div>
+              <div className="pt-2">
+                <dt className="text-slate-500 font-semibold mb-1">{t.counselorNotes}</dt>
+                <dd className="rounded-xl bg-[#fcfaf7] border border-stone-200 p-3 text-slate-700 leading-relaxed">
+                  {lead?.notes || "—"}
+                </dd>
+              </div>
+            </dl>
+          </div>
+
+          {uploadedDocs.length > 0 && (
+            <div className="border-t border-stone-100 pt-4">
+              <h3 className="text-sm font-black text-slate-900 flex items-center gap-2 mb-3">
+                <FolderOpen className="h-4 w-4 text-indigo-600" />
+                <span>{t.docsHeading} ({uploadedDocs.length})</span>
+              </h3>
+              <div className="space-y-2">
+                {uploadedDocs.map((doc) => (
+                  <div
+                    key={doc.id}
+                    className="flex items-center justify-between gap-2 rounded-xl border border-stone-200 bg-[#fcfaf7] px-3 py-2 text-xs"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-bold text-slate-800">
+                        {language === "bn" ? doc.titleBn : doc.titleEn}
+                      </p>
+                      <p className="truncate text-[10px] text-slate-500">
+                        {doc.fileName || doc.status}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPreviewDoc({
+                            title: language === "bn" ? doc.titleBn : doc.titleEn,
+                            subtitle: doc.fileName,
+                            fileUrl: doc.fileUrl!,
+                            fileName: doc.fileName,
+                          })
+                        }
+                        className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 border border-indigo-200 px-2.5 py-1 text-[11px] font-bold text-indigo-700 hover:bg-indigo-100"
+                      >
+                        <Eye className="h-3 w-3" />
+                        <span>{t.viewFile}</span>
+                      </button>
+                      <a
+                        href={doc.fileUrl}
+                        download={doc.fileName || doc.titleEn}
+                        className="rounded-lg border border-stone-200 bg-white p-1 text-slate-600 hover:bg-stone-100"
+                      >
+                        <Download className="h-3 w-3" />
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="pt-2">
-              <dt className="text-slate-500 font-semibold mb-1">{t.counselorNotes}</dt>
-              <dd className="rounded-xl bg-[#fcfaf7] border border-stone-200 p-3 text-slate-700 leading-relaxed">
-                {lead?.notes || "—"}
-              </dd>
-            </div>
-          </dl>
+          )}
         </div>
 
         {/* Right: Multi-Track Visa File Progress */}
@@ -386,6 +481,17 @@ export default function StudentProfileView({
           </div>
         </div>
       </div>
+
+      {previewDoc && (
+        <DocumentPreviewModal
+          isOpen={Boolean(previewDoc)}
+          onClose={() => setPreviewDoc(null)}
+          title={previewDoc.title}
+          subtitle={previewDoc.subtitle}
+          fileUrl={previewDoc.fileUrl}
+          fileName={previewDoc.fileName}
+        />
+      )}
     </div>
   );
 }

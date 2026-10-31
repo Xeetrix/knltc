@@ -16,7 +16,7 @@ export default function DriveFileUploadButton({
   onUploaded,
   folderName = "KNLTC_Dashboard_Uploads",
   accept = "image/*,application/pdf",
-  label = "Upload to Google Drive",
+  label = "Upload File",
   className = "",
 }: DriveFileUploadButtonProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -68,12 +68,12 @@ export default function DriveFileUploadButton({
         {isUploading ? (
           <>
             <Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-700" />
-            <span>Uploading to Drive...</span>
+            <span>Uploading...</span>
           </>
         ) : uploadedOk ? (
           <>
             <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-            <span>Uploaded to Drive!</span>
+            <span>Uploaded!</span>
           </>
         ) : (
           <>

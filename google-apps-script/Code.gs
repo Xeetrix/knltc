@@ -60,6 +60,7 @@ var TABLE_SCHEMAS = {
     "pending_commission_bdt",
     "paid_commission_bdt",
     "logo_url",
+    "documents_urls",
     "trade_license_no",
     "nid_or_passport_no",
     "bank_name",
@@ -96,6 +97,8 @@ var TABLE_SCHEMAS = {
     "due_amount_bdt",
     "ssc_gpa",
     "hsc_gpa",
+    "avatar_url",
+    "documents_urls",
     "profile_json"
   ],
   knltc_finance_transactions: [
@@ -149,6 +152,7 @@ var TABLE_SCHEMAS = {
     "email",
     "website_url",
     "logo_url",
+    "documents_urls",
     "first_year_tuition_yen",
     "commission_per_student_yen",
     "commission_per_student_bdt",
@@ -166,6 +170,7 @@ var TABLE_SCHEMAS = {
     "location",
     "phone",
     "email",
+    "avatar_url",
     "monthly_base_salary_bdt",
     "kpi_type",
     "kpi_target",
@@ -208,6 +213,8 @@ var TABLE_SCHEMAS = {
     "visa_status",
     "counselor_name",
     "visa_track",
+    "avatar_url",
+    "documents_urls",
     "profile_json",
     "updated_at",
     "created_at"

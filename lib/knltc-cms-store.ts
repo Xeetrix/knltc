@@ -549,6 +549,8 @@ export interface VisaApplicant {
   contractAmountBdt?: number;
   paidAmountBdt?: number;
   dueAmountBdt?: number;
+  avatarUrl?: string;
+  documentsUrls?: string;
   b2bCommissionTriggered?: boolean;
   schoolCommissionClaimed?: boolean;
   updatedAt: string;
@@ -850,6 +852,7 @@ export interface StaffMember {
   location: "REMOTE" | "DHAKA_OFFICE" | "KHULNA_OFFICE";
   phone: string;
   email: string;
+  avatarUrl?: string;
   monthlyBaseSalaryBdt: number;
   kpiType?: "CALLS" | "CLASSES" | "VISA_FILES" | "SALARIED_FIXED";
   kpiTarget?: number;
@@ -1740,6 +1743,16 @@ function isIsoDateLike(val: any): boolean {
   return /^\d{4}-\d{2}-\d{2}/.test(s) || s.includes("T18:00:00") || s.endsWith(".000Z");
 }
 
+export function formatDocumentLinksForSheet(
+  docs?: Array<{ titleEn?: string; titleBn?: string; fileName?: string; fileUrl?: string }>,
+): string {
+  if (!Array.isArray(docs) || docs.length === 0) return "";
+  return docs
+    .filter((d) => Boolean(d?.fileUrl))
+    .map((d) => `${d.titleEn || d.titleBn || d.fileName || "Document"}: ${d.fileUrl}`)
+    .join("\n");
+}
+
 export function serializeLeadToSheetRow(lead: CrmLead): Record<string, any> {
   const defaultContract =
     lead.contractAmountBdt ??
@@ -1779,6 +1792,8 @@ export function serializeLeadToSheetRow(lead: CrmLead): Record<string, any> {
     contract_amount_bdt: defaultContract,
     paid_amount_bdt: paid,
     due_amount_bdt: due,
+    avatar_url: lead.avatarUrl || "",
+    documents_urls: formatDocumentLinksForSheet(lead.documentChecklist),
     profile_json: JSON.stringify(lead),
   };
 }
@@ -1814,6 +1829,8 @@ export function serializeVisaToSheetRow(v: VisaApplicant): Record<string, any> {
     coe_status: v.coEStatus,
     visa_status: v.visaStatus,
     counselor_name: v.counselorName,
+    avatar_url: v.avatarUrl || "",
+    documents_urls: v.documentsUrls || "",
     profile_json: JSON.stringify({ ...v, visaTrack: resolvedTrack }),
     updated_at: v.updatedAt || new Date().toISOString(),
     created_at: v.updatedAt || new Date().toISOString(),
@@ -1831,6 +1848,7 @@ export function serializeSchoolToSheetRow(s: JapanesePartnerSchool): Record<stri
     email: s.email || "",
     website_url: s.websiteUrl || "",
     logo_url: s.logoUrl || "",
+    documents_urls: formatDocumentLinksForSheet(s.documents),
     first_year_tuition_yen: s.firstYearTuitionYen ?? 760000,
     commission_per_student_yen: s.commissionPerStudentYen ?? 0,
     commission_per_student_bdt: s.commissionPerStudentBdt ?? 0,
@@ -1856,6 +1874,7 @@ export function serializeAgentToSheetRow(a: B2bAgent): Record<string, any> {
     pending_commission_bdt: a.pendingCommissionBdt ?? 0,
     paid_commission_bdt: a.paidCommissionBdt ?? 0,
     logo_url: a.logoUrl || "",
+    documents_urls: formatDocumentLinksForSheet(a.documents),
     trade_license_no: a.tradeLicenseNo || "",
     nid_or_passport_no: a.nidOrPassportNo || "",
     bank_name: a.bankName || "",
@@ -1873,6 +1892,7 @@ export function serializeStaffToSheetRow(st: StaffMember): Record<string, any> {
     location: st.location,
     phone: st.phone,
     email: st.email,
+    avatar_url: st.avatarUrl || "",
     monthly_base_salary_bdt: st.monthlyBaseSalaryBdt ?? 0,
     kpi_type: st.kpiType || "CALLS",
     kpi_target: st.kpiTarget ?? st.callsTargetMonthly ?? 0,
@@ -2087,6 +2107,7 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
           dueAmountBdt: due,
           notes: rawNotes,
           followUpDate: cleanFollowUp,
+          avatarUrl: l.avatar_url || parsedProfile.avatarUrl || local?.avatarUrl || "",
           documentChecklist: mergeDocumentLists(
             parsedProfile.documentChecklist,
             local?.documentChecklist,
@@ -2173,6 +2194,8 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
             v.counselor_name || parsedProfile.counselorName || local?.counselorName,
             "KNLTC Admin",
           ),
+          avatarUrl: v.avatar_url || parsedProfile.avatarUrl || local?.avatarUrl || "",
+          documentsUrls: v.documents_urls || parsedProfile.documentsUrls || local?.documentsUrls || "",
           updatedAt: v.updated_at || parsedProfile.updatedAt || new Date().toISOString(),
         };
       });
@@ -2604,6 +2627,10 @@ export function updateCrmLeadProfile(id: string, updates: Partial<CrmLead>): Crm
     if (updatedLead.contractAmountBdt !== undefined) linkedVisa.contractAmountBdt = updatedLead.contractAmountBdt;
     if (updatedLead.paidAmountBdt !== undefined) linkedVisa.paidAmountBdt = updatedLead.paidAmountBdt;
     if (updatedLead.dueAmountBdt !== undefined) linkedVisa.dueAmountBdt = updatedLead.dueAmountBdt;
+    if (updatedLead.avatarUrl) linkedVisa.avatarUrl = updatedLead.avatarUrl;
+    if (updatedLead.documentChecklist) {
+      linkedVisa.documentsUrls = formatDocumentLinksForSheet(updatedLead.documentChecklist);
+    }
     linkedVisa.counselorName = updatedLead.assignedTo || linkedVisa.counselorName;
     linkedVisa.updatedAt = new Date().toISOString();
     syncToServer("UPSERT", "knltc_visa_applicants", serializeVisaToSheetRow(linkedVisa));

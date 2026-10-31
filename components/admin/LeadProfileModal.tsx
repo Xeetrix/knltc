@@ -40,8 +40,11 @@ import {
   FileCheck2,
   Award,
   Wallet,
+  Eye,
+  Download,
 } from "lucide-react";
 import { uploadDocumentFile, uploadMediaImage } from "@/lib/media-upload";
+import DocumentPreviewModal from "@/components/admin/DocumentPreviewModal";
 import {
   getCmsStore,
   updateCrmLeadProfile,
@@ -437,6 +440,12 @@ export default function LeadProfileModal({
   const [activityLog, setActivityLog] = useState<LeadActivityItem[]>(
     () => lead.activityLog || []
   );
+  const [previewDoc, setPreviewDoc] = useState<{
+    title: string;
+    subtitle?: string;
+    fileUrl: string;
+    fileName?: string;
+  } | null>(null);
 
   // Inline Status Update Composer State
   const [nextStatusInput, setNextStatusInput] = useState<LeadStatus>(
@@ -869,8 +878,8 @@ export default function LeadProfileModal({
       persistLeadChanges(
         { documentChecklist: nextDocs, activityLog: nextLog },
         tr(
-          `"${docItem.titleBn}" Google Drive-এ আপলোড হয়েছে`,
-          `"${docItem.titleEn}" uploaded to Google Drive`
+          `"${docItem.titleBn}" সফলভাবে আপলোড ও সংরক্ষিত হয়েছে`,
+          `"${docItem.titleEn}" uploaded & saved`
         )
       );
     } catch (err) {
@@ -1765,15 +1774,15 @@ export default function LeadProfileModal({
             <div>
               <h2 className="text-base font-bold text-slate-900">
                 {tr(
-                  "জাপান COE ও এম্বাসি ১২টি ডকুমেন্ট ভল্ট (Google Drive)",
-                  "Japan COE & Embassy 12-Document Vault (Google Drive)",
+                  "জাপান COE ও এম্বাসি ১২টি ডকুমেন্ট ভল্ট",
+                  "Japan COE & Embassy 12-Document Vault",
                   "日本COE・大使館提出12書類チェックリスト"
                 )}
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
                 {tr(
-                  "সরাসরি পিডিএফ বা ছবি আপলোড করুন — ফাইলগুলো স্বয়ংক্রিয়ভাবে Google Drive-এ সংরক্ষিত হবে",
-                  "Upload PDFs or scans directly to Google Drive and verify COE readiness."
+                  "সরাসরি পিডিএফ বা ছবি আপলোড করুন — প্রতিটি ফাইলের ডিরেক্ট লিংক স্বয়ংক্রিয়ভাবে প্রোফাইল ও শিট কলামে সংরক্ষিত হবে",
+                  "Upload PDFs or images directly and preview or download them anytime."
                 )}
               </p>
             </div>
@@ -1867,7 +1876,9 @@ export default function LeadProfileModal({
                         <span>
                           {isUploading
                             ? tr("আপলোড হচ্ছে...", "Uploading...")
-                            : tr("Drive-এ আপলোড", "Upload File")}
+                            : doc.fileUrl
+                              ? tr("নতুন ফাইল আপলোড", "Replace File")
+                              : tr("ফাইল আপলোড", "Upload File")}
                         </span>
                         <input
                           type="file"
@@ -1881,15 +1892,35 @@ export default function LeadProfileModal({
                       </label>
 
                       {doc.fileUrl && (
-                        <a
-                          href={doc.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:underline"
-                        >
-                          <span>{tr("ফাইল দেখুন", "View File")}</span>
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setPreviewDoc({
+                                title: isBn ? doc.titleBn : doc.titleEn,
+                                subtitle: `${name} • ${doc.fileName || "Document"}`,
+                                fileUrl: doc.fileUrl!,
+                                fileName: doc.fileName,
+                              })
+                            }
+                            className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 border border-indigo-200 px-2.5 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition cursor-pointer"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                            <span>{tr("ফাইল দেখুন", "View File")}</span>
+                          </button>
+                          <a
+                            href={
+                              doc.fileUrl.includes("/api/media/file/")
+                                ? `${doc.fileUrl}${doc.fileUrl.includes("?") ? "&" : "?"}download=1`
+                                : doc.fileUrl
+                            }
+                            download={doc.fileName || doc.titleEn}
+                            className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white p-1.5 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition"
+                            title={tr("ডাউনলোড", "Download")}
+                          >
+                            <Download className="h-3.5 w-3.5" />
+                          </a>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -2796,6 +2827,17 @@ export default function LeadProfileModal({
             </div>
           </div>
         </div>
+      )}
+
+      {previewDoc && (
+        <DocumentPreviewModal
+          isOpen={Boolean(previewDoc)}
+          onClose={() => setPreviewDoc(null)}
+          title={previewDoc.title}
+          subtitle={previewDoc.subtitle}
+          fileUrl={previewDoc.fileUrl}
+          fileName={previewDoc.fileName}
+        />
       )}
     </div>
   );

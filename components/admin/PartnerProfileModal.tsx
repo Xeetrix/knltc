@@ -30,8 +30,11 @@ import {
   Trash2,
   Printer,
   GraduationCap,
+  Eye,
+  Download,
 } from "lucide-react";
 import { uploadMediaImage, uploadDocumentFile } from "@/lib/media-upload";
+import DocumentPreviewModal from "@/components/admin/DocumentPreviewModal";
 import {
   type JapanesePartnerSchool,
   type B2bAgent,
@@ -127,6 +130,12 @@ export default function PartnerProfileModal({
   const [newTaskDueDate, setNewTaskDueDate] = useState("");
   const [statusUpdateNote, setStatusUpdateNote] = useState("");
   const [matchSearchQuery, setMatchSearchQuery] = useState("");
+  const [previewDoc, setPreviewDoc] = useState<{
+    title: string;
+    subtitle?: string;
+    fileUrl: string;
+    fileName?: string;
+  } | null>(null);
 
   // School State
   const [schoolState, setSchoolState] = useState<JapanesePartnerSchool>(() => {
@@ -1118,7 +1127,13 @@ export default function PartnerProfileModal({
                       ) : (
                         <Upload className="h-3.5 w-3.5 text-indigo-600" />
                       )}
-                      <span>Upload to Google Drive</span>
+                      <span>
+                        {isUploading
+                          ? "Uploading..."
+                          : doc.fileUrl
+                            ? "Replace File"
+                            : "Upload File"}
+                      </span>
                       <input
                         type="file"
                         accept=".pdf,image/*"
@@ -1149,13 +1164,13 @@ export default function PartnerProfileModal({
                               persistEntity(
                                 { documents: nextDocs },
                                 undefined,
-                                "Document uploaded to Google Drive"
+                                "Document uploaded & saved"
                               );
                             } else {
                               persistEntity(
                                 undefined,
                                 { documents: nextDocs },
-                                "Document uploaded to Google Drive"
+                                "Document uploaded & saved"
                               );
                             }
                           } catch {
@@ -1168,15 +1183,35 @@ export default function PartnerProfileModal({
                     </label>
 
                     {doc.fileUrl && (
-                      <a
-                        href={doc.fileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:underline"
-                      >
-                        <span>View</span>
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPreviewDoc({
+                              title: isBn ? doc.titleBn : doc.titleEn,
+                              subtitle: `${displayName} • ${doc.fileName || "Document"}`,
+                              fileUrl: doc.fileUrl!,
+                              fileName: doc.fileName,
+                            })
+                          }
+                          className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 border border-indigo-200 px-2.5 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition cursor-pointer"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          <span>View File</span>
+                        </button>
+                        <a
+                          href={
+                            doc.fileUrl.includes("/api/media/file/")
+                              ? `${doc.fileUrl}${doc.fileUrl.includes("?") ? "&" : "?"}download=1`
+                              : doc.fileUrl
+                          }
+                          download={doc.fileName || doc.titleEn}
+                          className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white p-1.5 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition"
+                          title="Download"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                        </a>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1630,6 +1665,17 @@ export default function PartnerProfileModal({
             </div>
           </div>
         </div>
+      )}
+
+      {previewDoc && (
+        <DocumentPreviewModal
+          isOpen={Boolean(previewDoc)}
+          onClose={() => setPreviewDoc(null)}
+          title={previewDoc.title}
+          subtitle={previewDoc.subtitle}
+          fileUrl={previewDoc.fileUrl}
+          fileName={previewDoc.fileName}
+        />
       )}
     </div>
   );

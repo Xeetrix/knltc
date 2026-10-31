@@ -3485,9 +3485,23 @@ export default function DashboardPage() {
                                       className="cursor-pointer rounded-xl border border-slate-200/70 bg-slate-50/60 hover:bg-white hover:border-slate-300 p-3 transition space-y-1.5"
                                     >
                                       <div className="flex items-start justify-between gap-2">
-                                        <p className="text-xs font-bold text-slate-900 truncate">
-                                          {lead.name}
-                                        </p>
+                                        <div className="flex items-center gap-2 min-w-0">
+                                          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white font-bold text-[10px] overflow-hidden">
+                                            {lead.avatarUrl ? (
+                                              <img
+                                                src={lead.avatarUrl}
+                                                alt={lead.name}
+                                                referrerPolicy="no-referrer"
+                                                className="h-full w-full object-cover"
+                                              />
+                                            ) : (
+                                              <span>{(lead.name || "A").trim().charAt(0).toUpperCase()}</span>
+                                            )}
+                                          </div>
+                                          <p className="text-xs font-bold text-slate-900 truncate">
+                                            {lead.name}
+                                          </p>
+                                        </div>
                                         <span className="text-[10px] font-mono font-bold text-slate-500">
                                           {lead.priority || "WARM"}
                                         </span>
@@ -4626,8 +4640,17 @@ export default function DashboardPage() {
 
                                           {/* Candidate Avatar + Name + Phone */}
                                           <div className="mt-2.5 flex items-center gap-2.5">
-                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white font-bold text-xs shadow-2xs">
-                                              {initial}
+                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white font-bold text-xs shadow-2xs overflow-hidden">
+                                              {app.avatarUrl || linkedLead?.avatarUrl ? (
+                                                <img
+                                                  src={app.avatarUrl || linkedLead?.avatarUrl}
+                                                  alt={app.name}
+                                                  referrerPolicy="no-referrer"
+                                                  className="h-full w-full object-cover"
+                                                />
+                                              ) : (
+                                                <span>{initial}</span>
+                                              )}
                                             </div>
                                             <div className="min-w-0 flex-1">
                                               <p className="font-bold text-xs text-slate-900 group-hover:text-indigo-600 transition truncate">
@@ -4815,8 +4838,17 @@ export default function DashboardPage() {
                               >
                                 {/* Left: Avatar + Name + Tracking No + Phone + Institution */}
                                 <div className="flex items-center gap-3.5 min-w-0">
-                                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white font-bold text-sm shadow-2xs">
-                                    {initial}
+                                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white font-bold text-sm shadow-2xs overflow-hidden">
+                                    {app.avatarUrl || linkedLead?.avatarUrl ? (
+                                      <img
+                                        src={app.avatarUrl || linkedLead?.avatarUrl}
+                                        alt={app.name}
+                                        referrerPolicy="no-referrer"
+                                        className="h-full w-full object-cover"
+                                      />
+                                    ) : (
+                                      <span>{initial}</span>
+                                    )}
                                   </div>
 
                                   <div className="min-w-0">
@@ -7522,12 +7554,12 @@ export default function DashboardPage() {
                     <div className="sm:col-span-2">
                       <div className="flex items-center justify-between gap-2">
                         <label className="font-semibold text-slate-700">
-                          {tr("এজেন্সির লোগো URL বা ফাইল আপলোড", "Agency Logo URL or Drive Upload", "ロゴ画像URLまたはドライブアップロード")}
+                          {tr("এজেন্সির লোগো বা ফাইল আপলোড", "Agency Logo or File Upload", "ロゴ画像またはファイルアップロード")}
                         </label>
                         <DriveFileUploadButton
                           folderName="KNLTC_B2B_Agents"
                           accept="image/*,application/pdf"
-                          label={tr("গুগল ড্রাইভে আপলোড", "Upload to Google Drive", "Driveへアップロード")}
+                          label={tr("লোগো আপলোড", "Upload Logo", "ロゴアップロード")}
                           onUploaded={(url) => setB2bForm({ ...b2bForm, logoUrl: url })}
                         />
                       </div>
@@ -7535,7 +7567,7 @@ export default function DashboardPage() {
                         type="text"
                         value={b2bForm.logoUrl}
                         onChange={(e) => setB2bForm({ ...b2bForm, logoUrl: e.target.value })}
-                        placeholder={tr("লোগো ইমেজ লিংক দিন অথবা ডানপাশের বাটনে আপলোড করুন", "https://... (or click Upload to Google Drive)", "https://... (またはDriveへアップロード)")}
+                        placeholder={tr("লোগো ইমেজ লিংক দিন অথবা ডানপাশের বাটনে আপলোড করুন", "https://... (or click Upload Logo)", "https://... (またはロゴをアップロード)")}
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
                       />
                     </div>
@@ -7841,7 +7873,7 @@ export default function DashboardPage() {
                         <DriveFileUploadButton
                           folderName="KNLTC_Partner_Schools"
                           accept="image/*,application/pdf"
-                          label={tr("ড্রাইভে আপলোড", "Upload to Drive", "Driveアップロード")}
+                          label={tr("লোগো আপলোড", "Upload Logo", "ロゴアップロード")}
                           onUploaded={(url) => setSchoolForm({ ...schoolForm, logoUrl: url })}
                         />
                       </div>
@@ -8845,7 +8877,7 @@ export default function DashboardPage() {
                         onChange={(e) =>
                           setPaymentForm({ ...paymentForm, referenceOrTrx: e.target.value })
                         }
-                        placeholder="e.g. 9J28A00X or Drive Receipt URL"
+                        placeholder="e.g. 9J28A00X or Receipt File Link"
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
                       />
                     </div>
@@ -9036,7 +9068,7 @@ export default function DashboardPage() {
                     <div className="sm:col-span-2">
                       <div className="flex items-center justify-between gap-2">
                         <label className="font-semibold text-slate-700">
-                          {tr("ভাউচার নং / গুগল ড্রাইভ ভাউচার আপলোড", "Voucher / Drive Upload", "伝票番号・証憑参照")}
+                          {tr("ভাউচার নং / ফাইল আপলোড", "Voucher / File Upload", "伝票番号・証憑参照")}
                         </label>
                         <DriveFileUploadButton
                           folderName="KNLTC_Expense_Vouchers"
@@ -9053,7 +9085,7 @@ export default function DashboardPage() {
                         onChange={(e) =>
                           setExpenseForm({ ...expenseForm, referenceOrTrx: e.target.value })
                         }
-                        placeholder={tr("ভাউচার নং বা মেমো বিবরণ", "Voucher # or Drive link", "伝票番号・メモ詳細")}
+                        placeholder={tr("ভাউচার নং বা ফাইল লিংক", "Voucher # or File link", "伝票番号・メモ詳細")}
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
                       />
                     </div>

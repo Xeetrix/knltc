@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import {
-  HardDrive,
-  Cloud,
   Upload,
   CheckCircle2,
   FileText,
@@ -11,16 +9,13 @@ import {
   Trash2,
   Copy,
   Check,
-  ExternalLink,
   Download,
   RefreshCw,
   Sparkles,
   Search,
   FolderOpen,
   Eye,
-  X,
   ShieldCheck,
-  AlertTriangle,
   Layers,
   LayoutGrid,
   List as ListIcon,
@@ -34,6 +29,7 @@ import {
   type MediaVaultClientItem,
   type StorageStatusSummary,
 } from "@/lib/media-upload";
+import DocumentPreviewModal from "@/components/admin/DocumentPreviewModal";
 
 interface MediaStorageManagerProps {
   language: "bn" | "en" | "ja";
@@ -153,11 +149,11 @@ export default function MediaStorageManager({
       onShowToast(
         tr(
           `${successCount}টি ফাইল সফলভাবে আপলোড ও সংরক্ষিত হয়েছে!`,
-          `${successCount} file(s) uploaded & persisted!`,
+          `${successCount} file(s) uploaded & saved!`,
         ),
         tr(
-          "গুগল ড্রাইভ ও সার্ভার স্টোরেজে স্থায়ী লিংক তৈরি হয়েছে",
-          "Saved to Persistent Server Vault & Google Drive",
+          "সরাসরি প্রিভিউ ও ডিরেক্ট মিডিয়া লিংক প্রস্তুত",
+          "Direct media link is ready for instant preview & use",
         ),
       );
     } catch (err) {
@@ -171,17 +167,19 @@ export default function MediaStorageManager({
     }
   };
 
+  const toPublicUrl = (rawUrl: string) =>
+    rawUrl.startsWith("/") && typeof window !== "undefined"
+      ? `${window.location.origin}${rawUrl}`
+      : rawUrl;
+
   const handleCopyUrl = async (item: MediaVaultClientItem) => {
     try {
-      const fullUrl =
-        item.url.startsWith("/") && typeof window !== "undefined"
-          ? `${window.location.origin}${item.url}`
-          : item.url;
-      await navigator.clipboard.writeText(item.url);
+      const fullUrl = toPublicUrl(item.url);
+      await navigator.clipboard.writeText(fullUrl);
       setCopiedId(item.id);
       setTimeout(() => setCopiedId(null), 2500);
       onShowToast(
-        tr("মিডিয়া লিংক কপি করা হয়েছে!", "Media URL copied to clipboard!"),
+        tr("ডিরেক্ট মিডিয়া লিংক কপি করা হয়েছে!", "Direct media link copied!"),
         fullUrl,
       );
     } catch {
@@ -197,7 +195,7 @@ export default function MediaStorageManager({
       if (res.summary) setSummary(res.summary);
       if (previewItem?.id === item.id) setPreviewItem(null);
       onShowToast(
-        tr("ফাইলটি ডিলিট করা হয়েছে", "File deleted from Media Vault"),
+        tr("ফাইলটি মুছে ফেলা হয়েছে", "File removed from Media Library"),
         item.name,
       );
     }
@@ -212,12 +210,12 @@ export default function MediaStorageManager({
         if (res.summary) setSummary(res.summary);
         onShowToast(
           tr(
-            `স্টোরেজ অপ্টিমাইজড! ${res.optimizedCount}টি এমবেডেড ফাইল শর্ট লিংকে রূপান্তরিত হয়েছে`,
-            `Storage Optimized! ${res.optimizedCount} inline files converted to short URLs`,
+            `মিডিয়া লাইব্রেরি সিঙ্ক সম্পন্ন! (${res.optimizedCount}টি নতুন ফাইল যুক্ত হয়েছে)`,
+            `Media Library Synced! (${res.optimizedCount} embedded files indexed)`,
           ),
           tr(
-            `${formatBytes(res.freedBytes)} ডাটাবেজ সেল স্পেস খালি করা হয়েছে`,
-            `Freed ${formatBytes(res.freedBytes)} of Google Sheets cell space`,
+            "সকল প্রোফাইল ছবি ও ডকুমেন্টের ডিরেক্ট লিংক আপডেট করা হয়েছে",
+            "All profile photos, logos, and documents now use direct URLs",
           ),
         );
       }
@@ -243,24 +241,20 @@ export default function MediaStorageManager({
         <div>
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2.5 py-1 text-[11px] font-bold tracking-wide text-emerald-800 uppercase border border-emerald-200">
-              <HardDrive className="h-3.5 w-3.5 text-emerald-700" />
-              {tr("হাইব্রিড ক্লাউড ও সার্ভার ভল্ট", "HYBRID DRIVE + SERVER VAULT")}
-            </span>
-            <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-              {tr("রিফ্রেশে ১০০% ডাটা সুরক্ষিত", "100% Refresh-Safe Persistence")}
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-700" />
+              {tr("ডিরেক্ট মিডিয়া ও ডকুমেন্ট ভল্ট", "DIRECT MEDIA & DOCUMENT VAULT")}
             </span>
           </div>
           <h2 className="mt-2 text-xl font-black tracking-tight text-slate-900">
             {tr(
-              "মিডিয়া লাইব্রেরি ও স্টোরেজ স্ট্যাটাস ম্যানেজার",
-              "Media Library & Storage Status Manager",
+              "মিডিয়া লাইব্রেরি ও ফাইল ম্যানেজার",
+              "Media Library & File Browser",
             )}
           </h2>
           <p className="mt-1 text-xs text-slate-500">
             {tr(
-              "স্টুডেন্ট পাসপোর্ট, ভিসা পিডিএফ, স্কুলের লোগো, বুকস্টোর বইয়ের ছবি এবং ওয়েবসাইট ব্যানার এক জায়গা থেকে আপলোড, প্রিভিউ ও লিংক কপি করুন।",
-              "Upload, preview, copy clean URLs, and manage all Student PDFs, Partner Logos, Bookstore covers, and Website CMS media in one centralized vault.",
+              "স্টুডেন্ট ছবি, পাসপোর্ট, ভিসা পিডিএফ, পার্টনার স্কুলের লোগো, বুকস্টোর বইয়ের কভার এবং ওয়েবসাইট ব্যানার এক জায়গা থেকে আপলোড, প্রিভিউ ও ডিরেক্ট লিংক কপি করুন।",
+              "Upload, preview, and copy direct links for Student Photos, Visa PDFs, Partner Logos, Bookstore Covers, and Website Banners.",
             )}
           </p>
         </div>
@@ -270,13 +264,13 @@ export default function MediaStorageManager({
             type="button"
             onClick={handleOptimizeAll}
             disabled={isOptimizing}
-            className="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-2.5 text-xs font-bold text-amber-900 hover:bg-amber-100 transition disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/90 px-4 py-2.5 text-xs font-bold text-emerald-900 hover:bg-emerald-100 transition disabled:opacity-60"
           >
-            <Sparkles className={`h-4 w-4 text-amber-600 ${isOptimizing ? "animate-spin" : ""}`} />
+            <Sparkles className={`h-4 w-4 text-emerald-700 ${isOptimizing ? "animate-spin" : ""}`} />
             <span>
               {isOptimizing
-                ? tr("অপ্টিমাইজ হচ্ছে...", "Optimizing Storage...")
-                : tr("স্টোরেজ ও শিট রিপেয়ার", "Optimize & Repair Storage")}
+                ? tr("সিঙ্ক হচ্ছে...", "Indexing Files...")
+                : tr("সকল ফাইল ইনডেক্স ও সিঙ্ক", "Sync All Profile Media")}
             </span>
           </button>
 
@@ -292,15 +286,15 @@ export default function MediaStorageManager({
         </div>
       </div>
 
-      {/* 4 Storage Health & Diagnostic Cards */}
+      {/* 4 Clean Summary Metric Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500">
-              {tr("সার্ভার ডিস্ক স্টোরেজ", "Persistent Server Disk")}
+              {tr("মোট সংরক্ষিত ফাইল", "Total Stored Files")}
             </span>
             <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
-              <CheckCircle2 className="h-3 w-3" /> ACTIVE
+              <CheckCircle2 className="h-3 w-3" /> ONLINE
             </span>
           </div>
           <p className="mt-2 text-2xl font-black text-slate-900">
@@ -310,7 +304,7 @@ export default function MediaStorageManager({
             </span>
           </p>
           <p className="mt-1 text-[11px] text-slate-500">
-            {tr("মোট সাইজ:", "Total Vault Size:")}{" "}
+            {tr("মোট ব্যবহৃত স্টোরেজ:", "Total Size:")}{" "}
             <strong className="text-slate-700">{formatBytes(summary?.totalBytes || 0)}</strong>
           </p>
         </div>
@@ -318,81 +312,54 @@ export default function MediaStorageManager({
         <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500">
-              {tr("গুগল ড্রাইভ ক্লাউড", "Google Drive Backup")}
+              {tr("ছবি ও লোগো (Images)", "Photos, Avatars & Logos")}
             </span>
-            <span
-              className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold border ${
-                summary?.googleDriveConnected
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                  : "bg-blue-50 text-blue-700 border-blue-200"
-              }`}
-            >
-              <Cloud className="h-3 w-3" />
-              {summary?.googleDriveConnected ? "CONNECTED" : "HYBRID FALLBACK"}
-            </span>
+            <ImageIcon className="h-4 w-4 text-indigo-600" />
           </div>
           <p className="mt-2 text-2xl font-black text-slate-900">
-            {summary?.imageCount ?? 0}{" "}
+            {summary?.imageCount ?? items.filter((i) => i.mimeType.startsWith("image/")).length}{" "}
             <span className="text-xs font-semibold text-slate-500">
-              {tr("ছবি", "Images")}
-            </span>{" "}
-            • {summary?.pdfCount ?? 0}{" "}
-            <span className="text-xs font-semibold text-slate-500">PDF</span>
+              {tr("টি ছবি", "images")}
+            </span>
           </p>
           <p className="mt-1 text-[11px] text-slate-500">
-            {summary?.googleDriveConnected
-              ? tr("ড্রাইভ এবং লোকাল ডিস্ক উভয়েই সংরক্ষিত", "Dual-synced to Google Drive & Server Disk")
-              : tr("সার্ভার ডিস্কে ১০০% স্থায়ীভাবে সংরক্ষিত", "100% persisted on local server vault")}
+            {tr("সরাসরি প্রোফাইল ও ওয়েবসাইটে প্রদর্শিত", "Direct rendering across profiles & portal")}
           </p>
         </div>
 
         <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500">
-              {tr("গুগল শিট সেল হেলথ", "Google Sheets Cell Health")}
+              {tr("পিডিএফ ও ডকুমেন্টস", "PDFs & Official Documents")}
             </span>
-            {summary?.sheetsCellHealthOk !== false ? (
-              <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
-                <CheckCircle2 className="h-3 w-3" /> HEALTHY
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800 border border-amber-200">
-                <AlertTriangle className="h-3 w-3" /> NEEDS OPTIMIZE
-              </span>
-            )}
+            <FileText className="h-4 w-4 text-rose-600" />
           </div>
           <p className="mt-2 text-2xl font-black text-slate-900">
-            {summary?.inlineBase64Count ?? 0}{" "}
+            {summary?.pdfCount ?? items.filter((i) => i.mimeType.includes("pdf")).length}{" "}
             <span className="text-xs font-semibold text-slate-500">
-              {tr("টি ওভারসাইজড সেল", "oversized cells")}
+              {tr("টি ডকুমেন্ট", "documents")}
             </span>
           </p>
           <p className="mt-1 text-[11px] text-slate-500">
-            {tr("সর্বোচ্চ সেল দৈর্ঘ্য:", "Max Cell Chars:")}{" "}
-            <strong className="text-slate-700">
-              {(summary?.maxCellLength || 0).toLocaleString()} / 50,000
-            </strong>
+            {tr("ইন-অ্যাপ পিডিএফ প্রিভিউ ও ডাউনলোড রেডি", "Instant in-app PDF viewer & download")}
           </p>
         </div>
 
         <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-2xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500">
-              {tr("ফোল্ডার ক্যাটাগরি", "Active Vault Folders")}
+              {tr("স্টোরেজ বাকেট / ফোল্ডার", "Media Buckets")}
             </span>
             <Layers className="h-4 w-4 text-emerald-700" />
           </div>
           <p className="mt-2 text-2xl font-black text-slate-900">
             {FOLDER_OPTIONS.length}{" "}
             <span className="text-xs font-semibold text-slate-500">
-              {tr("টি মডিউল ফোল্ডার", "module folders")}
+              {tr("টি বাকেট", "buckets")}
             </span>
           </p>
           <p className="mt-1 text-[11px] text-slate-500">
-            {tr("শর্ট ইউআরএল ফরম্যাট:", "Short URL Format:")}{" "}
-            <code className="rounded bg-slate-100 px-1 py-0.5 text-[10px] text-emerald-800">
-              /api/media/file/...
-            </code>
+            {tr("শিটে স্বয়ংক্রিয়ভাবে লিংক সংরক্ষিত", "Auto-synced to corresponding Sheet columns")}
           </p>
         </div>
       </div>
@@ -432,8 +399,8 @@ export default function MediaStorageManager({
               </h3>
               <p className="mt-0.5 text-xs text-slate-500">
                 {tr(
-                  "সমর্থিত ফরম্যাট: JPG, PNG, WEBP, GIF, SVG এবং PDF (সর্বোচ্চ ১৫ মেগাবাইট)। আপলোডের সাথে সাথেই স্থায়ী লিংক তৈরি হবে।",
-                  "Supports JPG, PNG, WEBP, GIF, SVG, and PDF up to 15MB. Generates permanent refresh-safe URLs immediately.",
+                  "সমর্থিত ফরম্যাট: JPG, PNG, WEBP, GIF, SVG এবং PDF। আপলোডের সাথে সাথেই সরাসরি ব্যবহারযোগ্য লিংক তৈরি হবে।",
+                  "Supports JPG, PNG, WEBP, GIF, SVG, and PDF. Generates direct media URLs immediately.",
                 )}
               </p>
             </div>
@@ -494,7 +461,7 @@ export default function MediaStorageManager({
                 : "bg-slate-100 text-slate-700 hover:bg-slate-200"
             }`}
           >
-            {tr("সব ফোল্ডার", "All Folders")} ({summary?.totalFiles ?? items.length})
+            {tr("সব বাকেট", "All Buckets")} ({summary?.totalFiles ?? items.length})
           </button>
           {FOLDER_OPTIONS.map((f) => {
             const count = summary?.folderCounts?.[f.value] || 0;
@@ -581,12 +548,12 @@ export default function MediaStorageManager({
             <FolderOpen className="h-7 w-7" />
           </div>
           <h3 className="mt-3 text-sm font-extrabold text-slate-800">
-            {tr("এই ফোল্ডারে এখনো কোনো ফাইল নেই", "No media files found in this view")}
+            {tr("এই বাকেটে এখনো কোনো ফাইল নেই", "No media files found in this bucket")}
           </h3>
           <p className="mt-1 max-w-md text-xs text-slate-500">
             {tr(
               "উপরের আপলোড বক্সে ক্লিক করে ছবি বা পিডিএফ আপলোড করুন, অথবা স্টুডেন্ট প্রোফাইল ও বুকস্টোর থেকে আপলোডকৃত ফাইলগুলো এখানে দেখতে পাবেন।",
-              "Upload images or PDF documents using the uploader above, or click 'Optimize & Repair Storage' to index existing embedded files.",
+              "Upload images or PDF documents using the uploader above, or click 'Sync All Profile Media' to index existing files.",
             )}
           </p>
         </div>
@@ -600,7 +567,10 @@ export default function MediaStorageManager({
                 key={item.id}
                 className="group flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xs hover:border-emerald-400 transition"
               >
-                <div className="relative h-44 w-full bg-slate-100 flex items-center justify-center overflow-hidden">
+                <div
+                  onClick={() => setPreviewItem(item)}
+                  className="relative h-44 w-full bg-slate-100 flex items-center justify-center overflow-hidden cursor-pointer"
+                >
                   {isImage ? (
                     <img
                       src={item.url}
@@ -622,20 +592,14 @@ export default function MediaStorageManager({
                     <span className="rounded-md bg-slate-900/80 backdrop-blur-xs px-2 py-0.5 text-[10px] font-bold text-white">
                       {formatBytes(item.size)}
                     </span>
-                    {item.driveUrl ? (
-                      <span className="rounded-md bg-emerald-700/90 px-2 py-0.5 text-[10px] font-bold text-white">
-                        Drive + Vault
-                      </span>
-                    ) : (
-                      <span className="rounded-md bg-slate-800/80 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
-                        Server Vault
-                      </span>
-                    )}
                   </div>
 
                   <button
                     type="button"
-                    onClick={() => setPreviewItem(item)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPreviewItem(item);
+                    }}
                     className="absolute top-2.5 right-2.5 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/90 text-slate-800 shadow-xs hover:bg-white transition"
                     title={tr("প্রিভিউ দেখুন", "Preview File")}
                   >
@@ -656,6 +620,15 @@ export default function MediaStorageManager({
                   <div className="flex items-center gap-1.5 pt-1 border-t border-slate-100">
                     <button
                       type="button"
+                      onClick={() => setPreviewItem(item)}
+                      className="inline-flex items-center justify-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-100"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      <span>{tr("দেখুন", "View")}</span>
+                    </button>
+
+                    <button
+                      type="button"
                       onClick={() => void handleCopyUrl(item)}
                       className={`flex-1 inline-flex items-center justify-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-bold transition ${
                         isCopied
@@ -666,22 +639,21 @@ export default function MediaStorageManager({
                       {isCopied ? (
                         <>
                           <Check className="h-3.5 w-3.5" />
-                          <span>{tr("কপি হয়েছে", "Copied")}</span>
+                          <span>{tr("কপিড", "Copied")}</span>
                         </>
                       ) : (
                         <>
                           <Copy className="h-3.5 w-3.5" />
-                          <span>{tr("লিংক কপি", "Copy URL")}</span>
+                          <span>{tr("লিংক", "Copy URL")}</span>
                         </>
                       )}
                     </button>
 
                     <a
                       href={item.downloadUrl || item.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      download={item.name}
                       className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
-                      title={tr("ডাউনলোড / ওপেন", "Download / Open")}
+                      title={tr("ডাউনলোড", "Download")}
                     >
                       <Download className="h-3.5 w-3.5" />
                     </a>
@@ -707,9 +679,9 @@ export default function MediaStorageManager({
               <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase text-slate-500">
                 <tr>
                   <th className="px-4 py-3">{tr("ফাইল", "File")}</th>
-                  <th className="px-4 py-3">{tr("ফোল্ডার", "Folder")}</th>
+                  <th className="px-4 py-3">{tr("বাকেট", "Bucket")}</th>
                   <th className="px-4 py-3">{tr("সাইজ ও টাইপ", "Size & Type")}</th>
-                  <th className="px-4 py-3">{tr("স্টোরেজ লিংক", "Permanent URL")}</th>
+                  <th className="px-4 py-3">{tr("ডিরেক্ট লিংক", "Direct Media Link")}</th>
                   <th className="px-4 py-3 text-right">{tr("অ্যাকশন", "Actions")}</th>
                 </tr>
               </thead>
@@ -725,10 +697,14 @@ export default function MediaStorageManager({
                             <img
                               src={item.url}
                               alt={item.name}
-                              className="h-10 w-10 rounded-lg border object-cover shrink-0"
+                              onClick={() => setPreviewItem(item)}
+                              className="h-10 w-10 rounded-lg border object-cover shrink-0 cursor-pointer"
                             />
                           ) : (
-                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-rose-50 text-rose-600 border border-rose-200 shrink-0">
+                            <div
+                              onClick={() => setPreviewItem(item)}
+                              className="flex h-10 w-10 items-center justify-center rounded-lg bg-rose-50 text-rose-600 border border-rose-200 shrink-0 cursor-pointer"
+                            >
                               <FileText className="h-5 w-5" />
                             </div>
                           )}
@@ -749,7 +725,7 @@ export default function MediaStorageManager({
                       </td>
                       <td className="px-4 py-3">
                         <code className="rounded bg-slate-100 px-2 py-1 text-[10px] text-emerald-800">
-                          {item.url}
+                          {toPublicUrl(item.url)}
                         </code>
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -759,7 +735,7 @@ export default function MediaStorageManager({
                             onClick={() => setPreviewItem(item)}
                             className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-50"
                           >
-                            {tr("প্রিভিউ", "Preview")}
+                            {tr("ফাইল দেখুন", "View File")}
                           </button>
                           <button
                             type="button"
@@ -770,7 +746,7 @@ export default function MediaStorageManager({
                                 : "bg-emerald-50 text-emerald-900 border border-emerald-200"
                             }`}
                           >
-                            {isCopied ? tr("কপিড!", "Copied!") : tr("লিংক কপি", "Copy URL")}
+                            {isCopied ? tr("কপিড!", "Copied!") : tr("লিংক কপি", "Copy Link")}
                           </button>
                           <button
                             type="button"
@@ -790,62 +766,17 @@ export default function MediaStorageManager({
         </div>
       )}
 
-      {/* Fullscreen Media / PDF Preview Modal */}
+      {/* Universal In-App Preview Modal */}
       {previewItem ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-xs">
-          <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3.5">
-              <div className="min-w-0">
-                <h4 className="truncate text-sm font-black text-slate-900">{previewItem.name}</h4>
-                <p className="text-[11px] text-slate-500">
-                  {previewItem.folderName} • {formatBytes(previewItem.size)} • {previewItem.url}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => void handleCopyUrl(previewItem)}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-1.5 text-xs font-bold text-emerald-900 hover:bg-emerald-100"
-                >
-                  <Copy className="h-3.5 w-3.5" />
-                  <span>{tr("লিংক কপি", "Copy URL")}</span>
-                </button>
-                <a
-                  href={previewItem.downloadUrl || previewItem.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-slate-800"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                  <span>{tr("নতুন ট্যাবে খুলুন", "Open / Download")}</span>
-                </a>
-                <button
-                  type="button"
-                  onClick={() => setPreviewItem(null)}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-auto bg-slate-100 p-6 flex items-center justify-center min-h-[420px]">
-              {previewItem.mimeType.startsWith("image/") ? (
-                <img
-                  src={previewItem.url}
-                  alt={previewItem.name}
-                  className="max-h-[72vh] w-auto rounded-xl border border-slate-200 bg-white shadow-md object-contain"
-                />
-              ) : (
-                <iframe
-                  src={previewItem.url}
-                  title={previewItem.name}
-                  className="h-[70vh] w-full rounded-xl border border-slate-200 bg-white"
-                />
-              )}
-            </div>
-          </div>
-        </div>
+        <DocumentPreviewModal
+          isOpen={Boolean(previewItem)}
+          onClose={() => setPreviewItem(null)}
+          title={previewItem.name}
+          subtitle={`${previewItem.folderName} • ${formatBytes(previewItem.size)}`}
+          fileUrl={previewItem.url}
+          fileName={previewItem.name}
+          mimeType={previewItem.mimeType}
+        />
       ) : null}
     </div>
   );

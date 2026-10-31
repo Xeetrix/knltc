@@ -130,8 +130,20 @@ export async function compressImageToDataUrl(
   });
 }
 
+function toDirectPublicUrl(rawUrl?: string): string {
+  if (!rawUrl) return "";
+  if (
+    rawUrl.startsWith("/") &&
+    typeof window !== "undefined" &&
+    window.location?.origin
+  ) {
+    return `${window.location.origin}${rawUrl}`;
+  }
+  return rawUrl;
+}
+
 /**
- * Upload an image (logo, avatar, product photo, blog cover) to `/api/media` (Google Drive + Persistent Disk).
+ * Upload an image (logo, avatar, product photo, blog cover) to `/api/media` (Direct Object Storage).
  */
 export async function uploadMediaImage(
   file: File,
@@ -157,7 +169,7 @@ export async function uploadMediaImage(
   const base64Payload = compressed?.dataUrl || (await fileToBase64DataUrl(file));
   const mimeType = compressed?.blob?.type || file.type || "image/jpeg";
 
-  // 1. Primary upload via `/api/media` (Persistent Disk + Google Drive + Cloudinary)
+  // 1. Primary upload via `/api/media`
   try {
     const res = await fetch("/api/media", {
       method: "POST",
@@ -174,9 +186,11 @@ export async function uploadMediaImage(
     if (res.ok) {
       const data = await res.json();
       if (data?.url) {
+        const directUrl = toDirectPublicUrl(data.url);
+        const directDownload = toDirectPublicUrl(data.downloadUrl || data.url);
         return {
-          url: data.url,
-          downloadUrl: data.downloadUrl || data.url,
+          url: directUrl,
+          downloadUrl: directDownload,
           driveUrl: data.driveUrl,
           fileId: data.fileId,
           fileName: file.name,
@@ -205,9 +219,11 @@ export async function uploadMediaImage(
     if (res.ok) {
       const data = await res.json();
       if (data?.url) {
+        const directUrl = toDirectPublicUrl(data.url);
+        const directDownload = toDirectPublicUrl(data.downloadUrl || data.url);
         return {
-          url: data.url,
-          downloadUrl: data.downloadUrl || data.url,
+          url: directUrl,
+          downloadUrl: directDownload,
           driveUrl: data.driveUrl,
           fileId: data.fileId,
           fileName: file.name,
@@ -263,9 +279,11 @@ export async function uploadDocumentFile(
     if (res.ok) {
       const data = await res.json();
       if (data?.url) {
+        const directUrl = toDirectPublicUrl(data.url);
+        const directDownload = toDirectPublicUrl(data.downloadUrl || data.url);
         return {
-          url: data.url,
-          downloadUrl: data.downloadUrl || data.url,
+          url: directUrl,
+          downloadUrl: directDownload,
           driveUrl: data.driveUrl,
           fileId: data.fileId,
           fileName: cleanFileName,
@@ -295,9 +313,11 @@ export async function uploadDocumentFile(
     if (res.ok) {
       const data = await res.json();
       if (data?.url) {
+        const directUrl = toDirectPublicUrl(data.url);
+        const directDownload = toDirectPublicUrl(data.downloadUrl || data.url);
         return {
-          url: data.url,
-          downloadUrl: data.downloadUrl || data.url,
+          url: directUrl,
+          downloadUrl: directDownload,
           driveUrl: data.driveUrl,
           fileId: data.fileId,
           fileName: cleanFileName,
@@ -306,7 +326,7 @@ export async function uploadDocumentFile(
       }
     }
   } catch (err) {
-    console.warn("[DocUpload] Google Drive doc upload failed, using fallback:", err);
+    console.warn("[DocUpload] Doc upload failed, using fallback:", err);
   }
 
   const fallbackUrl = await fileToBase64DataUrl(file);
