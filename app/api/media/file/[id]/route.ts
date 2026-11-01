@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getMediaFileById } from "@/lib/google-sheets-db";
+import { resolveMediaFileById } from "@/lib/google-sheets-db";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +13,7 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const forceDownload = searchParams.get("download") === "1";
 
-    const { meta, buffer } = getMediaFileById(fileId);
+    const { meta, buffer } = await resolveMediaFileById(fileId);
 
     if (buffer) {
       const mimeType = meta?.mimeType || "application/octet-stream";

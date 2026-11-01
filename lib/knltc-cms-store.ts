@@ -1530,7 +1530,12 @@ function mergeDocumentLists<T extends { id: string; fileUrl?: string; fileName?:
   return merged;
 }
 
-export function saveCmsStore(updated: MasterKnlTcStore) {
+let fullStoreSyncTimer: ReturnType<typeof setTimeout> | null = null;
+
+export function saveCmsStore(
+  updated: MasterKnlTcStore,
+  options?: { skipServerSync?: boolean },
+) {
   globalForStore.__knltc_master_store = updated;
   if (typeof window !== "undefined") {
     try {
@@ -1548,6 +1553,24 @@ export function saveCmsStore(updated: MasterKnlTcStore) {
       }
     }
     window.dispatchEvent(new CustomEvent("knltc-cms-updated", { detail: updated }));
+
+    if (!options?.skipServerSync) {
+      if (fullStoreSyncTimer) {
+        clearTimeout(fullStoreSyncTimer);
+      }
+      fullStoreSyncTimer = setTimeout(() => {
+        fetch("/api/cms/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "FULL_STORE_SYNC",
+            fullStore: globalForStore.__knltc_master_store || updated,
+          }),
+        }).catch((err) => {
+          console.warn("[KNLTC-CMS] Background fullStore sync warning:", err);
+        });
+      }, 350);
+    }
   }
 }
 
@@ -1574,13 +1597,22 @@ export function purgeStoreOfDummyData(): MasterKnlTcStore {
   return store;
 }
 
-async function syncToServer(type: "UPSERT" | "INSERT" | "DELETE" | "CMS_UPDATE", entity?: string, payload?: any) {
+async function syncToServer(
+  type: "UPSERT" | "INSERT" | "DELETE" | "CMS_UPDATE",
+  entity?: string,
+  payload?: any,
+) {
   if (typeof window === "undefined") return;
   try {
     await fetch("/api/cms/sync", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type, entity, payload }),
+      body: JSON.stringify({
+        type,
+        entity,
+        payload,
+        fullStore: globalForStore.__knltc_master_store,
+      }),
     });
   } catch (err) {
     console.warn("[KNLTC-CMS] Sync to server failed:", err);
@@ -1943,9 +1975,62 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
     const store = getCmsStore();
     let hasChanges = false;
 
+    const snap = data.snapshotStore as MasterKnlTcStore | undefined;
+    if (snap) {
+      if (store.crmLeads.length === 0 && Array.isArray(snap.crmLeads) && snap.crmLeads.length > 0) {
+        store.crmLeads = snap.crmLeads;
+        hasChanges = true;
+      }
+      if (
+        store.visaApplicants.length === 0 &&
+        Array.isArray(snap.visaApplicants) &&
+        snap.visaApplicants.length > 0
+      ) {
+        store.visaApplicants = snap.visaApplicants;
+        hasChanges = true;
+      }
+      if (
+        store.partnerSchools.length === 0 &&
+        Array.isArray(snap.partnerSchools) &&
+        snap.partnerSchools.length > 0
+      ) {
+        store.partnerSchools = snap.partnerSchools;
+        hasChanges = true;
+      }
+      if (store.b2bAgents.length === 0 && Array.isArray(snap.b2bAgents) && snap.b2bAgents.length > 0) {
+        store.b2bAgents = snap.b2bAgents;
+        hasChanges = true;
+      }
+      if (store.staffList.length === 0 && Array.isArray(snap.staffList) && snap.staffList.length > 0) {
+        store.staffList = snap.staffList;
+        hasChanges = true;
+      }
+      if (
+        store.transactions.length === 0 &&
+        Array.isArray(snap.transactions) &&
+        snap.transactions.length > 0
+      ) {
+        store.transactions = snap.transactions;
+        hasChanges = true;
+      }
+      if (
+        store.lmsBridges.length === 0 &&
+        Array.isArray(snap.lmsBridges) &&
+        snap.lmsBridges.length > 0
+      ) {
+        store.lmsBridges = snap.lmsBridges;
+        hasChanges = true;
+      }
+    }
+
     if (Array.isArray(data.crmLeads)) {
-      const existingLeadsMap = new Map(store.crmLeads.map((item) => [item.id, item]));
-      store.crmLeads = data.crmLeads.map((rawRow: any) => {
+      const existingLeadsMap = new Map<string, CrmLead>();
+      if (Array.isArray(snap?.crmLeads)) {
+        snap.crmLeads.forEach((item) => existingLeadsMap.set(item.id, item));
+      }
+      store.crmLeads.forEach((item) => existingLeadsMap.set(item.id, item));
+
+      const mappedLeads: CrmLead[] = data.crmLeads.map((rawRow: any) => {
         // Detect if this 18-column row was read under the temporary shifted header order
         // where col 18 (created_at) landed in b2b_agent_name and col 14 (branch) landed in study_gap_years
         const isShiftedHeaderRow =
@@ -2125,12 +2210,27 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
           createdAt: l.created_at || parsedProfile.createdAt || new Date().toISOString(),
         };
       });
+      const mappedIds = new Set(mappedLeads.map((m) => m.id));
+      if (Array.isArray(snap?.crmLeads)) {
+        for (const sItem of snap.crmLeads) {
+          if (!mappedIds.has(sItem.id)) {
+            mappedLeads.push(sItem);
+            mappedIds.add(sItem.id);
+          }
+        }
+      }
+      store.crmLeads = mappedLeads;
       hasChanges = true;
     }
 
     if (Array.isArray(data.visaApplicants)) {
-      const existingVisaMap = new Map(store.visaApplicants.map((item) => [item.id, item]));
-      store.visaApplicants = data.visaApplicants.map((v: any) => {
+      const existingVisaMap = new Map<string, VisaApplicant>();
+      if (Array.isArray(snap?.visaApplicants)) {
+        snap.visaApplicants.forEach((item) => existingVisaMap.set(item.id, item));
+      }
+      store.visaApplicants.forEach((item) => existingVisaMap.set(item.id, item));
+
+      const mappedVisas: VisaApplicant[] = data.visaApplicants.map((v: any) => {
         const local = existingVisaMap.get(v.id);
         let parsedProfile: Partial<VisaApplicant> = {};
         if (v.profile_json) {
@@ -2199,6 +2299,16 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
           updatedAt: v.updated_at || parsedProfile.updatedAt || new Date().toISOString(),
         };
       });
+      const mappedVisaIds = new Set(mappedVisas.map((m) => m.id));
+      if (Array.isArray(snap?.visaApplicants)) {
+        for (const sItem of snap.visaApplicants) {
+          if (!mappedVisaIds.has(sItem.id)) {
+            mappedVisas.push(sItem);
+            mappedVisaIds.add(sItem.id);
+          }
+        }
+      }
+      store.visaApplicants = mappedVisas;
       hasChanges = true;
     }
 
@@ -2226,8 +2336,13 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
     }
 
     if (Array.isArray(data.partnerSchools)) {
-      const existingSchoolsMap = new Map(store.partnerSchools.map((s) => [s.id, s]));
-      store.partnerSchools = data.partnerSchools.map((s: any) => {
+      const existingSchoolsMap = new Map<string, JapanesePartnerSchool>();
+      if (Array.isArray(snap?.partnerSchools)) {
+        snap.partnerSchools.forEach((s) => existingSchoolsMap.set(s.id, s));
+      }
+      store.partnerSchools.forEach((s) => existingSchoolsMap.set(s.id, s));
+
+      const mappedSchools: JapanesePartnerSchool[] = data.partnerSchools.map((s: any) => {
         const local = existingSchoolsMap.get(s.id);
         let parsedProfile: Partial<JapanesePartnerSchool> = {};
         if (s.profile_json) {
@@ -2272,12 +2387,27 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
           notes: parsedProfile.notes || local?.notes || "",
         };
       });
+      const mappedSchoolIds = new Set(mappedSchools.map((m) => m.id));
+      if (Array.isArray(snap?.partnerSchools)) {
+        for (const sItem of snap.partnerSchools) {
+          if (!mappedSchoolIds.has(sItem.id)) {
+            mappedSchools.push(sItem);
+            mappedSchoolIds.add(sItem.id);
+          }
+        }
+      }
+      store.partnerSchools = mappedSchools;
       hasChanges = true;
     }
 
     if (Array.isArray(data.b2bAgents)) {
-      const existingAgentsMap = new Map(store.b2bAgents.map((a) => [a.id, a]));
-      store.b2bAgents = data.b2bAgents.map((a: any) => {
+      const existingAgentsMap = new Map<string, B2bAgent>();
+      if (Array.isArray(snap?.b2bAgents)) {
+        snap.b2bAgents.forEach((a) => existingAgentsMap.set(a.id, a));
+      }
+      store.b2bAgents.forEach((a) => existingAgentsMap.set(a.id, a));
+
+      const mappedAgents: B2bAgent[] = data.b2bAgents.map((a: any) => {
         const local = existingAgentsMap.get(a.id);
         let parsedProfile: Partial<B2bAgent> = {};
         if (a.profile_json) {
@@ -2313,6 +2443,16 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
           notes: parsedProfile.notes || local?.notes || "",
         };
       });
+      const mappedAgentIds = new Set(mappedAgents.map((m) => m.id));
+      if (Array.isArray(snap?.b2bAgents)) {
+        for (const sItem of snap.b2bAgents) {
+          if (!mappedAgentIds.has(sItem.id)) {
+            mappedAgents.push(sItem);
+            mappedAgentIds.add(sItem.id);
+          }
+        }
+      }
+      store.b2bAgents = mappedAgents;
       hasChanges = true;
     }
 
@@ -2478,7 +2618,7 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
     }
 
     if (hasChanges) {
-      saveCmsStore(store);
+      saveCmsStore(store, { skipServerSync: true });
     }
     return store;
   } catch (err) {

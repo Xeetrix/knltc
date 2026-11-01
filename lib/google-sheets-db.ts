@@ -32,6 +32,7 @@ export const GOOGLE_SHEETS_TABLES = [
   "knltc_staff_members",
   "knltc_visa_applicants",
   "knltc_website_cms",
+  "media_vault",
   "order_items",
   "orders",
   "product_reviews",
@@ -58,24 +59,97 @@ export interface MediaVaultItem {
   updatedAt: string;
 }
 
+export interface RuntimeBackendConfig {
+  webAppUrl?: string;
+  apiKey?: string;
+  masterSheetUrl?: string;
+  cloudinaryCloudName?: string;
+  cloudinaryUploadPreset?: string;
+  updatedAt?: string;
+}
+
+function getBackendConfigFilePath(): string {
+  return path.join(getPersistentDataDir(), "backend-config.json");
+}
+
+export function loadRuntimeBackendConfig(): RuntimeBackendConfig {
+  if (globalForSheetsFallback.knltcBackendConfig) {
+    return globalForSheetsFallback.knltcBackendConfig;
+  }
+  try {
+    const file = getBackendConfigFilePath();
+    if (fs.existsSync(file)) {
+      const raw = fs.readFileSync(file, "utf-8");
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") {
+        globalForSheetsFallback.knltcBackendConfig = parsed;
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.warn("[GoogleSheetsDB] Failed to read backend-config.json:", err);
+  }
+  return {};
+}
+
+export function saveRuntimeGoogleSheetsConfig(
+  partial: Partial<RuntimeBackendConfig>,
+): RuntimeBackendConfig {
+  const current = loadRuntimeBackendConfig();
+  const next: RuntimeBackendConfig = {
+    ...current,
+    ...partial,
+    webAppUrl:
+      partial.webAppUrl !== undefined ? partial.webAppUrl.trim() : current.webAppUrl,
+    masterSheetUrl:
+      partial.masterSheetUrl !== undefined
+        ? partial.masterSheetUrl.trim()
+        : current.masterSheetUrl,
+    apiKey: partial.apiKey !== undefined ? partial.apiKey.trim() : current.apiKey,
+    updatedAt: new Date().toISOString(),
+  };
+  globalForSheetsFallback.knltcBackendConfig = next;
+  try {
+    fs.writeFileSync(getBackendConfigFilePath(), JSON.stringify(next, null, 2), "utf-8");
+  } catch (err) {
+    console.warn("[GoogleSheetsDB] Failed to write backend-config.json:", err);
+  }
+  return next;
+}
+
 export function getGoogleSheetsConfig() {
-  const webAppUrl = (
+  const runtime = loadRuntimeBackendConfig();
+  const envWebApp = (
     process.env.GOOGLE_SHEETS_WEB_APP_URL ||
     process.env.NEXT_PUBLIC_GOOGLE_SHEETS_WEB_APP_URL ||
     ""
   ).trim();
+  const validEnvWebApp =
+    envWebApp && !envWebApp.includes("YOUR_APPS_SCRIPT_DEPLOYMENT_ID") ? envWebApp : "";
+
+  const webAppUrl = (runtime.webAppUrl || validEnvWebApp || "").trim();
   const apiKey = (
-    process.env.GOOGLE_SHEETS_API_KEY || "KNLTC_SECRET_2026"
+    runtime.apiKey ||
+    process.env.GOOGLE_SHEETS_API_KEY ||
+    "KNLTC_SECRET_2026"
   ).trim();
+  const envSheetUrl = (process.env.NEXT_PUBLIC_MASTER_SHEET_URL || "").trim();
+  const validEnvSheetUrl =
+    envSheetUrl && !envSheetUrl.includes("YOUR_MASTER_SHEET_ID") ? envSheetUrl : "";
   const masterSheetUrl = (
-    process.env.NEXT_PUBLIC_MASTER_SHEET_URL ||
+    runtime.masterSheetUrl ||
+    validEnvSheetUrl ||
     "https://docs.google.com/spreadsheets"
   ).trim();
   const cloudinaryCloudName = (
-    process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || ""
+    runtime.cloudinaryCloudName ||
+    process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ||
+    ""
   ).trim();
   const cloudinaryUploadPreset = (
-    process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || ""
+    runtime.cloudinaryUploadPreset ||
+    process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET ||
+    ""
   ).trim();
 
   return {
@@ -84,7 +158,11 @@ export function getGoogleSheetsConfig() {
     masterSheetUrl,
     cloudinaryCloudName,
     cloudinaryUploadPreset,
-    isConfigured: Boolean(webAppUrl && webAppUrl.startsWith("https://script.google.com/")),
+    isConfigured: Boolean(
+      webAppUrl &&
+        webAppUrl.startsWith("https://script.google.com/") &&
+        !webAppUrl.includes("YOUR_APPS_SCRIPT_DEPLOYMENT_ID"),
+    ),
   };
 }
 
@@ -155,6 +233,7 @@ const globalForSheetsFallback = globalThis as unknown as {
   knltcFallbackTables?: Record<GoogleSheetsTableName, Record<string, any>[]>;
   knltcUploadedMedia?: MediaVaultItem[];
   knltcDiskLoaded?: boolean;
+  knltcBackendConfig?: RuntimeBackendConfig;
 };
 
 function loadMediaIndexFromDisk(): MediaVaultItem[] {
@@ -189,12 +268,68 @@ function getRawMediaStore(): MediaVaultItem[] {
   return globalForSheetsFallback.knltcUploadedMedia;
 }
 
+function syncMediaVaultFromFallbackRows(): MediaVaultItem[] {
+  const rawList = getRawMediaStore();
+  try {
+    const fallback = getFallbackTables();
+    const sheetMediaRows = Array.isArray(fallback.media_vault) ? fallback.media_vault : [];
+    if (sheetMediaRows.length > 0) {
+      let updated = false;
+      for (const r of sheetMediaRows) {
+        if (!r || !r.id) continue;
+        const id = String(r.id);
+        const existingIdx = rawList.findIndex((m) => m.id === id);
+        const safeName = String(r.safe_file_name || r.name || `${id}.bin`);
+        const localUrl = String(r.url || `/api/media/file/${id}/${encodeURIComponent(safeName)}`);
+        const itemFromRow: MediaVaultItem = {
+          id,
+          name: String(r.name || safeName),
+          safeFileName: safeName,
+          folderName: String(r.folder_name || "KNLTC_General_Uploads"),
+          mimeType: String(r.mime_type || "application/octet-stream"),
+          size: Number(r.size) || 0,
+          url: localUrl,
+          downloadUrl: String(r.download_url || `${localUrl}?download=1`),
+          driveFileId: r.drive_file_id ? String(r.drive_file_id) : undefined,
+          driveUrl: r.drive_url ? String(r.drive_url) : undefined,
+          provider: r.drive_file_id || r.drive_url ? "google-drive" : "persistent-disk",
+          base64Backup: r.base64_chunk ? String(r.base64_chunk) : undefined,
+          createdAt: String(r.created_at || new Date().toISOString()),
+          updatedAt: String(r.updated_at || r.created_at || new Date().toISOString()),
+        };
+
+        if (existingIdx === -1) {
+          rawList.push(itemFromRow);
+          updated = true;
+        } else {
+          const cur = rawList[existingIdx];
+          if (!cur.driveFileId && itemFromRow.driveFileId) {
+            cur.driveFileId = itemFromRow.driveFileId;
+            cur.driveUrl = itemFromRow.driveUrl || cur.driveUrl;
+            updated = true;
+          }
+          if (!cur.base64Backup && itemFromRow.base64Backup) {
+            cur.base64Backup = itemFromRow.base64Backup;
+            updated = true;
+          }
+        }
+      }
+      if (updated) {
+        saveMediaIndexToDisk(rawList);
+      }
+    }
+  } catch {
+    // Ignore sync errors during initialization
+  }
+  return rawList;
+}
+
 export function getUploadedMediaList(filters?: {
   folder?: string;
   type?: "ALL" | "IMAGE" | "PDF" | "OTHER";
   search?: string;
 }): MediaVaultItem[] {
-  let list = getRawMediaStore().map(({ base64Backup: _b64, ...rest }) => rest);
+  let list = syncMediaVaultFromFallbackRows().map(({ base64Backup: _b64, ...rest }) => rest);
 
   if (!filters) return list;
 
@@ -290,6 +425,40 @@ export function saveBinaryToMediaVault(options: {
   }
 
   saveMediaIndexToDisk(list);
+
+  // Also record in `fallback.media_vault` table so it syncs across Google Sheets & all browsers
+  try {
+    const fallback = getFallbackTables();
+    const mvRows = Array.isArray(fallback.media_vault) ? fallback.media_vault : [];
+    const sheetBase64Chunk =
+      item.base64Backup && item.base64Backup.length <= 42000 ? item.base64Backup : "";
+    const mvRow = {
+      id: item.id,
+      name: item.name,
+      safe_file_name: item.safeFileName,
+      folder_name: item.folderName,
+      mime_type: item.mimeType,
+      size: item.size,
+      url: item.url,
+      download_url: item.downloadUrl,
+      drive_file_id: item.driveFileId || "",
+      drive_url: item.driveUrl || "",
+      base64_chunk: sheetBase64Chunk,
+      created_at: item.createdAt,
+      updated_at: item.updatedAt,
+    };
+    const rIdx = mvRows.findIndex((r) => String(r.id) === item.id);
+    if (rIdx >= 0) {
+      mvRows[rIdx] = { ...mvRows[rIdx], ...mvRow };
+    } else {
+      mvRows.unshift(mvRow);
+    }
+    fallback.media_vault = mvRows;
+    saveFallbackTablesToDisk(fallback);
+  } catch {
+    // Ignore fallback table update error
+  }
+
   const { base64Backup: _omit, ...publicItem } = item;
   return publicItem;
 }
@@ -299,7 +468,7 @@ export function getMediaFileById(fileId: string): {
   buffer: Buffer | null;
 } {
   const cleanId = fileId.replace(/[^a-zA-Z0-9_-]/g, "");
-  const list = getRawMediaStore();
+  const list = syncMediaVaultFromFallbackRows();
   const meta = list.find((m) => m.id === cleanId) || null;
   try {
     const binPath = getMediaBinaryFilePath(cleanId);
@@ -319,6 +488,105 @@ export function getMediaFileById(fileId: string): {
   } catch (err) {
     console.warn("[GoogleSheetsDB] Failed to read media file buffer:", err);
   }
+  return { meta, buffer: null };
+}
+
+/**
+ * Asynchronous media resolver that checks local disk & base64 backup first,
+ * and if missing (e.g., on a new server instance or new browser), automatically
+ * fetches from the `media_vault` Google Sheet table or Google Drive (`driveFileId`)
+ * and caches the binary on disk so `/api/media/file/<id>/<filename>` NEVER 404s!
+ */
+export async function resolveMediaFileById(fileId: string): Promise<{
+  meta: MediaVaultItem | null;
+  buffer: Buffer | null;
+}> {
+  const cleanId = fileId.replace(/[^a-zA-Z0-9_-]/g, "");
+  const local = getMediaFileById(cleanId);
+  if (local.buffer) {
+    return local;
+  }
+
+  const { webAppUrl, apiKey, isConfigured } = getGoogleSheetsConfig();
+  let meta = local.meta;
+
+  // Step 1: If meta is missing or has no base64Backup/driveFileId, query `media_vault` from Google Sheets
+  if (!meta && isConfigured) {
+    try {
+      const rows = await fetchSheetTable<Record<string, any>>("media_vault");
+      const foundRow = rows.find((r) => String(r.id) === cleanId);
+      if (foundRow) {
+        syncMediaVaultFromFallbackRows();
+        const refreshed = getMediaFileById(cleanId);
+        if (refreshed.buffer) return refreshed;
+        meta = refreshed.meta;
+      }
+    } catch {
+      // Continue to Drive fallback
+    }
+  }
+
+  // Step 2: If we have a Google Drive `driveFileId`, fetch the file bytes via Apps Script or Drive direct download
+  if (meta?.driveFileId) {
+    if (isConfigured) {
+      try {
+        const res = await fetch(webAppUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          redirect: "follow",
+          body: JSON.stringify({
+            apiKey,
+            action: "GET_DRIVE_FILE",
+            fileId: meta.driveFileId,
+          }),
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.ok && json?.base64Data) {
+            const buffer = Buffer.from(json.base64Data, "base64");
+            saveBinaryToMediaVault({
+              fileName: meta.name || json.fileName || `${cleanId}.bin`,
+              mimeType: meta.mimeType || json.mimeType || "application/octet-stream",
+              buffer,
+              folderName: meta.folderName,
+              customId: cleanId,
+              driveFileId: meta.driveFileId,
+              driveUrl: meta.driveUrl,
+              provider: "google-drive",
+            });
+            return { meta, buffer };
+          }
+        }
+      } catch {
+        // Fall through to direct Google Drive download URL
+      }
+    }
+
+    try {
+      const directDownloadUrl = `https://drive.google.com/uc?export=download&id=${encodeURIComponent(meta.driveFileId)}`;
+      const driveRes = await fetch(directDownloadUrl, { redirect: "follow" });
+      if (driveRes.ok) {
+        const arrBuf = await driveRes.arrayBuffer();
+        const buffer = Buffer.from(arrBuf);
+        if (buffer.byteLength > 0) {
+          saveBinaryToMediaVault({
+            fileName: meta.name || `${cleanId}.bin`,
+            mimeType: meta.mimeType || "application/octet-stream",
+            buffer,
+            folderName: meta.folderName,
+            customId: cleanId,
+            driveFileId: meta.driveFileId,
+            driveUrl: meta.driveUrl,
+            provider: "google-drive",
+          });
+          return { meta, buffer };
+        }
+      }
+    } catch {
+      // Ignore direct fetch failure
+    }
+  }
+
   return { meta, buffer: null };
 }
 
@@ -446,6 +714,7 @@ function buildInitialFallbackTables(): Record<GoogleSheetsTableName, Record<stri
     order_items: [],
     product_reviews: [],
     wishlist_items: [],
+    media_vault: [],
     knltc_crm_leads: initialStore.crmLeads.map((l) => ({
       id: l.id,
       name: l.name,
@@ -793,7 +1062,16 @@ function mergeRemoteAndMirrorRows(
     return mergedRemote;
   }
 
-  return mergedRemote;
+  // Union merge: preserve any local mirror rows not yet present in remoteRows
+  const remoteKeys = new Set(
+    remoteRows.map((r) => String(r.id || r.section_key || "")).filter(Boolean),
+  );
+  const unsyncedMirrorRows = mirrorRows.filter((m) => {
+    const k = String(m.id || m.section_key || "");
+    return k && !remoteKeys.has(k);
+  });
+
+  return [...unsyncedMirrorRows, ...mergedRemote];
 }
 
 export function invalidateSheetsCache(tableName?: string) {
@@ -1172,7 +1450,12 @@ export async function uploadFileToDriveOrCloudinary(options: {
     }
   }
 
-  // Step 2: Upload to Google Drive (`KNLTC_Uploads_And_Visa_Docs`) via Google Apps Script `doPost`
+  const hash = crypto.createHash("sha1").update(buffer).digest("hex").slice(0, 16);
+  const fileId = `med-${hash}`;
+  const safeFileName = sanitizeFileName(options.fileName, mimeType);
+  const localServeUrl = `/api/media/file/${fileId}/${encodeURIComponent(safeFileName)}`;
+
+  // Step 2: Upload to Google Drive (`KNLTC_Uploads_And_Visa_Docs`) + `media_vault` tab via Google Apps Script `doPost`
   if (isConfigured) {
     try {
       const res = await fetch(webAppUrl, {
@@ -1182,6 +1465,8 @@ export async function uploadFileToDriveOrCloudinary(options: {
         body: JSON.stringify({
           apiKey,
           action: "UPLOAD_FILE_TO_DRIVE",
+          mediaId: fileId,
+          publicUrl: localServeUrl,
           fileName: options.fileName,
           mimeType,
           base64Data: cleanBase64,
@@ -1204,17 +1489,42 @@ export async function uploadFileToDriveOrCloudinary(options: {
     }
   }
 
-  // Step 3: Save binary & metadata into Persistent Server Media Vault (`.data/media-files/<id>`)
+  // Step 3: Save binary & metadata into Persistent Server Media Vault (`.data/media-files/<id>`) and `media_vault` table
   const vaultItem = saveBinaryToMediaVault({
     fileName: options.fileName,
     mimeType,
     buffer,
     folderName,
+    customId: fileId,
     driveUrl,
     driveFileId,
     cloudinaryUrl,
     provider,
   });
+
+  // If Drive upload did not run or old script version didn't auto-upsert `media_vault`, upsert row to `media_vault` sheet
+  if (isConfigured && !driveFileId) {
+    const sheetBase64Chunk = cleanBase64.length <= 42000 ? cleanBase64 : "";
+    mutateSheetTable({
+      action: "UPSERT",
+      table: "media_vault",
+      payload: {
+        id: vaultItem.id,
+        name: vaultItem.name,
+        safe_file_name: vaultItem.safeFileName,
+        folder_name: vaultItem.folderName,
+        mime_type: vaultItem.mimeType,
+        size: vaultItem.size,
+        url: vaultItem.url,
+        download_url: vaultItem.downloadUrl,
+        drive_file_id: vaultItem.driveFileId || "",
+        drive_url: vaultItem.driveUrl || "",
+        base64_chunk: sheetBase64Chunk,
+        created_at: vaultItem.createdAt,
+        updated_at: vaultItem.updatedAt,
+      },
+    }).catch(() => {});
+  }
 
   return {
     success: true,
@@ -1348,6 +1658,7 @@ export async function bulkSyncMasterStoreToSheets(
     order_items: fallback.order_items,
     product_reviews: fallback.product_reviews,
     wishlist_items: fallback.wishlist_items,
+    media_vault: fallback.media_vault || [],
     knltc_crm_leads: (s.crmLeads || []).map((l) => ({
       id: l.id,
       name: l.name,

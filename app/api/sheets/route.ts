@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import fs from "fs";
+import path from "path";
 import {
   GOOGLE_SHEETS_TABLES,
   bulkSyncMasterStoreToSheets,
@@ -9,6 +11,7 @@ import {
   invalidateSheetsCache,
   mutateSheetTable,
   optimizeAllTablesMedia,
+  saveRuntimeGoogleSheetsConfig,
   uploadFileToDriveOrCloudinary,
   type GoogleSheetsTableName,
 } from "@/lib/google-sheets-db";
@@ -18,16 +21,18 @@ import {
  * UNIFIED GOOGLE SHEETS + GOOGLE DRIVE / CLOUDINARY API ROUTE (`/api/sheets`)
  * ============================================================================
  * GET:
- * - `/api/sheets?action=status` -> Connection status, masterSheetUrl, tables, storageSummary
- * - `/api/sheets?table=all`     -> All 15 Google Sheets tables
+ * - `/api/sheets?action=status` -> Connection status, masterSheetUrl, webAppUrl, tables, storageSummary
+ * - `/api/sheets?action=code_gs` -> Full Code.gs script for 1-click copy in Dashboard
+ * - `/api/sheets?table=all`     -> All 16 Google Sheets tables
  * - `/api/sheets?table=<name>`  -> Rows for a specific table
  *
  * POST:
+ * - `action: "SAVE_BACKEND_CONFIG"` -> Save Google Apps Script Web App URL, Sheet URL & API Key
  * - `action: "CREATE" | "INSERT" | "UPDATE" | "UPSERT" | "DELETE" | "UPSERT_CMS"`
  * - `action: "BULK_SYNC"`       -> Push full MasterKnlTcStore & bookstore tables to Google Sheets
  * - `action: "REFRESH_CACHE"`   -> Revalidate Next.js 15 cache tags (`knltc-db`)
  * - `action: "UPLOAD_FILE_TO_DRIVE"` -> Upload base64 file/image to Google Drive / Cloudinary / Persistent Disk
- * - `action: "OPTIMIZE_MEDIA_STORAGE"` -> Offload inline base64 strings across all 15 tables
+ * - `action: "OPTIMIZE_MEDIA_STORAGE"` -> Offload inline base64 strings across all 16 tables
  * ============================================================================
  */
 export async function GET(request: Request) {
@@ -45,11 +50,27 @@ export async function GET(request: Request) {
         connected: config.isConfigured,
         mode: config.isConfigured ? "GOOGLE_SHEETS_LIVE" : "LOCAL_SEED_FALLBACK",
         masterSheetUrl: config.masterSheetUrl,
+        webAppUrl: config.webAppUrl,
+        apiKey: config.apiKey,
         webAppConfigured: config.isConfigured,
         cloudinaryConfigured: Boolean(config.cloudinaryCloudName && config.cloudinaryUploadPreset),
         storageSummary: getStorageStatusSummary(),
         tables: GOOGLE_SHEETS_TABLES,
         timestamp: new Date().toISOString(),
+      });
+    }
+
+    if (action === "code_gs") {
+      let scriptContent = "";
+      try {
+        const scriptPath = path.join(process.cwd(), "google-apps-script", "Code.gs");
+        scriptContent = fs.readFileSync(scriptPath, "utf-8");
+      } catch {
+        scriptContent = "// Error reading google-apps-script/Code.gs";
+      }
+      return NextResponse.json({
+        ok: true,
+        code: scriptContent,
       });
     }
 
@@ -59,6 +80,7 @@ export async function GET(request: Request) {
         ok: true,
         connected: config.isConfigured,
         masterSheetUrl: config.masterSheetUrl,
+        webAppUrl: config.webAppUrl,
         data: allData,
       });
     }
@@ -96,6 +118,49 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const action = String(body.action || body.type || "").toUpperCase();
+
+    if (action === "SAVE_BACKEND_CONFIG") {
+      const savedConfig = saveRuntimeGoogleSheetsConfig({
+        webAppUrl: body.webAppUrl,
+        masterSheetUrl: body.masterSheetUrl,
+        apiKey: body.apiKey,
+      });
+
+      const updatedConfig = getGoogleSheetsConfig();
+      let setupResult: any = null;
+
+      if (updatedConfig.isConfigured) {
+        try {
+          const setupRes = await fetch(updatedConfig.webAppUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              apiKey: updatedConfig.apiKey,
+              action: "SETUP_DATABASE",
+            }),
+            redirect: "follow",
+            cache: "no-store",
+          });
+          setupResult = await setupRes.json().catch(() => null);
+        } catch (err) {
+          console.warn("[API][/api/sheets][SAVE_BACKEND_CONFIG] Setup test warning:", err);
+        }
+
+        // Push current server tables + media_vault to Google Sheets in background
+        await bulkSyncMasterStoreToSheets(body.store, false).catch(() => null);
+      }
+
+      return NextResponse.json({
+        ok: true,
+        connected: updatedConfig.isConfigured,
+        webAppUrl: updatedConfig.webAppUrl,
+        masterSheetUrl: updatedConfig.masterSheetUrl,
+        apiKey: updatedConfig.apiKey,
+        savedConfig,
+        setupResult,
+        storageSummary: getStorageStatusSummary(),
+      });
+    }
 
     if (action === "REFRESH_CACHE") {
       invalidateSheetsCache(body.table);

@@ -4,6 +4,8 @@ import path from "path";
 import { selectRows, upsertRow, insertRow, deleteRow } from "@/lib/supabase";
 import {
   bulkSyncMasterStoreToSheets,
+  fetchSheetTable,
+  getGoogleSheetsConfig,
   getPersistentDataDir,
   offloadEmbeddedBase64Strings,
   purgeFallbackTables,
@@ -59,6 +61,7 @@ async function writeServerSnapshot(store: MasterKnlTcStore): Promise<MasterKnlTc
 export async function GET() {
   try {
     const snapshot = await readServerSnapshot();
+    const gsConfig = getGoogleSheetsConfig();
 
     const [
       leads,
@@ -78,6 +81,7 @@ export async function GET() {
       selectRows<any>("knltc_finance_transactions", { order: "created_at.desc" }, true),
       selectRows<any>("knltc_staff_members", { order: "created_at.desc" }, true),
       selectRows<any>("knltc_website_cms", "", true),
+      gsConfig.isConfigured ? fetchSheetTable("media_vault") : Promise.resolve([]),
     ]);
 
     const dbLeads =

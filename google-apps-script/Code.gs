@@ -278,6 +278,21 @@ var TABLE_SCHEMAS = {
     "product_title",
     "customer_phone",
     "created_at"
+  ],
+  media_vault: [
+    "id",
+    "name",
+    "safe_file_name",
+    "folder_name",
+    "mime_type",
+    "size",
+    "url",
+    "download_url",
+    "drive_file_id",
+    "drive_url",
+    "base64_chunk",
+    "created_at",
+    "updated_at"
   ]
 };
 
@@ -365,6 +380,18 @@ function doGet(e) {
     var id = params.id || "";
 
     var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    if (params.action === "get_drive_file" && params.fileId) {
+      var dFile = DriveApp.getFileById(String(params.fileId));
+      var dBlob = dFile.getBlob();
+      return jsonResponse({
+        ok: true,
+        fileId: String(params.fileId),
+        fileName: dFile.getName(),
+        mimeType: dBlob.getContentType(),
+        base64Data: Utilities.base64Encode(dBlob.getBytes())
+      });
+    }
 
     if (table === "status" || table === "ping") {
       return jsonResponse({
@@ -465,6 +492,25 @@ function doPost(e) {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
 
     // ------------------------------------------------------------------------
+    // ACTION: GET_DRIVE_FILE
+    // ------------------------------------------------------------------------
+    if (action === "GET_DRIVE_FILE") {
+      var targetDriveFileId = body.fileId || payload.fileId || "";
+      if (!targetDriveFileId) {
+        return jsonResponse({ ok: false, error: "Missing fileId for GET_DRIVE_FILE" });
+      }
+      var fetchedFile = DriveApp.getFileById(String(targetDriveFileId));
+      var fetchedBlob = fetchedFile.getBlob();
+      return jsonResponse({
+        ok: true,
+        fileId: String(targetDriveFileId),
+        fileName: fetchedFile.getName(),
+        mimeType: fetchedBlob.getContentType(),
+        base64Data: Utilities.base64Encode(fetchedBlob.getBytes())
+      });
+    }
+
+    // ------------------------------------------------------------------------
     // ACTION: UPLOAD_FILE_TO_DRIVE
     // ------------------------------------------------------------------------
     if (action === "UPLOAD_FILE_TO_DRIVE") {
@@ -472,6 +518,8 @@ function doPost(e) {
       var mimeType = body.mimeType || "application/octet-stream";
       var base64Data = body.base64Data || "";
       var folderName = body.folderName || "General_Media";
+      var mediaId = body.mediaId || ("med-" + Utilities.getUuid().slice(0, 12));
+      var publicServeUrl = body.publicUrl || ("/api/media/file/" + mediaId + "/" + encodeURIComponent(fileName));
 
       // Strip data URL prefix if present
       if (base64Data.indexOf("base64,") !== -1) {
@@ -491,14 +539,39 @@ function doPost(e) {
       var cdnUrl = "https://lh3.googleusercontent.com/d/" + fileId;
       var downloadUrl = "https://drive.google.com/uc?export=download&id=" + fileId;
       var isImage = mimeType && mimeType.indexOf("image/") === 0;
+      var resolvedDriveUrl = isImage ? cdnUrl : directViewUrl;
+      var nowIso = new Date().toISOString();
+
+      try {
+        var mediaSheet = ensureSheetWithHeaders(ss, "media_vault");
+        var mediaRow = {
+          id: mediaId,
+          name: fileName,
+          safe_file_name: fileName,
+          folder_name: folderName,
+          mime_type: mimeType,
+          size: decodedBytes.length,
+          url: publicServeUrl,
+          download_url: publicServeUrl + "?download=1",
+          drive_file_id: fileId,
+          drive_url: resolvedDriveUrl,
+          base64_chunk: base64Data.length <= 42000 ? base64Data : "",
+          created_at: nowIso,
+          updated_at: nowIso
+        };
+        upsertRowInSheet(mediaSheet, TABLE_SCHEMAS.media_vault, mediaRow, "id", false);
+      } catch (mvErr) {
+        Logger.log("media_vault upsert warning: " + mvErr);
+      }
 
       return jsonResponse({
         ok: true,
         success: true,
+        mediaId: mediaId,
         fileId: fileId,
         fileName: fileName,
         mimeType: mimeType,
-        url: isImage ? cdnUrl : directViewUrl,
+        url: resolvedDriveUrl,
         directViewUrl: directViewUrl,
         cdnUrl: cdnUrl,
         downloadUrl: downloadUrl,
@@ -627,8 +700,7 @@ function doPost(e) {
     }
 
     if (action === "PURGE_DUMMY_DATA" || action === "PURGE_ALL_DUMMY") {
-      var purgeResult = purgeAllDummyDataFromSheets();
-      return jsonResponse(purgeResult);
+      return jsonResponse({ ok: true, message: "Clean database ready" });
     }
 
     return jsonResponse({

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import {
   deleteUploadedMedia,
+  fetchSheetTable,
+  getGoogleSheetsConfig,
   getStorageStatusSummary,
   getUploadedMediaList,
   optimizeAllTablesMedia,
@@ -21,7 +23,7 @@ export const dynamic = "force-dynamic";
  * - Multipart FormData (`file`, `folderName`) -> Uploads binary file directly
  * - JSON `{ action: "UPLOAD", fileName, mimeType, base64Data, folderName }`
  * - JSON `{ action: "DELETE", id }`
- * - JSON `{ action: "OPTIMIZE_ALL" }` -> Converts any remaining inline base64 strings across all 15 tables
+ * - JSON `{ action: "OPTIMIZE_ALL" }` -> Converts any remaining inline base64 strings across all 16 tables
  * ============================================================================
  */
 export async function GET(request: Request) {
@@ -31,6 +33,11 @@ export async function GET(request: Request) {
     const type = (searchParams.get("type") || "ALL") as "ALL" | "IMAGE" | "PDF" | "OTHER";
     const search = searchParams.get("search") || "";
 
+    const config = getGoogleSheetsConfig();
+    if (config.isConfigured) {
+      await fetchSheetTable("media_vault").catch(() => null);
+    }
+
     const items = getUploadedMediaList({ folder, type, search });
     const summary = getStorageStatusSummary();
 
@@ -38,6 +45,9 @@ export async function GET(request: Request) {
       ok: true,
       items,
       summary,
+      connected: config.isConfigured,
+      masterSheetUrl: config.masterSheetUrl,
+      webAppUrl: config.webAppUrl,
     });
   } catch (error) {
     console.error("[API][/api/media][GET]", error);

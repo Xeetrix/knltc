@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Upload,
   CheckCircle2,
@@ -19,6 +19,11 @@ import {
   Layers,
   LayoutGrid,
   List as ListIcon,
+  Settings2,
+  ExternalLink,
+  Code2,
+  CloudUpload,
+  Link2,
 } from "lucide-react";
 import {
   uploadMediaImage,
@@ -29,6 +34,7 @@ import {
   type MediaVaultClientItem,
   type StorageStatusSummary,
 } from "@/lib/media-upload";
+import { getCmsStore, fetchLiveStoreFromServer } from "@/lib/knltc-cms-store";
 import DocumentPreviewModal from "@/components/admin/DocumentPreviewModal";
 
 interface MediaStorageManagerProps {
@@ -99,26 +105,168 @@ export default function MediaStorageManager({
   const [previewItem, setPreviewItem] = useState<MediaVaultClientItem | null>(null);
   const [isDragActive, setIsDragActive] = useState(false);
 
+  // Backend Connection & Cloud Sync Settings State
+  const [showSettingsPanel, setShowSettingsPanel] = useState(false);
+  const [webAppUrlInput, setWebAppUrlInput] = useState("");
+  const [masterSheetUrlInput, setMasterSheetUrlInput] = useState("");
+  const [apiKeyInput, setApiKeyInput] = useState("KNLTC_SECRET_2026");
+  const [isBackendConnected, setIsBackendConnected] = useState(false);
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
+  const [isPushingStore, setIsPushingStore] = useState(false);
+  const [copiedScript, setCopiedScript] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const loadLibrary = async () => {
+  const loadBackendStatus = async () => {
+    try {
+      const res = await fetch("/api/sheets?action=status", { cache: "no-store" });
+      const data = await res.json();
+      if (data.ok) {
+        setIsBackendConnected(Boolean(data.connected));
+        if (data.webAppUrl) setWebAppUrlInput(data.webAppUrl);
+        if (data.masterSheetUrl) setMasterSheetUrlInput(data.masterSheetUrl);
+        if (data.apiKey) setApiKeyInput(data.apiKey);
+        if (data.storageSummary) setSummary(data.storageSummary);
+      }
+    } catch {
+      // Ignore error
+    }
+  };
+
+  const loadLibrary = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetchMediaLibrary({
         folder: selectedFolder,
         type: selectedType,
-        search: searchQuery,
+        search: "",
       });
       setItems(res.items);
       if (res.summary) setSummary(res.summary);
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedFolder, selectedType]);
+
+  useEffect(() => {
+    void loadBackendStatus();
+  }, []);
 
   useEffect(() => {
     void loadLibrary();
-  }, [selectedFolder, selectedType]);
+  }, [loadLibrary]);
+
+  const handleSaveBackendConfig = async () => {
+    setIsSavingConfig(true);
+    try {
+      const currentStore = getCmsStore();
+      const res = await fetch("/api/sheets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "SAVE_BACKEND_CONFIG",
+          webAppUrl: webAppUrlInput.trim(),
+          masterSheetUrl: masterSheetUrlInput.trim(),
+          apiKey: apiKeyInput.trim() || "KNLTC_SECRET_2026",
+          store: currentStore,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setIsBackendConnected(Boolean(data.connected));
+        if (data.storageSummary) setSummary(data.storageSummary);
+        await loadLibrary();
+        onShowToast(
+          tr(
+            "ব্যাকএন্ড সংযোগ ও শিট ইউআরএল সংরক্ষিত হয়েছে!",
+            "Backend Connection & Sheet URL Saved!",
+          ),
+          data.connected
+            ? tr(
+                "Google Drive এবং media_vault টেবিলের সাথে স্বয়ংক্রিয় সিঙ্ক সক্রিয়",
+                "Live sync active with Google Drive & Sheet media_vault table",
+              )
+            : tr(
+                "সার্ভার স্টোরেজ সক্রিয়। Apps Script Web App URL দিলে Google Drive যুক্ত হবে।",
+                "Server storage active. Paste Apps Script Web App URL to enable Google Drive.",
+              ),
+        );
+      } else {
+        onShowToast(
+          tr("কনফিগারেশন সেভ করতে সমস্যা হয়েছে", "Failed to save configuration"),
+          data.error,
+        );
+      }
+    } catch (err) {
+      onShowToast(
+        tr("কনফিগারেশন সেভ করতে সমস্যা হয়েছে", "Failed to save configuration"),
+        err instanceof Error ? err.message : undefined,
+      );
+    } finally {
+      setIsSavingConfig(false);
+    }
+  };
+
+  const handlePushAllBrowserData = async () => {
+    setIsPushingStore(true);
+    try {
+      const currentStore = getCmsStore();
+      await fetch("/api/cms/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "FULL_STORE_SYNC",
+          fullStore: currentStore,
+        }),
+      });
+      const optRes = await optimizeMediaStorage();
+      if (optRes.items) setItems(optRes.items);
+      if (optRes.summary) setSummary(optRes.summary);
+      await fetchLiveStoreFromServer();
+      await loadLibrary();
+      onShowToast(
+        tr(
+          "সব ডাটা ও মিডিয়া সার্ভার এবং শিটে সিঙ্ক সম্পন্ন!",
+          "All Data & Media Synced to Server & Google Sheet!",
+        ),
+        tr(
+          "এখন যেকোনো নতুন ব্রাউজার বা ডিভাইস থেকে ওপেন করলে সব ডাটা ও ফাইল দেখা যাবে।",
+          "Now opening in any new browser or device will display all records and media files.",
+        ),
+      );
+    } catch (err) {
+      onShowToast(
+        tr("সিঙ্ক করতে সমস্যা হয়েছে", "Sync failed"),
+        err instanceof Error ? err.message : undefined,
+      );
+    } finally {
+      setIsPushingStore(false);
+    }
+  };
+
+  const handleCopyAppsScript = async () => {
+    try {
+      const res = await fetch("/api/sheets?action=code_gs", { cache: "no-store" });
+      const data = await res.json();
+      if (data.ok && data.code) {
+        await navigator.clipboard.writeText(data.code);
+        setCopiedScript(true);
+        setTimeout(() => setCopiedScript(false), 3000);
+        onShowToast(
+          tr(
+            "সম্পূর্ণ Google Apps Script (Code.gs) কপি হয়েছে!",
+            "Complete Google Apps Script (Code.gs) Copied!",
+          ),
+          tr(
+            "আপনার Google Sheet > Extensions > Apps Script-এ পেস্ট করে Deploy > New deployment (Web app) করুন।",
+            "Paste into Google Sheet > Extensions > Apps Script and Deploy as Web App.",
+          ),
+        );
+      }
+    } catch {
+      onShowToast(tr("স্ক্রিপ্ট কপি করতে সমস্যা হয়েছে", "Failed to copy script"));
+    }
+  };
 
   const handleFilesUpload = async (fileList: FileList | File[]) => {
     const files = Array.from(fileList);
@@ -239,22 +387,40 @@ export default function MediaStorageManager({
       {/* Top Header & Quick Actions */}
       <div className="flex flex-col gap-4 rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2.5 py-1 text-[11px] font-bold tracking-wide text-emerald-800 uppercase border border-emerald-200">
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-700" />
               {tr("ডিরেক্ট মিডিয়া ও ডকুমেন্ট ভল্ট", "DIRECT MEDIA & DOCUMENT VAULT")}
             </span>
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-bold border ${
+                isBackendConnected
+                  ? "bg-emerald-900 text-white border-emerald-950"
+                  : "bg-amber-50 text-amber-900 border-amber-200"
+              }`}
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              {isBackendConnected
+                ? tr(
+                    "Google Drive + Sheet (media_vault) সংযুক্ত",
+                    "Google Drive + Sheet (media_vault) Connected",
+                  )
+                : tr(
+                    "সার্ভার ভল্ট সক্রিয় (Google Drive সংযোগ সেটিংস)",
+                    "Server Vault Active (Connect Google Drive)",
+                  )}
+            </span>
           </div>
           <h2 className="mt-2 text-xl font-black tracking-tight text-slate-900">
             {tr(
-              "মিডিয়া লাইব্রেরি ও ফাইল ম্যানেজার",
-              "Media Library & File Browser",
+              "মিডিয়া লাইব্রেরি ও ক্লাউড স্টোরেজ ম্যানেজার",
+              "Media Library & Cloud Storage Manager",
             )}
           </h2>
           <p className="mt-1 text-xs text-slate-500">
             {tr(
-              "স্টুডেন্ট ছবি, পাসপোর্ট, ভিসা পিডিএফ, পার্টনার স্কুলের লোগো, বুকস্টোর বইয়ের কভার এবং ওয়েবসাইট ব্যানার এক জায়গা থেকে আপলোড, প্রিভিউ ও ডিরেক্ট লিংক কপি করুন।",
-              "Upload, preview, and copy direct links for Student Photos, Visa PDFs, Partner Logos, Bookstore Covers, and Website Banners.",
+              "স্টুডেন্ট ছবি, পাসপোর্ট, ভিসা পিডিএফ, পার্টনার স্কুলের লোগো, বুকস্টোর বইয়ের কভার এবং ওয়েবসাইট ব্যানার স্থায়ীভাবে সংরক্ষণ, প্রিভিউ ও যেকোনো ব্রাউজার থেকে অ্যাক্সেস করুন।",
+              "Store, preview, and sync Student Photos, Visa PDFs, Partner Logos, Bookstore Covers, and Website Banners across all browsers & devices.",
             )}
           </p>
         </div>
@@ -262,15 +428,44 @@ export default function MediaStorageManager({
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             type="button"
+            onClick={() => setShowSettingsPanel((prev) => !prev)}
+            className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-bold transition ${
+              showSettingsPanel
+                ? "border-slate-900 bg-slate-900 text-white"
+                : "border-slate-300 bg-white text-slate-800 hover:bg-slate-50"
+            }`}
+          >
+            <Settings2 className="h-4 w-4" />
+            <span>
+              {tr("ব্যাকএন্ড ও Google Drive সেটিংস", "Backend & Drive Settings")}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handlePushAllBrowserData}
+            disabled={isPushingStore}
+            className="inline-flex items-center gap-2 rounded-xl bg-[#133e29] px-4 py-2.5 text-xs font-bold text-white hover:bg-emerald-800 transition disabled:opacity-60"
+          >
+            <CloudUpload className={`h-4 w-4 ${isPushingStore ? "animate-bounce" : ""}`} />
+            <span>
+              {isPushingStore
+                ? tr("সিঙ্ক হচ্ছে...", "Syncing All...")
+                : tr("সব ডাটা ও ফাইল ক্লাউডে পুশ করুন", "Sync All Data & Media")}
+            </span>
+          </button>
+
+          <button
+            type="button"
             onClick={handleOptimizeAll}
             disabled={isOptimizing}
-            className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/90 px-4 py-2.5 text-xs font-bold text-emerald-900 hover:bg-emerald-100 transition disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/90 px-3.5 py-2.5 text-xs font-bold text-emerald-900 hover:bg-emerald-100 transition disabled:opacity-60"
           >
             <Sparkles className={`h-4 w-4 text-emerald-700 ${isOptimizing ? "animate-spin" : ""}`} />
             <span>
               {isOptimizing
-                ? tr("সিঙ্ক হচ্ছে...", "Indexing Files...")
-                : tr("সকল ফাইল ইনডেক্স ও সিঙ্ক", "Sync All Profile Media")}
+                ? tr("ইনডেক্স হচ্ছে...", "Indexing...")
+                : tr("ফাইল ইনডেক্স", "Index Files")}
             </span>
           </button>
 
@@ -285,6 +480,124 @@ export default function MediaStorageManager({
           </button>
         </div>
       </div>
+
+      {/* Collapsible Backend Connection & Google Drive / Sheet Settings Panel */}
+      {showSettingsPanel ? (
+        <div className="rounded-2xl border-2 border-emerald-800/20 bg-emerald-950/3 p-6 shadow-xs space-y-5">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between border-b border-slate-200 pb-4">
+            <div>
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <Link2 className="h-4 w-4 text-emerald-700" />
+                {tr(
+                  "স্থায়ী Google Drive + Google Sheet (media_vault) কানেকশন প্যানেল",
+                  "Permanent Google Drive + Google Sheet (media_vault) Connection Settings",
+                )}
+              </h3>
+              <p className="mt-1 text-xs text-slate-600">
+                {tr(
+                  "নতুন ব্রাউজার, ইনকগনিটো বা অন্য ডিভাইস থেকে এবং সার্ভার রিস্টার্টের পরও যেন কোনো ডাটা বা ফাইল না হারায়, তাই আপনার Google Apps Script Web App URL ও Sheet URL এখানে সেভ রাখুন।",
+                  "Save your Google Apps Script Web App URL & Sheet URL here so all uploaded files and data persist permanently in Google Drive and the media_vault Sheet tab across all browsers and server restarts.",
+                )}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleCopyAppsScript}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-800 hover:bg-slate-50 transition"
+              >
+                {copiedScript ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>{tr("Code.gs কপি হয়েছে!", "Code.gs Copied!")}</span>
+                  </>
+                ) : (
+                  <>
+                    <Code2 className="h-3.5 w-3.5 text-indigo-600" />
+                    <span>{tr("১-ক্লিকে Code.gs কপি করুন", "Copy Apps Script (Code.gs)")}</span>
+                  </>
+                )}
+              </button>
+
+              {masterSheetUrlInput ? (
+                <a
+                  href={masterSheetUrlInput}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3.5 py-2 text-xs font-bold text-emerald-900 hover:bg-emerald-100 transition"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  <span>{tr("মাস্টার গুগল শিট খুলুন", "Open Master Google Sheet")}</span>
+                </a>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="md:col-span-2">
+              <label className="block text-xs font-extrabold text-slate-800 mb-1.5">
+                {tr(
+                  "১. Google Apps Script Web App URL (https://script.google.com/macros/s/.../exec)",
+                  "1. Google Apps Script Web App URL (https://script.google.com/macros/s/.../exec)",
+                )}
+              </label>
+              <input
+                type="url"
+                value={webAppUrlInput}
+                onChange={(e) => setWebAppUrlInput(e.target.value)}
+                placeholder="https://script.google.com/macros/s/AKfycb.../exec"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-mono text-slate-900 outline-none focus:border-emerald-700"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-extrabold text-slate-800 mb-1.5">
+                {tr("২. সিকিউরিটি API Key", "2. Security API Key")}
+              </label>
+              <input
+                type="text"
+                value={apiKeyInput}
+                onChange={(e) => setApiKeyInput(e.target.value)}
+                placeholder="KNLTC_SECRET_2026"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-mono text-slate-900 outline-none focus:border-emerald-700"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-xs font-extrabold text-slate-800 mb-1.5">
+                {tr(
+                  "৩. আপনার Master Google Sheet লিংক (ঐচ্ছিক - সরাসরি ওপেন বাটনের জন্য)",
+                  "3. Master Google Sheet URL (Optional - for quick access)",
+                )}
+              </label>
+              <input
+                type="url"
+                value={masterSheetUrlInput}
+                onChange={(e) => setMasterSheetUrlInput(e.target.value)}
+                placeholder="https://docs.google.com/spreadsheets/d/14n2_.../edit"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-mono text-slate-900 outline-none focus:border-emerald-700"
+              />
+            </div>
+
+            <div className="flex items-end">
+              <button
+                type="button"
+                onClick={handleSaveBackendConfig}
+                disabled={isSavingConfig}
+                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#133e29] px-4 py-2.5 text-xs font-bold text-white hover:bg-emerald-800 transition shadow-xs disabled:opacity-60"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                <span>
+                  {isSavingConfig
+                    ? tr("সেভ ও কানেক্ট হচ্ছে...", "Saving & Connecting...")
+                    : tr("সেভ ও কানেক্ট করুন", "Save & Connect Backend")}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* 4 Clean Summary Metric Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
