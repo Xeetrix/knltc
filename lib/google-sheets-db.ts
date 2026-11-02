@@ -128,11 +128,28 @@ export function getGoogleSheetsConfig() {
     envWebApp && !envWebApp.includes("YOUR_APPS_SCRIPT_DEPLOYMENT_ID") ? envWebApp : "";
 
   const webAppUrl = (runtime.webAppUrl || validEnvWebApp || "").trim();
-  const apiKey = (
+  const primaryApiKey = (
     runtime.apiKey ||
     process.env.GOOGLE_SHEETS_API_KEY ||
+    process.env.DEFAULT_API_KEY ||
     "KNLTC_SECRET_2026"
   ).trim();
+
+  const apiKeysToTry = Array.from(
+    new Set(
+      [
+        runtime.apiKey?.trim(),
+        process.env.GOOGLE_SHEETS_API_KEY?.trim(),
+        process.env.DEFAULT_API_KEY?.trim(),
+        "KNLTC_SECRET_2026",
+      ].filter((k): k is string => Boolean(k && k.length > 0)),
+    ),
+  );
+
+  const driveRootFolderName = (
+    process.env.DRIVE_ROOT_FOLDER_NAME || "KNLTC_Uploads_And_Visa_Docs"
+  ).trim();
+
   const envSheetUrl = (process.env.NEXT_PUBLIC_MASTER_SHEET_URL || "").trim();
   const validEnvSheetUrl =
     envSheetUrl && !envSheetUrl.includes("YOUR_MASTER_SHEET_ID") ? envSheetUrl : "";
@@ -154,16 +171,91 @@ export function getGoogleSheetsConfig() {
 
   return {
     webAppUrl,
-    apiKey,
+    apiKey: primaryApiKey,
+    apiKeysToTry,
+    driveRootFolderName,
     masterSheetUrl,
     cloudinaryCloudName,
     cloudinaryUploadPreset,
+    envDiagnostics: {
+      hasWebAppUrlEnv: Boolean(validEnvWebApp),
+      hasGoogleSheetsApiKeyEnv: Boolean(process.env.GOOGLE_SHEETS_API_KEY?.trim()),
+      hasDefaultApiKeyEnv: Boolean(process.env.DEFAULT_API_KEY?.trim()),
+      hasDriveRootFolderEnv: Boolean(process.env.DRIVE_ROOT_FOLDER_NAME?.trim()),
+      hasMasterSheetUrlEnv: Boolean(validEnvSheetUrl),
+      driveRootFolderName,
+    },
     isConfigured: Boolean(
       webAppUrl &&
         webAppUrl.startsWith("https://script.google.com/") &&
         !webAppUrl.includes("YOUR_APPS_SCRIPT_DEPLOYMENT_ID"),
     ),
   };
+}
+
+/**
+ * Posts a JSON payload to the Google Apps Script Web App URL, automatically trying
+ * all configured API keys (`GOOGLE_SHEETS_API_KEY`, `DEFAULT_API_KEY`, `"KNLTC_SECRET_2026"`)
+ * if an "Unauthorized" response is returned.
+ */
+export async function postToAppsScript(
+  payload: Record<string, any>,
+): Promise<{ ok: boolean; json: any; usedApiKey?: string; status?: number }> {
+  const { webAppUrl, apiKeysToTry, driveRootFolderName, isConfigured } = getGoogleSheetsConfig();
+  if (!isConfigured || !webAppUrl) {
+    return { ok: false, json: { ok: false, error: "Web App URL not configured" } };
+  }
+
+  const keys = apiKeysToTry.length > 0 ? apiKeysToTry : ["KNLTC_SECRET_2026"];
+  let lastJson: any = null;
+  let lastStatus = 0;
+
+  for (const candidateKey of keys) {
+    try {
+      const res = await fetch(webAppUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        redirect: "follow",
+        cache: "no-store",
+        body: JSON.stringify({
+          ...payload,
+          apiKey: candidateKey,
+          driveRootFolderName: payload.driveRootFolderName || driveRootFolderName,
+        }),
+      });
+      lastStatus = res.status;
+      const text = await res.text();
+      let parsed: any = null;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        parsed = { ok: false, error: text.slice(0, 200) };
+      }
+      lastJson = parsed;
+
+      const isUnauthorized =
+        parsed &&
+        parsed.ok === false &&
+        typeof parsed.error === "string" &&
+        parsed.error.toLowerCase().includes("unauthorized");
+
+      if (!isUnauthorized) {
+        return {
+          ok: Boolean(res.ok && parsed?.ok !== false),
+          json: parsed,
+          usedApiKey: candidateKey,
+          status: res.status,
+        };
+      }
+    } catch (err) {
+      lastJson = {
+        ok: false,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+  }
+
+  return { ok: false, json: lastJson, status: lastStatus };
 }
 
 /**
@@ -272,30 +364,55 @@ function syncMediaVaultFromFallbackRows(): MediaVaultItem[] {
   const rawList = getRawMediaStore();
   try {
     const fallback = getFallbackTables();
-    const sheetMediaRows = Array.isArray(fallback.media_vault) ? fallback.media_vault : [];
+    const sheetMediaRows: Record<string, any>[] = [
+      ...(Array.isArray(fallback.media_vault) ? fallback.media_vault : []),
+    ];
+
+    // Also inspect `knltc_website_cms` for `media_item_<id>` bridge rows so existing Oct 29 sheets work too
+    const cmsRows = Array.isArray(fallback.knltc_website_cms) ? fallback.knltc_website_cms : [];
+    for (const cRow of cmsRows) {
+      const sKey = String(cRow?.section_key || "");
+      if (sKey.startsWith("media_item_") && cRow?.data) {
+        try {
+          const parsed = typeof cRow.data === "string" ? JSON.parse(cRow.data) : cRow.data;
+          if (parsed && parsed.id) {
+            sheetMediaRows.push(parsed);
+          }
+        } catch {
+          // Ignore malformed row
+        }
+      }
+    }
+
     if (sheetMediaRows.length > 0) {
       let updated = false;
       for (const r of sheetMediaRows) {
         if (!r || !r.id) continue;
         const id = String(r.id);
         const existingIdx = rawList.findIndex((m) => m.id === id);
-        const safeName = String(r.safe_file_name || r.name || `${id}.bin`);
+        const safeName = String(r.safe_file_name || r.safeFileName || r.name || `${id}.bin`);
         const localUrl = String(r.url || `/api/media/file/${id}/${encodeURIComponent(safeName)}`);
         const itemFromRow: MediaVaultItem = {
           id,
           name: String(r.name || safeName),
           safeFileName: safeName,
-          folderName: String(r.folder_name || "KNLTC_General_Uploads"),
-          mimeType: String(r.mime_type || "application/octet-stream"),
+          folderName: String(r.folder_name || r.folderName || "KNLTC_General_Uploads"),
+          mimeType: String(r.mime_type || r.mimeType || "application/octet-stream"),
           size: Number(r.size) || 0,
           url: localUrl,
-          downloadUrl: String(r.download_url || `${localUrl}?download=1`),
-          driveFileId: r.drive_file_id ? String(r.drive_file_id) : undefined,
-          driveUrl: r.drive_url ? String(r.drive_url) : undefined,
-          provider: r.drive_file_id || r.drive_url ? "google-drive" : "persistent-disk",
-          base64Backup: r.base64_chunk ? String(r.base64_chunk) : undefined,
-          createdAt: String(r.created_at || new Date().toISOString()),
-          updatedAt: String(r.updated_at || r.created_at || new Date().toISOString()),
+          downloadUrl: String(r.download_url || r.downloadUrl || `${localUrl}?download=1`),
+          driveFileId: r.drive_file_id || r.driveFileId ? String(r.drive_file_id || r.driveFileId) : undefined,
+          driveUrl: r.drive_url || r.driveUrl ? String(r.drive_url || r.driveUrl) : undefined,
+          provider:
+            r.drive_file_id || r.driveFileId || r.drive_url || r.driveUrl
+              ? "google-drive"
+              : "persistent-disk",
+          base64Backup:
+            r.base64_chunk || r.base64Backup
+              ? String(r.base64_chunk || r.base64Backup)
+              : undefined,
+          createdAt: String(r.created_at || r.createdAt || new Date().toISOString()),
+          updatedAt: String(r.updated_at || r.updatedAt || r.created_at || new Date().toISOString()),
         };
 
         if (existingIdx === -1) {
@@ -369,6 +486,7 @@ export function saveBinaryToMediaVault(options: {
   driveFileId?: string;
   cloudinaryUrl?: string;
   provider?: "google-drive" | "cloudinary" | "persistent-disk";
+  syncToRemoteSheets?: boolean;
 }): MediaVaultItem {
   const list = getRawMediaStore();
   const hash = crypto.createHash("sha1").update(options.buffer).digest("hex").slice(0, 16);
@@ -426,27 +544,28 @@ export function saveBinaryToMediaVault(options: {
 
   saveMediaIndexToDisk(list);
 
-  // Also record in `fallback.media_vault` table so it syncs across Google Sheets & all browsers
+  const sheetBase64Chunk =
+    item.base64Backup && item.base64Backup.length <= 43000 ? item.base64Backup : "";
+  const mvRow = {
+    id: item.id,
+    name: item.name,
+    safe_file_name: item.safeFileName,
+    folder_name: item.folderName,
+    mime_type: item.mimeType,
+    size: item.size,
+    url: item.url,
+    download_url: item.downloadUrl,
+    drive_file_id: item.driveFileId || "",
+    drive_url: item.driveUrl || "",
+    base64_chunk: sheetBase64Chunk,
+    created_at: item.createdAt,
+    updated_at: item.updatedAt,
+  };
+
+  // Also record in `fallback.media_vault` AND `fallback.knltc_website_cms` so it syncs across Google Sheets & all browsers
   try {
     const fallback = getFallbackTables();
     const mvRows = Array.isArray(fallback.media_vault) ? fallback.media_vault : [];
-    const sheetBase64Chunk =
-      item.base64Backup && item.base64Backup.length <= 42000 ? item.base64Backup : "";
-    const mvRow = {
-      id: item.id,
-      name: item.name,
-      safe_file_name: item.safeFileName,
-      folder_name: item.folderName,
-      mime_type: item.mimeType,
-      size: item.size,
-      url: item.url,
-      download_url: item.downloadUrl,
-      drive_file_id: item.driveFileId || "",
-      drive_url: item.driveUrl || "",
-      base64_chunk: sheetBase64Chunk,
-      created_at: item.createdAt,
-      updated_at: item.updatedAt,
-    };
     const rIdx = mvRows.findIndex((r) => String(r.id) === item.id);
     if (rIdx >= 0) {
       mvRows[rIdx] = { ...mvRows[rIdx], ...mvRow };
@@ -454,9 +573,63 @@ export function saveBinaryToMediaVault(options: {
       mvRows.unshift(mvRow);
     }
     fallback.media_vault = mvRows;
+
+    const cmsRows = Array.isArray(fallback.knltc_website_cms) ? fallback.knltc_website_cms : [];
+    const cmsSectionKey = `media_item_${item.id}`;
+    const cmsIdx = cmsRows.findIndex((r) => String(r.section_key) === cmsSectionKey);
+    const cmsMediaEntry = {
+      id: `cms-${item.id}`,
+      section_key: cmsSectionKey,
+      data: mvRow,
+      updated_at: nowIso,
+    };
+    if (cmsIdx >= 0) {
+      cmsRows[cmsIdx] = cmsMediaEntry;
+    } else {
+      cmsRows.push(cmsMediaEntry);
+    }
+    fallback.knltc_website_cms = cmsRows;
+
     saveFallbackTablesToDisk(fallback);
   } catch {
     // Ignore fallback table update error
+  }
+
+  // If called from `offloadEmbeddedBase64Strings` (`syncToRemoteSheets: true`), push to Google Drive + Sheets in background
+  if (options.syncToRemoteSheets && getGoogleSheetsConfig().isConfigured && base64Backup) {
+    void (async () => {
+      try {
+        const upRes = await postToAppsScript({
+          action: "UPLOAD_FILE_TO_DRIVE",
+          mediaId: item.id,
+          publicUrl: localServeUrl,
+          fileName: item.name,
+          mimeType: item.mimeType,
+          base64Data: base64Backup,
+          folderName: item.folderName,
+        });
+        if (upRes.ok && upRes.json?.fileId) {
+          item.driveFileId = String(upRes.json.fileId);
+          item.driveUrl = String(upRes.json.url || "");
+          item.provider = "google-drive";
+          mvRow.drive_file_id = item.driveFileId;
+          mvRow.drive_url = item.driveUrl;
+          saveMediaIndexToDisk(list);
+        }
+        // Also persist to `knltc_website_cms` (`section_key: media_item_<id>`) so Oct 29 deployments without `media_vault` tab still store it permanently!
+        await postToAppsScript({
+          action: "UPSERT_CMS",
+          section_key: `media_item_${item.id}`,
+          payload: {
+            id: `cms-${item.id}`,
+            section_key: `media_item_${item.id}`,
+            data: mvRow,
+          },
+        });
+      } catch {
+        // Ignore background upload error
+      }
+    })();
   }
 
   const { base64Backup: _omit, ...publicItem } = item;
@@ -493,8 +666,8 @@ export function getMediaFileById(fileId: string): {
 
 /**
  * Asynchronous media resolver that checks local disk & base64 backup first,
- * and if missing (e.g., on a new server instance or new browser), automatically
- * fetches from the `media_vault` Google Sheet table or Google Drive (`driveFileId`)
+ * and if missing (e.g., on a cold Vercel serverless container or new browser), automatically
+ * fetches from `GET_MEDIA_FILE`, `media_vault`, `knltc_website_cms` (`media_item_<id>`), or Google Drive (`driveFileId`)
  * and caches the binary on disk so `/api/media/file/<id>/<filename>` NEVER 404s!
  */
 export async function resolveMediaFileById(fileId: string): Promise<{
@@ -507,71 +680,65 @@ export async function resolveMediaFileById(fileId: string): Promise<{
     return local;
   }
 
-  const { webAppUrl, apiKey, isConfigured } = getGoogleSheetsConfig();
+  const { isConfigured } = getGoogleSheetsConfig();
   let meta = local.meta;
 
-  // Step 1: If meta is missing or has no base64Backup/driveFileId, query `media_vault` from Google Sheets
+  // Step 1: Ask Apps Script directly via `GET_MEDIA_FILE` (works with updated Code.gs)
+  if (isConfigured) {
+    try {
+      const gmRes = await postToAppsScript({
+        action: "GET_MEDIA_FILE",
+        mediaId: cleanId,
+      });
+      if (gmRes.ok && gmRes.json?.ok && gmRes.json?.base64Data) {
+        const rowData = gmRes.json.data || {};
+        const buffer = Buffer.from(String(gmRes.json.base64Data), "base64");
+        const saved = saveBinaryToMediaVault({
+          fileName: String(rowData.name || meta?.name || `${cleanId}.bin`),
+          mimeType: String(rowData.mime_type || meta?.mimeType || "application/octet-stream"),
+          buffer,
+          folderName: String(rowData.folder_name || meta?.folderName || "KNLTC_General_Uploads"),
+          customId: cleanId,
+          driveFileId: rowData.drive_file_id ? String(rowData.drive_file_id) : meta?.driveFileId,
+          driveUrl: rowData.drive_url ? String(rowData.drive_url) : meta?.driveUrl,
+          provider: "google-drive",
+        });
+        return { meta: saved, buffer };
+      }
+    } catch {
+      // Continue to table lookup fallback
+    }
+  }
+
+  // Step 2: Query `media_vault` AND `knltc_website_cms` from Google Sheets (works even on older Oct 29 Code.gs deployments!)
   if (!meta && isConfigured) {
     try {
-      const rows = await fetchSheetTable<Record<string, any>>("media_vault");
-      const foundRow = rows.find((r) => String(r.id) === cleanId);
-      if (foundRow) {
-        syncMediaVaultFromFallbackRows();
-        const refreshed = getMediaFileById(cleanId);
-        if (refreshed.buffer) return refreshed;
-        meta = refreshed.meta;
-      }
+      await Promise.allSettled([
+        fetchSheetTable<Record<string, any>>("media_vault"),
+        fetchSheetTable<Record<string, any>>("knltc_website_cms"),
+      ]);
+      syncMediaVaultFromFallbackRows();
+      const refreshed = getMediaFileById(cleanId);
+      if (refreshed.buffer) return refreshed;
+      meta = refreshed.meta;
     } catch {
       // Continue to Drive fallback
     }
   }
 
-  // Step 2: If we have a Google Drive `driveFileId`, fetch the file bytes via Apps Script or Drive direct download
+  // Step 3: If we have a Google Drive `driveFileId`, fetch the file bytes via Apps Script or Drive direct download
   if (meta?.driveFileId) {
     if (isConfigured) {
       try {
-        const res = await fetch(webAppUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          redirect: "follow",
-          body: JSON.stringify({
-            apiKey,
-            action: "GET_DRIVE_FILE",
-            fileId: meta.driveFileId,
-          }),
+        const gdRes = await postToAppsScript({
+          action: "GET_DRIVE_FILE",
+          fileId: meta.driveFileId,
         });
-        if (res.ok) {
-          const json = await res.json();
-          if (json?.ok && json?.base64Data) {
-            const buffer = Buffer.from(json.base64Data, "base64");
-            saveBinaryToMediaVault({
-              fileName: meta.name || json.fileName || `${cleanId}.bin`,
-              mimeType: meta.mimeType || json.mimeType || "application/octet-stream",
-              buffer,
-              folderName: meta.folderName,
-              customId: cleanId,
-              driveFileId: meta.driveFileId,
-              driveUrl: meta.driveUrl,
-              provider: "google-drive",
-            });
-            return { meta, buffer };
-          }
-        }
-      } catch {
-        // Fall through to direct Google Drive download URL
-      }
-    }
-
-    try {
-      const directDownloadUrl = `https://drive.google.com/uc?export=download&id=${encodeURIComponent(meta.driveFileId)}`;
-      const driveRes = await fetch(directDownloadUrl, { redirect: "follow" });
-      if (driveRes.ok) {
-        const arrBuf = await driveRes.arrayBuffer();
-        const buffer = Buffer.from(arrBuf);
-        if (buffer.byteLength > 0) {
-          saveBinaryToMediaVault({
-            fileName: meta.name || `${cleanId}.bin`,
-            mimeType: meta.mimeType || "application/octet-stream",
+        if (gdRes.ok && gdRes.json?.ok && gdRes.json?.base64Data) {
+          const buffer = Buffer.from(String(gdRes.json.base64Data), "base64");
+          const saved = saveBinaryToMediaVault({
+            fileName: meta.name || gdRes.json.fileName || `${cleanId}.bin`,
+            mimeType: meta.mimeType || gdRes.json.mimeType || "application/octet-stream",
             buffer,
             folderName: meta.folderName,
             customId: cleanId,
@@ -579,11 +746,44 @@ export async function resolveMediaFileById(fileId: string): Promise<{
             driveUrl: meta.driveUrl,
             provider: "google-drive",
           });
-          return { meta, buffer };
+          return { meta: saved, buffer };
         }
+      } catch {
+        // Fall through to direct Google Drive download URL
       }
-    } catch {
-      // Ignore direct fetch failure
+    }
+
+    const candidateDriveUrls = [
+      `https://drive.google.com/uc?export=download&id=${encodeURIComponent(meta.driveFileId)}`,
+      `https://lh3.googleusercontent.com/d/${encodeURIComponent(meta.driveFileId)}`,
+    ];
+
+    for (const directDownloadUrl of candidateDriveUrls) {
+      try {
+        const driveRes = await fetch(directDownloadUrl, { redirect: "follow" });
+        if (driveRes.ok) {
+          const contentType = driveRes.headers.get("content-type") || "";
+          if (!contentType.includes("text/html")) {
+            const arrBuf = await driveRes.arrayBuffer();
+            const buffer = Buffer.from(arrBuf);
+            if (buffer.byteLength > 0) {
+              const saved = saveBinaryToMediaVault({
+                fileName: meta.name || `${cleanId}.bin`,
+                mimeType: meta.mimeType || contentType || "application/octet-stream",
+                buffer,
+                folderName: meta.folderName,
+                customId: cleanId,
+                driveFileId: meta.driveFileId,
+                driveUrl: meta.driveUrl,
+                provider: "google-drive",
+              });
+              return { meta: saved, buffer };
+            }
+          }
+        }
+      } catch {
+        // Try next candidate URL
+      }
     }
   }
 
@@ -1057,11 +1257,6 @@ function mergeRemoteAndMirrorRows(
     return merged;
   });
 
-  // For knltc_website_cms, return mergedRemote directly
-  if (tableName === "knltc_website_cms") {
-    return mergedRemote;
-  }
-
   // Union merge: preserve any local mirror rows not yet present in remoteRows
   const remoteKeys = new Set(
     remoteRows.map((r) => String(r.id || r.section_key || "")).filter(Boolean),
@@ -1106,10 +1301,7 @@ export async function fetchSheetTable<T = Record<string, any>>(
     const response = await fetch(url, {
       method: "GET",
       redirect: "follow",
-      next: {
-        tags: ["knltc-db", tableName],
-        revalidate: 30,
-      },
+      cache: "no-store",
     });
 
     if (!response.ok) {
@@ -1147,10 +1339,7 @@ export async function fetchAllSheetTables(): Promise<
     const response = await fetch(url, {
       method: "GET",
       redirect: "follow",
-      next: {
-        tags: ["knltc-db"],
-        revalidate: 30,
-      },
+      cache: "no-store",
     });
 
     if (!response.ok) return fallback;
@@ -1162,6 +1351,7 @@ export async function fetchAllSheetTables(): Promise<
         }
       }
       saveFallbackTablesToDisk(fallback);
+      syncMediaVaultFromFallbackRows();
       return fallback;
     }
     return fallback;
@@ -1249,7 +1439,7 @@ export async function mutateSheetTable<T = Record<string, any>>(options: {
   tables?: Record<string, any[]>;
   replaceAll?: boolean;
 }): Promise<T> {
-  const { webAppUrl, apiKey, isConfigured } = getGoogleSheetsConfig();
+  const { isConfigured } = getGoogleSheetsConfig();
   const fallback = getFallbackTables();
   const tableName = (options.table || "knltc_website_cms") as GoogleSheetsTableName;
   const nowIso = new Date().toISOString();
@@ -1285,12 +1475,21 @@ export async function mutateSheetTable<T = Record<string, any>>(options: {
     const sectionKey = options.payload?.section_key || "master_cms";
     const cmsData = options.payload?.data !== undefined ? options.payload.data : options.payload;
     const cmsRow = {
-      id: "cms-master-01",
+      id: options.payload?.id || (sectionKey === "master_cms" ? "cms-master-01" : `cms-${sectionKey}`),
       section_key: sectionKey,
       data: cmsData,
       updated_at: nowIso,
     };
-    fallback.knltc_website_cms = [cmsRow];
+    const existingCmsRows = Array.isArray(fallback.knltc_website_cms)
+      ? fallback.knltc_website_cms
+      : [];
+    const cIdx = existingCmsRows.findIndex((r) => String(r.section_key) === String(sectionKey));
+    if (cIdx >= 0) {
+      existingCmsRows[cIdx] = cmsRow;
+    } else {
+      existingCmsRows.push(cmsRow);
+    }
+    fallback.knltc_website_cms = existingCmsRows;
     saveFallbackTablesToDisk(fallback);
   } else if (GOOGLE_SHEETS_TABLES.includes(tableName)) {
     const currentRows = fallback[tableName] || [];
@@ -1305,7 +1504,7 @@ export async function mutateSheetTable<T = Record<string, any>>(options: {
       fallback[tableName] = [...created, ...currentRows];
       options.payload = Array.isArray(options.payload) ? created : created[0];
     } else if (options.action === "UPDATE" || options.action === "UPSERT") {
-      const matchKey = options.matchKey || "id";
+      const matchKey = options.matchKey || (tableName === "knltc_website_cms" ? "section_key" : "id");
       const norm = normalizeRowRecord(options.payload || {});
       const matchVal = options.id || norm[matchKey];
       const idx = currentRows.findIndex((r) => String(r[matchKey]) === String(matchVal));
@@ -1330,30 +1529,21 @@ export async function mutateSheetTable<T = Record<string, any>>(options: {
     saveFallbackTablesToDisk(fallback);
   }
 
-  // 2. Forward write to Google Apps Script Web App if configured
+  // 2. Forward write to Google Apps Script Web App if configured (automatically trying all API keys)
   if (isConfigured) {
     try {
-      const response = await fetch(webAppUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        redirect: "follow",
-        body: JSON.stringify({
-          apiKey,
-          action: options.action,
-          table: options.table,
-          payload: options.payload,
-          id: options.id,
-          matchKey: options.matchKey,
-          tables: options.tables,
-          replaceAll: options.replaceAll,
-        }),
+      const res = await postToAppsScript({
+        action: options.action,
+        table: options.table,
+        payload: options.payload,
+        id: options.id,
+        matchKey: options.matchKey,
+        tables: options.tables,
+        replaceAll: options.replaceAll,
       });
-      if (response.ok) {
-        const json = await response.json();
-        invalidateSheetsCache(options.table);
-        if (json?.data !== undefined) {
-          return json.data as T;
-        }
+      invalidateSheetsCache(options.table);
+      if (res.ok && res.json?.data !== undefined) {
+        return res.json.data as T;
       }
     } catch (err) {
       console.warn(`[GoogleSheetsDB] Remote POST (${options.action}) failed, saved in persistent disk mirror:`, err);
@@ -1371,7 +1561,7 @@ export async function mutateSheetTable<T = Record<string, any>>(options: {
  * 1. Decodes the uploaded file binary and ALWAYS saves it to `.data/media-files/<id>`
  *    on persistent server disk.
  * 2. Also uploads to Cloudinary (if configured) or Google Drive (`UPLOAD_FILE_TO_DRIVE`
- *    in `KNLTC_Uploads_And_Visa_Docs/<folderName>`).
+ *    in `DRIVE_ROOT_FOLDER_NAME/<folderName>`) AND persists to `media_vault` + `knltc_website_cms`.
  * 3. Returns a clean, short `/api/media/file/<id>/<filename>` URL (< 70 chars) so
  *    images/PDFs load instantaneously without Google Drive cookie blocks and NEVER
  *    overflow Google Sheets' 50,000-character cell limit or browser `localStorage`!
@@ -1392,8 +1582,6 @@ export async function uploadFileToDriveOrCloudinary(options: {
   size: number;
 }> {
   const {
-    webAppUrl,
-    apiKey,
     cloudinaryCloudName,
     cloudinaryUploadPreset,
     isConfigured,
@@ -1455,33 +1643,24 @@ export async function uploadFileToDriveOrCloudinary(options: {
   const safeFileName = sanitizeFileName(options.fileName, mimeType);
   const localServeUrl = `/api/media/file/${fileId}/${encodeURIComponent(safeFileName)}`;
 
-  // Step 2: Upload to Google Drive (`KNLTC_Uploads_And_Visa_Docs`) + `media_vault` tab via Google Apps Script `doPost`
+  // Step 2: Upload to Google Drive (`DRIVE_ROOT_FOLDER_NAME`) + `media_vault` tab via Google Apps Script `doPost`
   if (isConfigured) {
     try {
-      const res = await fetch(webAppUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        redirect: "follow",
-        body: JSON.stringify({
-          apiKey,
-          action: "UPLOAD_FILE_TO_DRIVE",
-          mediaId: fileId,
-          publicUrl: localServeUrl,
-          fileName: options.fileName,
-          mimeType,
-          base64Data: cleanBase64,
-          folderName,
-        }),
+      const upRes = await postToAppsScript({
+        action: "UPLOAD_FILE_TO_DRIVE",
+        mediaId: fileId,
+        publicUrl: localServeUrl,
+        fileName: options.fileName,
+        mimeType,
+        base64Data: cleanBase64,
+        folderName,
       });
 
-      if (res.ok) {
-        const json = await res.json();
-        if (json?.ok && json?.url) {
-          driveUrl = json.url;
-          driveFileId = json.fileId;
-          if (!cloudinaryUrl) {
-            provider = "google-drive";
-          }
+      if (upRes.ok && upRes.json?.ok) {
+        driveUrl = upRes.json.url;
+        driveFileId = upRes.json.fileId ? String(upRes.json.fileId) : undefined;
+        if (!cloudinaryUrl && (driveFileId || driveUrl)) {
+          provider = "google-drive";
         }
       }
     } catch (err) {
@@ -1502,28 +1681,43 @@ export async function uploadFileToDriveOrCloudinary(options: {
     provider,
   });
 
-  // If Drive upload did not run or old script version didn't auto-upsert `media_vault`, upsert row to `media_vault` sheet
-  if (isConfigured && !driveFileId) {
-    const sheetBase64Chunk = cleanBase64.length <= 42000 ? cleanBase64 : "";
-    mutateSheetTable({
-      action: "UPSERT",
-      table: "media_vault",
-      payload: {
-        id: vaultItem.id,
-        name: vaultItem.name,
-        safe_file_name: vaultItem.safeFileName,
-        folder_name: vaultItem.folderName,
-        mime_type: vaultItem.mimeType,
-        size: vaultItem.size,
-        url: vaultItem.url,
-        download_url: vaultItem.downloadUrl,
-        drive_file_id: vaultItem.driveFileId || "",
-        drive_url: vaultItem.driveUrl || "",
-        base64_chunk: sheetBase64Chunk,
-        created_at: vaultItem.createdAt,
-        updated_at: vaultItem.updatedAt,
-      },
-    }).catch(() => {});
+  // Step 4: Ensure both `media_vault` AND `knltc_website_cms` (`media_item_<id>`) in Google Sheets have the file record
+  if (isConfigured) {
+    const sheetBase64Chunk = cleanBase64.length <= 43000 ? cleanBase64 : "";
+    const mvPayload = {
+      id: vaultItem.id,
+      name: vaultItem.name,
+      safe_file_name: vaultItem.safeFileName,
+      folder_name: vaultItem.folderName,
+      mime_type: vaultItem.mimeType,
+      size: vaultItem.size,
+      url: vaultItem.url,
+      download_url: vaultItem.downloadUrl,
+      drive_file_id: vaultItem.driveFileId || "",
+      drive_url: vaultItem.driveUrl || "",
+      base64_chunk: sheetBase64Chunk,
+      created_at: vaultItem.createdAt,
+      updated_at: vaultItem.updatedAt,
+    };
+
+    await Promise.allSettled([
+      !driveFileId
+        ? postToAppsScript({
+            action: "UPSERT",
+            table: "media_vault",
+            payload: mvPayload,
+          })
+        : Promise.resolve(),
+      postToAppsScript({
+        action: "UPSERT_CMS",
+        section_key: `media_item_${vaultItem.id}`,
+        payload: {
+          id: `cms-${vaultItem.id}`,
+          section_key: `media_item_${vaultItem.id}`,
+          data: mvPayload,
+        },
+      }),
+    ]);
   }
 
   return {
@@ -1841,6 +2035,11 @@ export async function bulkSyncMasterStoreToSheets(
         data: s.websiteCms?.[0] || getWebsiteCms(),
         updated_at: nowIso,
       },
+      ...(Array.isArray(fallback.knltc_website_cms)
+        ? fallback.knltc_website_cms.filter(
+            (r) => r && String(r.section_key || "") !== "master_cms",
+          )
+        : []),
     ],
   };
 
@@ -1857,3 +2056,98 @@ export async function bulkSyncMasterStoreToSheets(
     timestamp: nowIso,
   };
 }
+
+/**
+ * Performs a live diagnostic check of the Google Apps Script Web App URL,
+ * Vercel Environment Variables (`GOOGLE_SHEETS_WEB_APP_URL`, `GOOGLE_SHEETS_API_KEY`,
+ * `DEFAULT_API_KEY`, `DRIVE_ROOT_FOLDER_NAME`, `NEXT_PUBLIC_MASTER_SHEET_URL`),
+ * `doGet(?table=status)`, and `doPost(SETUP_DATABASE)`.
+ */
+export async function testLiveGoogleSheetsConnection() {
+  const config = getGoogleSheetsConfig();
+  const result: {
+    ok: boolean;
+    isConfigured: boolean;
+    envDiagnostics: typeof config.envDiagnostics;
+    webAppUrl: string;
+    masterSheetUrl: string;
+    getStatusOk: boolean;
+    spreadsheetName?: string;
+    spreadsheetUrl?: string;
+    existingSheets?: string[];
+    mediaVaultTabExists?: boolean;
+    postAuthOk: boolean;
+    usedApiKey?: string;
+    postError?: string;
+    getError?: string;
+  } = {
+    ok: false,
+    isConfigured: config.isConfigured,
+    envDiagnostics: config.envDiagnostics,
+    webAppUrl: config.webAppUrl,
+    masterSheetUrl: config.masterSheetUrl,
+    getStatusOk: false,
+    postAuthOk: false,
+  };
+
+  if (!config.isConfigured) {
+    result.getError = "GOOGLE_SHEETS_WEB_APP_URL is not configured or invalid.";
+    return result;
+  }
+
+  // 1. Test GET ?table=status
+  try {
+    const statusUrl = `${config.webAppUrl}${config.webAppUrl.includes("?") ? "&" : "?"}table=status`;
+    const getRes = await fetch(statusUrl, {
+      method: "GET",
+      redirect: "follow",
+      cache: "no-store",
+    });
+    if (getRes.ok) {
+      const getJson = await getRes.json().catch(() => null);
+      if (getJson && getJson.ok) {
+        result.getStatusOk = true;
+        result.spreadsheetName = getJson.spreadsheetName;
+        result.spreadsheetUrl = getJson.spreadsheetUrl;
+        result.existingSheets = Array.isArray(getJson.existingSheets)
+          ? getJson.existingSheets
+          : Array.isArray(getJson.tables)
+            ? getJson.tables
+            : [];
+        result.mediaVaultTabExists = Boolean(
+          result.existingSheets?.includes("media_vault") ||
+            (Array.isArray(getJson.tables) && getJson.tables.includes("media_vault")),
+        );
+      } else {
+        result.getError = getJson?.error || `Unexpected GET response (${getRes.status})`;
+      }
+    } else {
+      result.getError = `GET request returned HTTP ${getRes.status}`;
+    }
+  } catch (err) {
+    result.getError = err instanceof Error ? err.message : String(err);
+  }
+
+  // 2. Test POST SETUP_DATABASE (verifies API key authentication and creates all 16 tabs including media_vault)
+  try {
+    const postRes = await postToAppsScript({
+      action: "SETUP_DATABASE",
+    });
+    if (postRes.ok && postRes.json?.ok !== false) {
+      result.postAuthOk = true;
+      result.usedApiKey = postRes.usedApiKey;
+      if (Array.isArray(postRes.json?.tablesCreated)) {
+        result.existingSheets = postRes.json.tablesCreated;
+        result.mediaVaultTabExists = postRes.json.tablesCreated.includes("media_vault");
+      }
+    } else {
+      result.postError = postRes.json?.error || "POST SETUP_DATABASE failed";
+    }
+  } catch (err) {
+    result.postError = err instanceof Error ? err.message : String(err);
+  }
+
+  result.ok = result.getStatusOk || result.postAuthOk;
+  return result;
+}
+

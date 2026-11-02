@@ -11,7 +11,9 @@ import {
   invalidateSheetsCache,
   mutateSheetTable,
   optimizeAllTablesMedia,
+  postToAppsScript,
   saveRuntimeGoogleSheetsConfig,
+  testLiveGoogleSheetsConnection,
   uploadFileToDriveOrCloudinary,
   type GoogleSheetsTableName,
 } from "@/lib/google-sheets-db";
@@ -22,6 +24,7 @@ import {
  * ============================================================================
  * GET:
  * - `/api/sheets?action=status` -> Connection status, masterSheetUrl, webAppUrl, tables, storageSummary
+ * - `/api/sheets?action=test_connection` -> Live ping + API key auth + 16-tab verification
  * - `/api/sheets?action=code_gs` -> Full Code.gs script for 1-click copy in Dashboard
  * - `/api/sheets?table=all`     -> All 16 Google Sheets tables
  * - `/api/sheets?table=<name>`  -> Rows for a specific table
@@ -52,10 +55,20 @@ export async function GET(request: Request) {
         masterSheetUrl: config.masterSheetUrl,
         webAppUrl: config.webAppUrl,
         apiKey: config.apiKey,
+        envDiagnostics: config.envDiagnostics,
         webAppConfigured: config.isConfigured,
         cloudinaryConfigured: Boolean(config.cloudinaryCloudName && config.cloudinaryUploadPreset),
         storageSummary: getStorageStatusSummary(),
         tables: GOOGLE_SHEETS_TABLES,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    if (action === "test_connection") {
+      const liveTest = await testLiveGoogleSheetsConnection();
+      return NextResponse.json({
+        ...liveTest,
+        storageSummary: getStorageStatusSummary(),
         timestamp: new Date().toISOString(),
       });
     }
@@ -131,22 +144,15 @@ export async function POST(request: Request) {
 
       if (updatedConfig.isConfigured) {
         try {
-          const setupRes = await fetch(updatedConfig.webAppUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              apiKey: updatedConfig.apiKey,
-              action: "SETUP_DATABASE",
-            }),
-            redirect: "follow",
-            cache: "no-store",
+          const setupRes = await postToAppsScript({
+            action: "SETUP_DATABASE",
           });
-          setupResult = await setupRes.json().catch(() => null);
+          setupResult = setupRes.json;
         } catch (err) {
           console.warn("[API][/api/sheets][SAVE_BACKEND_CONFIG] Setup test warning:", err);
         }
 
-        // Push current server tables + media_vault to Google Sheets in background
+        // Push current server tables + media_vault to Google Sheets
         await bulkSyncMasterStoreToSheets(body.store, false).catch(() => null);
       }
 
@@ -156,6 +162,7 @@ export async function POST(request: Request) {
         webAppUrl: updatedConfig.webAppUrl,
         masterSheetUrl: updatedConfig.masterSheetUrl,
         apiKey: updatedConfig.apiKey,
+        envDiagnostics: updatedConfig.envDiagnostics,
         savedConfig,
         setupResult,
         storageSummary: getStorageStatusSummary(),

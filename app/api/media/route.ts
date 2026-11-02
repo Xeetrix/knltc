@@ -35,7 +35,10 @@ export async function GET(request: Request) {
 
     const config = getGoogleSheetsConfig();
     if (config.isConfigured) {
-      await fetchSheetTable("media_vault").catch(() => null);
+      await Promise.allSettled([
+        fetchSheetTable("media_vault"),
+        fetchSheetTable("knltc_website_cms"),
+      ]);
     }
 
     const items = getUploadedMediaList({ folder, type, search });

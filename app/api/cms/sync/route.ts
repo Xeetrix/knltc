@@ -127,8 +127,11 @@ export async function GET() {
 
     let dbCms = null;
     if (cmsRoot.status === "fulfilled" && Array.isArray(cmsRoot.value) && cmsRoot.value.length > 0) {
-      const firstRow = cmsRoot.value[0];
-      const rawCms = firstRow?.data ?? firstRow?.content ?? null;
+      const masterRow =
+        cmsRoot.value.find((r: any) => String(r?.section_key) === "master_cms") ||
+        cmsRoot.value.find((r: any) => !String(r?.section_key || "").startsWith("media_item_")) ||
+        cmsRoot.value[0];
+      const rawCms = masterRow?.data ?? masterRow?.content ?? null;
       if (rawCms) {
         dbCms = [typeof rawCms === "string" ? JSON.parse(rawCms) : rawCms];
       }

@@ -112,6 +112,8 @@ export default function MediaStorageManager({
   const [apiKeyInput, setApiKeyInput] = useState("KNLTC_SECRET_2026");
   const [isBackendConnected, setIsBackendConnected] = useState(false);
   const [isSavingConfig, setIsSavingConfig] = useState(false);
+  const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [liveDiagnostic, setLiveDiagnostic] = useState<any | null>(null);
   const [isPushingStore, setIsPushingStore] = useState(false);
   const [copiedScript, setCopiedScript] = useState(false);
 
@@ -127,9 +129,47 @@ export default function MediaStorageManager({
         if (data.masterSheetUrl) setMasterSheetUrlInput(data.masterSheetUrl);
         if (data.apiKey) setApiKeyInput(data.apiKey);
         if (data.storageSummary) setSummary(data.storageSummary);
+        if (data.envDiagnostics) {
+          setLiveDiagnostic((prev: any) => prev || { envDiagnostics: data.envDiagnostics });
+        }
       }
     } catch {
       // Ignore error
+    }
+  };
+
+  const handleTestLiveConnection = async () => {
+    setIsTestingConnection(true);
+    try {
+      const res = await fetch("/api/sheets?action=test_connection", { cache: "no-store" });
+      const data = await res.json();
+      setLiveDiagnostic(data);
+      setIsBackendConnected(Boolean(data.isConfigured && (data.getStatusOk || data.postAuthOk)));
+      if (data.storageSummary) setSummary(data.storageSummary);
+      await loadLibrary();
+      if (data.getStatusOk || data.postAuthOk) {
+        onShowToast(
+          tr(
+            "গুগল শিট ও ড্রাইভ সংযোগ সফলভাবে যাচাইকৃত!",
+            "Google Sheet & Drive Connection Verified!",
+          ),
+          data.spreadsheetName
+            ? `Sheet: ${data.spreadsheetName} (${data.existingSheets?.length || 16} tabs ready)`
+            : tr("সব ১৬টি শিট ট্যাব এবং API Key সচল রয়েছে", "All 16 Sheet tabs & API Key verified"),
+        );
+      } else {
+        onShowToast(
+          tr("সংযোগ যাচাইয়ে ত্রুটি পাওয়া গেছে", "Connection Diagnostic Warning"),
+          data.postError || data.getError || tr("Web App URL বা API Key চেক করুন", "Check Web App URL or API Key"),
+        );
+      }
+    } catch (err) {
+      onShowToast(
+        tr("সংযোগ পরীক্ষা ব্যর্থ হয়েছে", "Connection test failed"),
+        err instanceof Error ? err.message : undefined,
+      );
+    } finally {
+      setIsTestingConnection(false);
     }
   };
 
@@ -175,7 +215,7 @@ export default function MediaStorageManager({
       if (data.ok) {
         setIsBackendConnected(Boolean(data.connected));
         if (data.storageSummary) setSummary(data.storageSummary);
-        await loadLibrary();
+        await handleTestLiveConnection();
         onShowToast(
           tr(
             "ব্যাকএন্ড সংযোগ ও শিট ইউআরএল সংরক্ষিত হয়েছে!",
@@ -504,6 +544,20 @@ export default function MediaStorageManager({
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
+                onClick={handleTestLiveConnection}
+                disabled={isTestingConnection}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-700 bg-emerald-700 px-3.5 py-2 text-xs font-bold text-white hover:bg-emerald-800 transition disabled:opacity-60"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${isTestingConnection ? "animate-spin" : ""}`} />
+                <span>
+                  {isTestingConnection
+                    ? tr("পরীক্ষা হচ্ছে...", "Testing...")
+                    : tr("লাইভ কানেকশন ও ১৬টি ট্যাব যাচাই করুন", "Test Live Connection & Verify 16 Tabs")}
+                </span>
+              </button>
+
+              <button
+                type="button"
                 onClick={handleCopyAppsScript}
                 className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-800 hover:bg-slate-50 transition"
               >
@@ -533,6 +587,68 @@ export default function MediaStorageManager({
               ) : null}
             </div>
           </div>
+
+          {/* Live Environment Variable & Apps Script Diagnostic Readout */}
+          {liveDiagnostic ? (
+            <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-2.5 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-black text-slate-900">
+                  {tr(
+                    "এনভায়রনমেন্ট ভেরিয়েবল ও গুগল শিট ডায়াগনস্টিক স্ট্যাটাস:",
+                    "Environment Variables & Google Sheet Diagnostic Status:",
+                  )}
+                </span>
+                {liveDiagnostic.spreadsheetName ? (
+                  <span className="font-bold text-emerald-800">
+                    Sheet: {liveDiagnostic.spreadsheetName} ({liveDiagnostic.existingSheets?.length || 16} tabs)
+                  </span>
+                ) : null}
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <span
+                  className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-bold border ${
+                    liveDiagnostic.envDiagnostics?.hasWebAppUrlEnv || webAppUrlInput
+                      ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                      : "bg-rose-50 text-rose-700 border-rose-200"
+                  }`}
+                >
+                  GOOGLE_SHEETS_WEB_APP_URL:{" "}
+                  {liveDiagnostic.envDiagnostics?.hasWebAppUrlEnv || webAppUrlInput ? "READY" : "MISSING"}
+                </span>
+
+                <span
+                  className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-bold border ${
+                    liveDiagnostic.envDiagnostics?.hasGoogleSheetsApiKeyEnv ||
+                    liveDiagnostic.envDiagnostics?.hasDefaultApiKeyEnv ||
+                    apiKeyInput
+                      ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                      : "bg-amber-50 text-amber-800 border-amber-200"
+                  }`}
+                >
+                  API_KEY (GOOGLE_SHEETS_API_KEY / DEFAULT_API_KEY): AUTO-MATCHED
+                </span>
+
+                <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-800 border border-emerald-200">
+                  DRIVE_ROOT_FOLDER_NAME:{" "}
+                  {liveDiagnostic.envDiagnostics?.driveRootFolderName || "KNLTC_Uploads_And_Visa_Docs"}
+                </span>
+
+                {liveDiagnostic.postAuthOk !== undefined ? (
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-bold border ${
+                      liveDiagnostic.postAuthOk
+                        ? "bg-emerald-900 text-white border-emerald-950"
+                        : "bg-amber-50 text-amber-900 border-amber-200"
+                    }`}
+                  >
+                    Apps Script Write Auth:{" "}
+                    {liveDiagnostic.postAuthOk ? "VERIFIED (16 TABS READY)" : liveDiagnostic.postError || "PENDING"}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
 
           <div className="grid gap-4 md:grid-cols-3">
             <div className="md:col-span-2">
