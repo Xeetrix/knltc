@@ -875,6 +875,17 @@ export interface MultilingualText {
   ja: string;
 }
 
+export interface LanguageCoursePromoCode {
+  id: string;
+  code: string;
+  discountType: "PERCENT" | "FLAT_BDT";
+  discountValue: number;
+  clientNameOrNote?: string;
+  expiresAt?: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
 export interface MinnaLesson {
   id: string;
   lessonNumber: number;
@@ -963,6 +974,11 @@ export interface WebsiteCmsContent {
     n5PriceBdt: number;
     n4PriceBdt: number;
     comboPriceBdt: number;
+    jftPriceBdt?: number;
+    fullPaymentDiscountPercent?: number;
+    bkashMerchantNumber?: string;
+    banglaQrImageUrl?: string;
+    promoCodes?: LanguageCoursePromoCode[];
     externalLmsUrl: string;
     externalIrodoriUrl: string;
     bonuses: { title: MultilingualText; valueBdt: number; description: MultilingualText }[];
@@ -1080,8 +1096,34 @@ export const DEFAULT_WEBSITE_CMS: WebsiteCmsContent = {
   },
   languageCoursePage: {
     n5PriceBdt: 12000,
-    n4PriceBdt: 12000,
+    n4PriceBdt: 14500,
     comboPriceBdt: 21500,
+    jftPriceBdt: 12500,
+    fullPaymentDiscountPercent: 20,
+    bkashMerchantNumber: "01805-013633",
+    banglaQrImageUrl: "/images/payment/bangla-qr.png",
+    promoCodes: [
+      {
+        id: "promo-knltc-10",
+        code: "KNLTC10",
+        discountType: "PERCENT",
+        discountValue: 10,
+        clientNameOrNote: "স্পেশাল স্কলারশিপ প্রোমো (সকল কোর্স)",
+        expiresAt: "2027-12-31",
+        isActive: true,
+        createdAt: "2026-01-01T00:00:00.000Z",
+      },
+      {
+        id: "promo-khulna-1000",
+        code: "KHULNA1000",
+        discountType: "FLAT_BDT",
+        discountValue: 1000,
+        clientNameOrNote: "খুলনা ও অনলাইন স্পেশাল ডিসকাউন্ট",
+        expiresAt: "2027-12-31",
+        isActive: true,
+        createdAt: "2026-01-01T00:00:00.000Z",
+      },
+    ],
     externalLmsUrl: "https://npw.bd/knltc",
     externalIrodoriUrl: "https://npw.bd/irodori/index.html",
     bonuses: [
@@ -5308,5 +5350,168 @@ export function bulkImportCrmLeads(
     totalProcessed: importedCount + updatedCount + skippedCount,
   };
 }
+
+export function recordPublicCourseEnrollment(input: {
+  referenceId: string;
+  applicantName: string;
+  phone: string;
+  whatsapp: string;
+  courseId: string;
+  courseLabel: string;
+  deliveryMode: string;
+  classModeLabel: string;
+  visaCategory: string;
+  purposeLabel: string;
+  baseFeeBdt: number;
+  discountBdt: number;
+  netCourseFeeBdt: number;
+  paidAmountBdt: number;
+  dueAmountBdt: number;
+  paymentPlan: "FULL_PAYMENT" | "INSTALLMENT_50";
+  paymentMethod: "BKASH_BANGLA_QR" | "PAY_AT_OFFICE";
+  senderNumber?: string;
+  trxId?: string;
+  promoCode?: string;
+}): void {
+  if (typeof window === "undefined") return;
+  try {
+    const store = getCmsStore();
+    const cms = store.websiteCms?.[0] || DEFAULT_WEBSITE_CMS;
+    if (!cms.leadExtendedProfiles) cms.leadExtendedProfiles = {};
+
+    const normPhone = normalizeBdPhone(input.phone);
+    const branchCode: "DHK-HQ" | "KHULNA-01" = input.deliveryMode.includes("KHULNA")
+      ? "KHULNA-01"
+      : "DHK-HQ";
+    const interest: ServiceInterest = input.courseId.includes("N4")
+      ? "JAPANESE_N4"
+      : "JAPANESE_N5";
+    const courseLevel: "N5" | "N4" | "IRODORI" = input.courseId.includes("IRODORI") || input.courseId.includes("JFT")
+      ? "IRODORI"
+      : input.courseId.includes("N4")
+        ? "N4"
+        : "N5";
+
+    const nowIso = new Date().toISOString();
+    const todayDate = nowIso.slice(0, 10);
+
+    const paymentSummaryNote = [
+      `Course: ${input.courseLabel}`,
+      `Mode: ${input.classModeLabel}`,
+      `Target: ${input.purposeLabel}`,
+      `Plan: ${input.paymentPlan === "FULL_PAYMENT" ? "Full Payment (20% Off)" : "50% 1st Installment"}`,
+      input.promoCode ? `Promo: ${input.promoCode} (-৳${input.discountBdt})` : `Discount: ৳${input.discountBdt}`,
+      input.paymentMethod === "BKASH_BANGLA_QR"
+        ? `bKash/Bangla QR Paid: ৳${input.paidAmountBdt} | Sender: ${input.senderNumber || "N/A"} | TrxID: ${input.trxId || "N/A"}`
+        : `Pay at Office Desk | Payable: ৳${input.paidAmountBdt}`,
+    ].join(" | ");
+
+    let existingLead = normPhone
+      ? store.crmLeads.find((l) => normalizeBdPhone(l.phone) === normPhone)
+      : undefined;
+
+    if (existingLead) {
+      existingLead.name = input.applicantName || existingLead.name;
+      existingLead.whatsapp = input.whatsapp || existingLead.whatsapp;
+      existingLead.interest = interest;
+      existingLead.branch = branchCode;
+      existingLead.isCourseEnrolled = true;
+      existingLead.enrolledBatchOrSession = `${input.courseLabel} (${input.classModeLabel})`;
+      existingLead.contractAmountBdt = input.netCourseFeeBdt;
+      existingLead.paidAmountBdt = (existingLead.paidAmountBdt || 0) + (input.trxId ? input.paidAmountBdt : 0);
+      existingLead.dueAmountBdt = Math.max(0, input.netCourseFeeBdt - (existingLead.paidAmountBdt || 0));
+      existingLead.notes = `${paymentSummaryNote} || ${existingLead.notes || ""}`;
+      existingLead.lastContactedAt = nowIso;
+      cms.leadExtendedProfiles[existingLead.id] = {
+        ...(cms.leadExtendedProfiles[existingLead.id] || {}),
+        ...existingLead,
+      };
+    } else {
+      existingLead = {
+        id: `lead-${Date.now()}`,
+        name: input.applicantName,
+        phone: input.phone,
+        whatsapp: input.whatsapp || input.phone,
+        city: branchCode === "KHULNA-01" ? "খুলনা" : "ঢাকা",
+        source: "WEBSITE_FORM",
+        interest,
+        status: input.trxId ? "ADMITTED" : "NEW",
+        priority: "HOT",
+        education: "HSC / Equivalent",
+        japaneseProficiency: courseLevel === "N4" ? "PASSED_N5" : "LEARNING_N5",
+        studyGapYears: 1,
+        assignedTo: "KNLTC Admissions",
+        branch: branchCode,
+        isCourseEnrolled: true,
+        enrolledBatchOrSession: `${input.courseLabel} (${input.classModeLabel})`,
+        contractAmountBdt: input.netCourseFeeBdt,
+        paidAmountBdt: input.trxId ? input.paidAmountBdt : 0,
+        dueAmountBdt: input.trxId ? input.dueAmountBdt : input.netCourseFeeBdt,
+        notes: paymentSummaryNote,
+        followUpDate: todayDate,
+        lastContactedAt: nowIso,
+        createdAt: nowIso,
+        customTags: [
+          courseLevel,
+          input.paymentPlan === "FULL_PAYMENT" ? "20% Full Pay" : "Installment",
+          ...(input.promoCode ? [`Promo:${input.promoCode}`] : []),
+          ...(input.trxId ? [`TrxID:${input.trxId}`] : []),
+        ],
+      };
+      store.crmLeads.unshift(existingLead);
+      cms.leadExtendedProfiles[existingLead.id] = { ...existingLead };
+    }
+
+    const newBridge: LmsUserBridge = {
+      id: `lms-${Date.now()}`,
+      leadId: existingLead.id,
+      studentName: input.applicantName,
+      phone: input.phone,
+      courseLevel,
+      enrollmentNo: input.referenceId,
+      portalUsername: `${input.applicantName
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "")
+        .slice(0, 10)}.${courseLevel.toLowerCase()}@npw.bd`,
+      portalPasswordMasked: `${courseLevel}@knltc2026`,
+      portalFeeDeductedBdt: 2000,
+      netKnlTcMarginBdt: Math.max(0, input.netCourseFeeBdt - 2000),
+      credentialsSentViaWa: false,
+      credentialsSentAt: nowIso,
+      progressPercentage: 5,
+      activeBatch: `${input.courseLabel} (${input.classModeLabel})`,
+      assignedSenseiId: "st-sensei-amir",
+      assignedSenseiName: "Senior Sensei Amir Hossen",
+    };
+    store.lmsBridges.unshift(newBridge);
+
+    if (input.paymentMethod === "BKASH_BANGLA_QR" && input.trxId && input.paidAmountBdt > 0) {
+      const newTx: FinancialTransaction = {
+        id: `trx-${Date.now()}`,
+        receiptNo: input.referenceId,
+        date: todayDate,
+        studentName: input.applicantName,
+        studentPhone: input.phone,
+        category: "INCOME",
+        type: "COURSE_FEE",
+        amountBdt: input.paidAmountBdt,
+        dueAmountBdt: input.dueAmountBdt,
+        paymentMethod: "BKASH",
+        referenceOrTrx: `${input.trxId} (Sender: ${input.senderNumber || input.phone})`,
+        branch: branchCode,
+        verifiedBy: "Pending TrxID Verification",
+        notes: paymentSummaryNote,
+        linkedLeadId: existingLead.id,
+      };
+      store.transactions.unshift(newTx);
+    }
+
+    store.websiteCms = [cms];
+    saveCmsStore(store);
+  } catch (err) {
+    console.warn("[KNLTC-CMS] Failed to record local public enrollment:", err);
+  }
+}
+
 
 

@@ -6941,18 +6941,46 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* 2. Course Fees & Visa Packages */}
+                  {/* 2. Course Fees, Bangla QR Payment & Visa Packages */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="rounded-2xl border border-slate-200/80 bg-white p-5">
-                      <h3 className="font-bold text-sm text-slate-900">{t.cms.section2Title}</h3>
-                      <div className="mt-4 grid grid-cols-3 gap-3 text-xs">
+                    <div className="rounded-2xl border border-slate-200/80 bg-white p-5 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-bold text-sm text-slate-900">
+                          {tr(
+                            "৪টি ভাষা কোর্সের ফি ও পেমেন্ট সেটিংস (/japanese-language)",
+                            "4 Language Course Fees & Payment Settings",
+                            "日本語4コース料金＆決済設定",
+                          )}
+                        </h3>
+                        <span className="rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                          {tr("ফুল পেমেন্টে ২০% ছাড়", "20% Off Full Pay", "一括払20%割引")}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                         <div>
-                          <label className="font-semibold text-slate-600">N5 (BDT)</label>
+                          <label className="font-semibold text-[#b91c1c]">JFT Irodori (BDT)</label>
                           <input
                             type="number"
-                            defaultValue={cms.languageCoursePage?.n5PriceBdt ?? 12000}
+                            value={cms.languageCoursePage?.jftPriceBdt ?? 12500}
                             onChange={(e) => {
-                              if (!cms.languageCoursePage) cms.languageCoursePage = { ...DEFAULT_WEBSITE_CMS.languageCoursePage };
+                              if (!cms.languageCoursePage)
+                                cms.languageCoursePage = { ...DEFAULT_WEBSITE_CMS.languageCoursePage };
+                              cms.languageCoursePage.jftPriceBdt = Number(e.target.value);
+                              store.websiteCms[0] = cms;
+                              setStore({ ...store });
+                            }}
+                            className="mt-1 w-full rounded-xl border border-red-200 bg-red-50/30 p-2 font-bold tabular-nums text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="font-semibold text-slate-600">JLPT N5 (BDT)</label>
+                          <input
+                            type="number"
+                            value={cms.languageCoursePage?.n5PriceBdt ?? 12000}
+                            onChange={(e) => {
+                              if (!cms.languageCoursePage)
+                                cms.languageCoursePage = { ...DEFAULT_WEBSITE_CMS.languageCoursePage };
                               cms.languageCoursePage.n5PriceBdt = Number(e.target.value);
                               store.websiteCms[0] = cms;
                               setStore({ ...store });
@@ -6961,12 +6989,13 @@ export default function DashboardPage() {
                           />
                         </div>
                         <div>
-                          <label className="font-semibold text-slate-600">N4 (BDT)</label>
+                          <label className="font-semibold text-slate-600">JLPT N4 (BDT)</label>
                           <input
                             type="number"
-                            defaultValue={cms.languageCoursePage?.n4PriceBdt ?? 12000}
+                            value={cms.languageCoursePage?.n4PriceBdt ?? 14500}
                             onChange={(e) => {
-                              if (!cms.languageCoursePage) cms.languageCoursePage = { ...DEFAULT_WEBSITE_CMS.languageCoursePage };
+                              if (!cms.languageCoursePage)
+                                cms.languageCoursePage = { ...DEFAULT_WEBSITE_CMS.languageCoursePage };
                               cms.languageCoursePage.n4PriceBdt = Number(e.target.value);
                               store.websiteCms[0] = cms;
                               setStore({ ...store });
@@ -6975,17 +7004,88 @@ export default function DashboardPage() {
                           />
                         </div>
                         <div>
-                          <label className="font-semibold text-slate-600">Combo (BDT)</label>
+                          <label className="font-semibold text-slate-600">N5+N4 Combo</label>
                           <input
                             type="number"
-                            defaultValue={cms.languageCoursePage?.comboPriceBdt ?? 21500}
+                            value={cms.languageCoursePage?.comboPriceBdt ?? 21500}
                             onChange={(e) => {
-                              if (!cms.languageCoursePage) cms.languageCoursePage = { ...DEFAULT_WEBSITE_CMS.languageCoursePage };
+                              if (!cms.languageCoursePage)
+                                cms.languageCoursePage = { ...DEFAULT_WEBSITE_CMS.languageCoursePage };
                               cms.languageCoursePage.comboPriceBdt = Number(e.target.value);
                               store.websiteCms[0] = cms;
                               setStore({ ...store });
                             }}
                             className="mt-1 w-full rounded-xl border border-slate-200 p-2 font-bold tabular-nums"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-100 text-xs">
+                        <div>
+                          <label className="font-semibold text-slate-600">
+                            {tr("ফুল পেমেন্ট ডিসকাউন্ট (%)", "Full Pay Discount (%)", "一括払割引率 (%)")}
+                          </label>
+                          <input
+                            type="number"
+                            min={0}
+                            max={80}
+                            value={cms.languageCoursePage?.fullPaymentDiscountPercent ?? 20}
+                            onChange={(e) => {
+                              if (!cms.languageCoursePage)
+                                cms.languageCoursePage = { ...DEFAULT_WEBSITE_CMS.languageCoursePage };
+                              cms.languageCoursePage.fullPaymentDiscountPercent = Number(e.target.value);
+                              store.websiteCms[0] = cms;
+                              setStore({ ...store });
+                            }}
+                            className="mt-1 w-full rounded-xl border border-slate-200 p-2 font-bold tabular-nums text-emerald-700"
+                          />
+                        </div>
+                        <div>
+                          <label className="font-semibold text-slate-600">
+                            {tr("বিকাশ মার্চেন্ট নাম্বার", "bKash Merchant No.", "bKash加盟店番号")}
+                          </label>
+                          <input
+                            type="text"
+                            value={cms.languageCoursePage?.bkashMerchantNumber ?? "01805-013633"}
+                            onChange={(e) => {
+                              if (!cms.languageCoursePage)
+                                cms.languageCoursePage = { ...DEFAULT_WEBSITE_CMS.languageCoursePage };
+                              cms.languageCoursePage.bkashMerchantNumber = e.target.value;
+                              store.websiteCms[0] = cms;
+                              setStore({ ...store });
+                            }}
+                            className="mt-1 w-full rounded-xl border border-slate-200 p-2 font-mono font-bold"
+                          />
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <label className="font-semibold text-slate-600">Bangla QR Image</label>
+                            <DriveFileUploadButton
+                              folderName="KNLTC_Payment_QR"
+                              accept="image/*"
+                              label={tr("QR আপলোড", "Upload QR", "QR登録")}
+                              onUploaded={(url) => {
+                                if (!cms.languageCoursePage)
+                                  cms.languageCoursePage = { ...DEFAULT_WEBSITE_CMS.languageCoursePage };
+                                cms.languageCoursePage.banglaQrImageUrl = url;
+                                store.websiteCms[0] = cms;
+                                saveCmsStore(store);
+                                setStore({ ...store });
+                                showToast(tr("Bangla QR ইমেজ আপলোড হয়েছে!", "Bangla QR uploaded!", "QR画像を保存しました"));
+                              }}
+                            />
+                          </div>
+                          <input
+                            type="text"
+                            value={cms.languageCoursePage?.banglaQrImageUrl ?? "/images/payment/bangla-qr.png"}
+                            onChange={(e) => {
+                              if (!cms.languageCoursePage)
+                                cms.languageCoursePage = { ...DEFAULT_WEBSITE_CMS.languageCoursePage };
+                              cms.languageCoursePage.banglaQrImageUrl = e.target.value;
+                              store.websiteCms[0] = cms;
+                              setStore({ ...store });
+                            }}
+                            className="mt-1 w-full rounded-xl border border-slate-200 p-2 font-mono text-[11px]"
                           />
                         </div>
                       </div>
@@ -7023,6 +7123,208 @@ export default function DashboardPage() {
                           />
                         </div>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* 2B. Temporary Client Promo Codes & Special Discount Manager */}
+                  <div className="rounded-2xl border border-slate-200/80 bg-white p-5 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <h3 className="font-bold text-sm text-slate-900">
+                          {tr(
+                            "টেম্পোরারি প্রোমো কোড ও স্পেশাল ক্লায়েন্ট ডিসকাউন্ট প্যানেল",
+                            "Temporary Promo Codes & Client Discount Manager",
+                            "期間限定プロモコード・特別割引管理",
+                          )}
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {tr(
+                            "যেকোনো শিক্ষার্থীর জন্য স্পেশাল প্রোমো কোড তৈরি করুন। ভর্তি ফর্মে কোডটি দিলে স্বয়ংক্রিয়ভাবে ডিসকাউন্ট পাবে।",
+                            "Create custom temporary promo codes for any client to apply during course enrollment.",
+                            "特定の受講生やキャンペーン向けの割引コードを発行・管理できます。",
+                          )}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!cms.languageCoursePage)
+                            cms.languageCoursePage = { ...DEFAULT_WEBSITE_CMS.languageCoursePage };
+                          if (!Array.isArray(cms.languageCoursePage.promoCodes)) {
+                            cms.languageCoursePage.promoCodes = [
+                              ...(DEFAULT_WEBSITE_CMS.languageCoursePage.promoCodes || []),
+                            ];
+                          }
+                          const randomCode = `KNLTC${Math.floor(100 + Math.random() * 900)}`;
+                          cms.languageCoursePage.promoCodes.unshift({
+                            id: `promo-${Date.now()}`,
+                            code: randomCode,
+                            discountType: "FLAT_BDT",
+                            discountValue: 1000,
+                            clientNameOrNote: "স্পেশাল ক্লায়েন্ট ডিসকাউন্ট",
+                            expiresAt: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+                            isActive: true,
+                            createdAt: new Date().toISOString(),
+                          });
+                          store.websiteCms[0] = cms;
+                          saveCmsStore(store);
+                          setStore({ ...store });
+                          showToast(
+                            tr(
+                              `নতুন প্রোমো কোড (${randomCode}) তৈরি হয়েছে!`,
+                              `New promo code (${randomCode}) created!`,
+                              `プロモコード (${randomCode}) を作成しました`,
+                            ),
+                          );
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-[#b91c1c] px-4 py-2 text-xs font-bold text-white hover:bg-red-800 transition shrink-0 cursor-pointer"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        <span>
+                          {tr("নতুন প্রোমো কোড যোগ করুন", "Add Promo Code", "新規コード追加")}
+                        </span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-2.5">
+                      {(cms.languageCoursePage?.promoCodes || DEFAULT_WEBSITE_CMS.languageCoursePage.promoCodes || []).map(
+                        (promo, pIdx) => (
+                          <div
+                            key={promo.id || pIdx}
+                            className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center rounded-xl border border-slate-200/80 bg-slate-50/60 p-3 text-xs"
+                          >
+                            <div className="sm:col-span-2">
+                              <label className="text-[10px] font-semibold text-slate-500 block">
+                                {tr("প্রোমো কোড", "Promo Code", "コード")}
+                              </label>
+                              <input
+                                type="text"
+                                value={promo.code}
+                                onChange={(e) => {
+                                  if (!cms.languageCoursePage?.promoCodes) return;
+                                  cms.languageCoursePage.promoCodes[pIdx].code = e.target.value
+                                    .toUpperCase()
+                                    .replace(/\s+/g, "");
+                                  store.websiteCms[0] = cms;
+                                  setStore({ ...store });
+                                }}
+                                className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-mono font-bold text-[#b91c1c] uppercase"
+                              />
+                            </div>
+
+                            <div className="sm:col-span-2">
+                              <label className="text-[10px] font-semibold text-slate-500 block">
+                                {tr("ডিসকাউন্ট ধরন", "Type", "割引種別")}
+                              </label>
+                              <select
+                                value={promo.discountType}
+                                onChange={(e) => {
+                                  if (!cms.languageCoursePage?.promoCodes) return;
+                                  cms.languageCoursePage.promoCodes[pIdx].discountType = e.target
+                                    .value as "PERCENT" | "FLAT_BDT";
+                                  store.websiteCms[0] = cms;
+                                  setStore({ ...store });
+                                }}
+                                className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 font-semibold"
+                              >
+                                <option value="FLAT_BDT">{tr("নির্দিষ্ট টাকা (৳)", "Flat BDT (৳)", "定額 (৳)")}</option>
+                                <option value="PERCENT">{tr("শতাংশ (%)", "Percent (%)", "割引率 (%)")}</option>
+                              </select>
+                            </div>
+
+                            <div className="sm:col-span-2">
+                              <label className="text-[10px] font-semibold text-slate-500 block">
+                                {tr("ছাড়ের পরিমাণ", "Value", "割引値")}
+                              </label>
+                              <input
+                                type="number"
+                                min={0}
+                                value={promo.discountValue}
+                                onChange={(e) => {
+                                  if (!cms.languageCoursePage?.promoCodes) return;
+                                  cms.languageCoursePage.promoCodes[pIdx].discountValue = Number(
+                                    e.target.value,
+                                  );
+                                  store.websiteCms[0] = cms;
+                                  setStore({ ...store });
+                                }}
+                                className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-bold tabular-nums text-emerald-700"
+                              />
+                            </div>
+
+                            <div className="sm:col-span-3">
+                              <label className="text-[10px] font-semibold text-slate-500 block">
+                                {tr("ক্লায়েন্টের নাম / নোট", "Client Name / Note", "対象者・メモ")}
+                              </label>
+                              <input
+                                type="text"
+                                value={promo.clientNameOrNote || ""}
+                                onChange={(e) => {
+                                  if (!cms.languageCoursePage?.promoCodes) return;
+                                  cms.languageCoursePage.promoCodes[pIdx].clientNameOrNote =
+                                    e.target.value;
+                                  store.websiteCms[0] = cms;
+                                  setStore({ ...store });
+                                }}
+                                placeholder={tr("যেমন: করিম - খুলনা শাখা", "e.g. Special Client", "メモ")}
+                                className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-medium"
+                              />
+                            </div>
+
+                            <div className="sm:col-span-2">
+                              <label className="text-[10px] font-semibold text-slate-500 block">
+                                {tr("মেয়াদ (Expiry)", "Expires On", "有効期限")}
+                              </label>
+                              <input
+                                type="date"
+                                value={promo.expiresAt || ""}
+                                onChange={(e) => {
+                                  if (!cms.languageCoursePage?.promoCodes) return;
+                                  cms.languageCoursePage.promoCodes[pIdx].expiresAt = e.target.value;
+                                  store.websiteCms[0] = cms;
+                                  setStore({ ...store });
+                                }}
+                                className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 font-mono text-[11px]"
+                              />
+                            </div>
+
+                            <div className="sm:col-span-1 flex items-center justify-end gap-1.5 pt-3 sm:pt-4">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (!cms.languageCoursePage?.promoCodes) return;
+                                  cms.languageCoursePage.promoCodes[pIdx].isActive =
+                                    !cms.languageCoursePage.promoCodes[pIdx].isActive;
+                                  store.websiteCms[0] = cms;
+                                  saveCmsStore(store);
+                                  setStore({ ...store });
+                                }}
+                                className={`rounded-lg px-2 py-1 text-[10px] font-bold cursor-pointer ${
+                                  promo.isActive
+                                    ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                                    : "bg-slate-200 text-slate-600"
+                                }`}
+                              >
+                                {promo.isActive ? tr("চালু", "ON", "有効") : tr("বন্ধ", "OFF", "無効")}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (!cms.languageCoursePage?.promoCodes) return;
+                                  cms.languageCoursePage.promoCodes.splice(pIdx, 1);
+                                  store.websiteCms[0] = cms;
+                                  saveCmsStore(store);
+                                  setStore({ ...store });
+                                }}
+                                className="rounded-lg p-1.5 text-red-500 hover:bg-red-50 cursor-pointer"
+                                title="Delete Promo Code"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ),
+                      )}
                     </div>
                   </div>
 

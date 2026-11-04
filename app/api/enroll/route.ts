@@ -18,6 +18,16 @@ export async function POST(req: NextRequest) {
       highestDegree,
       notes,
       referenceId,
+      paymentPlan = "FULL",
+      paymentMethod = "BKASH_QR",
+      baseFeeBdt = 14500,
+      discountBdt = 0,
+      netCourseFeeBdt = 14500,
+      paidAmountBdt = 0,
+      dueAmountBdt = 0,
+      senderNumber = "",
+      trxId = "",
+      promoCode = "",
     } = body;
 
     if (!applicantName || !phone) {
@@ -27,30 +37,66 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Normalize courseId & branchId for portal-data store
+    const rawCourseStr = String(courseId || "JFT_IRODORI").toUpperCase();
+    const normalizedPortalCourseId = rawCourseStr.includes("COMBO")
+      ? "course-combo"
+      : rawCourseStr.includes("N4")
+        ? "course-n4"
+        : rawCourseStr.includes("N5")
+          ? "course-n5"
+          : "course-jft";
+
+    const rawModeStr = String(deliveryMode || "ONLINE_LIVE").toUpperCase();
+    const normalizedPortalBranchId =
+      branchId ||
+      (rawModeStr.includes("KHULNA")
+        ? "branch-khulna"
+        : rawModeStr.includes("PALTAN")
+          ? "branch-dhaka-hq"
+          : "branch-online-global");
+
+    const normalizedPortalDeliveryMode: DeliveryMode =
+      rawModeStr === "ONLINE_LIVE" ? "ONLINE_LIVE" : "OFFLINE_CLASSROOM";
+
+    const normalizedPortalVisa: VisaCategory = String(visaCategory || "STUDENT_VISA")
+      .toUpperCase()
+      .includes("SSW")
+      ? "SSW_JOB"
+      : String(visaCategory || "STUDENT_VISA").toUpperCase().includes("TITP")
+        ? "TITP_INTERN"
+        : "STUDENT_VISA";
+
     // 1. Save in portal data
     const enrollment = addEnrollment({
       applicantName: String(applicantName).trim(),
       phone: String(phone).trim(),
       whatsapp: String(whatsapp || phone).trim(),
       email: String(email || "").trim(),
-      branchId: String(branchId || "branch-dhaka-hq"),
-      courseId: String(courseId || "course-n5"),
-      deliveryMode: deliveryMode as DeliveryMode,
-      visaCategory: visaCategory as VisaCategory,
+      branchId: String(normalizedPortalBranchId),
+      courseId: normalizedPortalCourseId,
+      deliveryMode: normalizedPortalDeliveryMode,
+      visaCategory: normalizedPortalVisa,
       highestDegree: highestDegree ? String(highestDegree) : undefined,
       notes: notes ? String(notes) : undefined,
     });
 
+    enrollment.totalPayable = Number(netCourseFeeBdt || enrollment.totalPayable || 14500);
+    enrollment.paidAmount = Number(paidAmountBdt || 0);
+    if (trxId) {
+      enrollment.transactionId = String(trxId).trim().toUpperCase();
+    }
+
     const resolvedEnrollmentNo = referenceId || enrollment.enrollmentNo;
-    const courseLevel = String(courseId || "N5")
-      .toUpperCase()
-      .includes("N4")
-      ? "N4"
-      : String(courseId || "N5")
-          .toUpperCase()
-          .includes("IRODORI")
-        ? "IRODORI"
-        : "N5";
+    const courseLevel = rawCourseStr.includes("COMBO")
+      ? "N5+N4"
+      : rawCourseStr.includes("N4")
+        ? "N4"
+        : rawCourseStr.includes("IRODORI") || rawCourseStr.includes("JFT")
+          ? "IRODORI"
+          : "N5";
+
+    const nowIso = new Date().toISOString();
 
     // 2. Register in Google Sheets `knltc_lms_bridges` (`https://npw.bd/knltc` classroom bridge)
     try {
@@ -68,45 +114,78 @@ export async function POST(req: NextRequest) {
             .trim()
             .toLowerCase()
             .replace(/[^a-z0-9]/g, "")
-            .slice(0, 10)}.${courseLevel.toLowerCase()}@npw.bd`,
+            .slice(0, 10)}.${courseLevel.toLowerCase().replace(/[^a-z0-9]/g, "")}@npw.bd`,
           portal_password_masked: `${courseLevel}@knltc2026`,
           portal_fee_deducted_bdt: 2000,
-          net_knltc_margin_bdt: Math.max(0, (enrollment.totalPayable || 12000) - 2000),
+          net_knltc_margin_bdt: Math.max(0, Number(netCourseFeeBdt || 14500) - 2000),
           credentials_sent_via_wa: true,
-          credentials_sent_at: new Date().toISOString(),
+          credentials_sent_at: nowIso,
           progress_percentage: 5,
-          active_batch: `${enrollment.courseTitle} (${deliveryMode} — https://npw.bd/knltc)`,
+          active_batch: `${enrollment.courseTitle} (${deliveryMode} | Plan: ${paymentPlan} | TrxID: ${trxId || "OFFICE"})`,
           assigned_sensei_id: "",
-          assigned_sensei_name: "KNLTC Academic Team (Senior Sensei)",
-          created_at: new Date().toISOString(),
+          assigned_sensei_name: "Amir Hossen (Senior Sensei)",
+          created_at: nowIso,
         },
       });
     } catch (lmsErr) {
       console.warn("Failed to record LMS bridge row in Google Sheets:", lmsErr);
     }
 
-    // 3. Also register in Google Sheets `knltc_crm_leads` for KNLTC counselors
+    // 3. Register in Google Sheets `knltc_crm_leads` for KNLTC counselors
     try {
+      const paymentSummary = `Plan: ${paymentPlan} | Method: ${paymentMethod} | Net Fee: ৳${netCourseFeeBdt} | Paid: ৳${paidAmountBdt} | Due: ৳${dueAmountBdt} | Discount: ৳${discountBdt}${promoCode ? ` (Promo: ${promoCode})` : ""} | Sender: ${senderNumber || "N/A"} | TrxID: ${trxId || "PAY_AT_OFFICE"}`;
+
       await createCrmLead({
-        name: applicantName,
-        phone: phone,
+        name: String(applicantName).trim(),
+        phone: String(phone).trim(),
         email: email || null,
         source: "consultation form",
         interest: `Course Enrollment: ${enrollment.courseTitle} (${resolvedEnrollmentNo})`,
-        message: `Branch: ${enrollment.branchName} | Mode: ${deliveryMode} | Visa: ${visaCategory} | Edu: ${highestDegree || "N/A"}`,
+        message: `Branch: ${enrollment.branchName} | Mode: ${deliveryMode} | Visa: ${visaCategory} | Edu: ${highestDegree || "N/A"} | ${paymentSummary}`,
         status: "new",
-        notes: `Auto-created from Japanese Course Enrollment Form. Fee: ৳${enrollment.totalPayable}. LMS Portal: https://npw.bd/knltc`,
+        notes: `${paymentSummary}${notes ? ` | Student Note: ${notes}` : ""}`,
       });
     } catch (crmErr) {
       console.warn("Failed to mirror lead into CRM:", crmErr);
     }
 
+    // 4. Record in `knltc_finance_transactions` if TrxID is provided
+    if (trxId && Number(paidAmountBdt) > 0) {
+      try {
+        await mutateSheetTable({
+          action: "INSERT",
+          table: "knltc_finance_transactions",
+          payload: {
+            id: `FIN-WEB-${Date.now()}`,
+            date: nowIso.slice(0, 10),
+            type: "INCOME",
+            category: "LANGUAGE_COURSE_FEE",
+            title: `${courseLevel} Admission (${applicantName}) — ${paymentMethod} TrxID: ${String(trxId).trim().toUpperCase()}`,
+            amount_bdt: Number(paidAmountBdt),
+            branch: rawModeStr.includes("KHULNA") ? "KHULNA" : "DHAKA_PALTAN",
+            status: "PENDING_VERIFICATION",
+            recorded_by: `Online Enrollment (${senderNumber || phone})`,
+            notes: `Ref: ${resolvedEnrollmentNo} | Base: ৳${baseFeeBdt} | Discount: ৳${discountBdt} | Net: ৳${netCourseFeeBdt} | Paid: ৳${paidAmountBdt} | Due: ৳${dueAmountBdt}${promoCode ? ` | Promo: ${promoCode}` : ""}`,
+          },
+        });
+      } catch (finErr) {
+        console.warn("Failed to record finance transaction in Google Sheets:", finErr);
+      }
+    }
+
     return NextResponse.json({
       success: true,
-      message: "আপনার ভর্তি আবেদন সফলভাবে গ্রহণ করা হয়েছে!",
+      message: "আপনার ভর্তি আবেদন ও পেমেন্ট তথ্য সফলভাবে গ্রহণ করা হয়েছে!",
       enrollment: {
         ...enrollment,
         enrollmentNo: resolvedEnrollmentNo,
+        paymentPlan,
+        paymentMethod,
+        netCourseFeeBdt,
+        paidAmountBdt,
+        dueAmountBdt,
+        trxId,
+        promoCode,
       },
     });
   } catch (error) {

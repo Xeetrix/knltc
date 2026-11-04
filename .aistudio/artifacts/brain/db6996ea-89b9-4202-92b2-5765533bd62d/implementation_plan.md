@@ -1,42 +1,95 @@
-# Vercel Serverless, Environment Variables & Google Sheets/Drive Media Fix Plan
+# `/japanese-language` পেজের চূড়ান্ত ইমপ্লিমেন্টেশন প্ল্যান (সহজ বাংলায় ধাপে ধাপে)
 
-## 1. Root Cause Analysis (From Your Vercel Screenshot & Codebase Audit)
-1. **Vercel Serverless Container Isolation (`/tmp` is Ephemeral)**:
-   - On Vercel Production, every API request (`/api/media`, `/api/media/file/[id]`, `/api/cms/sync`) can run in a different serverless container. Files saved only to `/tmp/` in Container A are invisible to Container B or to a new browser when a cold start occurs.
-   - Previously, `offloadEmbeddedBase64Strings()` saved embedded base64 images/PDFs only to local `/tmp/` without pushing them to Google Drive or Google Sheets.
-2. **Environment Variable Mismatch (`DEFAULT_API_KEY` & `DRIVE_ROOT_FOLDER_NAME`)**:
-   - Your Vercel settings define `DEFAULT_API_KEY`, `GOOGLE_SHEETS_API_KEY`, `DRIVE_ROOT_FOLDER_NAME`, `GOOGLE_SHEETS_WEB_APP_URL`, and `NEXT_PUBLIC_MASTER_SHEET_URL`.
-   - Previously, the app only read `GOOGLE_SHEETS_API_KEY`. If `DEFAULT_API_KEY` or `GOOGLE_SHEETS_API_KEY` in Vercel differed from the key inside `Code.gs`, Google Apps Script returned `Unauthorized: Invalid GOOGLE_SHEETS_API_KEY` and rejected writes/uploads.
-3. **Google Apps Script (`Code.gs`) Resilience & `knltc_website_cms` Backup Bridge**:
-   - If `Code.gs` encounters a `DriveApp` authorization error or if an older deployment is active, `UPLOAD_FILE_TO_DRIVE` failed without storing the file in the Sheet.
+আপনার নতুন নির্দেশনা অনুযায়ী সব আপডেট যুক্ত করে পুরো প্ল্যানটি নিচে সহজ বাংলায় সাজানো হলো। আপনি **"Proceed"** বাটনে ক্লিক করলেই আমরা সাথে সাথে কোডে এই সবগুলো ফিচার ইমপ্লিমেন্ট করে দেব।
 
 ---
 
-## 2. Planned Changes
+## ১. ৪টি নির্দিষ্ট কোর্স প্যাকেজ ও ডাটাবেস ফি + ২০% ডিসকাউন্ট সিস্টেম (`CoursePackagesSection.tsx` ও `lib/knltc-cms-store.ts`)
 
-### A. Vercel Environment Variable Compatibility & Multi-Key Auto-Retry (`/lib/google-sheets-db.ts`)
-- Read all Vercel environment variables shown in your screenshot:
-  - `GOOGLE_SHEETS_WEB_APP_URL` / `NEXT_PUBLIC_GOOGLE_SHEETS_WEB_APP_URL`
-  - `DEFAULT_API_KEY` and `GOOGLE_SHEETS_API_KEY` (automatically try both keys plus `"KNLTC_SECRET_2026"` so an API key mismatch never blocks reads or writes)
-  - `DRIVE_ROOT_FOLDER_NAME` (passed to Apps Script `UPLOAD_FILE_TO_DRIVE`)
-  - `NEXT_PUBLIC_MASTER_SHEET_URL`
-- Fix `mutateSheetTable("UPSERT_CMS")` so multiple rows in `knltc_website_cms` (such as `master_cms` and `media_item_<id>`) are upserted by `section_key` instead of overwriting the array.
+আগের এলোমেলো কোর্স ট্যাব বাদ দিয়ে শুধুমাত্র **৪টি স্ট্যান্ডার্ড কোর্স প্যাকেজ** রাখা হবে এবং প্রতিটির ফি সরাসরি **ডাটাবেস / ড্যাশবোর্ড CMS (`languageCoursePage`)** থেকে আসবে:
 
-### B. Serverless-Safe Media Storage in Google Drive + Sheet (`media_vault` & `knltc_website_cms`)
-- Update `uploadFileToDriveOrCloudinary()` and `resolveMediaFileById()` in `/lib/google-sheets-db.ts`:
-  - Upload to Google Drive via `UPLOAD_FILE_TO_DRIVE` and record in `media_vault`.
-  - Also store a serverless recovery record in `knltc_website_cms` (`section_key: "media_item_<id>"`) so even if a Vercel serverless container cold-starts with an empty `/tmp/` directory, `/api/media/file/<id>/<filename>` immediately reconstructs and serves the image or PDF from Google Sheets or Google Drive.
-  - Ensure any base64 media offloaded during `offloadEmbeddedBase64Strings()` is also queued and pushed to Google Drive / Google Sheets.
+1. **`JLPT N5` (Beginner Foundation Course — ৩ মাস / ১২০ ঘণ্টা):**
+   - **টার্গেট:** স্টুডেন্ট ভিসা, TITP ও একদম নতুনদের জন্য (সাথে ১৫,০০০ টাকার ৩টি স্পেশাল বোনাস কোর্স ফ্রি)।
+2. **`JLPT N4` (Intermediate & SSW Track — ৩ মাস):**
+   - **টার্গেট:** SSW জব ভিসা ও ইউনিভার্সিটি ট্র্যাক।
+   - **স্পেশাল হাইলাইট ব্যাজ:** *"KNLTC স্টুডেন্ট ভিসা (COE প্রসেসিং) প্রার্থীদের জন্য N4 কোর্স ১০০% ফ্রি!"*
+3. **`JLPT N5 + N4 Together` (Complete Zero-to-N4 Combo — ৬ মাস):**
+   - **টার্গেট:** যারা হিরাগানা থেকে শুরু করে টানা N4 পাস পর্যন্ত একসাথে কমপ্লিট করতে চায়।
+4. **`JFT (Irodori)` (JFT-Basic & Workplace Japanese — ৩ মাস):**
+   - **টার্গেট:** দ্রুত SSW (Specified Skilled Worker) ভিসায় জাপানে যাওয়ার জন্য জাপান ফাউন্ডেশনের *Irodori* কথোপকথন ও লিসেনিং প্রস্তুতি।
 
-### C. Updated `google-apps-script/Code.gs` (Fault-Tolerant Drive + Sheet Storage)
-- Update `/google-apps-script/Code.gs` so:
-  - It accepts `DEFAULT_API_KEY`, `GOOGLE_SHEETS_API_KEY`, or Script Properties without failing on key rotation.
-  - It uses `body.driveRootFolderName || DRIVE_ROOT_FOLDER_NAME`.
-  - Inside `UPLOAD_FILE_TO_DRIVE`, `DriveApp` is wrapped in a `try/catch` so even if Google Drive fails or is restricted, the file is still saved into the `media_vault` tab in Google Sheets and returns `ok: true`.
-  - `doGet(?table=all)` and `doPost(BULK_SYNC)` automatically create `media_vault` if it does not exist yet.
+### 💰 পেমেন্ট প্ল্যান ও অটোমেটিক ডিসকাউন্ট নিয়ম (প্রতিটি কোর্সে):
+- **কিস্তি সুবিধা (Installment Available):** যেকোনো শিক্ষার্থী চাইলে **৫০% বুকিং পেমেন্ট (১ম কিস্তি)** দিয়ে ভর্তি হতে পারবে।
+- **ফুল পেমেন্টে ২০% ডিসকাউন্ট (Extra 20% OFF on Full Payment):** শিক্ষার্থী যদি এককালীন **Full Payment** সিলেক্ট করে, তাহলে ডাটাবেসের নির্ধারিত কোর্স ফি থেকে **স্বয়ংক্রিয়ভাবে ২০% ডিসকাউন্ট** বাদ দিয়ে পেমেন্ট অ্যামাউন্ট হিসাব হবে!
+- যেকোনো কোর্সের **"Enroll in This Course"** বাটনে ক্লিক করলে পেজটি স্মুথলি নিচের ফর্মে (`#enroll-form`) স্ক্রল করবে এবং সেই কোর্সটি অটো-সিলেক্ট হয়ে যাবে।
 
-### D. Live Vercel & Google Sheet Connection Diagnostics in Dashboard (`/components/dashboard/MediaStorageManager.tsx` & `/app/api/sheets/route.ts`)
-- Add a **"Test Connection & Environment Diagnostics"** status bar inside the Backend Settings panel of `MediaStorageManager.tsx` showing:
-  - Detected Vercel env vars (`GOOGLE_SHEETS_WEB_APP_URL`, `DEFAULT_API_KEY`, `GOOGLE_SHEETS_API_KEY`, `DRIVE_ROOT_FOLDER_NAME`, `NEXT_PUBLIC_MASTER_SHEET_URL`)
-  - Live `doGet` / `doPost` ping result from your Google Sheet Web App URL
-  - 1-click **"Copy Updated `Code.gs`"** and **"Initialize / Sync All 16 Sheet Tabs"** buttons.
+---
+
+## ২. ড্যাশবোর্ড থেকে টেম্পোরারি প্রোমো কোড (Promo Code) ও স্পেশাল ডিসকাউন্ট সিস্টেম
+
+যেকোনো ক্লায়েন্ট বা স্পেশাল ক্যাম্পেইনের জন্য আপনি যাতে ড্যাশবোর্ড থেকে তাৎক্ষণিক ডিসকাউন্ট কোড দিতে পারেন:
+- **ড্যাশবোর্ড কন্ট্রোল (`WebsiteCmsManager.tsx` ও `lib/knltc-cms-store.ts`):**
+  - ড্যাশবোর্ডে **"Language Course Promo Codes"** নামে একটি সহজ সেকশন থাকবে।
+  - সেখান থেকে আপনি যেকোনো নতুন প্রোমো কোড (যেমন: `KNLTC10`, `KHULNA500`, `SSW2026`) তৈরি করতে পারবেন—যেখানে **ডিসকাউন্টের ধরন (শতাংশ `%` অথবা নির্দিষ্ট টাকা `৳`)**, **মেয়াদ (Expiry Date / টেম্পোরারি অ্যাক্টিভ টগল)** এবং **নোট (কোন ক্লায়েন্টের জন্য)** সেট করা যাবে।
+- **ভর্তি ফর্মে লাইভ প্রোমো কোড বক্স (`EnrollmentForm.tsx`):**
+  - ভর্তি ফর্মে **"Have a Promo Code? (প্রোমো কোড আছে?)"** ইনপুট বক্স থাকবে।
+  - শিক্ষার্থী কোড লিখে **"Apply"** বাটনে চাপলেই সাথে সাথে ভ্যালিডেশন চেক করে মোট ফি থেকে প্রোমো ডিসকাউন্ট কেটে নেবে!
+
+---
+
+## ৩. বিকাশ মার্চেন্ট ও "Bangla QR" পেমেন্ট + TrxID ইন্টিগ্রেশন (`EnrollmentForm.tsx` ও `/api/enroll`)
+
+ভর্তি ফর্মটিকে ২-কলামের আধুনিক **Admission + Instant Payment** অভিজ্ঞতায় আপগ্রেড করা হবে:
+
+1. **ডাইনামিক ফি ক্যালকুলেটর (Live Fee Breakdown):**
+   - কোর্স সিলেক্ট করার পর শিক্ষার্থী বেছে নেবে:
+     - **`Full Course Fee (Get Extra 20% Discount!)`** অথবা
+     - **`1st Installment (50% Booking Payment)`**
+   - এর নিচে প্রোমো কোড দেওয়ার অপশন থাকবে এবং মোট কত টাকা পরিশোধ করতে হবে (`Payable Today: ৳...`) তা বড় করে দেখাবে।
+2. **বিকাশ মার্চেন্ট ও Bangla QR কার্ড:**
+   - ফর্মের ভেতরে অফিশিয়াল **Bangla QR Payment Box** থাকবে (`/images/payment/bangla-qr.png` ইমেজ + ড্যাশবোর্ড CMS থেকেও QR ছবি পরিবর্তনের সুবিধা + **"Click to Enlarge QR"** জুম মডাল)।
+   - মার্চেন্ট নাম্বার (`01805-013633` — ওয়ান-ক্লিক কপি বাটনসহ) এবং ৩ ধাপের সহজ নির্দেশনা দেওয়া থাকবে (*১. বিকাশ বা যেকোনো ব্যাংক অ্যাপ খুলুন ➔ ২. Scan QR বা Payment-এ যান ➔ ৩. পেমেন্ট করে TrxID কপি করুন*)।
+3. **পেমেন্ট ভেরিফিকেশন ইনপুট ফিল্ডসমূহ:**
+   - **Payment Method:** `bKash Merchant / Bangla QR` (ডিফল্ট) অথবা `Pay Later at Office (Dhaka / Khulna Desk)`
+   - **Sender bKash / Mobile Number \*:** যে নাম্বার থেকে টাকা পাঠানো হয়েছে (`017XXXXXXXX`)।
+   - **Paid Amount (BDT) \*:** হিসাব অনুযায়ী অটো-ফিল হবে (চাইলে এডিট করা যাবে)।
+   - **Transaction ID (TrxID) \*:** বড় হাতের অক্ষরে অটো-ফরমেট হবে (যেমন: `BKL982XYZ`) এবং অনলাইন পেমেন্টের ক্ষেত্রে ভ্যালিডেশন থাকবে।
+4. **ডাটাবেস ও Google Sheets সিঙ্ক (`/api/enroll/route.ts`):**
+   - ফর্ম সাবমিট করলেই শিক্ষার্থীর নাম, ফোন, কোর্স, ক্লাস মোড (`Online Live` / `Paltan Head Office` / `Khulna Branch`), ভিসা ক্যাটাগরি, ব্যবহৃত প্রোমো কোড, ডিসকাউন্ট, প্রেরকের নাম্বার, পরিশোধিত টাকা এবং **TrxID** সরাসরি `knltc_lms_bridges`, `knltc_crm_leads` ও ড্যাশবোর্ডে সেভ হয়ে যাবে।
+
+---
+
+## ৪. "Thank You & Digital Admission Receipt" (ডিজিটাল মানি রিসিট ও ১-ক্লিক WhatsApp)
+
+শিক্ষার্থী **TrxID** দিয়ে ফর্ম সাবমিট করার সাথে সাথে পেজটি স্মুথলি উপরে স্ক্রল করে একটি প্রফেশনাল **Thank You & Official Digital Payment Receipt** স্ক্রিন দেখাবে:
+- **অভিনন্দন হেডার:** সবুজ টিক মার্ক অ্যানিমেশনসহ *"অভিনন্দন [Name]! আপনার ভর্তি আবেদন ও পেমেন্ট তথ্য সফলভাবে জমা হয়েছে"* (বাংলা, ইংরেজি ও জাপানি ভাষায়)।
+- **প্রিন্টেবল ডিজিটাল রিসিট কার্ড (Print / Save PDF বাটনসহ):**
+  - অ্যাপ্লিকেশন রেফারেন্স আইডি (`KNLTC-...`), তারিখ ও সময়।
+  - শিক্ষার্থীর নাম, মোবাইল ও হোয়াটসঅ্যাপ নাম্বার।
+  - ভর্তিকৃত কোর্স, ক্লাসের মাধ্যম (`Online Live` / `Paltan` / `Khulna`) ও টার্গেট ভিসা।
+  - **পেমেন্ট সামারি:** মূল কোর্স ফি, প্রাপ্ত ডিসকাউন্ট (২০% ফুল পেমেন্ট ডিসকাউন্ট / প্রোমো কোড), পরিশোধিত অ্যামাউন্ট (`৳...`), প্রেরকের নাম্বার এবং হাইলাইট করা **TrxID** (`Status: Verification in Progress`)।
+- **১-ক্লিক প্রি-ফিল্ড WhatsApp বাটন (`https://wa.me/8801805013633?text=...`):**
+  - বাটনে ক্লিক করলেই শিক্ষার্থীর নাম, ফোন, রেফারেন্স আইডি, কোর্স, শাখা, পরিশোধিত টাকা, প্রেরকের নাম্বার এবং **TrxID** সহ রেডিমেড মেসেজ ওপেন হবে—যাতে অ্যাডমিন টিম ১ মিনিটেই পেমেন্ট মিলিয়ে `https://npw.bd/knltc` পোর্টালের ইউজারনেম ও পাসওয়ার্ড দিয়ে দিতে পারে।
+
+---
+
+## ৫. লার্নিং হাব, সিনিয়র সেন্সি স্পটলাইট ও ভাষা ফিক্স (`InteractiveLanguageLab.tsx`, `TrustMetricsSection.tsx`, `HeroCourseSection.tsx`)
+
+1. **১০০% নির্ভুল ভাষা (`en`, `bn`, `ja`) ও যুক্তবর্ণ ফিক্স:**
+   - ইংরেজি বা জাপানি মোডে কোনো বাংলা লেখা ঢুকে থাকবে না (শুধুমাত্র লার্নিং টেবিলের উচ্চারণ সাহায্যকারী অংশ ছাড়া)।
+   - হিরো সেকশনের হেডলাইনের স্পেসিং ঠিক করা হবে এবং বাংলা যুক্তবর্ণের জন্য `leading-relaxed` (`line-height: 1.6`) দেওয়া হবে।
+   - সব জায়গায় `Dhanmondi` পরিবর্তন করে **`Khulna Branch (Offline)`** করা হবে।
+2. **সিনিয়র সেন্সি আমির হোসেন স্পটলাইট ও স্পেশাল স্কলারশিপ ব্যানার:**
+   - **Senior Sensei Amir Hossen** (জাপানে ৭+ বছরের বাস্তব অভিজ্ঞতা, JLPT N2/N1 মেন্টর ও ইন্টারপ্রেটার)-এর প্রোফাইল কার্ড এবং ভেরিফায়েড পাস রেকর্ড ও Trustpilot রিভিউ স্ট্রিপ যুক্ত হবে।
+   - **JLPT N4 পাসদের জন্য ঢাকায় ফ্রি থাকা-খাওয়া ও ফ্রি কনস্ট্রাকশন স্কিল ট্রেনিং (Zero Advance SSW Campaign)**-এর কলআউট ব্যানার থাকবে।
+3. **৪-ট্যাব "Minna No Nihongo" ইন্টারঅ্যাক্টিভ লার্নিং হাব:**
+   - **Tab 1:** হিরাগানা ও কাতাকানা সম্পূর্ণ অডিও ম্যাট্রিক্স (বিদ্যমান ০.৮৫x অডিও উচ্চারণ ১০০% অক্ষুণ্ণ রেখে)।
+   - **Tab 2:** শব্দভাণ্ডার (`Kotoba`) — বামে ৭০% ৪-কলামের অডিও টেবিল এবং ডানে ৩০% `#1E5631` (Forest Green) ও `#C8102E` (Crimson Red) রঙের `'Grammar Tip'` বক্স।
+   - **Tab 3:** ব্যাকরণ (`Bunkei & Reibun`) — মোবাইলে না ভেঙে সুন্দরভাবে দেখানোর জন্য N5 পার্টিকেল (`は, が, を, に, で`) ও উদাহরণ বাক্য।
+   - **Tab 4:** কথোপকথন (`Kaiwa`) — দৈনন্দিন ও কর্মক্ষেত্রের ডায়ালগ (অডিও উচ্চারণসহ)।
+   - সাথে **`https://npw.bd/irodori/index.html` (Free Irodori Demo)** বাটন এবং **`/store` বুক স্টোর** ক্রস-সেল ব্যানার।
+
+---
+
+### ✅ পরবর্তী ধাপ
+প্ল্যানটি আপনার পছন্দ হলে নিচের **"Proceed"** বাটনে ক্লিক করুন—আমি সাথে সাথে সবগুলো ফাইলে কোড ইমপ্লিমেন্ট করে বিল্ড ও টেস্ট সম্পন্ন করব।

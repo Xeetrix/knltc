@@ -1,277 +1,512 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ArrowRight,
+  Award,
   BookOpen,
+  Building2,
   Calendar,
   Check,
   CheckCircle2,
   Clock,
+  ExternalLink,
   GraduationCap,
+  Percent,
   Sparkles,
+  Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
+import { DEFAULT_WEBSITE_CMS, getWebsiteCms } from "@/lib/knltc-cms-store";
+
+export type StandardCourseId =
+  | "JFT_IRODORI"
+  | "N5_COURSE"
+  | "N4_COURSE"
+  | "N5_N4_COMBO";
 
 interface Props {
-  onSelectCourse?: (courseId: string) => void;
+  onSelectCourse?: (courseId: StandardCourseId) => void;
 }
 
 export default function CoursePackagesSection({ onSelectCourse }: Props) {
   const { language } = useLanguage();
-  const [selectedId, setSelectedId] = useState<string>("N5_COURSE");
+  // Default to JFT_IRODORI as top priority for both Student & Job Visa candidates
+  const [selectedId, setSelectedId] = useState<StandardCourseId>("JFT_IRODORI");
+  const [cmsPricing, setCmsPricing] = useState({
+    n5PriceBdt: DEFAULT_WEBSITE_CMS.languageCoursePage.n5PriceBdt || 12000,
+    n4PriceBdt: DEFAULT_WEBSITE_CMS.languageCoursePage.n4PriceBdt || 14500,
+    comboPriceBdt: DEFAULT_WEBSITE_CMS.languageCoursePage.comboPriceBdt || 21500,
+    jftPriceBdt: DEFAULT_WEBSITE_CMS.languageCoursePage.jftPriceBdt || 12500,
+    fullPaymentDiscountPercent:
+      DEFAULT_WEBSITE_CMS.languageCoursePage.fullPaymentDiscountPercent ?? 20,
+    externalIrodoriUrl:
+      DEFAULT_WEBSITE_CMS.languageCoursePage.externalIrodoriUrl ||
+      "https://npw.bd/irodori/index.html",
+  });
+
+  useEffect(() => {
+    try {
+      const cms = getWebsiteCms();
+      if (cms?.languageCoursePage) {
+        setCmsPricing({
+          n5PriceBdt: Number(cms.languageCoursePage.n5PriceBdt) || 12000,
+          n4PriceBdt: Number(cms.languageCoursePage.n4PriceBdt) || 14500,
+          comboPriceBdt: Number(cms.languageCoursePage.comboPriceBdt) || 21500,
+          jftPriceBdt: Number(cms.languageCoursePage.jftPriceBdt) || 12500,
+          fullPaymentDiscountPercent:
+            cms.languageCoursePage.fullPaymentDiscountPercent ?? 20,
+          externalIrodoriUrl:
+            cms.languageCoursePage.externalIrodoriUrl ||
+            "https://npw.bd/irodori/index.html",
+        });
+      }
+    } catch {
+      // fallback to defaults
+    }
+  }, []);
+
+  const discountPct = cmsPricing.fullPaymentDiscountPercent;
+
+  const formatBdt = (amount: number) => {
+    const rounded = Math.round(amount);
+    if (language === "bn") {
+      return `৳${rounded.toLocaleString("bn-BD")}`;
+    }
+    return `৳${rounded.toLocaleString("en-IN")}`;
+  };
+
+  const getCoursePriceData = (id: StandardCourseId) => {
+    const baseFee =
+      id === "JFT_IRODORI"
+        ? cmsPricing.jftPriceBdt
+        : id === "N5_COURSE"
+          ? cmsPricing.n5PriceBdt
+          : id === "N4_COURSE"
+            ? cmsPricing.n4PriceBdt
+            : cmsPricing.comboPriceBdt;
+    const fullPayDiscountAmount = Math.round((baseFee * discountPct) / 100);
+    const fullPayFee = Math.max(0, baseFee - fullPayDiscountAmount);
+    const installmentFee = Math.round(baseFee / 2);
+    return {
+      baseFee,
+      fullPayDiscountAmount,
+      fullPayFee,
+      installmentFee,
+    };
+  };
 
   const t = translate(
     {
       en: {
-        kicker: "Curriculum & Fee Structure",
-        title: "Smart Course Selector & Options",
+        kicker: "4 Standardized Course Packages • Database Live Pricing",
+        title: "Choose Your Japanese Language Package",
         subtitle:
-          "Targeted preparation for JLPT, NAT-TEST, JFT-Basic, SSW Job Visas, and Japanese universities.",
-        tabN5: "N5 Beginner",
-        tabN4: "N4 Intermediate",
-        tabAdv: "Advanced & Irodori",
-        badgePopular: "Most Popular",
-        ctaEnroll: "Enroll in This Level",
-        feeLabel: "Total Course Fee",
-        installments: "2 Installments Available (50% + 50%)",
+          "Priority JFT (Irodori) & JLPT N5/N4 programs designed for both Student Visa and SSW Job Visa candidates. Pay in 2 easy installments (50% + 50%) OR get an instant 20% discount on Full Payment!",
+        priorityTag: "#1 Priority • Student & Job Visa",
+        scholarshipBadge: "100% FREE for KNLTC Student Visa COE Candidates",
+        comboBadge: "Best Value Combo",
+        regularFeeLabel: "Regular Fee (2 Installments)",
+        fullPayLabel: `Full Payment (${discountPct}% OFF)`,
+        installmentBadge: `50% Booking Installment Available • Extra ${discountPct}% OFF on Full Payment`,
         syllabusHeading: "Curriculum & Syllabus Highlights",
-        scheduleHeading: "Flexible Batch Schedules",
-        materialsHeading: "Free Included Materials",
+        scheduleHeading: "Flexible Batch Schedules (Online, Paltan & Khulna)",
+        materialsHeading: "100% Free Included Materials",
+        benefit1: "All Textbooks (Minna No Nihongo & Irodori) & Worksheets Free",
+        benefit2: "3 Career Bonus Courses Worth ৳15,000 Included Free",
+        benefit3: "Official Student LMS Account (npw.bd/knltc) & HD Recordings",
+        ctaEnrollFull: `Enroll with ${discountPct}% Full-Pay Discount`,
+        ctaEnrollInstallment: "Enroll with 50% Installment",
+        autoSelectNote: "Automatically selects this package & payment plan in the form below",
+        tryIrodoriBtn: "Try Free Irodori Demo",
+        camp1Badge: "Student Visa Special Scholarship",
+        camp1Title: "100% Free JLPT N4 Course During COE Processing!",
+        camp1Desc:
+          "All KNLTC Student Visa candidates automatically receive the complete 3-Month JLPT N4 Course 100% FREE while their Certificate of Eligibility (COE) is being processed in Japan.",
+        camp2Badge: "Zero-Advance SSW Campaign",
+        camp2Title: "Passed JLPT N4 or JFT-Basic? Get Free Skill Training + Free Food & Stay in Dhaka!",
+        camp2Desc:
+          "Candidates who pass JLPT N4 or JFT-Basic receive 100% Free Construction Skill Training plus Free Accommodation & Meals in Dhaka under our Zero-Advance SSW Visa program.",
+        camp2Cta: "Explore SSW Job Visa",
         courses: {
-          N5_COURSE: {
-            id: "N5_COURSE",
-            level: "JLPT N5 & JFT-Basic (Beginner)",
-            title: "Japanese N5 Level Comprehensive Course",
-            duration: "3 Months • 120 Hours",
-            fee: "৳12,000",
-            examTarget: "JLPT N5, NAT-TEST 5Q, JFT-Basic",
-            targetAudience: "Designed for beginners with zero prior Japanese knowledge.",
+          JFT_IRODORI: {
+            id: "JFT_IRODORI" as StandardCourseId,
+            shortTab: "JFT (Irodori)",
+            badge: "Top Priority • Students & SSW",
+            durationShort: "/ 3 Months (150 Hrs)",
+            level: "JFT-Basic & Practical Living/Workplace Japanese",
+            title: "JFT (Irodori) — Spoken, Listening & Exam Mastery",
+            duration: "3 Months • 150 Hours (Immigration Certified)",
+            examTarget: "JFT-Basic (A2), Student Embassy Interview & SSW",
+            targetAudience:
+              "Top priority for BOTH Student Visa candidates (for real-life campus life, Embassy interview fluency & instant Baitō jobs) AND SSW Specified Skilled Worker Job Visa applicants.",
             highlights: [
-              "Hiragana and Katakana stroke orders, phonetics & basic conversation",
-              "103 Basic Kanji characters with mnemonic memory sheets",
-              "Minna No Nihongo lessons 1 through 25 full mastery",
-              "5 Full-length exam simulation mock tests with grading",
+              "Japan Foundation official 'Irodori: Japanese for Life in Japan' A1–A2 full mastery",
+              "Real-life situational speaking & listening for Japanese schools, part-time jobs (Baitō) & workplaces",
+              "Computer-Based Testing (CBT) simulations for JFT-Basic & NAT/JLPT listening",
+              "Direct Japanese Embassy & School Zoom interview conversational drills",
+              "Includes 3 free bonus courses (Embassy Interview, JIS CV & Baitō worth ৳15,000)",
+            ],
+            schedules: [
+              "Morning Batch: 10:00 AM – 12:00 PM (Online Zoom / Paltan / Khulna)",
+              "Evening Batch: 07:00 PM – 09:00 PM (Online Zoom / Paltan / Khulna)",
+              "Weekend Intensive: Friday & Saturday (Special Spoken Lab)",
+            ],
+            materials:
+              "Japan Foundation Irodori Textbooks, Interactive Audio Lab (npw.bd/irodori), Kanji Sheets & 24/7 LMS Portal.",
+          },
+          N5_COURSE: {
+            id: "N5_COURSE" as StandardCourseId,
+            shortTab: "JLPT N5",
+            badge: "Foundation • 150 Hours",
+            durationShort: "/ 3 Months (150 Hrs)",
+            level: "JLPT N5 & NAT-TEST 5Q (Beginner Foundation)",
+            title: "JLPT N5 Complete Beginner Foundation Course",
+            duration: "3 Months • 150 Hours (Mandatory Study Certificate)",
+            examTarget: "JLPT N5, NAT-TEST 5Q, JCL / Top-J",
+            targetAudience:
+              "Designed for Student Visa applicants, TITP candidates, and complete beginners starting from zero Japanese knowledge.",
+            highlights: [
+              "Complete Hiragana & Katakana stroke orders, phonetics & native pronunciation",
+              "103 Essential N5 Kanji characters with visual memory sheets & weekly quizzes",
+              "Minna No Nihongo I (Lessons 1–25) complete vocabulary, grammar & conversation",
+              "Official 150-Hour Japanese Language Study Certificate required by Japan Immigration",
               "Includes 3 free bonus courses (Embassy, CV & Baitō worth ৳15,000)",
             ],
             schedules: [
-              "Morning Batch: 10:00 AM – 12:00 PM (Sun, Tue, Thu)",
-              "Evening Batch: 07:00 PM – 09:00 PM (Sun, Tue, Thu)",
-              "Weekend Special: Friday & Saturday (Intensive)",
+              "Morning Batch: 10:00 AM – 12:00 PM (Sun, Tue, Thu — Dhaka / Khulna / Zoom)",
+              "Evening Batch: 07:00 PM – 09:00 PM (Sun, Tue, Thu — Dhaka / Khulna / Zoom)",
+              "Weekend Special: Friday & Saturday (For College & Job Holders)",
             ],
-            materials: "Minna No Nihongo I Book, Kanji Workbook, Audio MP3s & Online LMS access.",
+            materials:
+              "Minna No Nihongo I Textbook, Kanji Workbook, Grammar Sheets, Audio MP3s & LMS Portal Access.",
           },
           N4_COURSE: {
-            id: "N4_COURSE",
-            level: "JLPT N4 & SSW Job Track (Intermediate)",
-            title: "Japanese N4 Level Comprehensive Course",
-            duration: "3 Months • 130 Hours",
-            fee: "৳14,500",
-            examTarget: "JLPT N4, NAT-TEST 4Q, SSW Skill Tests",
-            targetAudience: "For students with N5 knowledge, SSW job candidates, and degree applicants.",
+            id: "N4_COURSE" as StandardCourseId,
+            shortTab: "JLPT N4",
+            badge: "100% Free for KNLTC COE Students",
+            durationShort: "/ 3 Months (150 Hrs)",
+            level: "JLPT N4 & SSW / University Track (Intermediate)",
+            title: "JLPT N4 Intermediate & SSW Job Visa Course",
+            duration: "3 Months • 150 Hours",
+            examTarget: "JLPT N4, NAT-TEST 4Q, JFT-Basic & SSW Skill Exams",
+            targetAudience:
+              "For SSW Job Visa candidates, direct University/Senmon Gakko applicants, and KNLTC Student Visa candidates (100% Free during COE processing!).",
             highlights: [
-              "Minna No Nihongo II lessons 26 through 50 & honorifics (Keigo)",
-              "250+ Intermediate Kanji characters and workplace compound words",
-              "SSW Caregiver, Agriculture & Food Service interview preparation",
-              "6 Full-length JFT-Basic and JLPT N4 exam simulations",
-              "Embassy & Immigration SOP statement auditing included",
+              "Minna No Nihongo II (Lessons 26–50) intermediate grammar & polite Keigo (Honorifics)",
+              "250+ Intermediate Kanji characters and workplace technical vocabulary",
+              "SSW Construction, Caregiver, Food Service & Agriculture interview preparation",
+              "6 Full-length JLPT N4, NAT 4Q & JFT-Basic mock tests with individual review",
+              "100% FREE scholarship for KNLTC Student Visa candidates during COE wait period",
             ],
             schedules: [
-              "Morning Batch: 10:00 AM – 12:00 PM (Mon, Wed, Sat)",
-              "Evening Batch: 07:00 PM – 09:00 PM (Mon, Wed, Sat)",
-              "Weekend Special: Friday & Saturday (Intensive)",
+              "Morning Batch: 10:00 AM – 12:00 PM (Mon, Wed, Sat — Dhaka / Khulna / Zoom)",
+              "Evening Batch: 07:00 PM – 09:00 PM (Mon, Wed, Sat — Dhaka / Khulna / Zoom)",
+              "Weekend Intensive: Friday & Saturday",
             ],
-            materials: "Minna No Nihongo II Book, Grammar Handouts, Audio Drills & 24/7 LMS access.",
+            materials:
+              "Minna No Nihongo II Textbook, Intermediate Kanji Book, SSW Question Bank & 24/7 LMS Access.",
           },
-          ADVANCED_LEVELS: {
-            id: "ADVANCED_LEVELS",
-            level: "JLPT N3–N1 & Irodori Practical",
-            title: "Advanced & Practical Workplace Japanese",
-            duration: "4 Months • 160 Hours",
-            fee: "৳18,000",
-            examTarget: "JLPT N3/N2, Corporate Fluency, University Degree",
-            targetAudience: "For career professionals, translators, and direct university applicants.",
+          N5_N4_COMBO: {
+            id: "N5_N4_COMBO" as StandardCourseId,
+            shortTab: "JLPT N5 + N4 Together",
+            badge: "Complete Zero-to-N4 Combo",
+            durationShort: "/ 6 Months (300 Hrs)",
+            level: "Zero to JLPT N4 + JFT-Basic All-in-One Track",
+            title: "JLPT N5 + N4 Together (Complete Zero-to-N4 Package)",
+            duration: "6 Months • 300 Hours Comprehensive",
+            examTarget: "JLPT N5 + N4, NAT 4Q & JFT-Basic Guaranteed Readiness",
+            targetAudience:
+              "Ideal for ambitious Student Visa & SSW candidates who want uninterrupted mastery from Hiragana to N4 certificate at a special bundled discount.",
             highlights: [
-              "Irodori Japanese practical situational speaking & listening drills",
-              "500+ Advanced Kanji characters & corporate communication syntax",
-              "Japanese business etiquette (Business Keigo & Meishi exchange)",
-              "JLPT N3/N2 digital question bank and speed mock tests",
-              "Corporate career liaison and professional Japanese CV audit",
+              "Complete Minna No Nihongo I & II (Lessons 1–50) + Irodori Spoken Japanese integration",
+              "350+ Combined N5 & N4 Kanji mastery + daily Japanese listening & speaking lab",
+              "Priority placement for Japan SSW Employer Interviews & Top Tokyo/Osaka Schools",
+              "12 Full-length progressive mock exams + 1-on-1 mentorship with Senior Sensei Amir Hossen",
+              "Includes all textbooks, workbooks & 3 Career Bonus Courses (worth ৳15,000) 100% Free",
             ],
             schedules: [
-              "Evening Professional Batch: 07:30 PM – 09:30 PM",
-              "Weekend Executive: Friday & Saturday (Flexible)",
+              "Regular Track: 3 Days/Week (Online Live Zoom / Paltan HQ / Khulna Branch)",
+              "Fast-Track Intensive: 5 Days/Week (Dedicated Visa Target Batch)",
             ],
-            materials: "Irodori Textbooks, Business Japanese Handouts, N3/N2 Question Bank.",
+            materials:
+              "Complete N5 + N4 + Irodori Full Book Set, Kanji Master Sheets, Audio Library & Lifetime LMS Access.",
           },
         },
       },
       bn: {
-        kicker: "পাঠ্যক্রম ও কোর্স ফি",
-        title: "স্মার্ট কোর্স সিলেক্টর ও ফি বিবরণ",
+        kicker: "৪টি স্ট্যান্ডার্ড কোর্স প্যাকেজ • ডাটাবেস লাইভ ফি ও ডিসকাউন্ট",
+        title: "আপনার উপযুক্ত জাপানি ভাষা কোর্সটি বেছে নিন",
         subtitle:
-          "JLPT, NAT-TEST, JFT-Basic, SSW জব ভিসা ও জাপানে উচ্চশিক্ষার জন্য সুনির্দিষ্ট ও বাস্তবমুখী কোর্স পরিকল্পনা।",
-        tabN5: "N5 বিগিনার",
-        tabN4: "N4 ইন্টারমিডিয়েট",
-        tabAdv: "Advanced ও ইরোদেরি",
-        badgePopular: "সর্বাধিক জনপ্রিয়",
-        ctaEnroll: "এই কোর্সে ভর্তি হতে আবেদন করুন",
-        feeLabel: "মোট কোর্স ফি",
-        installments: "২টি সহজ কিস্তিতে পরিশোধযোগ্য (৫০% + ৫০%)",
-        syllabusHeading: "পাঠ্যক্রম ও সিলেবাসের মূল বিষয়সমূহ",
-        scheduleHeading: "সুবিধাজনক ব্যাচ সময়সূচি",
+          "স্টুডেন্ট ভিসা এবং SSW জব ভিসা—উভয় প্রার্থীদের জন্যই সর্বাধিক গুরুত্ব দিয়ে সাজানো JFT (Irodori) ও JLPT N5/N4 কোর্স। প্রতিটি কোর্সে কিস্তি সুবিধা (৫০% + ৫০%) রয়েছে, আর এককালীন ফুল পেমেন্ট করলে পাচ্ছেন অতিরিক্ত ২০% ডিসকাউন্ট!",
+        priorityTag: "#১ অগ্রাধিকার • স্টুডেন্ট ও জব ভিসা",
+        scholarshipBadge: "KNLTC স্টুডেন্ট ভিসা (COE) প্রার্থীদের জন্য ১০০% ফ্রি",
+        comboBadge: "সেরা কম্বো সাশ্রয়",
+        regularFeeLabel: "রেগুলার ফি (২ কিস্তিতে পরিশোধযোগ্য)",
+        fullPayLabel: `এককালীন ফুল পেমেন্ট (${discountPct}% ছাড়)`,
+        installmentBadge: `৫০% প্রথম কিস্তিতে ভর্তির সুযোগ • ফুল পেমেন্টে অতিরিক্ত ${discountPct}% ডিসকাউন্ট`,
+        syllabusHeading: "পাঠ্যক্রম ও সিলেবাসের মূল বৈশিষ্ট্যসমূহ",
+        scheduleHeading: "ব্যাচ সময়সূচি (অনলাইন জুম, পল্টন ও খুলনা শাখা)",
         materialsHeading: "সম্পূর্ণ বিনামূল্যে স্টাডি ম্যাটেরিয়ালস",
+        benefit1: "মিন্না নো নিহোঙ্গো ও ইরোদেরি সব পাঠ্যবই এবং লেকচার শিট ফ্রি",
+        benefit2: "১৫,০০০ টাকা মূল্যের ৩টি স্পেশাল ইন্টারভিউ ও সিভি কোর্স ফ্রি",
+        benefit3: "অফিশিয়াল LMS আইডি (npw.bd/knltc) ও এইচডি ক্লাস রেকর্ডিং",
+        ctaEnrollFull: `${discountPct}% ডিসকাউন্টে ফুল পেমেন্টে ভর্তি হোন`,
+        ctaEnrollInstallment: "৫০% কিস্তিতে ভর্তি আবেদন করুন",
+        autoSelectNote: "নিচের ভর্তি ও পেমেন্ট ফর্মে এই প্যাকেজটি স্বয়ংক্রিয়ভাবে সিলেক্ট হবে",
+        tryIrodoriBtn: "ফ্রি ইরোদেরি ডেমো",
+        camp1Badge: "স্টুডেন্ট ভিসা স্পেশাল স্কলারশিপ",
+        camp1Title: "COE প্রসেসিং চলাকালীন স্টুডেন্ট ভিসা প্রার্থীদের N4 কোর্স ১০০% ফ্রি!",
+        camp1Desc:
+          "KNLTC থেকে যারা স্টুডেন্ট ভিসার ফাইল প্রসেস করবেন, জাপান ইমিগ্রেশনে তাদের COE প্রসেসিং চলাকালীন সময়ে ৩ মাসের সম্পূর্ণ JLPT N4 কোর্সটি ১০০% বিনামূল্যে করানো হয়।",
+        camp2Badge: "জিরো অ্যাডভান্স SSW ক্যাম্পেইন",
+        camp2Title: "JLPT N4 বা JFT পাস থাকলেই ঢাকায় ফ্রি থাকা-খাওয়া ও ফ্রি স্কিল ট্রেনিং!",
+        camp2Desc:
+          "যাদের ইতিমধ্যে JLPT N4 অথবা JFT-Basic পাস করা আছে, তাদের জন্য আমাদের জিরো-অ্যাডভান্স SSW প্রোগ্রামের আওতায় ঢাকায় সম্পূর্ণ ফ্রি থাকা-খাওয়া এবং ফ্রি কনস্ট্রাকশন স্কিল ট্রেনিংয়ের সুবিধা রয়েছে।",
+        camp2Cta: "SSW জব ভিসা বিস্তারিত",
         courses: {
-          N5_COURSE: {
-            id: "N5_COURSE",
-            level: "JLPT N5 ও JFT-Basic (বিগিনার)",
-            title: "Japanese N5 Level Comprehensive Course",
-            duration: "৩ মাস • ১২০ ঘণ্টা নিবিড় প্রশিক্ষণ",
-            fee: "৳১২,০০০",
-            examTarget: "JLPT N5, NAT-TEST 5Q, JFT-Basic",
-            targetAudience: "যাদের জাপানি ভাষায় কোনো পূর্ব অভিজ্ঞতা নেই, তাদের একদম শূন্য লেভেল থেকে শেখার কোর্স।",
+          JFT_IRODORI: {
+            id: "JFT_IRODORI" as StandardCourseId,
+            shortTab: "JFT (Irodori)",
+            badge: "সর্বাধিক কার্যকরী • স্টুডেন্ট ও SSW",
+            durationShort: "/ ৩ মাস (১৫০ ঘণ্টা)",
+            level: "JFT-Basic ও বাস্তব জীবন/কর্মক্ষেত্রের জাপানি ভাষা",
+            title: "JFT (Irodori) — স্পোকেন, লিসেনিং ও এক্সাম স্পেশাল কোর্স",
+            duration: "৩ মাস • ১৫০ ঘণ্টা নিবিড় প্রশিক্ষণ",
+            examTarget: "JFT-Basic (A2), এম্বাসি/স্কুল ইন্টারভিউ ও SSW",
+            targetAudience:
+              "শুধুমাত্র জব ভিসা নয়—স্টুডেন্ট ভিসা প্রার্থীদের জন্যও এটি সর্বাধিক গুরুত্বপূর্ণ! জাপানে গিয়েই পার্ট-টাইম কাজ (Baitō) পাওয়া, স্কুল ও এম্বাসি ইন্টারভিউতে অনর্গল কথা বলা এবং SSW প্রার্থীদের দ্রুত জাপান যাওয়ার সেরা কোর্স।",
             highlights: [
-              "হিরাগানা ও কাতাকানা বর্ণমালার সঠিক স্ট্রোক অর্ডার ও শুদ্ধ উচ্চারণ",
+              "জাপান ফাউন্ডেশনের অফিশিয়াল 'Irodori: Japanese for Life in Japan' (A1–A2) পূর্ণাঙ্গ অনুশীলন",
+              "স্টুডেন্টদের জাপানি ক্যাম্পাস লাইফ, পার্ট-টাইম জব (Baitō) ও কর্মক্ষেত্রের রিয়েল-লাইফ কথোপকথন ও লিসেনিং",
+              "কম্পিউটার ভিত্তিক (CBT) JFT-Basic এবং JLPT/NAT লিসেনিং মক টেস্ট সিমুলেশন",
+              "জাপানি স্কুল জুম ইন্টারভিউ ও এম্বাসি ভিসা অফিসারের সামনে স্মার্টলি জাপানি বলার প্র্যাকটিস",
+              "১৫,০০০ টাকা মূল্যের ৩টি স্পেশাল বোনাস কোর্স (এম্বাসি ইন্টারভিউ, সিভি ও বাইতো) সম্পূর্ণ ফ্রি",
+            ],
+            schedules: [
+              "সকালের ব্যাচ: ১০:০০ AM – ১২:০০ PM (অনলাইন জুম / পল্টন / খুলনা শাখা)",
+              "সন্ধ্যার ব্যাচ: ০৭:০০ PM – ০৯:০০ PM (অনলাইন জুম / পল্টন / খুলনা শাখা)",
+              "উইকেন্ড ইন্টেনসিভ: শুক্র ও শনিবার (স্পেশাল স্পোকেন ও লিসেনিং ল্যাব)",
+            ],
+            materials:
+              "জাপান ফাউন্ডেশন ইরোদেরি টেক্সটবুক, ইন্টারঅ্যাক্টিভ অডিও ল্যাব (npw.bd/irodori), কাঞ্জি শিট ও ২৪/৭ LMS পোর্টাল।",
+          },
+          N5_COURSE: {
+            id: "N5_COURSE" as StandardCourseId,
+            shortTab: "JLPT N5",
+            badge: "ফাউন্ডেশন • ১৫০ ঘণ্টা",
+            durationShort: "/ ৩ মাস (১৫০ ঘণ্টা)",
+            level: "JLPT N5 ও NAT-TEST 5Q (বিগিনার ফাউন্ডেশন)",
+            title: "JLPT N5 কমপ্লিট বিগিনার ফাউন্ডেশন কোর্স",
+            duration: "৩ মাস • ১৫০ ঘণ্টা (ইমিগ্রেশন বাধ্যতামূলক সার্টিফিকেট)",
+            examTarget: "JLPT N5, NAT-TEST 5Q, JCL / Top-J",
+            targetAudience:
+              "স্টুডেন্ট ভিসা, TITP এবং যাদের জাপানি ভাষায় কোনো পূর্ব অভিজ্ঞতা নেই—তাদের একদম শূন্য (Zero Level) থেকে ১৫০ ঘণ্টা স্টাডি সার্টিফিকেটসহ পূর্ণাঙ্গ প্রস্তুতির কোর্স।",
+            highlights: [
+              "হিরাগানা ও কাতাকানা বর্ণমালার সঠিক স্ট্রোক অর্ডার ও নেটিভ উচ্চারণ প্র্যাকটিস",
               "১০৩টি বেসিক কাঞ্জি মেমোরি টেকনিক ও সাপ্তাহিক কুইজ প্র্যাকটিস",
-              "মিন্না নো নিহোঙ্গো ১ থেকে ২৫ অধ্যায়ের পূর্ণাঙ্গ ব্যাকরণ ও শব্দার্থ",
-              "অফিশিয়াল পরীক্ষার আদলে ৫টি পূর্ণাঙ্গ মক টেস্ট ও মূল্যায়ন",
+              "মিন্না নো নিহোঙ্গো ১ থেকে ২৫ অধ্যায়ের পূর্ণাঙ্গ শব্দভাণ্ডার (Kotoba), ব্যাকরণ ও কথোপকথন",
+              "জাপান ইমিগ্রেশনের জন্য বাধ্যতামূলক ১৫০ ঘণ্টার অফিশিয়াল ল্যাঙ্গুয়েজ স্টাডি সার্টিফিকেট",
               "১৫,০০০ টাকা মূল্যের ৩টি স্পেশাল ইন্টারভিউ ও সিভি কোর্স সম্পূর্ণ ফ্রি",
             ],
             schedules: [
-              "সকালের ব্যাচ: ১০:০০ AM – ১২:০০ PM (রবি, মঙ্গল, বৃহস্পতি)",
-              "সন্ধ্যার ব্যাচ: ০৭:০০ PM – ০৯:০০ PM (রবি, মঙ্গল, বৃহস্পতি)",
-              "উইকেন্ড স্পেশাল: শুক্র ও শনিবার (চাকরিজীবী ও শিক্ষার্থীদের জন্য)",
+              "সকালের ব্যাচ: ১০:০০ AM – ১২:০০ PM (রবি, মঙ্গল, বৃহস্পতি — ঢাকা / খুলনা / জুম)",
+              "সন্ধ্যার ব্যাচ: ০৭:০০ PM – ০৯:০০ PM (রবি, মঙ্গল, বৃহস্পতি — ঢাকা / খুলনা / জুম)",
+              "উইকেন্ড স্পেশাল: শুক্র ও শনিবার (শিক্ষার্থী ও চাকরিজীবীদের জন্য)",
             ],
-            materials: "মিন্না নো নিহোঙ্গো ১ম খণ্ড বই, কাঞ্জি শিট, অডিও ফাইল ও ডিজিটাল LMS ক্লাসরুম এক্সেস।",
+            materials:
+              "মিন্না নো নিহোঙ্গো ১ম খণ্ড বই, কাঞ্জি ওয়ার্কবুক, গ্রামার শিট, অডিও ফাইল ও ডিজিটাল LMS ক্লাসরুম এক্সেস।",
           },
           N4_COURSE: {
-            id: "N4_COURSE",
-            level: "JLPT N4 ও SSW জব ট্র্যাক (ইন্টারমিডিয়েট)",
-            title: "Japanese N4 Level Comprehensive Course",
-            duration: "৩ মাস • ১৩০ ঘণ্টা নিবিড় প্রশিক্ষণ",
-            fee: "৳১৪,৫০০",
-            examTarget: "JLPT N4, NAT-TEST 4Q, SSW স্কিল টেস্ট",
-            targetAudience: "যাদের N5 সম্পন্ন বা বেসিক জানা আছে এবং SSW জব ভিসা বা বিশ্ববিদ্যালয়ের প্রস্তুতি নিতে চান।",
+            id: "N4_COURSE" as StandardCourseId,
+            shortTab: "JLPT N4",
+            badge: "স্টুডেন্ট ভিসা COE প্রার্থীদের ফ্রি",
+            durationShort: "/ ৩ মাস (১৫০ ঘণ্টা)",
+            level: "JLPT N4 ও SSW / ইউনিভার্সিটি ট্র্যাক (ইন্টারমিডিয়েট)",
+            title: "JLPT N4 ইন্টারমিডিয়েট ও SSW জব ভিসা কোর্স",
+            duration: "৩ মাস • ১৫০ ঘণ্টা নিবিড় প্রশিক্ষণ",
+            examTarget: "JLPT N4, NAT-TEST 4Q, JFT-Basic ও SSW স্কিল টেস্ট",
+            targetAudience:
+              "SSW জব ভিসা প্রার্থী, সরাসরি জাপানি কলেজ/ভার্সিটিতে আবেদনকারী এবং KNLTC-এর স্টুডেন্ট ভিসা প্রার্থীদের জন্য (COE প্রসেসিং চলাকালীন ১০০% ফ্রি!)।",
             highlights: [
-              "মিন্না নো নিহোঙ্গো ২৬ থেকে ৫০ অধ্যায় ও বিনীত কেইগো ব্যাকরণ",
-              "২৫০+ মধ্যম স্তরের কাঞ্জি ও কর্মক্ষেত্রের প্রয়োজনীয় শব্দভাণ্ডার",
-              "SSW কেয়ারগিভার, এগ্রিকালচার ও ফুড সার্ভিস ইন্টারভিউ প্রস্তুতি",
-              "JFT-Basic / JLPT N4 স্ট্যান্ডার্ড ৬টি পূর্ণাঙ্গ মক টেস্ট",
-              "এম্বাসি ও স্টাডি মোটিভেশন (SOP) রাইটিং বিশেষ গাইডেন্স",
+              "মিন্না নো নিহোঙ্গো ২৬ থেকে ৫০ অধ্যায় ও জাপানি বিনীত ভাষা (Keigo) আয়ত্তকরণ",
+              "২৫০+ ইন্টারমিডিয়েট কাঞ্জি ও জাপানি কর্মক্ষেত্রের টেকনিক্যাল শব্দভাণ্ডার",
+              "SSW কনস্ট্রাকশন, কেয়ারগিভার, ফুড সার্ভিস ও এগ্রিকালচার ইন্টারভিউ প্রস্তুতি",
+              "JLPT N4, NAT 4Q ও JFT-Basic স্ট্যান্ডার্ড ৬টি পূর্ণাঙ্গ মক টেস্ট ও মূল্যায়ন",
+              "KNLTC স্টুডেন্ট ভিসা প্রার্থীদের COE অপেক্ষাকালীন সময়ে ১০০% ফ্রি স্কলারশিপ সুবিধা",
             ],
             schedules: [
-              "সকালের ব্যাচ: ১০:০০ AM – ১২:০০ PM (সোম, বুধ, শনি)",
-              "সন্ধ্যার ব্যাচ: ০৭:০০ PM – ০৯:০০ PM (সোম, বুধ, শনি)",
-              "উইকেন্ড স্পেশাল: শুক্র ও শনিবার (ইন্টেনসিভ)",
+              "সকালের ব্যাচ: ১০:০০ AM – ১২:০০ PM (সোম, বুধ, শনি — ঢাকা / খুলনা / জুম)",
+              "সন্ধ্যার ব্যাচ: ০৭:০০ PM – ০৯:০০ PM (সোম, বুধ, শনি — ঢাকা / খুলনা / জুম)",
+              "উইকেন্ড ইন্টেনসিভ: শুক্র ও শনিবার",
             ],
-            materials: "মিন্না নো নিহোঙ্গো ২য় খণ্ড বই, গ্রামার শিট, অডিও ড্রিলস ও ২৪/৭ LMS এক্সেস।",
+            materials:
+              "মিন্না নো নিহোঙ্গো ২য় খণ্ড বই, ইন্টারমিডিয়েট কাঞ্জি বুক, SSW প্রশ্নব্যাংক ও ২৪/৭ LMS এক্সেস।",
           },
-          ADVANCED_LEVELS: {
-            id: "ADVANCED_LEVELS",
-            level: "JLPT N3–N1 ও ইরোদোরি প্র্যাকটিক্যাল",
-            title: "Advanced & Practical Workplace Japanese",
-            duration: "৪ মাস • ১৬০ ঘণ্টা নিবিড় প্রশিক্ষণ",
-            fee: "৳১৮,০০০",
-            examTarget: "JLPT N3/N2, কর্পোরেট ক্যারিয়ার, ডিগ্রি প্রোগ্রাম",
-            targetAudience: "জাপানি কোম্পানিতে চাকরি, অনুবাদক বা সরাসরি জাপানি বিশ্ববিদ্যালয়ে মাস্টার্সের জন্য।",
+          N5_N4_COMBO: {
+            id: "N5_N4_COMBO" as StandardCourseId,
+            shortTab: "JLPT N5 + N4 Together",
+            badge: "কমপ্লিট জিরো-টু-N4 কম্বো",
+            durationShort: "/ ৬ মাস (৩০০ ঘণ্টা)",
+            level: "শূন্য থেকে JLPT N4 + ইরোদেরি অল-ইন-ওয়ান প্যাকেজ",
+            title: "JLPT N5 + N4 Together (কমপ্লিট জিরো-টু-N4 কম্বো প্যাকেজ)",
+            duration: "৬ মাস • ৩০০ ঘণ্টা পূর্ণাঙ্গ প্রশিক্ষণ",
+            examTarget: "JLPT N5 + N4, NAT 4Q ও JFT-Basic নিশ্চিত প্রস্তুতি",
+            targetAudience:
+              "যারা হিরাগানা থেকে শুরু করে একটানা N4 সার্টিফিকেট ও প্র্যাকটিক্যাল স্পোকেন জাপানিজ কমপ্লিট করে স্টুডেন্ট ভিসা বা SSW ভিসায় নিশ্চিতভাবে জাপান যেতে চান।",
             highlights: [
-              "ইরোদেরি জাপানিজ বাস্তবমুখী সিচুয়েশনাল স্পিকিং ও লিসেনিং ড্রিলস",
-              "৫০০+ উচ্চতর কাঞ্জি ও কর্পোরেট যোগাযোগের বিশেষ অনুশীলন",
-              "জাপানিজ কর্মসংস্কৃতি (Work Ethics) ও বিজনেস এটিকেট",
-              "JLPT N3/N2 পরীক্ষার সিমুলেশন ও ডিজিটাল প্রশ্নব্যাংক",
-              "কর্পোরেট ইন্টারভিউ গাইড ও জাপানি সিভি প্রফেশনাল অডিট",
+              "মিন্না নো নিহোঙ্গো ১ম ও ২য় খণ্ড (১–৫০ লেসন) + ইরোদেরি স্পোকেন জাপানিজের সমন্বিত মাস্টারি",
+              "৩৫০+ কম্বাইন্ড N5 ও N4 কাঞ্জি + প্রতিদিন জাপানি লিসেনিং ও স্পিকিং ল্যাব",
+              "জাপানি SSW এম্প্লয়ার ইন্টারভিউ এবং টোকিও/ওসাকার শীর্ষ স্কুলে অগ্রাধিকার প্লেসমেন্ট",
+              "১২টি পূর্ণাঙ্গ মক টেস্ট + সিনিয়র সেন্সি আমির হোসেনের সরাসরি ওয়ান-টু-ওয়ান মেন্টরশিপ",
+              "সম্পূর্ণ বুক সেট, ওয়ার্কবুক এবং ১৫,০০০ টাকার ৩টি ক্যারিয়ার বোনাস কোর্স ১০০% ফ্রি",
             ],
             schedules: [
-              "ইভনিং প্রফেশনাল ব্যাচ: ০৭:৩০ PM – ০৯:৩০ PM",
-              "উইকেন্ড এক্সিকিউটিভ ব্যাচ: শুক্র ও শনিবার",
+              "রেগুলার ট্র্যাক: সপ্তাহে ৩ দিন (অনলাইন লাইভ জুম / পল্টন হেড অফিস / খুলনা শাখা)",
+              "ফাস্ট-ট্র্যাক ইন্টেনসিভ: সপ্তাহে ৫ দিন (স্পেশাল ভিসা টার্গেট ব্যাচ)",
             ],
-            materials: "ইরোদেরি টেক্সটবুক, বিজনেস হ্যান্ডআউটস ও N3/N2 প্রশ্নব্যাংক।",
+            materials:
+              "কমপ্লিট N5 + N4 + Irodori ফুল বুক সেট, কাঞ্জি মাস্টার শিট, অডিও লাইব্রেরি ও আজীবন LMS এক্সেস।",
           },
         },
       },
       ja: {
-        kicker: "受講プラン・料金案内",
-        title: "スマートコース選択・受講料詳細",
+        kicker: "4大標準コースパッケージ • データベース連動料金",
+        title: "目的に合わせた日本語コース選択",
         subtitle:
-          "JLPT、NAT-TEST、JFT-Basic、特定技能就労、日本留学に直結する実践カリキュラム。",
-        tabN5: "N5 基礎",
-        tabN4: "N4 中級",
-        tabAdv: "上級・いろどり",
-        badgePopular: "標準推奨コース",
-        ctaEnroll: "このコースで受講申請する",
-        feeLabel: "受講料合計",
-        installments: "2回分割払い可能（50% + 50%）",
-        syllabusHeading: "カリキュラム概要・特徴",
-        scheduleHeading: "受講時間帯（選択可）",
-        materialsHeading: "完全無料教材",
+          "留学ビザ・特定技能（SSW）双方に最優先の『JFT（いろどり）』および『JLPT N5 / N4』150時間認定講座。2回分割払い（50%+50%）可能、一括払いならさらに20%特別割引！",
+        priorityTag: "最優先推奨 • 留学＆特定技能",
+        scholarshipBadge: "KNLTC留学ビザ（COE申請中）候補生は100%無料",
+        comboBadge: "お得なセット割",
+        regularFeeLabel: "通常受講料（2回分割払い可）",
+        fullPayLabel: `一括払い特別料金 (${discountPct}%割引)`,
+        installmentBadge: `初回50%分割払い可能 • 一括払いならさらに${discountPct}%割引`,
+        syllabusHeading: "カリキュラム概要・学習内容",
+        scheduleHeading: "クラス時間割（オンライン・ダッカ本部・クルナ支部）",
+        materialsHeading: "完全無料配布教材",
+        benefit1: "『みんなの日本語』＆『いろどり』全テキスト・資料無料",
+        benefit2: "15,000タカ相当の面接・履歴書・バイト3大特典講座無料",
+        benefit3: "公式LMSアカウント（npw.bd/knltc）＆講義録画視聴",
+        ctaEnrollFull: `一括払い（${discountPct}%割引）で申し込む`,
+        ctaEnrollInstallment: "50%分割払いで申し込む",
+        autoSelectNote: "ページ下部の申込・決済フォームに自動反映されます",
+        tryIrodoriBtn: "無料いろどりデモ",
+        camp1Badge: "留学ビザ特別奨学金",
+        camp1Title: "COE申請期間中の留学ビザ候補生はJLPT N4講座が100%無料！",
+        camp1Desc:
+          "KNLTCで留学ビザ申請を行う候補生は、在留資格認定証明書（COE）審査期間中に3ヶ月間のJLPT N4コースを完全無料で受講できます。",
+        camp2Badge: "初期費用ゼロ 特定技能キャンペーン",
+        camp2Title: "JLPT N4またはJFT合格者はダッカでの宿泊・食事・建設実技訓練が無料！",
+        camp2Desc:
+          "JLPT N4またはJFT-Basic合格者は、特定技能（建設）ゼロ前払いプログラムにより、ダッカでの実技訓練および宿泊・食事が100%無料になります。",
+        camp2Cta: "特定技能の詳細を見る",
         courses: {
-          N5_COURSE: {
-            id: "N5_COURSE",
-            level: "JLPT N5・JFT-Basic（基礎レベル）",
-            title: "日本語N5集中総合講座",
-            duration: "3ヶ月 • 120時間",
-            fee: "৳12,000",
-            examTarget: "JLPT N5, NAT-TEST 5Q, JFT-Basic",
-            targetAudience: "日本語学習が初めての方向け。ひらがな・カタカナからスタートします。",
+          JFT_IRODORI: {
+            id: "JFT_IRODORI" as StandardCourseId,
+            shortTab: "JFT (いろどり)",
+            badge: "最優先 • 留学＆特定技能",
+            durationShort: "/ 3ヶ月 (150時間)",
+            level: "JFT-Basic＆実践生活・職場コミュニケーション",
+            title: "JFT (Irodori) — 会話・聴解・試験突破コース",
+            duration: "3ヶ月 • 150時間（入管基準対応）",
+            examTarget: "JFT-Basic (A2), 大使館・学校面接, 特定技能",
+            targetAudience:
+              "特定技能（SSW）希望者だけでなく、日本到着後すぐにアルバイト（Baitō）や学校生活で自然な会話力が必要な【留学ビザ候補生】にも最優先で推奨される実践コースです。",
             highlights: [
-              "ひらがな・カタカナの正確な筆順と発音指導",
-              "基本漢字103字の記憶法と確認小テスト",
-              "『みんなの日本語』第1課〜第25課の完全習得",
-              "本番レベルの模擬試験5回と個別添削",
-              "15,000タカ相当の面接・履歴書3大特典講座が完全無料",
+              "国際交流基金公式『いろどり 生活の日本語』A1〜A2完全マスター",
+              "日本の学校生活、コンビニ・飲食店アルバイト、職場で即戦力となる会話・聴解特訓",
+              "JFT-Basic（CBT方式）およびJLPT聴解の本番形式シミュレーション",
+              "日本大使館面接・日本語学校Zoom面接での自然な受け答えロールプレイ",
+              "15,000タカ相当の面接・履歴書・アルバイト3大特典講座が完全無料",
             ],
             schedules: [
-              "午前クラス: 10:00〜12:00（日・火・木）",
-              "夜間クラス: 19:00〜21:00（日・火・木）",
-              "週末集中クラス: 金曜・土曜",
+              "午前クラス: 10:00〜12:00（Zoom / ダッカ本部 / クルナ支部）",
+              "夜間クラス: 19:00〜21:00（Zoom / ダッカ本部 / クルナ支部）",
+              "週末集中クラス: 金曜・土曜（実践会話ラボ）",
             ],
-            materials: "『みんなの日本語』教科書、漢字ドリル、音声データ、LMSアカウント",
+            materials:
+              "国際交流基金『いろどり』教材、対話型音声デモ（npw.bd/irodori）、漢字シート、24時間LMSアクセス",
+          },
+          N5_COURSE: {
+            id: "N5_COURSE" as StandardCourseId,
+            shortTab: "JLPT N5",
+            badge: "基礎 • 150時間証明",
+            durationShort: "/ 3ヶ月 (150時間)",
+            level: "JLPT N5・NAT-TEST 5Q（初級基礎）",
+            title: "JLPT N5 初級総合マスター講座",
+            duration: "3ヶ月 • 150時間（入管提出用学習証明書発行）",
+            examTarget: "JLPT N5, NAT-TEST 5Q, JCL / Top-J",
+            targetAudience:
+              "留学ビザ申請者、技能実習生、日本語学習が全く初めての方向けの150時間認定基礎コース。",
+            highlights: [
+              "ひらがな・カタカナの正しい筆順とネイティブ発音指導",
+              "基本漢字103字の記憶シートと毎週の確認テスト",
+              "『みんなの日本語』第1課〜第25課の語彙・文法・会話を完全習得",
+              "日本の出入国在留管理庁が求める「150時間日本語学習証明書」を公式発行",
+              "15,000タカ相当の面接・履歴書・アルバイト3大特典講座が完全無料",
+            ],
+            schedules: [
+              "午前クラス: 10:00〜12:00（日・火・木 — ダッカ / クルナ / Zoom）",
+              "夜間クラス: 19:00〜21:00（日・火・木 — ダッカ / クルナ / Zoom）",
+              "週末特別クラス: 金曜・土曜",
+            ],
+            materials:
+              "『みんなの日本語』第1巻、漢字ワークブック、文法シート、音声データ、公式LMSアカウント",
           },
           N4_COURSE: {
-            id: "N4_COURSE",
-            level: "JLPT N4・特定技能就労（中級レベル）",
-            title: "日本語N4中級総合講座",
-            duration: "3ヶ月 • 130時間",
-            fee: "৳14,500",
-            examTarget: "JLPT N4, NAT-TEST 4Q, 特定技能試験",
-            targetAudience: "N5修了者、特定技能（介護・外食等）就労希望者、大学進学希望者。",
+            id: "N4_COURSE" as StandardCourseId,
+            shortTab: "JLPT N4",
+            badge: "COE待機留学生は100%無料",
+            durationShort: "/ 3ヶ月 (150時間)",
+            level: "JLPT N4・特定技能 / 大学進学トラック",
+            title: "JLPT N4 中級＆特定技能・進学総合講座",
+            duration: "3ヶ月 • 150時間",
+            examTarget: "JLPT N4, NAT-TEST 4Q, JFT-Basic, 特定技能試験",
+            targetAudience:
+              "特定技能（SSW）就労希望者、大学・専門学校進学希望者、およびKNLTC留学ビザCOE待機生（受講料100%無料！）。",
             highlights: [
-              "『みんなの日本語』第26課〜第50課およびビジネス敬語",
-              "中級漢字250字および実務単語の習得",
-              "特定技能（介護・外食等）の採用面接特訓",
-              "JFT-Basic / JLPT N4 本番レベル模試6回",
-              "志望理由書および出願書類の個別添削",
+              "『みんなの日本語』第26課〜第50課および丁寧語・敬語表現の習得",
+              "中級漢字250字以上と日本の職場・学校で使われる実務語彙",
+              "特定技能（建設・介護・外食・農業）採用面接および技能試験対策",
+              "JLPT N4・NAT 4Q・JFT-Basicの本番形式模擬試験6回",
+              "KNLTC留学ビザ候補生はCOE審査期間中100%無料で受講可能",
             ],
             schedules: [
-              "午前クラス: 10:00〜12:00（月・水・土）",
-              "夜間クラス: 19:00〜21:00（月・水・土）",
+              "午前クラス: 10:00〜12:00（月・水・土 — ダッカ / クルナ / Zoom）",
+              "夜間クラス: 19:00〜21:00（月・水・土 — ダッカ / クルナ / Zoom）",
               "週末集中クラス: 金曜・土曜",
             ],
-            materials: "『みんなの日本語』第2巻、文法資料、リスニング音声、LMSアクセス",
+            materials:
+              "『みんなの日本語』第2巻、中級漢字ブック、特定技能問題集、24時間LMSアクセス",
           },
-          ADVANCED_LEVELS: {
-            id: "ADVANCED_LEVELS",
-            level: "JLPT N3〜N1・実践いろどり",
-            title: "上級・ビジネス実践日本語講座",
-            duration: "4ヶ月 • 160時間",
-            fee: "৳18,000",
-            examTarget: "JLPT N3/N2, 企業就職, 大学院進学",
-            targetAudience: "日系企業就労、通訳、大学院進学を目指す上級者向け。",
+          N5_N4_COMBO: {
+            id: "N5_N4_COMBO" as StandardCourseId,
+            shortTab: "JLPT N5 + N4 セット",
+            badge: "ゼロからN4一貫セット",
+            durationShort: "/ 6ヶ月 (300時間)",
+            level: "ゼロからJLPT N4＋実践いろどり一貫マスター",
+            title: "JLPT N5 + N4 一貫総合パッケージ（6ヶ月・300時間）",
+            duration: "6ヶ月 • 300時間 徹底指導",
+            examTarget: "JLPT N5 + N4, NAT 4Q, JFT-Basic 完全合格保証",
+            targetAudience:
+              "ひらがなからスタートし、N4合格と実践会話力まで一気に習得したい留学・特定技能候補生向けの特別割引パッケージ。",
             highlights: [
-              "『いろどり』生活・職場シチュエーション会話特訓",
-              "上級漢字500字およびビジネス文書作成演習",
-              "日本の企業文化・名刺交換・ビジネスマナー指導",
-              "JLPT N3/N2問題演習および模擬試験",
-              "就職面接ポートフォリオ作成サポート",
+              "『みんなの日本語』第1〜50課＋『いろどり』実践会話の統合カリキュラム",
+              "N5・N4漢字350字以上＋毎日のリスニング＆スピーキング特訓",
+              "日本の受入企業面接および東京・大阪優良校への優先推薦枠",
+              "模擬試験12回＋アミール・ホセン主任講師による個別メンタリング",
+              "全テキスト・問題集および15,000タカ相当の3大特典講座が100%無料",
             ],
             schedules: [
-              "夜間ビジネス便: 19:30〜21:30",
-              "週末エグゼクティブ便: 金曜・土曜",
+              "通常コース: 週3日（オンラインZoom / ダッカ本部 / クルナ支部）",
+              "短期集中コース: 週5日（ビザ優先選抜クラス）",
             ],
-            materials: "『いろどり』テキスト、ビジネス日本語ハンドブック、試験問題集",
+            materials:
+              "N5＋N4＋いろどり全教材セット、漢字マスターシート、音声ライブラリ、無期限LMSアクセス",
           },
         },
       },
@@ -279,16 +514,29 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
     language,
   );
 
-  const activeCourse = t.courses[selectedId as keyof typeof t.courses] || t.courses.N5_COURSE;
+  const courseOrder: StandardCourseId[] = [
+    "JFT_IRODORI",
+    "N5_COURSE",
+    "N4_COURSE",
+    "N5_N4_COMBO",
+  ];
 
-  const handleApply = (courseId: string) => {
+  const activeCourse = t.courses[selectedId] || t.courses.JFT_IRODORI;
+  const activePricing = getCoursePriceData(activeCourse.id);
+
+  const handleApply = (
+    courseId: StandardCourseId,
+    paymentPlan: "FULL_PAYMENT" | "INSTALLMENT_50" = "FULL_PAYMENT",
+  ) => {
+    setSelectedId(courseId);
     if (onSelectCourse) {
       onSelectCourse(courseId);
     }
-    // Sync with form
     if (typeof window !== "undefined") {
       window.dispatchEvent(
-        new CustomEvent("knltc-select-course", { detail: { courseId } }),
+        new CustomEvent("knltc-select-course", {
+          detail: { courseId, paymentPlan },
+        }),
       );
     }
     const form = document.getElementById("enrollment-form");
@@ -297,21 +545,18 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
     }
   };
 
-  const tabs = [
-    { id: "N5_COURSE", label: t.tabN5, popular: true },
-    { id: "N4_COURSE", label: t.tabN4, popular: false },
-    { id: "ADVANCED_LEVELS", label: t.tabAdv, popular: false },
-  ];
-
   return (
-    <section id="course-options" className="py-16 md:py-22 bg-white border-b border-stone-200 scroll-mt-14">
+    <section
+      id="course-options"
+      className="py-16 md:py-22 bg-white border-b border-stone-200 scroll-mt-14"
+    >
       <div className="container-narrow">
         {/* Section Header */}
-        <div className="max-w-2xl mx-auto text-center mb-10 sm:mb-12">
+        <div className="max-w-3xl mx-auto text-center mb-10">
           <p className="text-xs font-bold tracking-widest text-[#b91c1c] uppercase">
             {t.kicker}
           </p>
-          <h2 className="mt-2 text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
+          <h2 className="mt-2 text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight leading-relaxed">
             {t.title}
           </h2>
           <p className="mt-2.5 text-xs sm:text-sm text-slate-600 leading-relaxed">
@@ -319,44 +564,95 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
           </p>
         </div>
 
-        {/* Smart Segmented Level Switcher */}
-        <div className="flex justify-center mb-10">
-          <div className="inline-flex p-1.5 rounded-2xl bg-[#fcfaf7] border border-stone-200/90 shadow-2xs max-w-xl w-full">
-            {tabs.map((tab) => {
-              const active = selectedId === tab.id;
-              return (
+        {/* 4 Standardized Course Overview Cards (Quick Comparison + 1-Click Switch) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+          {courseOrder.map((cId) => {
+            const c = t.courses[cId];
+            const p = getCoursePriceData(cId);
+            const isSelected = selectedId === cId;
+            const isIrodori = cId === "JFT_IRODORI";
+
+            return (
+              <div
+                key={cId}
+                onClick={() => setSelectedId(cId)}
+                className={`rounded-2xl border p-5 transition-all cursor-pointer flex flex-col justify-between ${
+                  isSelected
+                    ? isIrodori
+                      ? "border-2 border-[#1E5631] bg-emerald-50/30 shadow-md"
+                      : "border-2 border-[#b91c1c] bg-red-50/20 shadow-md"
+                    : "border-stone-200 bg-[#fcfaf7] hover:border-stone-300 hover:bg-white shadow-2xs"
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-2.5">
+                    <span
+                      className={`text-[11px] font-bold px-2.5 py-0.5 rounded-md ${
+                        isIrodori
+                          ? "bg-[#1E5631] text-white"
+                          : cId === "N4_COURSE"
+                            ? "bg-emerald-100 text-[#1E5631]"
+                            : "bg-red-50 text-[#b91c1c] border border-red-200/70"
+                      }`}
+                    >
+                      {c.badge}
+                    </span>
+                    {isIrodori && (
+                      <Star className="h-4 w-4 text-amber-500 fill-amber-500 shrink-0" />
+                    )}
+                  </div>
+
+                  <h3 className="text-base sm:text-lg font-extrabold text-slate-900 leading-relaxed">
+                    {c.shortTab}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                    {c.duration}
+                  </p>
+
+                  {/* Pricing Box inside summary card */}
+                  <div className="mt-4 pt-3 border-t border-stone-200/80 space-y-1">
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-[11px] text-slate-500">
+                        {t.regularFeeLabel}:
+                      </span>
+                      <span className="text-xs font-bold text-slate-500 line-through tabular-nums">
+                        {formatBdt(p.baseFee)}
+                      </span>
+                    </div>
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-[11px] font-bold text-[#1E5631]">
+                        {t.fullPayLabel}:
+                      </span>
+                      <span className="text-lg font-black text-slate-950 tabular-nums">
+                        {formatBdt(p.fullPayFee)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
                 <button
-                  key={tab.id}
-                  onClick={() => setSelectedId(tab.id)}
                   type="button"
-                  className={`relative flex-1 py-3 px-3 sm:px-4 text-xs sm:text-sm font-bold rounded-xl transition-all ${
-                    active
-                      ? "text-slate-900 shadow-xs"
-                      : "text-slate-600 hover:text-slate-900"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleApply(cId, "FULL_PAYMENT");
+                  }}
+                  className={`mt-4 w-full rounded-xl py-2.5 px-3 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
+                    isSelected
+                      ? isIrodori
+                        ? "bg-[#1E5631] text-white hover:bg-emerald-900"
+                        : "bg-[#b91c1c] text-white hover:bg-red-800"
+                      : "bg-white border border-stone-300 text-slate-800 hover:bg-stone-100"
                   }`}
                 >
-                  {active && (
-                    <motion.div
-                      layoutId="courseTabActive"
-                      className="absolute inset-0 rounded-xl bg-white border border-stone-200/90 -z-0"
-                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                    />
-                  )}
-                  <span className="relative z-10 flex items-center justify-center gap-1.5">
-                    <span>{tab.label}</span>
-                    {tab.popular && (
-                      <span className="hidden sm:inline text-[10px] font-bold text-[#b91c1c] bg-red-50 border border-red-200/60 px-1.5 py-0.2 rounded">
-                        Hot
-                      </span>
-                    )}
-                  </span>
+                  <span>{c.shortTab}</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </button>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
         </div>
 
-        {/* Smart Course Explorer Panel */}
+        {/* Detailed Course Explorer Panel for Selected Package */}
         <AnimatePresence mode="wait">
           <motion.div
             key={activeCourse.id}
@@ -367,36 +663,56 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
             className="rounded-3xl border border-stone-200/90 bg-[#fcfaf7] p-6 sm:p-9 shadow-xs"
           >
             <div className="grid gap-8 lg:grid-cols-12 lg:items-start">
-              {/* Left Column (8 cols): Syllabus, Highlights & Schedule */}
-              <div className="lg:col-span-8 space-y-6">
+              {/* Left Column (7 cols): Syllabus, Highlights & Schedule */}
+              <div className="lg:col-span-7 space-y-6">
                 <div>
-                  <div className="flex flex-wrap items-center gap-2 mb-2">
-                    <span className="text-xs font-bold text-[#b91c1c] bg-red-50 border border-red-200/80 px-2.5 py-0.5 rounded-md">
+                  <div className="flex flex-wrap items-center gap-2 mb-2.5">
+                    <span
+                      className={`text-xs font-bold px-2.5 py-1 rounded-md ${
+                        activeCourse.id === "JFT_IRODORI"
+                          ? "bg-[#1E5631] text-white"
+                          : "text-[#b91c1c] bg-red-50 border border-red-200/80"
+                      }`}
+                    >
                       {activeCourse.level}
                     </span>
-                    <span className="flex items-center gap-1 text-xs text-slate-500 font-medium bg-white border border-stone-200 px-2.5 py-0.5 rounded-md">
+                    <span className="flex items-center gap-1 text-xs text-slate-600 font-medium bg-white border border-stone-200 px-2.5 py-1 rounded-md">
                       <Clock className="h-3.5 w-3.5 text-slate-400" />
                       <span>{activeCourse.duration}</span>
                     </span>
-                    <span className="text-xs font-medium text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-md">
+                    <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md">
                       {activeCourse.examTarget}
                     </span>
                   </div>
 
-                  <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-snug">
+                  <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-relaxed">
                     {activeCourse.title}
                   </h3>
-                  <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
+                  <p className="mt-2 text-xs sm:text-sm text-slate-700 leading-relaxed font-normal">
                     {activeCourse.targetAudience}
                   </p>
                 </div>
 
                 {/* Syllabus Highlights */}
                 <div className="rounded-2xl border border-stone-200 bg-white p-5 sm:p-6 shadow-2xs">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-3 flex items-center gap-2">
-                    <BookOpen className="h-4 w-4 text-[#b91c1c]" />
-                    <span>{t.syllabusHeading}</span>
-                  </h4>
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 flex items-center gap-2">
+                      <BookOpen className="h-4 w-4 text-[#b91c1c]" />
+                      <span>{t.syllabusHeading}</span>
+                    </h4>
+                    {activeCourse.id === "JFT_IRODORI" && (
+                      <a
+                        href={cmsPricing.externalIrodoriUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs font-bold text-[#1E5631] hover:underline"
+                      >
+                        <Sparkles className="h-3.5 w-3.5" />
+                        <span>{t.tryIrodoriBtn}</span>
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                  </div>
                   <ul className="space-y-2.5 text-xs sm:text-sm text-slate-700">
                     {activeCourse.highlights.map((h, i) => (
                       <li key={i} className="flex items-start gap-2.5">
@@ -416,8 +732,8 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
                     </h5>
                     <ul className="space-y-1.5 text-xs text-slate-600">
                       {activeCourse.schedules.map((sc, i) => (
-                        <li key={i} className="flex items-center gap-1.5">
-                          <span className="h-1 w-1 rounded-full bg-slate-400" />
+                        <li key={i} className="flex items-start gap-1.5 leading-relaxed">
+                          <span className="text-slate-400 font-bold">•</span>
                           <span>{sc}</span>
                         </li>
                       ))}
@@ -436,50 +752,96 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
                 </div>
               </div>
 
-              {/* Right Column (4 cols): Pricing Box & Direct 1-Click Action */}
-              <div className="lg:col-span-4">
+              {/* Right Column (5 cols): Pricing Breakdown (Full Pay 20% Off vs 50% Installment) */}
+              <div className="lg:col-span-5">
                 <div className="rounded-2xl border-2 border-slate-900 bg-white p-6 sm:p-7 shadow-md">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#b91c1c]">
-                    {t.feeLabel}
-                  </span>
-
-                  <div className="mt-2 flex items-baseline gap-2">
-                    <span className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-                      {activeCourse.fee}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#b91c1c]">
+                      {activeCourse.shortTab}
                     </span>
-                    <span className="text-xs text-slate-500 font-medium">/ ৩ মাস</span>
+                    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[11px] font-bold text-[#1E5631]">
+                      <Percent className="h-3 w-3" />
+                      <span>{t.fullPayLabel}</span>
+                    </span>
                   </div>
 
-                  <div className="mt-3 rounded-xl bg-emerald-50/80 border border-emerald-200/80 p-3 text-xs font-semibold text-[#15803d] flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 shrink-0" />
-                    <span>{t.installments}</span>
+                  {/* Full Payment 20% OFF Box */}
+                  <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <div>
+                        <span className="text-xs font-bold text-[#1E5631] block">
+                          {t.fullPayLabel}
+                        </span>
+                        <span className="text-3xl sm:text-4xl font-black text-slate-950 tracking-tight tabular-nums">
+                          {formatBdt(activePricing.fullPayFee)}
+                        </span>
+                        <span className="text-xs text-slate-500 font-medium ml-1">
+                          {activeCourse.durationShort}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs text-slate-400 line-through block tabular-nums">
+                          {formatBdt(activePricing.baseFee)}
+                        </span>
+                        <span className="text-[11px] font-bold text-[#b91c1c] tabular-nums">
+                          -{formatBdt(activePricing.fullPayDiscountAmount)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="mt-5 space-y-2.5 text-xs text-slate-600 pb-5 border-b border-stone-100">
-                    <div className="flex items-center gap-2">
-                      <Check className="h-3.5 w-3.5 text-[#15803d] stroke-[2.5]" />
-                      <span>সব পাঠ্যবই ও লেকচার শিট ফ্রি</span>
+                  {/* 50% Installment Option Box */}
+                  <div className="mt-3 rounded-xl border border-stone-200 bg-[#fcfaf7] p-3.5 flex items-center justify-between text-xs">
+                    <div>
+                      <span className="font-bold text-slate-800 block">
+                        {t.regularFeeLabel}: {formatBdt(activePricing.baseFee)}
+                      </span>
+                      <span className="text-[11px] text-slate-500">
+                        50% 1st Installment: {formatBdt(activePricing.installmentFee)} + 50% Later
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="h-3.5 w-3.5 text-[#15803d] stroke-[2.5]" />
-                      <span>১৫,০০০ টাকার ৩টি কোর্স ফ্রি</span>
+                    <CheckCircle2 className="h-4 w-4 text-[#15803d] shrink-0" />
+                  </div>
+
+                  {/* 3 Localized Included Benefits */}
+                  <div className="mt-5 space-y-2.5 text-xs text-slate-700 pb-5 border-b border-stone-100">
+                    <div className="flex items-start gap-2">
+                      <Check className="h-3.5 w-3.5 text-[#15803d] stroke-[2.5] shrink-0 mt-0.5" />
+                      <span className="leading-relaxed">{t.benefit1}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Check className="h-3.5 w-3.5 text-[#15803d] stroke-[2.5]" />
-                      <span>অফিশিয়াল LMS আইডি ও ক্লাস রেকর্ডিং</span>
+                    <div className="flex items-start gap-2">
+                      <Check className="h-3.5 w-3.5 text-[#15803d] stroke-[2.5] shrink-0 mt-0.5" />
+                      <span className="leading-relaxed">{t.benefit2}</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Check className="h-3.5 w-3.5 text-[#15803d] stroke-[2.5] shrink-0 mt-0.5" />
+                      <span className="leading-relaxed">{t.benefit3}</span>
                     </div>
                   </div>
 
-                  <div className="mt-6">
+                  {/* Dual Action Buttons: Full Payment (20% Off) vs 50% Installment */}
+                  <div className="mt-5 space-y-2.5">
                     <Button
-                      onClick={() => handleApply(activeCourse.id)}
-                      className="w-full py-6 rounded-xl bg-[#b91c1c] hover:bg-red-800 text-white font-bold text-sm shadow-xs active:scale-[0.98] transition-transform"
+                      onClick={() => handleApply(activeCourse.id, "FULL_PAYMENT")}
+                      className="w-full py-6 rounded-xl bg-[#b91c1c] hover:bg-red-800 text-white font-bold text-xs sm:text-sm shadow-xs active:scale-[0.98] transition-transform cursor-pointer"
                     >
-                      <span>{t.ctaEnroll}</span>
+                      <span>{t.ctaEnrollFull}</span>
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
-                    <p className="text-center text-[11px] text-slate-400 mt-2">
-                      নিচের ফর্মে স্বয়ংক্রিয়ভাবে সিলেক্ট হবে
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => handleApply(activeCourse.id, "INSTALLMENT_50")}
+                      className="w-full py-5 rounded-xl border-stone-300 hover:bg-stone-50 text-slate-800 font-bold text-xs sm:text-sm active:scale-[0.98] transition-transform cursor-pointer"
+                    >
+                      <span>
+                        {t.ctaEnrollInstallment} ({formatBdt(activePricing.installmentFee)})
+                      </span>
+                    </Button>
+
+                    <p className="text-center text-[11px] text-slate-500 pt-1">
+                      {t.autoSelectNote}
                     </p>
                   </div>
                 </div>
@@ -487,6 +849,66 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
             </div>
           </motion.div>
         </AnimatePresence>
+
+        {/* Special Scholarships & Zero-Advance SSW Campaign Banners */}
+        <div className="mt-10 grid gap-5 lg:grid-cols-2">
+          {/* 1. Student Visa N4 100% Free Scholarship */}
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-6 flex flex-col justify-between shadow-2xs">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#1E5631]">
+                <Award className="h-4 w-4" />
+                <span>{t.camp1Badge}</span>
+              </div>
+              <h3 className="text-base sm:text-lg font-extrabold text-slate-900 leading-relaxed">
+                {t.camp1Title}
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                {t.camp1Desc}
+              </p>
+            </div>
+            <div className="mt-4 pt-3 border-t border-emerald-200/70 flex items-center justify-between">
+              <span className="text-xs font-bold text-[#1E5631]">
+                Value: {formatBdt(cmsPricing.n4PriceBdt)} — 100% Waived
+              </span>
+              <button
+                type="button"
+                onClick={() => handleApply("N5_COURSE", "FULL_PAYMENT")}
+                className="inline-flex items-center gap-1 text-xs font-bold text-[#1E5631] hover:underline cursor-pointer"
+              >
+                <span>Enroll Now</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* 2. JLPT N4 / JFT Passed Zero-Advance SSW Campaign */}
+          <div className="rounded-2xl border border-red-200 bg-red-50/50 p-6 flex flex-col justify-between shadow-2xs">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#C8102E]">
+                <Building2 className="h-4 w-4" />
+                <span>{t.camp2Badge}</span>
+              </div>
+              <h3 className="text-base sm:text-lg font-extrabold text-slate-900 leading-relaxed">
+                {t.camp2Title}
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                {t.camp2Desc}
+              </p>
+            </div>
+            <div className="mt-4 pt-3 border-t border-red-200/70 flex items-center justify-between">
+              <span className="text-xs font-bold text-[#C8102E]">
+                Zero Advance Service Charge
+              </span>
+              <Link
+                href="/work-in-japan"
+                className="inline-flex items-center gap-1 text-xs font-bold text-[#C8102E] hover:underline"
+              >
+                <span>{t.camp2Cta}</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );

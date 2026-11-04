@@ -1,6 +1,6 @@
 {
-  "summary":  "Comprehensive plan to fix Vercel Serverless + Google Sheets + Google Drive media and data synchronization, supporting both DEFAULT_API_KEY and GOOGLE_SHEETS_API_KEY, DRIVE_ROOT_FOLDER_NAME, chunked Sheet media backup for serverless cold starts, and updated Code.gs with live diagnostics.",
-  "updatedAt":  "2026-11-01T10:11:52.222947095Z",
-  "requestFeedback":  true,
-  "userFacing":  true
+  "summary": "সম্পূর্ণ বাংলা ভাষায় প্রস্তুতকৃত `/japanese-language` পেজের চূড়ান্ত ইমপ্লিমেন্টেশন প্ল্যান: ৪টি স্ট্যান্ডার্ড কোর্স প্যাকেজ (ডাটাবেস/CMS ফি + ফুল পেমেন্টে ২০% ডিসকাউন্ট ও ইনস্টলমেন্ট সুবিধা), ড্যাশবোর্ড থেকে টেম্পোরারি প্রোমো কোড সিস্টেম, বিকাশ মার্চেন্ট ও বাংলা কিউআর (Bangla QR + TrxID) পেমেন্ট গেটওয়ে, ডিজিটাল মানি রিসিট ও থ্যাংক ইউ ভিউ, মিন্না নো নিহোঙ্গো ৪-ট্যাব লার্নিং হাব এবং সিনিয়র সেন্সি আমির হোসেন স্পটলাইট।",
+  "updatedAt": "2026-11-04T16:31:22.464251931Z",
+  "requestFeedback": true,
+  "userFacing": true
 }

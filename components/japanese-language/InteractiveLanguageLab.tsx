@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Volume2,
@@ -11,12 +12,17 @@ import {
   Bookmark,
   Play,
   RotateCcw,
+  BookOpen,
+  ShoppingBag,
+  ExternalLink,
+  CheckCircle2,
+  MessageSquare,
 } from "lucide-react";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 
-type ScriptType = "hiragana" | "katakana" | "phrases";
+type ScriptType = "hiragana" | "katakana" | "kotoba" | "grammar" | "phrases";
 type SubFilterType = "basic" | "voiced" | "yoon";
 
 interface Phrase {
@@ -912,6 +918,244 @@ const KATAKANA_YOON_ROWS: YoonRow[] = [
   },
 ];
 
+const MINNA_KOTOBA_L1 = [
+  {
+    jp: "わたし (私)",
+    speech: "わたし",
+    bnPron: "ওয়াতাশি (Watashi)",
+    enMeaning: "I / Me",
+    bnMeaning: "আমি",
+  },
+  {
+    jp: "あなた",
+    speech: "あなた",
+    bnPron: "আনাতা (Anata)",
+    enMeaning: "You",
+    bnMeaning: "আপনি / তুমি",
+  },
+  {
+    jp: "あのひと (あの人)",
+    speech: "あのひと",
+    bnPron: "আনো হিতো (Ano hito)",
+    enMeaning: "That person / He / She",
+    bnMeaning: "ঐ ব্যক্তি / উনি",
+  },
+  {
+    jp: "せんせい (先生)",
+    speech: "せんせい",
+    bnPron: "সেন্সেই (Sensei)",
+    enMeaning: "Teacher / Instructor",
+    bnMeaning: "শিক্ষক / প্রশিক্ষক",
+  },
+  {
+    jp: "がくせい (学生)",
+    speech: "がくせい",
+    bnPron: "গাকুসেই (Gakusei)",
+    enMeaning: "Student",
+    bnMeaning: "ছাত্র / শিক্ষার্থী",
+  },
+  {
+    jp: "かいしゃいん (会社員)",
+    speech: "かいしゃいん",
+    bnPron: "কাইশাইন (Kaishain)",
+    enMeaning: "Company Employee",
+    bnMeaning: "কোম্পানির কর্মী / চাকরিজীবী",
+  },
+  {
+    jp: "ぎんこういん (銀行員)",
+    speech: "ぎんこういん",
+    bnPron: "গিংকোইন (Ginkōin)",
+    enMeaning: "Bank Employee",
+    bnMeaning: "ব্যাংক কর্মকর্তা",
+  },
+  {
+    jp: "いしゃ (医者)",
+    speech: "いしゃ",
+    bnPron: "ইশা (Isha)",
+    enMeaning: "Medical Doctor",
+    bnMeaning: "ডাক্তার / চিকিৎসক",
+  },
+  {
+    jp: "けんきゅうしゃ (研究者)",
+    speech: "けんきゅうしゃ",
+    bnPron: "কেনকিউশা (Kenkyūsha)",
+    enMeaning: "Researcher / Scholar",
+    bnMeaning: "গবেষক",
+  },
+  {
+    jp: "だいがく (大学)",
+    speech: "だいがく",
+    bnPron: "দাইগাকু (Daigaku)",
+    enMeaning: "University",
+    bnMeaning: "বিশ্ববিদ্যালয়",
+  },
+  {
+    jp: "びょういん (病院)",
+    speech: "びょういん",
+    bnPron: "বিয়োইন (Byōin)",
+    enMeaning: "Hospital",
+    bnMeaning: "হাসপাতাল",
+  },
+  {
+    jp: "～さん",
+    speech: "さん",
+    bnPron: "~সান (~San)",
+    enMeaning: "Mr. / Ms. (Polite Suffix)",
+    bnMeaning: "জনাব / জনাবা (সম্মানসূচক পদবি)",
+  },
+];
+
+const N5_GRAMMAR_PARTICLES = [
+  {
+    particle: "は",
+    romaji: "wa (ওয়া)",
+    role: {
+      en: "Topic Marker Particle",
+      bn: "বাক্যের মূল উদ্দেশ্য বা টপিক নির্দেশক",
+      ja: "主題を示す助詞",
+    },
+    rule: {
+      en: "Written as 'ha' (は) in Hiragana, but always pronounced 'wa' when used as a particle.",
+      bn: "লেখার সময় হিরাগানার 'হা' (は) লেখা হয়, কিন্তু পার্টিকেল হিসেবে উচ্চারণ সবসময় 'ওয়া' (wa) হবে।",
+      ja: "文字は「は」と書きますが、助詞としては「わ (wa)」と発音します。",
+    },
+    exampleJp: "わたし は がくせい です。",
+    exampleRo: "Watashi wa gakusei desu.",
+    exampleMeaning: {
+      en: "I am a student.",
+      bn: "আমি একজন শিক্ষার্থী।",
+      ja: "私は学生です。",
+    },
+  },
+  {
+    particle: "が",
+    romaji: "ga (গা)",
+    role: {
+      en: "Subject / Existence / Ability Marker",
+      bn: "কর্তা, অস্তিত্ব বা দক্ষতা নির্দেশক",
+      ja: "主語・対象・能力を示す助詞",
+    },
+    rule: {
+      en: "Marks the specific subject, likes/dislikes (suki/kirai), or language ability (wakaru/dekiru).",
+      bn: "পছন্দ-অপছন্দ (すき), বোঝা বা পারা (わかります) এবং নির্দিষ্ট কর্তা বোঝাতে 'গা' (が) ব্যবহৃত হয়।",
+      ja: "好き・嫌い、分かる・できるの対象や、疑問詞が主語になるときに使います。",
+    },
+    exampleJp: "にほんご が わかります。",
+    exampleRo: "Nihongo ga wakarimasu.",
+    exampleMeaning: {
+      en: "I understand Japanese.",
+      bn: "আমি জাপানি ভাষা বুঝি।",
+      ja: "日本語がわかります。",
+    },
+  },
+  {
+    particle: "を",
+    romaji: "o (ও)",
+    role: {
+      en: "Direct Object Marker",
+      bn: "কর্ম (Direct Object) নির্দেশক পার্টিকেল",
+      ja: "動作の対象（目的語）を示す助詞",
+    },
+    rule: {
+      en: "Placed immediately after the noun that receives the action of a transitive verb.",
+      bn: "ক্রিয়ার কাজটি যে বস্তুর ওপর সরাসরি প্রযুক্ত হয় (যেমন: ভাত খাওয়া, বই পড়া), তার পরে 'ও' (を) বসে।",
+      ja: "他動詞の前に置き、動作の対象となる名詞を示します。",
+    },
+    exampleJp: "にほんご を べんきょうします。",
+    exampleRo: "Nihongo o benkyō shimasu.",
+    exampleMeaning: {
+      en: "I study Japanese.",
+      bn: "আমি জাপানি ভাষা অধ্যয়ন করি।",
+      ja: "日本語を勉強します。",
+    },
+  },
+  {
+    particle: "に",
+    romaji: "ni (নি)",
+    role: {
+      en: "Time / Destination / Location of Existence",
+      bn: "নির্দিষ্ট সময়, গন্তব্য বা অবস্থান নির্দেশক",
+      ja: "時間・目的地・存在場所を示す助詞",
+    },
+    rule: {
+      en: "Used after clock time (6-ji ni), destination with ikimasu/kimasu, or location with imasu/arimasu.",
+      bn: "নির্দিষ্ট ঘড়ির সময় (৬টায়), কোথাও যাওয়া (ইকিমাসু) এবং কোনো স্থানে থাকা বোঝাতে 'নি' (に) বসে।",
+      ja: "具体的な時刻、移動の到着点（〜に行きます）、存在の場所（〜にいます）を示します。",
+    },
+    exampleJp: "らいげつ にほん に いきます。",
+    exampleRo: "Raigetsu Nihon ni ikimasu.",
+    exampleMeaning: {
+      en: "I will go to Japan next month.",
+      bn: "আগামী মাসে আমি জাপানে যাব।",
+      ja: "来月日本に行きます。",
+    },
+  },
+  {
+    particle: "で",
+    romaji: "de (দে)",
+    role: {
+      en: "Place of Action / Means & Transport",
+      bn: "কাজের স্থান অথবা যানবাহন/মাধ্যম নির্দেশক",
+      ja: "動作の場所・手段（乗り物・道具）を示す助詞",
+    },
+    rule: {
+      en: "Indicates WHERE an active action happens (at school) or BY WHAT means (by train / in Japanese).",
+      bn: "কোথায় কাজটি ঘটছে (স্কুলে পড়া) অথবা কী মাধ্যমে কাজটি হচ্ছে (ট্রেনে যাওয়া / জাপানি ভাষায় কথা বলা) বোঝাতে 'দে' (で) বসে।",
+      ja: "動作が行われる場所や、交通手段・道具・言語などを表します。",
+    },
+    exampleJp: "でんしゃ で がっこう へ いきます。",
+    exampleRo: "Densha de gakkō e ikimasu.",
+    exampleMeaning: {
+      en: "I go to school by train.",
+      bn: "আমি ট্রেনে করে স্কুলে যাই।",
+      ja: "電車で学校へ行きます。",
+    },
+  },
+];
+
+const KAIWA_L1_DIALOGUE = [
+  {
+    speaker: "Rahim (রহিম)",
+    role: "Student / Applicant",
+    jp: "はじめまして。わたしは ラヒムです。",
+    ro: "Hajimemashite. Watashi wa Rahimu desu.",
+    bn: "প্রথম পরিচয়ে আনন্দিত। আমি রহিম।",
+    en: "Nice to meet you. I am Rahim.",
+  },
+  {
+    speaker: "Rahim (রহিম)",
+    role: "Student / Applicant",
+    jp: "ダッカから きました。どうぞ よろしく おねがいします。",
+    ro: "Dakka kara kimashita. Dōzo yoroshiku onegaishimasu.",
+    bn: "আমি ঢাকা থেকে এসেছি। অনুগ্রহ করে আমার প্রতি সুদৃষ্টি রাখবেন।",
+    en: "I came from Dhaka. Pleased to meet you.",
+  },
+  {
+    speaker: "Sensei Sato (সাতো সেন্সি)",
+    role: "Japanese Instructor",
+    jp: "さとうです。こちらこそ よろしく おねがいします。",
+    ro: "Satō desu. Kochirakoso yoroshiku onegaishimasu.",
+    bn: "আমি সাতো। আপনার সাথেও পরিচিত হয়ে আনন্দিত।",
+    en: "I am Sato. The pleasure is mine.",
+  },
+  {
+    speaker: "Sensei Sato (সাতো সেন্সি)",
+    role: "Japanese Instructor",
+    jp: "ラヒムさんは がくせいですか。",
+    ro: "Rahimu-san wa gakusei desu ka.",
+    bn: "রহিম সাহেব কি একজন শিক্ষার্থী?",
+    en: "Are you a student, Mr. Rahim?",
+  },
+  {
+    speaker: "Rahim (রহিম)",
+    role: "Student / Applicant",
+    jp: "はい、KNLTCの にほんごの がくせいです。",
+    ro: "Hai, KNLTC no Nihongo no gakusei desu.",
+    bn: "হ্যাঁ, আমি KNLTC-এর জাপানি ভাষার শিক্ষার্থী।",
+    en: "Yes, I am a Japanese language student at KNLTC.",
+  },
+];
+
 export default function InteractiveLanguageLab() {
   const { language } = useLanguage();
   const [activeScript, setActiveScript] = useState<ScriptType>("hiragana");
@@ -922,22 +1166,33 @@ export default function InteractiveLanguageLab() {
   const t = translate(
     {
       bn: {
-        badge: "অফিসিয়াল জাপানিজ অ্যালফাবেট ও সাউন্ড ল্যাব",
-        title: "হিরাগানা ও কাতাকানা বর্ণমালার সম্পূর্ণ লাইন-বাই-লাইন ল্যাব",
+        badge: "অফিশিয়াল মিন্না নো নিহোঙ্গো ও ইরোদেরি লার্নিং হাব",
+        title: "মিন্না নো নিহোঙ্গো N5 ও অ্যালফাবেট সাউন্ড ল্যাব",
         subtitle:
-          "জাপানি ব্যাকরণ ও ৫০ ধ্বনির সুনির্দিষ্ট নিয়মে সাজানো প্রতিটি লাইন (行)। প্রতিটি বর্ণে ক্লিক করে সঠিক উচ্চারণ শুনুন অথবা পুরো লাইন একসাথে অডিও প্লে করুন।",
-        tabHiragana: "হিরাগানা চার্ট (Hiragana)",
-        tabKatakana: "কাতাকানা চার্ট (Katakana)",
-        tabPhrases: "১০টি স্পোকেন বাক্য (Audio)",
+          "হিরাগানা ও কাতাকানা ৫০ ধ্বনি, লেসন ১ শব্দভাণ্ডার (Kotoba), N5 পার্টিকেল ব্যাকরণ (Bunkei) এবং বাস্তব কথোপকথন (Kaiwa)—অডিও উচ্চারণসহ প্র্যাকটিস করুন।",
+        tabHiragana: "১. হিরাগানা (Hiragana)",
+        tabKatakana: "২. কাতাকানা (Katakana)",
+        tabKotoba: "৩. শব্দভাণ্ডার (Kotoba)",
+        tabGrammar: "৪. ব্যাকরণ (Bunkei)",
+        tabPhrases: "৫. কথোপকথন (Kaiwa)",
         filterBasic: "মৌলিক ১০ লাইন (৫০ সাউন্ডস - 五十音)",
         filterVoiced: "৫টি ভয়েসড লাইন (দাকুতেন ও হানদাকুতেন - 濁音/半濁音)",
         filterYoon: "১১টি কম্বিনেশন লাইন (ইয়ো-অন - 拗音)",
-        clickListen: "যেকোনো বর্ণে ক্লিক করে সিঙ্গেল উচ্চারণ শুনুন",
+        clickListen: "যেকোনো শব্দে বা বর্ণে ক্লিক করে অডিও উচ্চারণ শুনুন",
         playRow: "পুরো লাইন শুনুন",
         playingRow: "বাজছে...",
         speedNote: "লার্নারদের সুবিধার্থে ০.৮৫x স্পষ্ট গতিতে সাউন্ড প্লে হয়",
-        enrollBanner: "প্রথম দিন থেকেই জাপানি ভাষায় সাবলীল হতে আমাদের N5 ব্যাচে যোগ দিন",
-        btnEnroll: "N5 কোর্সে ভর্তি আবেদন",
+        enrollBanner: "প্রথম দিন থেকেই জাপানি ভাষায় সাবলীল হতে আমাদের ১৫০ ঘণ্টার কোর্সে যোগ দিন",
+        enrollSub: "মিন্না নো নিহোঙ্গো ১ ও ২ বই, ইরোদেরি শিট, অডিও ড্রিল এবং ১৫,০০০ টাকার ৩টি স্পেশাল ইন্টারভিউ কোর্স ১০০% ফ্রি।",
+        btnEnroll: "কোর্সে ভর্তি আবেদন",
+        btnIrodoriDemo: "ফ্রি ইরোদেরি (Irodori) ডেমো",
+        btnBookStore: "বুক স্টোর (/store) থেকে বই অর্ডার করুন",
+        storeBannerTitle: "বাসায় বসে প্র্যাকটিস করার জন্য হার্ডকপি বই ও কাঞ্জি ওয়ার্কবুক প্রয়োজন?",
+        storeBannerSub: "KNLTC অফিশিয়াল বুক স্টোর (/store) থেকে মিন্না নো নিহোঙ্গো, ইরোদেরি, কাঞ্জি শিট ও SSW গাইড সারা বাংলাদেশে ক্যাশ-অন-ডেলিভারিতে অর্ডার করুন।",
+        pedagogicalHiragana:
+          "হিরাগানা চার্টের প্রতিটি লাইন (行 - Gyou) ৫টি স্বরধ্বনি (A, I, U, E, O) অনুযায়ী জাপানি ব্যাকরণের নিয়মে ১০০% সুনির্দিষ্টভাবে সাজানো।",
+        pedagogicalKatakana:
+          "কাতাকানা চার্টেও প্রতিটি লাইন (行 - Gyou) একই নিয়মে সাজানো। বিদেশি শব্দ, নিজের নাম ও আন্তর্জাতিক ব্র্যান্ড লেখার ক্ষেত্রে এটি ব্যবহৃত হয়।",
         vowels: [
           { v: "A (あ段)", bn: "আ-কলাম" },
           { v: "I (い段)", bn: "ই-কলাম" },
@@ -957,22 +1212,33 @@ export default function InteractiveLanguageLab() {
         hatsuonExamplesLabel: "বাস্তব উদাহরণ (ক্লিক করে শুনুন):",
       },
       en: {
-        badge: "Official Japanese Alphabet & Sound Lab",
-        title: "Japanese Hiragana & Katakana Complete Line Matrix",
+        badge: "Official Minna No Nihongo & Irodori Learning Hub",
+        title: "Interactive Minna No Nihongo N5 & Sound Matrix Lab",
         subtitle:
-          "Systematically organized by traditional 50-sound rows (行 - Gyō). Click any character for crystal-clear native pronunciation or play the entire line sequentially.",
-        tabHiragana: "Hiragana Matrix (ひらがな)",
-        tabKatakana: "Katakana Matrix (カタカナ)",
-        tabPhrases: "10 Essential Spoken Phrases",
+          "Master all 4 core pillars of Japanese: Hiragana & Katakana 50-sound matrix, Lesson 1 Vocabulary (Kotoba), N5 Particle Grammar (Bunkei), and Spoken Conversation (Kaiwa) with native audio.",
+        tabHiragana: "1. Hiragana (ひらがな)",
+        tabKatakana: "2. Katakana (カタカナ)",
+        tabKotoba: "3. Vocabulary (Kotoba)",
+        tabGrammar: "4. Grammar (Bunkei)",
+        tabPhrases: "5. Conversation (Kaiwa)",
         filterBasic: "10 Core Lines (Gojuon - 50 Sounds)",
         filterVoiced: "5 Voiced Lines (Dakuten / Handakuten)",
         filterYoon: "11 Contracted Lines (Yoon - 拗音)",
-        clickListen: "Click on any character to hear individual pronunciation",
+        clickListen: "Click on any character or sentence to hear native pronunciation",
         playRow: "Play Line",
         playingRow: "Playing...",
         speedNote: "Native speech tuned to 0.85x speed for clear learner comprehension",
-        enrollBanner: "Master Hiragana, Katakana, and real conversation in our upcoming N5 batch",
-        btnEnroll: "Apply for N5 Comprehensive",
+        enrollBanner: "Master JFT (Irodori) & JLPT N5/N4 in our 150-Hour Certified Batch",
+        enrollSub: "Includes Minna No Nihongo I & II books, Irodori handouts, audio drills, and 3 free bonus courses worth ৳15,000.",
+        btnEnroll: "Apply for Admission",
+        btnIrodoriDemo: "Try Free Irodori Demo",
+        btnBookStore: "Order Physical Books (/store)",
+        storeBannerTitle: "Want physical Minna No Nihongo books, Kanji workbooks & SSW guides delivered home?",
+        storeBannerSub: "Order authentic textbooks, Kanji practice sheets, and JFT/JLPT question banks from the official KNLTC Book Store with nationwide delivery.",
+        pedagogicalHiragana:
+          "Every row (Gyō - 行) of the Hiragana chart is systematically aligned across the 5 Japanese vowels (A, I, U, E, O).",
+        pedagogicalKatakana:
+          "Every row (Gyō - 行) of the Katakana chart follows the exact same 5-vowel phonetic structure and is used for foreign names, loanwords, and brands.",
         vowels: [
           { v: "A (あ)", bn: "Column A" },
           { v: "I (い)", bn: "Column I" },
@@ -992,22 +1258,33 @@ export default function InteractiveLanguageLab() {
         hatsuonExamplesLabel: "Real-world Examples (Click to listen):",
       },
       ja: {
-        badge: "公認 日本語五十音図・音声ラボ",
-        title: "ひらがな・カタカナ完全体系五十音図（行別整理）",
+        badge: "公式『みんなの日本語』＆『いろどり』総合学習ラボ",
+        title: "五十音図・語彙（ことば）・文法（文型）・会話（かいわ）体験ラボ",
         subtitle:
-          "伝統的な五十音図の行（あ行〜わ行）を忠実に再現。1文字ずつの発音確認に加え、行単位での連続リスニングに対応しています。",
-        tabHiragana: "ひらがな五十音図",
-        tabKatakana: "カタカナ五十音図",
-        tabPhrases: "面接・日常 実践10フレーズ",
+          "ひらがな・カタカナ五十音図に加え、『みんなの日本語』第1課の基本語彙、N5重要助詞、実践会話フレーズをネイティブ音声付きで体験できます。",
+        tabHiragana: "1. ひらがな",
+        tabKatakana: "2. カタカナ",
+        tabKotoba: "3. 語彙 (Kotoba)",
+        tabGrammar: "4. 文法 (Bunkei)",
+        tabPhrases: "5. 会話 (Kaiwa)",
         filterBasic: "基本10行（清音・五十音）",
         filterVoiced: "濁音・半濁音（5行）",
         filterYoon: "拗音（11行）",
-        clickListen: "文字をクリックして正しい発音を再生",
+        clickListen: "文字や例文をクリックして正しい発音を再生",
         playRow: "行を再生",
         playingRow: "再生中...",
         speedNote: "学習者に聞き取りやすい適正速度（0.85倍速）で再生されます",
-        enrollBanner: "文字の筆順から日常会話まで、基礎から着実に身につけましょう",
-        btnEnroll: "N5基礎コースへ申し込む",
+        enrollBanner: "入管基準150時間認定のJFT（いろどり）・JLPT N5/N4コース受講生募集中",
+        enrollSub: "『みんなの日本語』第1・2巻、いろどり教材、15,000タカ相当の面接・履歴書3大特典講座が100%無料。",
+        btnEnroll: "受講申込みへ",
+        btnIrodoriDemo: "無料『いろどり』デモ",
+        btnBookStore: "公式ブックストア (/store)",
+        storeBannerTitle: "紙の『みんなの日本語』教科書・漢字ドリル・特定技能テキストをご希望ですか？",
+        storeBannerSub: "KNLTC公式ブックストア（/store）より、バングラデシュ全国へ教材を配送いたします。",
+        pedagogicalHiragana:
+          "ひらがな五十音図の各行（あ行〜わ行）は、5つの母音（あ・い・う・え・お）に沿って体系的に配置されています。",
+        pedagogicalKatakana:
+          "カタカナ五十音図も同じく5母音体系で構成され、外来語や外国人名・企業名の表記に用いられます。",
         vowels: [
           { v: "あ段 (A)", bn: "A列" },
           { v: "い段 (I)", bn: "I列" },
@@ -1137,22 +1414,22 @@ export default function InteractiveLanguageLab() {
           </p>
         </div>
 
-        {/* Primary Navigation Tabs */}
+        {/* Primary Navigation Tabs (Complete Minna No Nihongo Pillars) */}
         <div className="flex justify-center mb-8">
-          <div className="inline-flex rounded-2xl bg-stone-200/80 p-1.5 border border-stone-300/80 shadow-2xs max-w-full overflow-x-auto">
+          <div className="inline-flex rounded-2xl bg-stone-200/80 p-1.5 border border-stone-300/80 shadow-2xs max-w-full overflow-x-auto gap-1">
             <button
               type="button"
               onClick={() => {
                 setActiveScript("hiragana");
                 setSubFilter("basic");
               }}
-              className={`px-4 sm:px-6 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer ${
+              className={`px-3.5 sm:px-5 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
                 activeScript === "hiragana"
                   ? "bg-white text-slate-950 shadow-xs"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              <span className="text-base">🇯🇵</span>
+              <span>あ</span>
               <span>{t.tabHiragana}</span>
             </button>
             <button
@@ -1161,19 +1438,43 @@ export default function InteractiveLanguageLab() {
                 setActiveScript("katakana");
                 setSubFilter("basic");
               }}
-              className={`px-4 sm:px-6 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer ${
+              className={`px-3.5 sm:px-5 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
                 activeScript === "katakana"
                   ? "bg-white text-slate-950 shadow-xs"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              <span className="text-base">🎌</span>
+              <span>ア</span>
               <span>{t.tabKatakana}</span>
             </button>
             <button
               type="button"
+              onClick={() => setActiveScript("kotoba")}
+              className={`px-3.5 sm:px-5 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                activeScript === "kotoba"
+                  ? "bg-white text-slate-950 shadow-xs"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <BookOpen className="h-3.5 w-3.5 text-[#1E5631]" />
+              <span>{t.tabKotoba}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveScript("grammar")}
+              className={`px-3.5 sm:px-5 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                activeScript === "grammar"
+                  ? "bg-white text-slate-950 shadow-xs"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <Sparkles className="h-3.5 w-3.5 text-[#b91c1c]" />
+              <span>{t.tabGrammar}</span>
+            </button>
+            <button
+              type="button"
               onClick={() => setActiveScript("phrases")}
-              className={`px-4 sm:px-6 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+              className={`px-3.5 sm:px-5 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                 activeScript === "phrases"
                   ? "bg-white text-slate-950 shadow-xs"
                   : "text-slate-600 hover:text-slate-900"
@@ -1187,7 +1488,208 @@ export default function InteractiveLanguageLab() {
 
         {/* Script Content Area */}
         <AnimatePresence mode="wait">
-          {activeScript === "phrases" ? (
+          {activeScript === "kotoba" ? (
+            <motion.div
+              key="kotoba-panel"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.25 }}
+              className="max-w-5xl mx-auto"
+            >
+              {/* 2-Column Layout: Left (70% / 8 cols) 4-Column Vocabulary Table & Right (30% / 4 cols) Grammar Tip Box */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                {/* Left 70% (8 cols): 4-Column Vocabulary Table */}
+                <div className="lg:col-span-8 rounded-2xl border border-stone-200 bg-white overflow-hidden shadow-xs">
+                  <div className="bg-stone-100/90 px-4 py-3 border-b border-stone-200 flex items-center justify-between">
+                    <span className="text-xs sm:text-sm font-extrabold text-slate-900">
+                      {language === "bn"
+                        ? "মিন্না নো নিহোঙ্গো লেসন ১ — মূল শব্দভাণ্ডার (Kotoba)"
+                        : language === "ja"
+                          ? "『みんなの日本語』第1課 — 基本語彙（ことば）"
+                          : "Minna No Nihongo Lesson 1 — Core Vocabulary (Kotoba)"}
+                    </span>
+                    <span className="text-[11px] font-semibold text-[#b91c1c] flex items-center gap-1">
+                      <Volume2 className="h-3.5 w-3.5" />
+                      <span>Audio</span>
+                    </span>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse text-xs sm:text-sm">
+                      <thead>
+                        <tr className="bg-[#fcfaf7] border-b border-stone-200 text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                          <th className="py-3 px-4">Japanese</th>
+                          <th className="py-3 px-4">Pronunciation in Bengali</th>
+                          <th className="py-3 px-4">English Meaning</th>
+                          <th className="py-3 px-4">Bengali Meaning</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-100">
+                        {MINNA_KOTOBA_L1.map((item, idx) => {
+                          const kKey = `kotoba-${idx}`;
+                          const isPlaying = playingKey === kKey;
+                          return (
+                            <tr
+                              key={idx}
+                              onClick={() => playSpeech(item.speech, kKey)}
+                              className={`transition-colors cursor-pointer ${
+                                isPlaying ? "bg-red-50/70" : "hover:bg-stone-50"
+                              }`}
+                            >
+                              <td className="py-3 px-4 font-bold text-slate-900 whitespace-nowrap">
+                                <div className="flex items-center gap-2">
+                                  <span className="h-6 w-6 rounded-md bg-stone-100 text-[#b91c1c] inline-flex items-center justify-center shrink-0">
+                                    <Volume2 className="h-3.5 w-3.5" />
+                                  </span>
+                                  <span className="text-sm sm:text-base">{item.jp}</span>
+                                </div>
+                              </td>
+                              <td className="py-3 px-4 font-medium text-slate-700 leading-relaxed">
+                                {item.bnPron}
+                              </td>
+                              <td className="py-3 px-4 font-semibold text-slate-800">
+                                {item.enMeaning}
+                              </td>
+                              <td className="py-3 px-4 font-bold text-[#1E5631] leading-relaxed">
+                                {item.bnMeaning}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Right 30% (4 cols): Neat 'Grammar Tip' Box in #1E5631 (Forest Green) & #C8102E (Crimson Red) */}
+                <div className="lg:col-span-4 space-y-4">
+                  <div className="rounded-2xl border-2 border-[#1E5631] bg-white p-5 shadow-xs space-y-3.5">
+                    <div className="flex items-center justify-between border-b border-stone-100 pb-2.5">
+                      <span className="inline-flex items-center gap-1.5 rounded-md bg-[#1E5631] px-2.5 py-1 text-xs font-bold text-white">
+                        <Sparkles className="h-3.5 w-3.5" />
+                        <span>Grammar Tip • Lesson 1</span>
+                      </span>
+                      <span className="text-xs font-bold text-[#C8102E]">N1 は N2 です</span>
+                    </div>
+
+                    <div className="space-y-2 text-xs text-slate-700 leading-relaxed">
+                      <p className="font-bold text-slate-900">
+                        {language === "bn"
+                          ? "১. আত্মপরিচয়ের মূল সূত্র (～は ～です):"
+                          : language === "ja"
+                            ? "1. 基本文型「N1 は N2 です」:"
+                            : "1. Core Identity Rule (~wa ~desu):"}
+                      </p>
+                      <p>
+                        {language === "bn"
+                          ? "জাপানি ভাষায় নিজের নাম বা পেশা বলার সময় কর্তার পরে 「は (ওয়া)」 এবং বাক্যের শেষে বিনীত সমাপিকা ক্রিয়া হিসেবে 「です (দেস)」 বসে।"
+                          : language === "ja"
+                            ? "助詞「は（わ）」は主題を示し、文末の「です」は丁寧な断定を表します。"
+                            : "Particle 'は (pronounced wa)' marks the topic, and 'です (desu)' at the end makes the sentence polite (am / is / are)."}
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl bg-red-50/70 border border-[#C8102E]/30 p-3.5 text-xs space-y-1.5">
+                      <span className="font-extrabold text-[#C8102E] block">
+                        {language === "bn"
+                          ? "⚠️ গুরুত্বপূর্ণ নিয়ম (～さん কখনো নিজের নামে বসে না!):"
+                          : language === "ja"
+                            ? "⚠️ 注意：自分の名前に「さん」はつけません！"
+                            : "⚠️ Golden Rule: Never attach '~san' to your own name!"}
+                      </span>
+                      <p className="text-slate-700 leading-relaxed">
+                        {language === "bn"
+                          ? "অন্যের নামের শেষে সম্মান জানাতে 「～さん (সান)」 বসে (যেমন: সাতো-সান)। কিন্তু নিজের নাম বলার সময় কখনোই সান বলা যাবে না—শুধু নাম বলতে হবে!"
+                          : language === "ja"
+                            ? "他人の名前には敬称「〜さん」をつけますが、自分の名前には絶対につけません。"
+                            : "Use '~san' (Mr./Ms.) only for other people. When introducing yourself, state your name without '~san'."}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        playSpeech("わたしは ラヒムです。がくせいです。", "kotoba-tip-sample")
+                      }
+                      className="w-full rounded-xl bg-[#1E5631] hover:bg-emerald-900 text-white py-3 px-4 text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer"
+                    >
+                      <Volume2 className="h-4 w-4" />
+                      <span>わたしは ラヒムです (Listen)</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ) : activeScript === "grammar" ? (
+            <motion.div
+              key="grammar-panel"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.25 }}
+              className="max-w-5xl mx-auto space-y-6"
+            >
+              {/* N5 Core Particles Grid — Mobile-safe non-breaking particle badges */}
+              <div className="grid gap-4 md:grid-cols-2">
+                {N5_GRAMMAR_PARTICLES.map((g, idx) => {
+                  const gKey = `grammar-p-${idx}`;
+                  const isPlaying = playingKey === gKey;
+                  return (
+                    <div
+                      key={idx}
+                      className="rounded-2xl border border-stone-200 bg-white p-5 shadow-2xs flex flex-col justify-between space-y-3"
+                    >
+                      <div>
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                          <div className="inline-flex items-center gap-2 whitespace-nowrap">
+                            <span className="inline-flex items-center justify-center rounded-xl bg-[#1E5631] text-white px-3 py-1 text-base font-black whitespace-nowrap">
+                              {g.particle}
+                            </span>
+                            <span className="inline-flex items-center rounded-lg bg-red-50 border border-red-200 px-2.5 py-1 text-xs font-bold text-[#C8102E] whitespace-nowrap">
+                              [{g.romaji}]
+                            </span>
+                          </div>
+                          <span className="text-xs font-bold text-slate-700">
+                            {g.role[language]}
+                          </span>
+                        </div>
+
+                        <p className="text-xs text-slate-600 leading-relaxed">
+                          {g.rule[language]}
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl bg-[#fcfaf7] border border-stone-200/80 p-3.5 flex items-center justify-between gap-3">
+                        <div className="space-y-0.5">
+                          <p className="text-sm sm:text-base font-black text-slate-900">
+                            {g.exampleJp}
+                          </p>
+                          <p className="text-[11px] font-mono font-bold text-[#C8102E]">
+                            {g.exampleRo}
+                          </p>
+                          <p className="text-xs font-semibold text-[#1E5631] leading-relaxed">
+                            {g.exampleMeaning[language]}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => playSpeech(g.exampleJp, gKey)}
+                          className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 transition cursor-pointer ${
+                            isPlaying
+                              ? "bg-[#C8102E] text-white"
+                              : "bg-stone-100 text-slate-700 hover:bg-red-50 hover:text-[#C8102E]"
+                          }`}
+                        >
+                          <Volume2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          ) : activeScript === "phrases" ? (
             <motion.div
               key="phrases-panel"
               initial={{ opacity: 0, y: 12 }}
@@ -1196,6 +1698,77 @@ export default function InteractiveLanguageLab() {
               transition={{ duration: 0.25 }}
               className="space-y-6"
             >
+              {/* Kaiwa Dialogue Box: Minna No Nihongo Lesson 1 — Hajimemashite */}
+              <div className="max-w-5xl mx-auto rounded-2xl border border-stone-200 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100">
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-9 w-9 rounded-xl bg-[#1E5631] text-white flex items-center justify-center shrink-0">
+                      <MessageSquare className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm sm:text-base font-extrabold text-slate-900 leading-relaxed">
+                        {language === "bn"
+                          ? "কাইওয়া (Kaiwa - 会話): লেসন ১ — হাজিমেমাশিতে (প্রথম সাক্ষাৎ সংলাপ)"
+                          : language === "ja"
+                            ? "第1課 会話（かいわ）：はじめまして"
+                            : "Kaiwa (会話) Lesson 1 Dialogue: Hajimemashite (First Introduction)"}
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        {t.clickListen}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2.5">
+                  {KAIWA_L1_DIALOGUE.map((line, lIdx) => {
+                    const lKey = `kaiwa-line-${lIdx}`;
+                    const isPlaying = playingKey === lKey;
+                    return (
+                      <div
+                        key={lIdx}
+                        onClick={() => playSpeech(line.jp, lKey)}
+                        className={`rounded-xl border p-3.5 transition cursor-pointer flex items-center justify-between gap-3 ${
+                          isPlaying
+                            ? "border-[#C8102E] bg-red-50/40"
+                            : "border-stone-200/80 bg-[#fcfaf7] hover:bg-stone-50"
+                        }`}
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="font-extrabold text-[#1E5631]">
+                              {line.speaker}
+                            </span>
+                            <span className="text-slate-400">·</span>
+                            <span className="text-slate-500">{line.role}</span>
+                          </div>
+                          <p className="text-sm sm:text-base font-black text-slate-900">
+                            {line.jp}
+                          </p>
+                          <p className="text-xs font-mono text-[#C8102E]">{line.ro}</p>
+                          <p className="text-xs font-semibold text-slate-700 leading-relaxed">
+                            {language === "bn" ? line.bn : line.en}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            playSpeech(line.jp, lKey);
+                          }}
+                          className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${
+                            isPlaying
+                              ? "bg-[#C8102E] text-white"
+                              : "bg-white border border-stone-200 text-slate-700 hover:text-[#C8102E]"
+                          }`}
+                        >
+                          <Volume2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
               {/* Context Notice */}
               <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600 max-w-5xl mx-auto px-1">
                 <span className="flex items-center gap-1.5 font-medium">
@@ -1667,40 +2240,87 @@ export default function InteractiveLanguageLab() {
                 </div>
               )}
 
-              {/* Pedagogical Note */}
-              <div className="text-center text-xs text-slate-500 pt-2 border-t border-stone-200/80">
+              {/* Pedagogical Note (Localized in EN, BN, JA) */}
+              <div className="text-center text-xs text-slate-500 pt-2 border-t border-stone-200/80 leading-relaxed">
                 {activeScript === "hiragana"
-                  ? "হিরাগানা চার্টের প্রতিটি লাইন (行 - Gyou) ৫টি স্বরধ্বনি (A, I, U, E, O) অনুযায়ী জাপানি ব্যাকরণের নিয়ম অনুযায়ী ১০০% সুনির্দিষ্টভাবে সংরক্ষিত।"
-                  : "কাতাকানা চার্টেও প্রতিটি লাইন (行 - Gyou) একই নিয়মে সাজানো। বিদেশি শব্দ, নিজের নাম ও ব্র্যান্ড লেখার ক্ষেত্রে এটি ব্যবহৃত হয়।"}
+                  ? t.pedagogicalHiragana
+                  : t.pedagogicalKatakana}
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Motivational Institutional Footer Strip */}
-        <div className="mt-12 rounded-2xl border border-slate-900 bg-slate-950 text-white p-6 sm:p-7 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5 shadow-lg">
+        {/* Book Store (/store) Cross-Sell Banner */}
+        <div className="mt-10 rounded-2xl border border-stone-200 bg-white p-5 sm:p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 shadow-xs">
+          <div className="flex items-start gap-3.5">
+            <div className="h-10 w-10 rounded-xl bg-emerald-50 border border-emerald-200 text-[#1E5631] flex items-center justify-center shrink-0 mt-0.5">
+              <ShoppingBag className="h-5 w-5" />
+            </div>
+            <div>
+              <h4 className="text-sm sm:text-base font-bold text-slate-900 leading-relaxed">
+                {t.storeBannerTitle}
+              </h4>
+              <p className="text-xs text-slate-600 mt-0.5 leading-relaxed max-w-2xl">
+                {t.storeBannerSub}
+              </p>
+            </div>
+          </div>
+
+          <Button
+            asChild
+            variant="outline"
+            className="border-[#1E5631] text-[#1E5631] hover:bg-emerald-50 font-bold text-xs sm:text-sm rounded-xl py-5 px-5 shrink-0"
+          >
+            <Link href="/store" className="flex items-center gap-2">
+              <ShoppingBag className="h-4 w-4" />
+              <span>{t.btnBookStore}</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </Button>
+        </div>
+
+        {/* Motivational Institutional Footer Strip with Free Irodori Demo + Enroll CTA */}
+        <div className="mt-6 rounded-2xl border border-slate-900 bg-slate-950 text-white p-6 sm:p-7 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5 shadow-lg">
           <div className="flex items-center gap-3.5">
             <div className="h-11 w-11 rounded-xl bg-[#b91c1c] text-white flex items-center justify-center shrink-0 shadow-xs">
               <Languages className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm sm:text-base font-bold text-white">
+              <p className="text-sm sm:text-base font-bold text-white leading-relaxed">
                 {t.enrollBanner}
               </p>
-              <p className="text-xs text-slate-300 mt-1">
-                মিন্না নো নিহোঙ্গো ১ ও ২ বই, অডিও ড্রিল এবং ১৫,০০০ টাকার ৩টি স্পেশাল ইন্টারভিউ কোর্স ১০০% ফ্রি।
+              <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                {t.enrollSub}
               </p>
             </div>
           </div>
-          <Button
-            asChild
-            className="bg-[#b91c1c] hover:bg-red-800 text-white rounded-xl text-xs sm:text-sm font-bold py-5 px-6 shrink-0 active:scale-95 transition-all shadow-md cursor-pointer"
-          >
-            <a href="#course-options" className="flex items-center gap-2">
-              <span>{t.btnEnroll}</span>
-              <ArrowRight className="h-4 w-4" />
-            </a>
-          </Button>
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <Button
+              asChild
+              variant="outline"
+              className="border-emerald-400/50 bg-emerald-950/60 hover:bg-emerald-900 text-emerald-200 rounded-xl text-xs sm:text-sm font-bold py-5 px-5 cursor-pointer"
+            >
+              <a
+                href="https://npw.bd/irodori/index.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2"
+              >
+                <Sparkles className="h-4 w-4" />
+                <span>{t.btnIrodoriDemo}</span>
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            </Button>
+            <Button
+              asChild
+              className="bg-[#b91c1c] hover:bg-red-800 text-white rounded-xl text-xs sm:text-sm font-bold py-5 px-6 active:scale-95 transition-all shadow-md cursor-pointer"
+            >
+              <a href="#course-options" className="flex items-center gap-2">
+                <span>{t.btnEnroll}</span>
+                <ArrowRight className="h-4 w-4" />
+              </a>
+            </Button>
+          </div>
         </div>
       </div>
     </section>

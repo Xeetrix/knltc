@@ -198,7 +198,13 @@ export default function HowItWorksSection() {
             <div className="pt-5 mt-4 border-t border-stone-200/60">
               <div className="flex items-center gap-2 text-xs font-semibold text-[#15803d]">
                 <UserCheck className="h-4 w-4" />
-                <span>WhatsApp / SMS Credential Delivery</span>
+                <span>
+                  {language === "bn"
+                    ? "হোয়াটসঅ্যাপ / SMS-এ LMS আইডি ও পাসওয়ার্ড প্রদান"
+                    : language === "ja"
+                      ? "WhatsApp / SMSにてLMSアカウント送付"
+                      : "WhatsApp / SMS Credential Delivery"}
+                </span>
               </div>
             </div>
           </motion.div>
