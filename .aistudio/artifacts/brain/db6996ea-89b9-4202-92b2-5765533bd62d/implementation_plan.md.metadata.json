@@ -1,6 +1,6 @@
 {
-  "summary": "সম্পূর্ণ বাংলা ভাষায় প্রস্তুতকৃত `/japanese-language` পেজের চূড়ান্ত ইমপ্লিমেন্টেশন প্ল্যান: ৪টি স্ট্যান্ডার্ড কোর্স প্যাকেজ (ডাটাবেস/CMS ফি + ফুল পেমেন্টে ২০% ডিসকাউন্ট ও ইনস্টলমেন্ট সুবিধা), ড্যাশবোর্ড থেকে টেম্পোরারি প্রোমো কোড সিস্টেম, বিকাশ মার্চেন্ট ও বাংলা কিউআর (Bangla QR + TrxID) পেমেন্ট গেটওয়ে, ডিজিটাল মানি রিসিট ও থ্যাংক ইউ ভিউ, মিন্না নো নিহোঙ্গো ৪-ট্যাব লার্নিং হাব এবং সিনিয়র সেন্সি আমির হোসেন স্পটলাইট।",
-  "updatedAt": "2026-11-04T16:31:22.464251931Z",
+  "summary": "Updated implementation plan incorporating: (1) Removing redundant green Google Sheets banner and pre-seeded dummy promo codes/job circulars in Dashboard CMS, (2) Dedicated Ad-Ready Course Enrollment Pages (/japanese-language/enroll/[courseSlug]) for each of the 4 courses with 1-click campaign link copying, (3) Ultra-minimal, elegant redesign of /japanese-language and checkout pages, and (4) Google Apps Script Code.gs update with the new knltc_course_enrollments sheet tab.",
+  "updatedAt": "2026-11-04T17:40:32.655338284Z",
   "requestFeedback": true,
   "userFacing": true
 }

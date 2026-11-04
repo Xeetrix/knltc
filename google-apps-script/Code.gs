@@ -123,6 +123,33 @@ var TABLE_SCHEMAS = {
     "linked_staff_id",
     "created_at"
   ],
+  knltc_course_enrollments: [
+    "id",
+    "enrollment_no",
+    "applicant_name",
+    "phone",
+    "whatsapp",
+    "email",
+    "course_id",
+    "course_title",
+    "delivery_mode",
+    "branch",
+    "visa_category",
+    "highest_degree",
+    "payment_plan",
+    "payment_method",
+    "base_fee_bdt",
+    "discount_bdt",
+    "promo_code",
+    "net_course_fee_bdt",
+    "paid_amount_bdt",
+    "due_amount_bdt",
+    "sender_number",
+    "trx_id",
+    "payment_status",
+    "notes",
+    "created_at"
+  ],
   knltc_lms_bridges: [
     "id",
     "lead_id",
@@ -1119,6 +1146,9 @@ function getInitialSeedDataForTable(tableName, nowIso) {
       return [];
 
     case "knltc_visa_applicants":
+      return [];
+
+    case "knltc_course_enrollments":
       return [];
 
     case "knltc_lms_bridges":

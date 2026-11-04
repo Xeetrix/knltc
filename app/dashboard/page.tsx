@@ -6814,68 +6814,6 @@ export default function DashboardPage() {
                     </button>
                   </div>
 
-                  {/* Google Sheets & Storage Backend Integration Bar */}
-                  <div className="rounded-2xl border border-emerald-900/15 bg-gradient-to-r from-[#133e29] to-[#164a31] p-4 text-white shadow-xs">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-emerald-300">
-                          <FileSpreadsheet className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs sm:text-sm font-bold text-white">
-                              {tr("KNLTC মাস্টার গুগল শিট ডাটাবেজ (১৫টি টেবিল)", "KNLTC Master Google Sheet (15 Tables)", "KNLTC Googleスプレッドシート（15タブ）")}
-                            </span>
-                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/20 border border-emerald-400/30 px-2 py-0.5 text-[10px] font-bold text-emerald-200">
-                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                              {tr("লাইভ সংযুক্ত", "Live Connected", "接続中")}
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-emerald-100/75 mt-0.5">
-                            {tr("গুগল ড্রাইভ ও শিটের সাথে স্বয়ংক্রিয় সিঙ্ক সক্রিয় রয়েছে।", "Auto-sync with Google Drive & Sheets is active.", "Googleドライブおよびシートとリアルタイム連携中")}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {sheetsStatus.masterSheetUrl && (
-                          <a
-                            href={sheetsStatus.masterSheetUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-400/30 bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-100 hover:bg-emerald-500/30 transition"
-                          >
-                            <span>{tr("গুগল শিট খুলুন", "Open Google Sheet", "シートを開く")}</span>
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
-                        )}
-                        <button
-                          type="button"
-                          onClick={handlePushInitialDataToSheets}
-                          disabled={isPushingToSheets}
-                          className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-xs font-bold text-[#133e29] hover:bg-emerald-50 transition shadow-2xs disabled:opacity-60"
-                        >
-                          <Upload className="h-3.5 w-3.5" />
-                          <span>
-                            {isPushingToSheets
-                              ? tr("পুশ হচ্ছে...", "Pushing...", "送信中...")
-                              : tr("পুশ ডাটা", "Push Data", "データ送信")}
-                          </span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handlePurgeDummyData}
-                          disabled={isSyncingWithDb}
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-red-400/40 bg-red-500/20 px-3 py-1.5 text-xs font-semibold text-red-200 hover:bg-red-500/30 transition disabled:opacity-60"
-                          title="Purge Dummy Data"
-                        >
-                          <Trash2 className="h-3.5 w-3.5 text-red-300" />
-                          <span>{tr("ডামি ডাটা মুছুন", "Purge Dummy", "ダミー削除")}</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
                   {/* 1. Global Announcement & Hero Section */}
                   <div className="rounded-2xl border border-slate-200/80 bg-white p-5">
                     <h3 className="font-bold text-sm text-slate-900">{t.cms.section1Title}</h3>
@@ -7089,6 +7027,65 @@ export default function DashboardPage() {
                           />
                         </div>
                       </div>
+
+                      {/* Direct Ad-Campaign Enrollment Links for each of the 4 courses */}
+                      <div className="pt-3 border-t border-slate-100">
+                        <p className="text-[11px] font-bold text-slate-700 mb-2">
+                          {tr(
+                            "কোর্সভিত্তিক সরাসরি অ্যাড ক্যাম্পেইন ও ভর্তি লিংক (FB / Google Ads):",
+                            "Direct Course Ad-Campaign & Enrollment Links:",
+                            "コース別ダイレクト広告・申込ページURL:",
+                          )}
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {[
+                            { label: "JFT (Irodori)", slug: "jft-irodori" },
+                            { label: "JLPT N5", slug: "jlpt-n5" },
+                            { label: "JLPT N4", slug: "jlpt-n4" },
+                            { label: "N5 + N4 Combo", slug: "n5-n4-combo" },
+                          ].map((cLink) => (
+                            <div
+                              key={cLink.slug}
+                              className="flex items-center justify-between gap-2 rounded-lg border border-slate-200/80 bg-slate-50/70 px-2.5 py-1.5 text-[11px]"
+                            >
+                              <div className="min-w-0">
+                                <span className="font-bold text-slate-800 block truncate">{cLink.label}</span>
+                                <span className="font-mono text-[10px] text-slate-500 block truncate">
+                                  /japanese-language/enroll/{cLink.slug}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const fullUrl = `${window.location.origin}/japanese-language/enroll/${cLink.slug}`;
+                                    navigator.clipboard.writeText(fullUrl);
+                                    showToast(
+                                      tr(
+                                        `${cLink.label} ক্যাম্পেইন লিংক কপি হয়েছে!`,
+                                        `${cLink.label} campaign link copied!`,
+                                        `${cLink.label} のURLをコピーしました`,
+                                      ),
+                                    );
+                                  }}
+                                  className="rounded-md bg-white border border-slate-200 px-2 py-1 text-[10px] font-semibold text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                                >
+                                  {tr("কপি লিংক", "Copy", "コピー")}
+                                </button>
+                                <a
+                                  href={`/japanese-language/enroll/${cLink.slug}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="rounded-md bg-white border border-slate-200 p-1 text-slate-600 hover:text-slate-900 transition"
+                                  title="Open Page"
+                                >
+                                  <ExternalLink className="h-3 w-3" />
+                                </a>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
 
                     <div className="rounded-2xl border border-slate-200/80 bg-white p-5">
@@ -7151,9 +7148,7 @@ export default function DashboardPage() {
                           if (!cms.languageCoursePage)
                             cms.languageCoursePage = { ...DEFAULT_WEBSITE_CMS.languageCoursePage };
                           if (!Array.isArray(cms.languageCoursePage.promoCodes)) {
-                            cms.languageCoursePage.promoCodes = [
-                              ...(DEFAULT_WEBSITE_CMS.languageCoursePage.promoCodes || []),
-                            ];
+                            cms.languageCoursePage.promoCodes = [];
                           }
                           const randomCode = `KNLTC${Math.floor(100 + Math.random() * 900)}`;
                           cms.languageCoursePage.promoCodes.unshift({
@@ -7161,7 +7156,7 @@ export default function DashboardPage() {
                             code: randomCode,
                             discountType: "FLAT_BDT",
                             discountValue: 1000,
-                            clientNameOrNote: "স্পেশাল ক্লায়েন্ট ডিসকাউন্ট",
+                            clientNameOrNote: "",
                             expiresAt: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
                             isActive: true,
                             createdAt: new Date().toISOString(),
@@ -7186,146 +7181,156 @@ export default function DashboardPage() {
                       </button>
                     </div>
 
-                    <div className="space-y-2.5">
-                      {(cms.languageCoursePage?.promoCodes || DEFAULT_WEBSITE_CMS.languageCoursePage.promoCodes || []).map(
-                        (promo, pIdx) => (
-                          <div
-                            key={promo.id || pIdx}
-                            className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center rounded-xl border border-slate-200/80 bg-slate-50/60 p-3 text-xs"
-                          >
-                            <div className="sm:col-span-2">
-                              <label className="text-[10px] font-semibold text-slate-500 block">
-                                {tr("প্রোমো কোড", "Promo Code", "コード")}
-                              </label>
-                              <input
-                                type="text"
-                                value={promo.code}
-                                onChange={(e) => {
-                                  if (!cms.languageCoursePage?.promoCodes) return;
-                                  cms.languageCoursePage.promoCodes[pIdx].code = e.target.value
-                                    .toUpperCase()
-                                    .replace(/\s+/g, "");
-                                  store.websiteCms[0] = cms;
-                                  setStore({ ...store });
-                                }}
-                                className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-mono font-bold text-[#b91c1c] uppercase"
-                              />
-                            </div>
+                    {(cms.languageCoursePage?.promoCodes || []).length === 0 ? (
+                      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-6 text-center text-xs text-slate-500">
+                        {tr(
+                          "বর্তমানে কোনো প্রোমো কোড চালু নেই। নতুন কোড তৈরি করতে উপরের '+ নতুন প্রোমো কোড যোগ করুন' বাটনে ক্লিক করুন।",
+                          "No active promo codes. Click '+ Add Promo Code' above to create a client or campaign discount code.",
+                          "現在有効なプロモコードはありません。上のボタンから追加してください。",
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-2.5">
+                        {(cms.languageCoursePage?.promoCodes || []).map(
+                          (promo, pIdx) => (
+                            <div
+                              key={promo.id || pIdx}
+                              className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center rounded-xl border border-slate-200/80 bg-slate-50/60 p-3 text-xs"
+                            >
+                              <div className="sm:col-span-2">
+                                <label className="text-[10px] font-semibold text-slate-500 block">
+                                  {tr("প্রোমো কোড", "Promo Code", "コード")}
+                                </label>
+                                <input
+                                  type="text"
+                                  value={promo.code}
+                                  onChange={(e) => {
+                                    if (!cms.languageCoursePage?.promoCodes) return;
+                                    cms.languageCoursePage.promoCodes[pIdx].code = e.target.value
+                                      .toUpperCase()
+                                      .replace(/\s+/g, "");
+                                    store.websiteCms[0] = cms;
+                                    setStore({ ...store });
+                                  }}
+                                  className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-mono font-bold text-[#b91c1c] uppercase"
+                                />
+                              </div>
 
-                            <div className="sm:col-span-2">
-                              <label className="text-[10px] font-semibold text-slate-500 block">
-                                {tr("ডিসকাউন্ট ধরন", "Type", "割引種別")}
-                              </label>
-                              <select
-                                value={promo.discountType}
-                                onChange={(e) => {
-                                  if (!cms.languageCoursePage?.promoCodes) return;
-                                  cms.languageCoursePage.promoCodes[pIdx].discountType = e.target
-                                    .value as "PERCENT" | "FLAT_BDT";
-                                  store.websiteCms[0] = cms;
-                                  setStore({ ...store });
-                                }}
-                                className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 font-semibold"
-                              >
-                                <option value="FLAT_BDT">{tr("নির্দিষ্ট টাকা (৳)", "Flat BDT (৳)", "定額 (৳)")}</option>
-                                <option value="PERCENT">{tr("শতাংশ (%)", "Percent (%)", "割引率 (%)")}</option>
-                              </select>
-                            </div>
+                              <div className="sm:col-span-2">
+                                <label className="text-[10px] font-semibold text-slate-500 block">
+                                  {tr("ডিসকাউন্ট ধরন", "Type", "割引種別")}
+                                </label>
+                                <select
+                                  value={promo.discountType}
+                                  onChange={(e) => {
+                                    if (!cms.languageCoursePage?.promoCodes) return;
+                                    cms.languageCoursePage.promoCodes[pIdx].discountType = e.target
+                                      .value as "PERCENT" | "FLAT_BDT";
+                                    store.websiteCms[0] = cms;
+                                    setStore({ ...store });
+                                  }}
+                                  className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 font-semibold"
+                                >
+                                  <option value="FLAT_BDT">{tr("নির্দিষ্ট টাকা (৳)", "Flat BDT (৳)", "定額 (৳)")}</option>
+                                  <option value="PERCENT">{tr("শতাংশ (%)", "Percent (%)", "割引率 (%)")}</option>
+                                </select>
+                              </div>
 
-                            <div className="sm:col-span-2">
-                              <label className="text-[10px] font-semibold text-slate-500 block">
-                                {tr("ছাড়ের পরিমাণ", "Value", "割引値")}
-                              </label>
-                              <input
-                                type="number"
-                                min={0}
-                                value={promo.discountValue}
-                                onChange={(e) => {
-                                  if (!cms.languageCoursePage?.promoCodes) return;
-                                  cms.languageCoursePage.promoCodes[pIdx].discountValue = Number(
-                                    e.target.value,
-                                  );
-                                  store.websiteCms[0] = cms;
-                                  setStore({ ...store });
-                                }}
-                                className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-bold tabular-nums text-emerald-700"
-                              />
-                            </div>
+                              <div className="sm:col-span-2">
+                                <label className="text-[10px] font-semibold text-slate-500 block">
+                                  {tr("ছাড়ের পরিমাণ", "Value", "割引値")}
+                                </label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={promo.discountValue}
+                                  onChange={(e) => {
+                                    if (!cms.languageCoursePage?.promoCodes) return;
+                                    cms.languageCoursePage.promoCodes[pIdx].discountValue = Number(
+                                      e.target.value,
+                                    );
+                                    store.websiteCms[0] = cms;
+                                    setStore({ ...store });
+                                  }}
+                                  className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-bold tabular-nums text-emerald-700"
+                                />
+                              </div>
 
-                            <div className="sm:col-span-3">
-                              <label className="text-[10px] font-semibold text-slate-500 block">
-                                {tr("ক্লায়েন্টের নাম / নোট", "Client Name / Note", "対象者・メモ")}
-                              </label>
-                              <input
-                                type="text"
-                                value={promo.clientNameOrNote || ""}
-                                onChange={(e) => {
-                                  if (!cms.languageCoursePage?.promoCodes) return;
-                                  cms.languageCoursePage.promoCodes[pIdx].clientNameOrNote =
-                                    e.target.value;
-                                  store.websiteCms[0] = cms;
-                                  setStore({ ...store });
-                                }}
-                                placeholder={tr("যেমন: করিম - খুলনা শাখা", "e.g. Special Client", "メモ")}
-                                className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-medium"
-                              />
-                            </div>
+                              <div className="sm:col-span-3">
+                                <label className="text-[10px] font-semibold text-slate-500 block">
+                                  {tr("ক্লায়েন্টের নাম / নোট", "Client Name / Note", "対象者・メモ")}
+                                </label>
+                                <input
+                                  type="text"
+                                  value={promo.clientNameOrNote || ""}
+                                  onChange={(e) => {
+                                    if (!cms.languageCoursePage?.promoCodes) return;
+                                    cms.languageCoursePage.promoCodes[pIdx].clientNameOrNote =
+                                      e.target.value;
+                                    store.websiteCms[0] = cms;
+                                    setStore({ ...store });
+                                  }}
+                                  placeholder={tr("যেমন: করিম - খুলনা শাখা", "e.g. Special Client", "メモ")}
+                                  className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-medium"
+                                />
+                              </div>
 
-                            <div className="sm:col-span-2">
-                              <label className="text-[10px] font-semibold text-slate-500 block">
-                                {tr("মেয়াদ (Expiry)", "Expires On", "有効期限")}
-                              </label>
-                              <input
-                                type="date"
-                                value={promo.expiresAt || ""}
-                                onChange={(e) => {
-                                  if (!cms.languageCoursePage?.promoCodes) return;
-                                  cms.languageCoursePage.promoCodes[pIdx].expiresAt = e.target.value;
-                                  store.websiteCms[0] = cms;
-                                  setStore({ ...store });
-                                }}
-                                className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 font-mono text-[11px]"
-                              />
-                            </div>
+                              <div className="sm:col-span-2">
+                                <label className="text-[10px] font-semibold text-slate-500 block">
+                                  {tr("মেয়াদ (Expiry)", "Expires On", "有効期限")}
+                                </label>
+                                <input
+                                  type="date"
+                                  value={promo.expiresAt || ""}
+                                  onChange={(e) => {
+                                    if (!cms.languageCoursePage?.promoCodes) return;
+                                    cms.languageCoursePage.promoCodes[pIdx].expiresAt = e.target.value;
+                                    store.websiteCms[0] = cms;
+                                    setStore({ ...store });
+                                  }}
+                                  className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 font-mono text-[11px]"
+                                />
+                              </div>
 
-                            <div className="sm:col-span-1 flex items-center justify-end gap-1.5 pt-3 sm:pt-4">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (!cms.languageCoursePage?.promoCodes) return;
-                                  cms.languageCoursePage.promoCodes[pIdx].isActive =
-                                    !cms.languageCoursePage.promoCodes[pIdx].isActive;
-                                  store.websiteCms[0] = cms;
-                                  saveCmsStore(store);
-                                  setStore({ ...store });
-                                }}
-                                className={`rounded-lg px-2 py-1 text-[10px] font-bold cursor-pointer ${
-                                  promo.isActive
-                                    ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
-                                    : "bg-slate-200 text-slate-600"
-                                }`}
-                              >
-                                {promo.isActive ? tr("চালু", "ON", "有効") : tr("বন্ধ", "OFF", "無効")}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (!cms.languageCoursePage?.promoCodes) return;
-                                  cms.languageCoursePage.promoCodes.splice(pIdx, 1);
-                                  store.websiteCms[0] = cms;
-                                  saveCmsStore(store);
-                                  setStore({ ...store });
-                                }}
-                                className="rounded-lg p-1.5 text-red-500 hover:bg-red-50 cursor-pointer"
-                                title="Delete Promo Code"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
+                              <div className="sm:col-span-1 flex items-center justify-end gap-1.5 pt-3 sm:pt-4">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (!cms.languageCoursePage?.promoCodes) return;
+                                    cms.languageCoursePage.promoCodes[pIdx].isActive =
+                                      !cms.languageCoursePage.promoCodes[pIdx].isActive;
+                                    store.websiteCms[0] = cms;
+                                    saveCmsStore(store);
+                                    setStore({ ...store });
+                                  }}
+                                  className={`rounded-lg px-2 py-1 text-[10px] font-bold cursor-pointer ${
+                                    promo.isActive
+                                      ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                                      : "bg-slate-200 text-slate-600"
+                                  }`}
+                                >
+                                  {promo.isActive ? tr("চালু", "ON", "有効") : tr("বন্ধ", "OFF", "無効")}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (!cms.languageCoursePage?.promoCodes) return;
+                                    cms.languageCoursePage.promoCodes.splice(pIdx, 1);
+                                    store.websiteCms[0] = cms;
+                                    saveCmsStore(store);
+                                    setStore({ ...store });
+                                  }}
+                                  className="rounded-lg p-1.5 text-red-500 hover:bg-red-50 cursor-pointer"
+                                  title="Delete Promo Code"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        ),
-                      )}
-                    </div>
+                          ),
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* 3. Job Circulars Manager */}
@@ -7335,64 +7340,94 @@ export default function DashboardPage() {
                       <button
                         type="button"
                         onClick={() => setActiveModal("ADD_CIRCULAR")}
-                        className="inline-flex items-center gap-1 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition"
+                        className="inline-flex items-center gap-1 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition cursor-pointer"
                       >
                         <Plus className="h-3.5 w-3.5" />
                         <span>{t.cms.newCircularBtn}</span>
                       </button>
                     </div>
 
-                    <div className="space-y-2.5">
-                      {(cms.jobCirculars || []).map((circ) => {
-                        const circTitle =
-                          typeof circ.title === "object" && circ.title
-                            ? circ.title[language] || circ.title.bn || circ.title.en || "SSW Position"
-                            : String(circ.title || "SSW Position");
+                    {(cms.jobCirculars || []).length === 0 ? (
+                      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-6 text-center text-xs text-slate-500">
+                        {tr(
+                          "কোনো জব সার্কুলার প্রকাশ করা নেই। নতুন সার্কুলার যোগ করতে উপরের '+ নতুন সার্কুলার প্রকাশ করুন' বাটনে ক্লিক করুন।",
+                          "No job circulars published yet. Click '+ Publish New Circular' above to add one.",
+                          "現在公開中の求人票はありません。上のボタンから新規作成してください。",
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-2.5">
+                        {(cms.jobCirculars || []).map((circ, cIdx) => {
+                          const circTitle =
+                            typeof circ.title === "object" && circ.title
+                              ? circ.title[language] || circ.title.bn || circ.title.en || "SSW Position"
+                              : String(circ.title || "SSW Position");
 
-                        return (
-                          <div
-                            key={circ.id}
-                            className="flex flex-col sm:flex-row sm:items-center justify-between rounded-xl border border-slate-200/70 p-3.5 gap-3"
-                          >
-                            <div>
-                              <div className="flex items-center gap-2 text-[11px] text-slate-400">
-                                <span className="font-semibold text-emerald-700">{circ.category}</span>
-                                <span>•</span>
-                                <span>{circ.locationJapan}</span>
-                              </div>
-                              <p className="font-bold text-xs sm:text-sm text-slate-900 mt-0.5">
-                                {circTitle}
-                              </p>
-                              <p className="text-xs text-slate-500 mt-0.5">
-                                {circ.salaryYen} ({circ.salaryBdtEquivalent})
-                              </p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                circ.isPublished = !circ.isPublished;
-                                store.websiteCms[0] = cms;
-                                saveCmsStore(store);
-                                setStore({ ...store });
-                                fetch("/api/cms/sync", {
-                                  method: "POST",
-                                  headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({ type: "CMS_UPDATE", payload: cms }),
-                                }).catch(() => {});
-                                showToast(circ.isPublished ? t.cms.liveActive : t.cms.draft);
-                              }}
-                              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition shrink-0 ${
-                                circ.isPublished
-                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                  : "bg-slate-100 text-slate-600"
-                              }`}
+                          return (
+                            <div
+                              key={circ.id || cIdx}
+                              className="flex flex-col sm:flex-row sm:items-center justify-between rounded-xl border border-slate-200/70 p-3.5 gap-3"
                             >
-                                {circ.isPublished ? t.cms.liveActive : t.cms.draft}
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
+                              <div>
+                                <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                                  <span className="font-semibold text-emerald-700">{circ.category}</span>
+                                  <span>•</span>
+                                  <span>{circ.locationJapan}</span>
+                                </div>
+                                <p className="font-bold text-xs sm:text-sm text-slate-900 mt-0.5">
+                                  {circTitle}
+                                </p>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                  {circ.salaryYen} ({circ.salaryBdtEquivalent})
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    circ.isPublished = !circ.isPublished;
+                                    store.websiteCms[0] = cms;
+                                    saveCmsStore(store);
+                                    setStore({ ...store });
+                                    fetch("/api/cms/sync", {
+                                      method: "POST",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({ type: "CMS_UPDATE", payload: cms }),
+                                    }).catch(() => {});
+                                    showToast(circ.isPublished ? t.cms.liveActive : t.cms.draft);
+                                  }}
+                                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
+                                    circ.isPublished
+                                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                      : "bg-slate-100 text-slate-600"
+                                  }`}
+                                >
+                                  {circ.isPublished ? t.cms.liveActive : t.cms.draft}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    cms.jobCirculars.splice(cIdx, 1);
+                                    store.websiteCms[0] = cms;
+                                    saveCmsStore(store);
+                                    setStore({ ...store });
+                                    fetch("/api/cms/sync", {
+                                      method: "POST",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({ type: "CMS_UPDATE", payload: cms }),
+                                    }).catch(() => {});
+                                  }}
+                                  className="rounded-lg p-1.5 text-red-500 hover:bg-red-50 transition cursor-pointer"
+                                  title="Delete Circular"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

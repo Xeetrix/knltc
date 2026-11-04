@@ -121,7 +121,7 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
         benefit3: "Official Student LMS Account (npw.bd/knltc) & HD Recordings",
         ctaEnrollFull: `Enroll with ${discountPct}% Full-Pay Discount`,
         ctaEnrollInstallment: "Enroll with 50% Installment",
-        autoSelectNote: "Automatically selects this package & payment plan in the form below",
+        autoSelectNote: "Opens dedicated course enrollment & bKash Bangla QR payment page",
         tryIrodoriBtn: "Try Free Irodori Demo",
         camp1Badge: "Student Visa Special Scholarship",
         camp1Title: "100% Free JLPT N4 Course During COE Processing!",
@@ -257,7 +257,7 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
         benefit3: "অফিশিয়াল LMS আইডি (npw.bd/knltc) ও এইচডি ক্লাস রেকর্ডিং",
         ctaEnrollFull: `${discountPct}% ডিসকাউন্টে ফুল পেমেন্টে ভর্তি হোন`,
         ctaEnrollInstallment: "৫০% কিস্তিতে ভর্তি আবেদন করুন",
-        autoSelectNote: "নিচের ভর্তি ও পেমেন্ট ফর্মে এই প্যাকেজটি স্বয়ংক্রিয়ভাবে সিলেক্ট হবে",
+        autoSelectNote: "এই কোর্সের ডেডিকেটেড ভর্তি ও বিকাশ Bangla QR পেমেন্ট পেইজে নিয়ে যাবে",
         tryIrodoriBtn: "ফ্রি ইরোদেরি ডেমো",
         camp1Badge: "স্টুডেন্ট ভিসা স্পেশাল স্কলারশিপ",
         camp1Title: "COE প্রসেসিং চলাকালীন স্টুডেন্ট ভিসা প্রার্থীদের N4 কোর্স ১০০% ফ্রি!",
@@ -393,7 +393,7 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
         benefit3: "公式LMSアカウント（npw.bd/knltc）＆講義録画視聴",
         ctaEnrollFull: `一括払い（${discountPct}%割引）で申し込む`,
         ctaEnrollInstallment: "50%分割払いで申し込む",
-        autoSelectNote: "ページ下部の申込・決済フォームに自動反映されます",
+        autoSelectNote: "このコース専用の申込・Bangla QR決済ページへ移動します",
         tryIrodoriBtn: "無料いろどりデモ",
         camp1Badge: "留学ビザ特別奨学金",
         camp1Title: "COE申請期間中の留学ビザ候補生はJLPT N4講座が100%無料！",
@@ -524,6 +524,29 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
   const activeCourse = t.courses[selectedId] || t.courses.JFT_IRODORI;
   const activePricing = getCoursePriceData(activeCourse.id);
 
+  const getCourseSlug = (courseId: StandardCourseId): string => {
+    switch (courseId) {
+      case "N5_COURSE":
+        return "jlpt-n5";
+      case "N4_COURSE":
+        return "jlpt-n4";
+      case "N5_N4_COMBO":
+        return "n5-n4-combo";
+      case "JFT_IRODORI":
+      default:
+        return "jft-irodori";
+    }
+  };
+
+  const getCourseEnrollUrl = (
+    courseId: StandardCourseId,
+    paymentPlan: "FULL_PAYMENT" | "INSTALLMENT_50" = "FULL_PAYMENT",
+  ) => {
+    const slug = getCourseSlug(courseId);
+    const planQuery = paymentPlan === "INSTALLMENT_50" ? "installment" : "full";
+    return `/japanese-language/enroll/${slug}?plan=${planQuery}`;
+  };
+
   const handleApply = (
     courseId: StandardCourseId,
     paymentPlan: "FULL_PAYMENT" | "INSTALLMENT_50" = "FULL_PAYMENT",
@@ -533,15 +556,7 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
       onSelectCourse(courseId);
     }
     if (typeof window !== "undefined") {
-      window.dispatchEvent(
-        new CustomEvent("knltc-select-course", {
-          detail: { courseId, paymentPlan },
-        }),
-      );
-    }
-    const form = document.getElementById("enrollment-form");
-    if (form) {
-      form.scrollIntoView({ behavior: "smooth" });
+      window.location.href = getCourseEnrollUrl(courseId, paymentPlan);
     }
   };
 
@@ -630,13 +645,10 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleApply(cId, "FULL_PAYMENT");
-                  }}
-                  className={`mt-4 w-full rounded-xl py-2.5 px-3 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
+                <Link
+                  href={getCourseEnrollUrl(cId, "FULL_PAYMENT")}
+                  onClick={(e) => e.stopPropagation()}
+                  className={`mt-4 w-full rounded-xl py-2.5 px-3 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 ${
                     isSelected
                       ? isIrodori
                         ? "bg-[#1E5631] text-white hover:bg-emerald-900"
@@ -644,9 +656,15 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
                       : "bg-white border border-stone-300 text-slate-800 hover:bg-stone-100"
                   }`}
                 >
-                  <span>{c.shortTab}</span>
+                  <span>
+                    {language === "bn"
+                      ? `${c.shortTab} ভর্তি`
+                      : language === "ja"
+                        ? `${c.shortTab} 申込`
+                        : `Enroll ${c.shortTab}`}
+                  </span>
                   <ArrowRight className="h-3.5 w-3.5" />
-                </button>
+                </Link>
               </div>
             );
           })}
@@ -822,22 +840,25 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
                   {/* Dual Action Buttons: Full Payment (20% Off) vs 50% Installment */}
                   <div className="mt-5 space-y-2.5">
                     <Button
-                      onClick={() => handleApply(activeCourse.id, "FULL_PAYMENT")}
+                      asChild
                       className="w-full py-6 rounded-xl bg-[#b91c1c] hover:bg-red-800 text-white font-bold text-xs sm:text-sm shadow-xs active:scale-[0.98] transition-transform cursor-pointer"
                     >
-                      <span>{t.ctaEnrollFull}</span>
-                      <ArrowRight className="ml-2 h-4 w-4" />
+                      <Link href={getCourseEnrollUrl(activeCourse.id, "FULL_PAYMENT")}>
+                        <span>{t.ctaEnrollFull}</span>
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Link>
                     </Button>
 
                     <Button
-                      type="button"
+                      asChild
                       variant="outline"
-                      onClick={() => handleApply(activeCourse.id, "INSTALLMENT_50")}
                       className="w-full py-5 rounded-xl border-stone-300 hover:bg-stone-50 text-slate-800 font-bold text-xs sm:text-sm active:scale-[0.98] transition-transform cursor-pointer"
                     >
-                      <span>
-                        {t.ctaEnrollInstallment} ({formatBdt(activePricing.installmentFee)})
-                      </span>
+                      <Link href={getCourseEnrollUrl(activeCourse.id, "INSTALLMENT_50")}>
+                        <span>
+                          {t.ctaEnrollInstallment} ({formatBdt(activePricing.installmentFee)})
+                        </span>
+                      </Link>
                     </Button>
 
                     <p className="text-center text-[11px] text-slate-500 pt-1">
@@ -870,14 +891,13 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
               <span className="text-xs font-bold text-[#1E5631]">
                 Value: {formatBdt(cmsPricing.n4PriceBdt)} — 100% Waived
               </span>
-              <button
-                type="button"
-                onClick={() => handleApply("N5_COURSE", "FULL_PAYMENT")}
-                className="inline-flex items-center gap-1 text-xs font-bold text-[#1E5631] hover:underline cursor-pointer"
+              <Link
+                href={getCourseEnrollUrl("N5_COURSE", "FULL_PAYMENT")}
+                className="inline-flex items-center gap-1 text-xs font-bold text-[#1E5631] hover:underline"
               >
                 <span>Enroll Now</span>
                 <ArrowRight className="h-3.5 w-3.5" />
-              </button>
+              </Link>
             </div>
           </div>
 

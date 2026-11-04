@@ -97,8 +97,58 @@ export async function POST(req: NextRequest) {
           : "N5";
 
     const nowIso = new Date().toISOString();
+    const resolvedBranchLabel = rawModeStr.includes("KHULNA")
+      ? "KHULNA"
+      : rawModeStr.includes("PALTAN")
+        ? "DHAKA_PALTAN"
+        : "ONLINE_ZOOM";
 
-    // 2. Register in Google Sheets `knltc_lms_bridges` (`https://npw.bd/knltc` classroom bridge)
+    // 2. Register in Dedicated Google Sheets `knltc_course_enrollments` (25-column Course Admission Table)
+    try {
+      await mutateSheetTable({
+        action: "INSERT",
+        table: "knltc_course_enrollments",
+        payload: {
+          id: `enr-${Date.now()}`,
+          enrollment_no: resolvedEnrollmentNo,
+          applicant_name: String(applicantName).trim(),
+          phone: String(phone).trim(),
+          whatsapp: String(whatsapp || phone).trim(),
+          email: String(email || "").trim(),
+          course_id: String(courseId || "JFT_IRODORI"),
+          course_title: enrollment.courseTitle,
+          delivery_mode: String(deliveryMode),
+          branch: resolvedBranchLabel,
+          visa_category: String(visaCategory),
+          highest_degree: String(highestDegree || "HSC / Equivalent"),
+          payment_plan: String(paymentPlan),
+          payment_method: String(paymentMethod),
+          base_fee_bdt: Number(baseFeeBdt || 14500),
+          discount_bdt: Number(discountBdt || 0),
+          promo_code: String(promoCode || ""),
+          net_course_fee_bdt: Number(netCourseFeeBdt || 14500),
+          paid_amount_bdt: Number(paidAmountBdt || 0),
+          due_amount_bdt: Number(dueAmountBdt || 0),
+          sender_number: String(senderNumber || ""),
+          trx_id: String(trxId || "PAY_AT_OFFICE")
+            .trim()
+            .toUpperCase(),
+          payment_status:
+            trxId && Number(paidAmountBdt) > 0
+              ? "TRX_SUBMITTED"
+              : "OFFICE_PENDING",
+          notes: String(notes || ""),
+          created_at: nowIso,
+        },
+      });
+    } catch (enrErr) {
+      console.warn(
+        "Failed to record course enrollment row in knltc_course_enrollments:",
+        enrErr,
+      );
+    }
+
+    // 3. Register in Google Sheets `knltc_lms_bridges` (`https://npw.bd/knltc` classroom bridge)
     try {
       await mutateSheetTable({
         action: "INSERT",
@@ -131,7 +181,7 @@ export async function POST(req: NextRequest) {
       console.warn("Failed to record LMS bridge row in Google Sheets:", lmsErr);
     }
 
-    // 3. Register in Google Sheets `knltc_crm_leads` for KNLTC counselors
+    // 4. Register in Google Sheets `knltc_crm_leads` for KNLTC counselors
     try {
       const paymentSummary = `Plan: ${paymentPlan} | Method: ${paymentMethod} | Net Fee: ৳${netCourseFeeBdt} | Paid: ৳${paidAmountBdt} | Due: ৳${dueAmountBdt} | Discount: ৳${discountBdt}${promoCode ? ` (Promo: ${promoCode})` : ""} | Sender: ${senderNumber || "N/A"} | TrxID: ${trxId || "PAY_AT_OFFICE"}`;
 
@@ -149,7 +199,7 @@ export async function POST(req: NextRequest) {
       console.warn("Failed to mirror lead into CRM:", crmErr);
     }
 
-    // 4. Record in `knltc_finance_transactions` if TrxID is provided
+    // 5. Record in `knltc_finance_transactions` with exact Code.gs schema columns
     if (trxId && Number(paidAmountBdt) > 0) {
       try {
         await mutateSheetTable({
@@ -157,15 +207,25 @@ export async function POST(req: NextRequest) {
           table: "knltc_finance_transactions",
           payload: {
             id: `FIN-WEB-${Date.now()}`,
+            receipt_no: resolvedEnrollmentNo,
             date: nowIso.slice(0, 10),
-            type: "INCOME",
+            student_name: String(applicantName).trim(),
+            student_phone: String(phone).trim(),
             category: "LANGUAGE_COURSE_FEE",
-            title: `${courseLevel} Admission (${applicantName}) — ${paymentMethod} TrxID: ${String(trxId).trim().toUpperCase()}`,
+            type: "INCOME",
             amount_bdt: Number(paidAmountBdt),
+            due_amount_bdt: Number(dueAmountBdt || 0),
+            payment_method: String(paymentMethod || "BKASH_BANGLA_QR"),
+            reference_or_trx: String(trxId).trim().toUpperCase(),
             branch: rawModeStr.includes("KHULNA") ? "KHULNA" : "DHAKA_PALTAN",
-            status: "PENDING_VERIFICATION",
-            recorded_by: `Online Enrollment (${senderNumber || phone})`,
-            notes: `Ref: ${resolvedEnrollmentNo} | Base: ৳${baseFeeBdt} | Discount: ৳${discountBdt} | Net: ৳${netCourseFeeBdt} | Paid: ৳${paidAmountBdt} | Due: ৳${dueAmountBdt}${promoCode ? ` | Promo: ${promoCode}` : ""}`,
+            verified_by: `Pending (${senderNumber || phone})`,
+            notes: `Course: ${courseLevel} | Plan: ${paymentPlan} | Base: ৳${baseFeeBdt} | Discount: ৳${discountBdt} | Net: ৳${netCourseFeeBdt}${promoCode ? ` | Promo: ${promoCode}` : ""}`,
+            linked_lead_id: "",
+            linked_visa_id: "",
+            linked_school_id: "",
+            linked_agent_id: "",
+            linked_staff_id: "",
+            created_at: nowIso,
           },
         });
       } catch (finErr) {

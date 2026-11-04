@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import {
   AlertCircle,
   ArrowLeft,
+  Award,
   Check,
   CheckCircle2,
+  Clock,
   Copy,
   CreditCard,
   ExternalLink,
@@ -21,6 +24,7 @@ import {
   QrCode,
   Receipt,
   Send,
+  ShieldCheck,
   Sparkles,
   Tag,
   User,
@@ -51,6 +55,35 @@ export type VisaPurposeOption =
 export type PaymentPlanOption = "FULL_PAYMENT" | "INSTALLMENT_50";
 export type PaymentMethodOption = "BKASH_BANGLA_QR" | "PAY_AT_OFFICE";
 
+export function slugToCourseOption(slug?: string): CourseOption {
+  const s = (slug || "").toLowerCase().trim();
+  if (s === "jlpt-n5" || s === "n5" || s === "n5_course") return "N5_COURSE";
+  if (s === "jlpt-n4" || s === "n4" || s === "n4_course") return "N4_COURSE";
+  if (
+    s === "n5-n4-combo" ||
+    s === "combo" ||
+    s === "n5_n4_combo" ||
+    s === "jlpt-combo"
+  ) {
+    return "N5_N4_COMBO";
+  }
+  return "JFT_IRODORI";
+}
+
+export function courseOptionToSlug(course: CourseOption): string {
+  switch (course) {
+    case "N5_COURSE":
+      return "jlpt-n5";
+    case "N4_COURSE":
+      return "jlpt-n4";
+    case "N5_N4_COMBO":
+      return "n5-n4-combo";
+    case "JFT_IRODORI":
+    default:
+      return "jft-irodori";
+  }
+}
+
 interface SubmittedReceiptData {
   id: string;
   submittedAt: string;
@@ -76,7 +109,19 @@ interface SubmittedReceiptData {
   trxId: string;
 }
 
-export default function EnrollmentForm() {
+export interface EnrollmentFormProps {
+  initialCourseSlug?: string;
+  initialPlan?: PaymentPlanOption;
+  initialPromoCode?: string;
+  isStandalonePage?: boolean;
+}
+
+export default function EnrollmentForm({
+  initialCourseSlug,
+  initialPlan,
+  initialPromoCode,
+  isStandalonePage = false,
+}: EnrollmentFormProps = {}) {
   const { language } = useLanguage();
 
   // Live CMS Pricing, Merchant Info & Promo Codes
@@ -91,11 +136,9 @@ export default function EnrollmentForm() {
         setCmsConfig({
           ...DEFAULT_WEBSITE_CMS.languageCoursePage,
           ...cms.languageCoursePage,
-          promoCodes:
-            Array.isArray(cms.languageCoursePage.promoCodes) &&
-            cms.languageCoursePage.promoCodes.length > 0
-              ? cms.languageCoursePage.promoCodes
-              : DEFAULT_WEBSITE_CMS.languageCoursePage.promoCodes,
+          promoCodes: Array.isArray(cms.languageCoursePage.promoCodes)
+            ? cms.languageCoursePage.promoCodes
+            : [],
         });
       }
     } catch {
@@ -489,22 +532,64 @@ export default function EnrollmentForm() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
-  const [course, setCourse] = useState<CourseOption>("JFT_IRODORI");
+  const [course, setCourse] = useState<CourseOption>(() =>
+    slugToCourseOption(initialCourseSlug),
+  );
   const [classMode, setClassMode] = useState<ClassModeOption>("ONLINE_LIVE");
   const [purpose, setPurpose] = useState<VisaPurposeOption>("STUDENT_VISA");
-  const [paymentPlan, setPaymentPlan] =
-    useState<PaymentPlanOption>("FULL_PAYMENT");
+  const [paymentPlan, setPaymentPlan] = useState<PaymentPlanOption>(
+    initialPlan || "FULL_PAYMENT",
+  );
   const [paymentMethod, setPaymentMethod] =
     useState<PaymentMethodOption>("BKASH_BANGLA_QR");
 
   // Promo Code State
-  const [promoInput, setPromoInput] = useState("");
+  const [promoInput, setPromoInput] = useState(
+    initialPromoCode ? initialPromoCode.toUpperCase() : "",
+  );
   const [appliedPromo, setAppliedPromo] =
     useState<LanguageCoursePromoCode | null>(null);
   const [promoFeedback, setPromoFeedback] = useState<{
     type: "success" | "error";
     text: string;
   } | null>(null);
+
+  // Sync initialCourseSlug and URL query parameters (?plan=full|installment&promo=CODE)
+  useEffect(() => {
+    if (initialCourseSlug) {
+      setCourse(slugToCourseOption(initialCourseSlug));
+      setPaidAmountEdited(false);
+    }
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const planParam = (params.get("plan") || "").toLowerCase();
+      if (planParam === "installment" || planParam === "50") {
+        setPaymentPlan("INSTALLMENT_50");
+        setPaidAmountEdited(false);
+      } else if (planParam === "full" || planParam === "20") {
+        setPaymentPlan("FULL_PAYMENT");
+        setPaidAmountEdited(false);
+      }
+      const promoParam = (params.get("promo") || initialPromoCode || "")
+        .trim()
+        .toUpperCase();
+      if (promoParam) {
+        setPromoInput(promoParam);
+        const cms = getWebsiteCms();
+        const availableCodes = cms?.languageCoursePage?.promoCodes || [];
+        const todayIso = new Date().toISOString().slice(0, 10);
+        const matched = availableCodes.find(
+          (p) =>
+            p.isActive &&
+            p.code.trim().toUpperCase() === promoParam &&
+            (!p.expiresAt || p.expiresAt >= todayIso),
+        );
+        if (matched) {
+          setAppliedPromo(matched);
+        }
+      }
+    }
+  }, [initialCourseSlug, initialPromoCode]);
 
   // Payment Verification Inputs
   const [senderNumber, setSenderNumber] = useState("");
@@ -825,20 +910,115 @@ export default function EnrollmentForm() {
   return (
     <section
       id="enrollment-form"
-      className="py-16 md:py-24 bg-[#fcfaf7] border-b border-stone-200 scroll-mt-16"
+      className={`${
+        isStandalonePage ? "py-10 md:py-16" : "py-16 md:py-24"
+      } bg-[#fcfaf7] border-b border-stone-200 scroll-mt-16`}
     >
       <div className="container-narrow max-w-5xl">
-        {/* Section Header */}
-        <div className="text-center mb-10">
-          <p className="text-xs font-bold uppercase tracking-widest text-[#b91c1c]">
-            {t.kicker}
-          </p>
-          <h2 className="mt-2 text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight leading-relaxed">
-            {t.title}
-          </h2>
-          <p className="mt-2.5 text-xs sm:text-sm text-slate-600 leading-relaxed max-w-2xl mx-auto">
-            {t.subtitle}
-          </p>
+        {/* Standalone Campaign Navigation & Course Switcher Bar */}
+        {isStandalonePage && (
+          <div className="mb-8 space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-stone-200/80">
+              <Link
+                href="/japanese-language"
+                className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-950 transition-colors"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span>
+                  {language === "bn"
+                    ? "সকল জাপানি ভাষা কোর্স ও কারিকুলামে ফিরে যান"
+                    : language === "ja"
+                      ? "全日本語コース一覧に戻る"
+                      : "Back to All Japanese Courses & Curriculum"}
+                </span>
+              </Link>
+
+              <div className="flex items-center gap-3 text-[11px] font-semibold text-slate-600">
+                <span className="inline-flex items-center gap-1 text-[#1E5631]">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  <span>
+                    {language === "bn"
+                      ? "১৫০ ঘণ্টা সার্টিফাইড"
+                      : "150-Hr Certified"}
+                  </span>
+                </span>
+                <span className="text-stone-300">•</span>
+                <span className="inline-flex items-center gap-1 text-[#b91c1c]">
+                  <Award className="h-3.5 w-3.5" />
+                  <span>
+                    {language === "bn"
+                      ? "সিনিয়র সেন্সি আমির হোসেন"
+                      : "Senior Sensei Amir Hossen"}
+                  </span>
+                </span>
+              </div>
+            </div>
+
+            {/* 4 Shareable Course Campaign Links / Switcher */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {t.courses.map((c) => {
+                const slug = courseOptionToSlug(c.id);
+                const active = course === c.id;
+                return (
+                  <Link
+                    key={c.id}
+                    href={`/japanese-language/enroll/${slug}`}
+                    onClick={() => {
+                      setCourse(c.id);
+                      setPaidAmountEdited(false);
+                    }}
+                    className={`rounded-xl border px-3.5 py-2.5 text-left transition-all ${
+                      active
+                        ? "border-slate-900 bg-slate-900 text-white shadow-xs"
+                        : "border-stone-200 bg-white text-slate-700 hover:border-stone-300"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-xs font-extrabold truncate">
+                        {c.id === "JFT_IRODORI"
+                          ? "JFT (Irodori)"
+                          : c.id === "N5_COURSE"
+                            ? "JLPT N5"
+                            : c.id === "N4_COURSE"
+                              ? "JLPT N4"
+                              : "N5 + N4 Combo"}
+                      </span>
+                      {active && (
+                        <span className="h-2 w-2 rounded-full bg-emerald-400 shrink-0" />
+                      )}
+                    </div>
+                    <p
+                      className={`text-[10px] mt-0.5 truncate ${
+                        active ? "text-stone-300" : "text-slate-500"
+                      }`}
+                    >
+                      {c.duration} • {formatBdt(c.baseFee)}
+                    </p>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Minimal Editorial Header */}
+        <div className="mb-8">
+          <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-[#b91c1c]">
+            <span>{t.kicker}</span>
+          </div>
+          <h1 className="mt-1.5 text-2xl sm:text-3xl font-extrabold text-slate-950 tracking-tight leading-relaxed">
+            {currentCourseObj.name}
+          </h1>
+          <div className="mt-2 flex flex-wrap items-center gap-2.5 text-xs text-slate-600">
+            <span className="inline-flex items-center gap-1 font-semibold text-slate-800 bg-white border border-stone-200 px-2.5 py-1 rounded-md">
+              <Clock className="h-3.5 w-3.5 text-[#b91c1c]" />
+              <span>{currentCourseObj.duration}</span>
+            </span>
+            <span className="inline-flex items-center gap-1 font-semibold text-[#1E5631] bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md">
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>{currentCourseObj.tag}</span>
+            </span>
+          </div>
         </div>
 
         <AnimatePresence mode="wait">

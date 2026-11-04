@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "motion/react";
 import { ArrowRight, CheckCircle2, ExternalLink, GraduationCap, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -162,12 +163,14 @@ export default function HowItWorksSection() {
 
             <div className="pt-5 mt-4 border-t border-stone-200/60">
               <Button
-                onClick={scrollToForm}
+                asChild
                 variant="outline"
                 size="sm"
                 className="w-full border-stone-300 hover:bg-white text-slate-800 font-semibold text-xs rounded-xl active:scale-95 transition-transform"
               >
-                {t.step1Action} <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                <Link href="/japanese-language/enroll/jft-irodori">
+                  {t.step1Action} <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                </Link>
               </Button>
             </div>
           </motion.div>

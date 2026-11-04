@@ -1102,28 +1102,7 @@ export const DEFAULT_WEBSITE_CMS: WebsiteCmsContent = {
     fullPaymentDiscountPercent: 20,
     bkashMerchantNumber: "01805-013633",
     banglaQrImageUrl: "/images/payment/bangla-qr.png",
-    promoCodes: [
-      {
-        id: "promo-knltc-10",
-        code: "KNLTC10",
-        discountType: "PERCENT",
-        discountValue: 10,
-        clientNameOrNote: "স্পেশাল স্কলারশিপ প্রোমো (সকল কোর্স)",
-        expiresAt: "2027-12-31",
-        isActive: true,
-        createdAt: "2026-01-01T00:00:00.000Z",
-      },
-      {
-        id: "promo-khulna-1000",
-        code: "KHULNA1000",
-        discountType: "FLAT_BDT",
-        discountValue: 1000,
-        clientNameOrNote: "খুলনা ও অনলাইন স্পেশাল ডিসকাউন্ট",
-        expiresAt: "2027-12-31",
-        isActive: true,
-        createdAt: "2026-01-01T00:00:00.000Z",
-      },
-    ],
+    promoCodes: [],
     externalLmsUrl: "https://npw.bd/knltc",
     externalIrodoriUrl: "https://npw.bd/irodori/index.html",
     bonuses: [
@@ -1275,71 +1254,7 @@ export const DEFAULT_WEBSITE_CMS: WebsiteCmsContent = {
     eligibilityMaxStudyGapYears: 6,
     ieltsRequired: false,
   },
-  jobCirculars: [
-    {
-      id: "job-01",
-      title: {
-        bn: "SSW কনস্ট্রাকশন ও নির্মাণ বিশেষজ্ঞ (টোকিও ও ওসাকা)",
-        en: "SSW Construction & Building Specialist (Tokyo & Osaka)",
-        ja: "特定技能 建設・躯体工事スペシャリスト（東京・大阪）",
-      },
-      category: "SSW_CONSTRUCTION",
-      salaryYen: "¥180,000 – ¥230,000 / মাস",
-      salaryBdtEquivalent: "৳ ১,৪৫,০০০ – ৳ ১,৮৫,০০০",
-      locationJapan: "Tokyo, Kanagawa, Osaka",
-      openings: 15,
-      requirements: {
-        bn: "JLPT N4 অথবা JFT-Basic + কনস্ট্রাকশন স্কিল টেস্ট (JAC)। ভালো শারীরিক সুস্থতা।",
-        en: "JLPT N4 or JFT-Basic + JAC Construction Evaluation Test. Good physical fitness.",
-        ja: "JLPT N4またはJFT-Basic合格、JAC建設評価試験合格、健康状態良好な方。",
-      },
-      specialBenefitsBn: "💥 স্পেশাল অফার: JLPT N4 পাসদের ঢাকায় ফ্রি থাকা-খাওয়া ও প্র্যাকটিক্যাল স্কিল ট্রেনিং দেওয়া হচ্ছে!",
-      isPublished: true,
-      deadline: "2027-01-31",
-    },
-    {
-      id: "job-02",
-      title: {
-        bn: "SSW নার্সিং কেয়ারগিভার (Kaigo - আইচি ও হিরোশিমা)",
-        en: "SSW Nursing Caregiver (Kaigo - Aichi & Hiroshima)",
-        ja: "特定技能 介護スタッフ（愛知・広島）",
-      },
-      category: "SSW_CAREGIVER",
-      salaryYen: "¥190,000 – ¥245,000 / মাস",
-      salaryBdtEquivalent: "৳ ১,৫৫,০০০ – ৳ ১,৯৮,০০০",
-      locationJapan: "Nagoya, Hiroshima, Fukuoka",
-      openings: 20,
-      requirements: {
-        bn: "JLPT N4 বা JFT-Basic + নার্সিং কেয়ার স্কিল ও জাপানিজ কেয়ারগিভিং ল্যাঙ্গুয়েজ টেস্ট।",
-        en: "JLPT N4 or JFT-Basic + Nursing Care Skill & Caregiving Japanese Evaluation Test.",
-        ja: "JLPT N4またはJFT-Basic合格、介護技能評価試験および介護日本語試験合格。",
-      },
-      specialBenefitsBn: "সাবসিডিযুক্ত আধুনিক ডরমেটরি বাসস্থান, ওভারটাইম ভাতা এবং জাপানি সোশ্যাল ইনস্যুরেন্স সুবিধা।",
-      isPublished: true,
-      deadline: "2027-02-15",
-    },
-    {
-      id: "job-03",
-      title: {
-        bn: "SSW এগ্রিকালচার ও ফার্মিং বিশেষজ্ঞ (হক্কাইডো ও নাগানো)",
-        en: "SSW Agriculture & Farming Specialist (Hokkaido & Nagano)",
-        ja: "特定技能 農業・畜産スタッフ（北海道・長野）",
-      },
-      category: "SSW_AGRICULTURE",
-      salaryYen: "¥170,000 – ¥215,000 / মাস",
-      salaryBdtEquivalent: "৳ ১,৩৮,০০০ – ৳ ১,৭২,০০০",
-      locationJapan: "Hokkaido, Nagano, Kumamoto",
-      openings: 12,
-      requirements: {
-        bn: "JLPT N4 অথবা JFT-Basic + এগ্রিকালচার স্কিল টেস্ট। ফসল ও গ্রিনহাউস কাজে আগ্রহ।",
-        en: "JLPT N4 or JFT-Basic + Agriculture Skill Test. Passion for greenhouse & crops.",
-        ja: "JLPT N4またはJFT-Basic合格、農業技能測定試験合格。",
-      },
-      specialBenefitsBn: "বিনামূল্যে ফ্রেশ ফার্ম ফুড অ্যালাউন্স, কোজি কান্ট্রি হাউজিং ও ভিসা নবায়ন সুবিধা।",
-      isPublished: true,
-      deadline: "2027-03-01",
-    },
-  ],
+  jobCirculars: [],
   storeProducts: [],
   customerOrders: [],
   metaPixelId: "n6w8uw179i0d0yw42u7z64xonnbmzv",
@@ -1527,6 +1442,19 @@ export function getCmsStore(): MasterKnlTcStore {
               : b.assignedSenseiName,
           }));
         }
+        if (parsed.websiteCms?.[0]) {
+          if (Array.isArray(parsed.websiteCms[0].languageCoursePage?.promoCodes)) {
+            parsed.websiteCms[0].languageCoursePage.promoCodes =
+              parsed.websiteCms[0].languageCoursePage.promoCodes.filter(
+                (p) => p.id !== "promo-knltc-10" && p.id !== "promo-khulna-1000",
+              );
+          }
+          if (Array.isArray(parsed.websiteCms[0].jobCirculars)) {
+            parsed.websiteCms[0].jobCirculars = parsed.websiteCms[0].jobCirculars.filter(
+              (j) => j.id !== "job-01" && j.id !== "job-02" && j.id !== "job-03",
+            );
+          }
+        }
         return parsed;
       }
     } catch {
@@ -1629,6 +1557,10 @@ export function purgeStoreOfDummyData(): MasterKnlTcStore {
     store.websiteCms[0].customerOrders = [];
     store.websiteCms[0].testimonials = [];
     store.websiteCms[0].storeProducts = [];
+    store.websiteCms[0].jobCirculars = [];
+    if (store.websiteCms[0].languageCoursePage) {
+      store.websiteCms[0].languageCoursePage.promoCodes = [];
+    }
     if (Array.isArray(store.websiteCms[0].systemAccounts)) {
       store.websiteCms[0].systemAccounts = store.websiteCms[0].systemAccounts.filter(
         (a) => a.id !== "acc-admin-01" && a.email?.toLowerCase() !== "baset@knltc.com",
@@ -2578,15 +2510,21 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
         languageCoursePage: {
           ...DEFAULT_WEBSITE_CMS.languageCoursePage,
           ...(serverCms.languageCoursePage || {}),
+          promoCodes: Array.isArray(serverCms.languageCoursePage?.promoCodes)
+            ? serverCms.languageCoursePage.promoCodes.filter(
+                (p) => p.id !== "promo-knltc-10" && p.id !== "promo-khulna-1000",
+              )
+            : [],
         },
         studyInJapanPage: {
           ...DEFAULT_WEBSITE_CMS.studyInJapanPage,
           ...(serverCms.studyInJapanPage || {}),
         },
-        jobCirculars:
-          Array.isArray(serverCms.jobCirculars) && serverCms.jobCirculars.length > 0
-            ? serverCms.jobCirculars
-            : DEFAULT_WEBSITE_CMS.jobCirculars,
+        jobCirculars: Array.isArray(serverCms.jobCirculars)
+          ? serverCms.jobCirculars.filter(
+              (j) => j.id !== "job-01" && j.id !== "job-02" && j.id !== "job-03",
+            )
+          : [],
         systemAccounts: Array.isArray(serverCms.systemAccounts)
           ? serverCms.systemAccounts.filter(
               (a) => a.id !== "acc-admin-01" && a.email?.toLowerCase() !== "baset@knltc.com",
@@ -2677,6 +2615,16 @@ export function getWebsiteCms(): WebsiteCmsContent {
   } else {
     cms.systemAccounts = cms.systemAccounts.filter(
       (a) => a.id !== "acc-admin-01" && a.email?.toLowerCase() !== "baset@knltc.com",
+    );
+  }
+  if (Array.isArray(cms.languageCoursePage?.promoCodes)) {
+    cms.languageCoursePage.promoCodes = cms.languageCoursePage.promoCodes.filter(
+      (p) => p.id !== "promo-knltc-10" && p.id !== "promo-khulna-1000",
+    );
+  }
+  if (Array.isArray(cms.jobCirculars)) {
+    cms.jobCirculars = cms.jobCirculars.filter(
+      (j) => j.id !== "job-01" && j.id !== "job-02" && j.id !== "job-03",
     );
   }
   return cms;

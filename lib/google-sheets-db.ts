@@ -25,6 +25,7 @@ export const GOOGLE_SHEETS_TABLES = [
   "blog_posts",
   "categories",
   "knltc_b2b_agents",
+  "knltc_course_enrollments",
   "knltc_crm_leads",
   "knltc_finance_transactions",
   "knltc_lms_bridges",
@@ -985,6 +986,7 @@ function buildInitialFallbackTables(): Record<GoogleSheetsTableName, Record<stri
         created_at: v.updatedAt,
       };
     }),
+    knltc_course_enrollments: [],
     knltc_lms_bridges: initialStore.lmsBridges.map((b) => ({
       id: b.id,
       lead_id: b.leadId || "",
@@ -1145,6 +1147,7 @@ export function purgeFallbackTables(): void {
   fallback.blog_posts = [];
   fallback.knltc_crm_leads = [];
   fallback.knltc_visa_applicants = [];
+  fallback.knltc_course_enrollments = [];
   fallback.knltc_lms_bridges = [];
   fallback.knltc_b2b_agents = [];
   fallback.knltc_partner_schools = [];
@@ -1923,6 +1926,7 @@ export async function bulkSyncMasterStoreToSheets(
         created_at: v.updatedAt || nowIso,
       };
     }),
+    knltc_course_enrollments: fallback.knltc_course_enrollments || [],
     knltc_lms_bridges: (s.lmsBridges || []).map((b) => ({
       id: b.id,
       lead_id: b.leadId || "",

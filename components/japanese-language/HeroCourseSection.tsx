@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { motion } from "motion/react";
 import {
   ArrowRight,
@@ -376,10 +377,12 @@ export default function HeroCourseSection() {
               {/* Quick Actions */}
               <div className="mt-6 pt-4 border-t border-stone-100 flex gap-2.5">
                 <Button
-                  onClick={scrollToForm}
+                  asChild
                   className="flex-1 bg-[#b91c1c] hover:bg-red-800 text-white font-semibold text-xs py-5 rounded-xl shadow-xs active:scale-[0.98] transition-transform cursor-pointer"
                 >
-                  {t.btnEnrollNow}
+                  <Link href="/japanese-language/enroll/jft-irodori">
+                    {t.btnEnrollNow}
+                  </Link>
                 </Button>
                 <Button
                   asChild
