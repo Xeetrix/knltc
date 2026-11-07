@@ -125,16 +125,64 @@ export async function GET() {
         ? staffMembers.value
         : null;
 
-    let dbCms = null;
+    const normalizeCmsQr = (cmsObj: any) => {
+      if (!cmsObj || typeof cmsObj !== "object") return cmsObj;
+      if (cmsObj.languageCoursePage?.banglaQrImageUrl) {
+        const rawQr = String(cmsObj.languageCoursePage.banglaQrImageUrl).trim();
+        const mediaIdx = rawQr.indexOf("/api/media/file/");
+        if (mediaIdx >= 0) {
+          cmsObj.languageCoursePage.banglaQrImageUrl = rawQr.slice(mediaIdx);
+        }
+      }
+      return cmsObj;
+    };
+
+    let dbCms: any[] | null = null;
+    let dbUpdatedAt = 0;
     if (cmsRoot.status === "fulfilled" && Array.isArray(cmsRoot.value) && cmsRoot.value.length > 0) {
       const masterRow =
         cmsRoot.value.find((r: any) => String(r?.section_key) === "master_cms") ||
         cmsRoot.value.find((r: any) => !String(r?.section_key || "").startsWith("media_item_")) ||
         cmsRoot.value[0];
+      dbUpdatedAt = Date.parse(String(masterRow?.updated_at || "")) || 0;
       const rawCms = masterRow?.data ?? masterRow?.content ?? null;
       if (rawCms) {
-        dbCms = [typeof rawCms === "string" ? JSON.parse(rawCms) : rawCms];
+        const parsed = typeof rawCms === "string" ? JSON.parse(rawCms) : rawCms;
+        if (parsed?.updatedAt) {
+          dbUpdatedAt = Math.max(dbUpdatedAt, Date.parse(String(parsed.updatedAt)) || 0);
+        }
+        dbCms = [normalizeCmsQr(parsed)];
       }
+    }
+
+    const snapCms = snapshot.websiteCms?.[0] ? normalizeCmsQr(snapshot.websiteCms[0]) : null;
+    const snapUpdatedAt = snapCms?.updatedAt ? Date.parse(String(snapCms.updatedAt)) || 0 : 0;
+
+    let resolvedCmsList = dbCms || (snapCms ? [snapCms] : null);
+    if (dbCms?.[0] && snapCms) {
+      const primary = snapUpdatedAt > dbUpdatedAt ? snapCms : dbCms[0];
+      const secondary = snapUpdatedAt > dbUpdatedAt ? dbCms[0] : snapCms;
+      const mergedQr =
+        primary.languageCoursePage?.banglaQrImageUrl ||
+        secondary.languageCoursePage?.banglaQrImageUrl ||
+        "";
+      resolvedCmsList = [
+        normalizeCmsQr({
+          ...secondary,
+          ...primary,
+          languageCoursePage: {
+            ...(secondary.languageCoursePage || {}),
+            ...(primary.languageCoursePage || {}),
+            banglaQrImageUrl: mergedQr,
+          },
+          leadExtendedProfiles:
+            primary.leadExtendedProfiles || secondary.leadExtendedProfiles || {},
+          schoolExtendedProfiles:
+            primary.schoolExtendedProfiles || secondary.schoolExtendedProfiles || {},
+          b2bAgentExtendedProfiles:
+            primary.b2bAgentExtendedProfiles || secondary.b2bAgentExtendedProfiles || {},
+        }),
+      ];
     }
 
     const result = {
@@ -145,7 +193,7 @@ export async function GET() {
       partnerSchools: dbSchools,
       transactions: dbTransactions,
       staffList: dbStaff,
-      websiteCms: dbCms || snapshot.websiteCms || null,
+      websiteCms: resolvedCmsList,
       snapshotStore: snapshot,
     };
 
@@ -166,13 +214,20 @@ export async function POST(request: Request) {
       fullStore?: MasterKnlTcStore;
     };
 
+    const nowIso = new Date().toISOString();
     const snapshot = await readServerSnapshot();
 
     if (fullStore && Array.isArray(fullStore.crmLeads)) {
+      if (fullStore.websiteCms?.[0]) {
+        (fullStore.websiteCms[0] as any).updatedAt = nowIso;
+      }
       await writeServerSnapshot(fullStore);
     }
 
     if (type === "FULL_STORE_SYNC" && fullStore) {
+      if (fullStore.websiteCms?.[0]) {
+        (fullStore.websiteCms[0] as any).updatedAt = nowIso;
+      }
       const cleanedStore = await writeServerSnapshot(fullStore);
       await bulkSyncMasterStoreToSheets(cleanedStore, false);
       return NextResponse.json({
@@ -202,6 +257,16 @@ export async function POST(request: Request) {
 
     if (type === "CMS_UPDATE" && payload) {
       const cleanedCms = offloadEmbeddedBase64Strings(payload, "KNLTC_Website_CMS", "cms").value;
+      if (cleanedCms && typeof cleanedCms === "object") {
+        cleanedCms.updatedAt = nowIso;
+        if (cleanedCms.languageCoursePage?.banglaQrImageUrl) {
+          const rawQr = String(cleanedCms.languageCoursePage.banglaQrImageUrl).trim();
+          const idx = rawQr.indexOf("/api/media/file/");
+          if (idx >= 0) {
+            cleanedCms.languageCoursePage.banglaQrImageUrl = rawQr.slice(idx);
+          }
+        }
+      }
       snapshot.websiteCms = [cleanedCms];
       await writeServerSnapshot(snapshot);
       await upsertRow(
@@ -210,7 +275,7 @@ export async function POST(request: Request) {
           id: "cms-master-01",
           section_key: "master_cms",
           data: cleanedCms,
-          updated_at: new Date().toISOString(),
+          updated_at: nowIso,
         },
         "section_key",
       );

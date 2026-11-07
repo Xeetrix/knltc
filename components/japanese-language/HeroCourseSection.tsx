@@ -18,24 +18,42 @@ import {
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
-import { DEFAULT_WEBSITE_CMS, getWebsiteCms } from "@/lib/knltc-cms-store";
+import {
+  DEFAULT_WEBSITE_CMS,
+  fetchLiveStoreFromServer,
+  getWebsiteCms,
+} from "@/lib/knltc-cms-store";
 
 export default function HeroCourseSection() {
   const { language } = useLanguage();
   const [cmsConfig, setCmsConfig] = useState(DEFAULT_WEBSITE_CMS.languageCoursePage);
 
   useEffect(() => {
-    try {
-      const cms = getWebsiteCms();
-      if (cms?.languageCoursePage) {
-        setCmsConfig({
-          ...DEFAULT_WEBSITE_CMS.languageCoursePage,
-          ...cms.languageCoursePage,
-        });
+    const syncHeroCms = () => {
+      try {
+        const cms = getWebsiteCms();
+        if (cms?.languageCoursePage) {
+          setCmsConfig({
+            ...DEFAULT_WEBSITE_CMS.languageCoursePage,
+            ...cms.languageCoursePage,
+          });
+        }
+      } catch {
+        // fallback to default
       }
-    } catch {
-      // fallback to default
-    }
+    };
+
+    syncHeroCms();
+    void fetchLiveStoreFromServer().then(() => {
+      syncHeroCms();
+    });
+
+    window.addEventListener("knltc-cms-updated", syncHeroCms);
+    window.addEventListener("storage", syncHeroCms);
+    return () => {
+      window.removeEventListener("knltc-cms-updated", syncHeroCms);
+      window.removeEventListener("storage", syncHeroCms);
+    };
   }, []);
 
   const minCoursePrice = Math.min(

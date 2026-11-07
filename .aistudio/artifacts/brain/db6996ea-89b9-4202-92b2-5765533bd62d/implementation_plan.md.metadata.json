@@ -1,6 +1,6 @@
 {
-  "summary": "Updated implementation plan incorporating: (1) Removing redundant green Google Sheets banner and pre-seeded dummy promo codes/job circulars in Dashboard CMS, (2) Dedicated Ad-Ready Course Enrollment Pages (/japanese-language/enroll/[courseSlug]) for each of the 4 courses with 1-click campaign link copying, (3) Ultra-minimal, elegant redesign of /japanese-language and checkout pages, and (4) Google Apps Script Code.gs update with the new knltc_course_enrollments sheet tab.",
-  "updatedAt": "2026-11-04T17:40:32.655338284Z",
+  "summary": "ড্যাশবোর্ডে আপলোড করা Bangla QR ওয়েবসাইটে শো না করা এবং অন্য ব্রাউজার/ডিভাইস বা Incognito মোডে CMS আপডেট না আসার মূল কারণ (Root Cause) ও স্থায়ী সমাধানের পরিকল্পনা।",
+  "updatedAt": "2026-11-04T18:35:52.257274937Z",
   "requestFeedback": true,
   "userFacing": true
 }

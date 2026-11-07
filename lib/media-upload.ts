@@ -130,16 +130,18 @@ export async function compressImageToDataUrl(
   });
 }
 
-function toDirectPublicUrl(rawUrl?: string): string {
+export function normalizeMediaUrl(rawUrl?: string): string {
   if (!rawUrl) return "";
-  if (
-    rawUrl.startsWith("/") &&
-    typeof window !== "undefined" &&
-    window.location?.origin
-  ) {
-    return `${window.location.origin}${rawUrl}`;
+  const trimmed = String(rawUrl).trim();
+  const apiMediaIdx = trimmed.indexOf("/api/media/file/");
+  if (apiMediaIdx >= 0) {
+    return trimmed.slice(apiMediaIdx);
   }
-  return rawUrl;
+  return trimmed;
+}
+
+function toDirectPublicUrl(rawUrl?: string): string {
+  return normalizeMediaUrl(rawUrl);
 }
 
 /**

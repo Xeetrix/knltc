@@ -617,9 +617,10 @@ export function saveBinaryToMediaVault(options: {
           mvRow.drive_url = item.driveUrl;
           saveMediaIndexToDisk(list);
         }
-        // Also persist to `knltc_website_cms` (`section_key: media_item_<id>`) so Oct 29 deployments without `media_vault` tab still store it permanently!
         await postToAppsScript({
-          action: "UPSERT_CMS",
+          action: "UPSERT",
+          table: "knltc_website_cms",
+          matchKey: "section_key",
           section_key: `media_item_${item.id}`,
           payload: {
             id: `cms-${item.id}`,
@@ -1204,6 +1205,43 @@ function mergeRemoteAndMirrorRows(
     const localMirror = key ? mirrorMap.get(key) : undefined;
     if (!localMirror) return remote;
 
+    if (tableName === "knltc_website_cms") {
+      const localTime = Date.parse(String(localMirror.updated_at || "")) || 0;
+      const remoteTime = Date.parse(String(remote.updated_at || "")) || 0;
+      const seedTime = Date.parse(NOW_ISO) || 0;
+      // If localMirror has been updated more recently than remote (and isn't just initial seed), prefer localMirror
+      if (localTime > remoteTime && localTime > seedTime) {
+        return localMirror;
+      }
+      try {
+        const localData =
+          typeof localMirror.data === "string" ? JSON.parse(localMirror.data) : localMirror.data;
+        const remoteData =
+          typeof remote.data === "string" ? JSON.parse(remote.data) : remote.data;
+        if (key === "master_cms" && localData && remoteData && typeof remoteData === "object") {
+          const mergedCmsData = {
+            ...localData,
+            ...remoteData,
+            languageCoursePage: {
+              ...(localData.languageCoursePage || {}),
+              ...(remoteData.languageCoursePage || {}),
+              banglaQrImageUrl:
+                remoteData.languageCoursePage?.banglaQrImageUrl ||
+                localData.languageCoursePage?.banglaQrImageUrl ||
+                "",
+            },
+          };
+          return {
+            ...localMirror,
+            ...remote,
+            data: mergedCmsData,
+          };
+        }
+      } catch {
+        // Fallback to standard merge below
+      }
+    }
+
     const merged = { ...localMirror, ...remote };
 
     // Preserve media & document link columns if remote is empty
@@ -1317,6 +1355,9 @@ export async function fetchSheetTable<T = Record<string, any>>(
         const merged = mergeRemoteAndMirrorRows(safeTable, json.data, fallback[safeTable] || []);
         fallback[safeTable] = merged;
         saveFallbackTablesToDisk(fallback);
+        if (safeTable === "knltc_website_cms" || safeTable === "media_vault") {
+          syncMediaVaultFromFallbackRows();
+        }
       }
       return (fallback[safeTable] || []) as T[];
     }
@@ -1462,6 +1503,55 @@ export async function mutateSheetTable<T = Record<string, any>>(options: {
       cleanedTables[tbl] = offloadEmbeddedBase64Strings(rows, `KNLTC_${tbl}`, tbl).value;
     }
     options.tables = cleanedTables;
+  }
+
+  // Ensure `master_cms` data never exceeds Google Sheets 50,000-character cell limit due to redundant extended profile maps
+  const compactMasterCmsData = (rawCms: any) => {
+    if (!rawCms || typeof rawCms !== "object") return rawCms;
+    const clone = { ...rawCms };
+    if (clone.languageCoursePage?.banglaQrImageUrl) {
+      const qr = String(clone.languageCoursePage.banglaQrImageUrl).trim();
+      const idx = qr.indexOf("/api/media/file/");
+      if (idx >= 0) {
+        clone.languageCoursePage = {
+          ...clone.languageCoursePage,
+          banglaQrImageUrl: qr.slice(idx),
+        };
+      }
+    }
+    const serialized = JSON.stringify(clone);
+    if (serialized.length > 36000) {
+      delete clone.leadExtendedProfiles;
+      delete clone.schoolExtendedProfiles;
+      delete clone.b2bAgentExtendedProfiles;
+    }
+    return clone;
+  };
+
+  if (
+    (tableName === "knltc_website_cms" || options.action === "UPSERT_CMS") &&
+    options.payload &&
+    typeof options.payload === "object"
+  ) {
+    if (options.payload.section_key === "master_cms" && options.payload.data) {
+      options.payload = {
+        ...options.payload,
+        data: compactMasterCmsData(options.payload.data),
+      };
+    } else if (!options.payload.section_key && options.payload.languageCoursePage) {
+      options.payload = compactMasterCmsData(options.payload);
+    }
+  }
+  if (options.tables && Array.isArray(options.tables.knltc_website_cms)) {
+    options.tables.knltc_website_cms = options.tables.knltc_website_cms.map((row: any) => {
+      if (row && row.section_key === "master_cms" && row.data) {
+        return {
+          ...row,
+          data: compactMasterCmsData(row.data),
+        };
+      }
+      return row;
+    });
   }
 
   // 1. Update local persistent mirror immediately so reads are always instant & durable
@@ -1712,7 +1802,9 @@ export async function uploadFileToDriveOrCloudinary(options: {
           })
         : Promise.resolve(),
       postToAppsScript({
-        action: "UPSERT_CMS",
+        action: "UPSERT",
+        table: "knltc_website_cms",
+        matchKey: "section_key",
         section_key: `media_item_${vaultItem.id}`,
         payload: {
           id: `cms-${vaultItem.id}`,

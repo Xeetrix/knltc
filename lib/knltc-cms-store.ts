@@ -1525,21 +1525,38 @@ export function saveCmsStore(
     window.dispatchEvent(new CustomEvent("knltc-cms-updated", { detail: updated }));
 
     if (!options?.skipServerSync) {
+      if (updated.websiteCms?.[0]) {
+        (updated.websiteCms[0] as any).updatedAt = new Date().toISOString();
+      }
       if (fullStoreSyncTimer) {
         clearTimeout(fullStoreSyncTimer);
       }
       fullStoreSyncTimer = setTimeout(() => {
+        const latestStore = globalForStore.__knltc_master_store || updated;
+        if (latestStore.websiteCms?.[0]) {
+          fetch("/api/cms/sync", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type: "CMS_UPDATE",
+              payload: latestStore.websiteCms[0],
+              fullStore: latestStore,
+            }),
+          }).catch((err) => {
+            console.warn("[KNLTC-CMS] Background CMS_UPDATE sync warning:", err);
+          });
+        }
         fetch("/api/cms/sync", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             type: "FULL_STORE_SYNC",
-            fullStore: globalForStore.__knltc_master_store || updated,
+            fullStore: latestStore,
           }),
         }).catch((err) => {
           console.warn("[KNLTC-CMS] Background fullStore sync warning:", err);
         });
-      }, 350);
+      }, 300);
     }
   }
 }
@@ -2510,6 +2527,15 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
         languageCoursePage: {
           ...DEFAULT_WEBSITE_CMS.languageCoursePage,
           ...(serverCms.languageCoursePage || {}),
+          banglaQrImageUrl: (() => {
+            const rawQr = String(
+              serverCms.languageCoursePage?.banglaQrImageUrl ||
+                store.websiteCms?.[0]?.languageCoursePage?.banglaQrImageUrl ||
+                "",
+            ).trim();
+            const mediaIdx = rawQr.indexOf("/api/media/file/");
+            return mediaIdx >= 0 ? rawQr.slice(mediaIdx) : rawQr;
+          })(),
           promoCodes: Array.isArray(serverCms.languageCoursePage?.promoCodes)
             ? serverCms.languageCoursePage.promoCodes.filter(
                 (p) => p.id !== "promo-knltc-10" && p.id !== "promo-khulna-1000",
@@ -2616,6 +2642,13 @@ export function getWebsiteCms(): WebsiteCmsContent {
     cms.systemAccounts = cms.systemAccounts.filter(
       (a) => a.id !== "acc-admin-01" && a.email?.toLowerCase() !== "baset@knltc.com",
     );
+  }
+  if (cms.languageCoursePage?.banglaQrImageUrl) {
+    const rawQr = String(cms.languageCoursePage.banglaQrImageUrl).trim();
+    const mediaIdx = rawQr.indexOf("/api/media/file/");
+    if (mediaIdx >= 0) {
+      cms.languageCoursePage.banglaQrImageUrl = rawQr.slice(mediaIdx);
+    }
   }
   if (Array.isArray(cms.languageCoursePage?.promoCodes)) {
     cms.languageCoursePage.promoCodes = cms.languageCoursePage.promoCodes.filter(

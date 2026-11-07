@@ -21,7 +21,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { translate } from "@/lib/i18n";
-import { DEFAULT_WEBSITE_CMS, getWebsiteCms } from "@/lib/knltc-cms-store";
+import {
+  DEFAULT_WEBSITE_CMS,
+  fetchLiveStoreFromServer,
+  getWebsiteCms,
+} from "@/lib/knltc-cms-store";
 
 export type StandardCourseId =
   | "JFT_IRODORI"
@@ -50,24 +54,38 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
   });
 
   useEffect(() => {
-    try {
-      const cms = getWebsiteCms();
-      if (cms?.languageCoursePage) {
-        setCmsPricing({
-          n5PriceBdt: Number(cms.languageCoursePage.n5PriceBdt) || 12000,
-          n4PriceBdt: Number(cms.languageCoursePage.n4PriceBdt) || 14500,
-          comboPriceBdt: Number(cms.languageCoursePage.comboPriceBdt) || 21500,
-          jftPriceBdt: Number(cms.languageCoursePage.jftPriceBdt) || 12500,
-          fullPaymentDiscountPercent:
-            cms.languageCoursePage.fullPaymentDiscountPercent ?? 20,
-          externalIrodoriUrl:
-            cms.languageCoursePage.externalIrodoriUrl ||
-            "https://npw.bd/irodori/index.html",
-        });
+    const syncPricing = () => {
+      try {
+        const cms = getWebsiteCms();
+        if (cms?.languageCoursePage) {
+          setCmsPricing({
+            n5PriceBdt: Number(cms.languageCoursePage.n5PriceBdt) || 12000,
+            n4PriceBdt: Number(cms.languageCoursePage.n4PriceBdt) || 14500,
+            comboPriceBdt: Number(cms.languageCoursePage.comboPriceBdt) || 21500,
+            jftPriceBdt: Number(cms.languageCoursePage.jftPriceBdt) || 12500,
+            fullPaymentDiscountPercent:
+              cms.languageCoursePage.fullPaymentDiscountPercent ?? 20,
+            externalIrodoriUrl:
+              cms.languageCoursePage.externalIrodoriUrl ||
+              "https://npw.bd/irodori/index.html",
+          });
+        }
+      } catch {
+        // fallback to defaults
       }
-    } catch {
-      // fallback to defaults
-    }
+    };
+
+    syncPricing();
+    void fetchLiveStoreFromServer().then(() => {
+      syncPricing();
+    });
+
+    window.addEventListener("knltc-cms-updated", syncPricing);
+    window.addEventListener("storage", syncPricing);
+    return () => {
+      window.removeEventListener("knltc-cms-updated", syncPricing);
+      window.removeEventListener("storage", syncPricing);
+    };
   }, []);
 
   const discountPct = cmsPricing.fullPaymentDiscountPercent;

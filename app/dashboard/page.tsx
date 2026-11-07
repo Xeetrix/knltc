@@ -6828,6 +6828,7 @@ export default function DashboardPage() {
                             if (!cms.topAnnouncementBar.text) cms.topAnnouncementBar.text = { ...DEFAULT_WEBSITE_CMS.topAnnouncementBar.text };
                             cms.topAnnouncementBar.text[language] = e.target.value;
                             store.websiteCms[0] = cms;
+                            saveCmsStore(store);
                             setStore({ ...store });
                           }}
                           className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 font-medium"
@@ -6843,6 +6844,7 @@ export default function DashboardPage() {
                             if (!cms.popupBanner.headline) cms.popupBanner.headline = { ...DEFAULT_WEBSITE_CMS.popupBanner.headline };
                             cms.popupBanner.headline[language] = e.target.value;
                             store.websiteCms[0] = cms;
+                            saveCmsStore(store);
                             setStore({ ...store });
                           }}
                           className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 font-medium"
@@ -6858,6 +6860,7 @@ export default function DashboardPage() {
                             if (!cms.heroSection.headline) cms.heroSection.headline = { ...DEFAULT_WEBSITE_CMS.heroSection.headline };
                             cms.heroSection.headline[language] = e.target.value;
                             store.websiteCms[0] = cms;
+                            saveCmsStore(store);
                             setStore({ ...store });
                           }}
                           className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 font-medium"
@@ -6871,6 +6874,7 @@ export default function DashboardPage() {
                           onChange={(e) => {
                             cms.metaPixelId = e.target.value;
                             store.websiteCms[0] = cms;
+                            saveCmsStore(store);
                             setStore({ ...store });
                           }}
                           className="mt-1 w-full rounded-xl border border-slate-200 p-2.5 font-mono font-semibold"
@@ -6906,6 +6910,7 @@ export default function DashboardPage() {
                                 cms.languageCoursePage = { ...DEFAULT_WEBSITE_CMS.languageCoursePage };
                               cms.languageCoursePage.jftPriceBdt = Number(e.target.value);
                               store.websiteCms[0] = cms;
+                              saveCmsStore(store);
                               setStore({ ...store });
                             }}
                             className="mt-1 w-full rounded-xl border border-red-200 bg-red-50/30 p-2 font-bold tabular-nums text-slate-900"
@@ -6921,6 +6926,7 @@ export default function DashboardPage() {
                                 cms.languageCoursePage = { ...DEFAULT_WEBSITE_CMS.languageCoursePage };
                               cms.languageCoursePage.n5PriceBdt = Number(e.target.value);
                               store.websiteCms[0] = cms;
+                              saveCmsStore(store);
                               setStore({ ...store });
                             }}
                             className="mt-1 w-full rounded-xl border border-slate-200 p-2 font-bold tabular-nums"
@@ -6936,6 +6942,7 @@ export default function DashboardPage() {
                                 cms.languageCoursePage = { ...DEFAULT_WEBSITE_CMS.languageCoursePage };
                               cms.languageCoursePage.n4PriceBdt = Number(e.target.value);
                               store.websiteCms[0] = cms;
+                              saveCmsStore(store);
                               setStore({ ...store });
                             }}
                             className="mt-1 w-full rounded-xl border border-slate-200 p-2 font-bold tabular-nums"
@@ -6951,6 +6958,7 @@ export default function DashboardPage() {
                                 cms.languageCoursePage = { ...DEFAULT_WEBSITE_CMS.languageCoursePage };
                               cms.languageCoursePage.comboPriceBdt = Number(e.target.value);
                               store.websiteCms[0] = cms;
+                              saveCmsStore(store);
                               setStore({ ...store });
                             }}
                             className="mt-1 w-full rounded-xl border border-slate-200 p-2 font-bold tabular-nums"
@@ -6973,6 +6981,7 @@ export default function DashboardPage() {
                                 cms.languageCoursePage = { ...DEFAULT_WEBSITE_CMS.languageCoursePage };
                               cms.languageCoursePage.fullPaymentDiscountPercent = Number(e.target.value);
                               store.websiteCms[0] = cms;
+                              saveCmsStore(store);
                               setStore({ ...store });
                             }}
                             className="mt-1 w-full rounded-xl border border-slate-200 p-2 font-bold tabular-nums text-emerald-700"
@@ -6990,6 +6999,7 @@ export default function DashboardPage() {
                                 cms.languageCoursePage = { ...DEFAULT_WEBSITE_CMS.languageCoursePage };
                               cms.languageCoursePage.bkashMerchantNumber = e.target.value;
                               store.websiteCms[0] = cms;
+                              saveCmsStore(store);
                               setStore({ ...store });
                             }}
                             className="mt-1 w-full rounded-xl border border-slate-200 p-2 font-mono font-bold"
@@ -7005,26 +7015,66 @@ export default function DashboardPage() {
                               onUploaded={(url) => {
                                 if (!cms.languageCoursePage)
                                   cms.languageCoursePage = { ...DEFAULT_WEBSITE_CMS.languageCoursePage };
-                                cms.languageCoursePage.banglaQrImageUrl = url;
+                                const mediaIdx = url.indexOf("/api/media/file/");
+                                const cleanUrl = mediaIdx >= 0 ? url.slice(mediaIdx) : url;
+                                cms.languageCoursePage.banglaQrImageUrl = cleanUrl;
                                 store.websiteCms[0] = cms;
                                 saveCmsStore(store);
                                 setStore({ ...store });
-                                showToast(tr("Bangla QR ইমেজ আপলোড হয়েছে!", "Bangla QR uploaded!", "QR画像を保存しました"));
+                                void fetch("/api/cms/sync", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({
+                                    type: "CMS_UPDATE",
+                                    payload: cms,
+                                    fullStore: store,
+                                  }),
+                                }).catch(() => {});
+                                showToast(tr("Bangla QR ইমেজ আপলোড ও সেভ হয়েছে!", "Bangla QR uploaded & synced!", "QR画像を保存しました"));
                               }}
                             />
                           </div>
                           <input
                             type="text"
-                            value={cms.languageCoursePage?.banglaQrImageUrl ?? "/images/payment/bangla-qr.png"}
+                            placeholder={tr("QR ইমেজ আপলোড করুন বা লিংক দিন", "Upload QR or paste image URL", "QR画像URL")}
+                            value={cms.languageCoursePage?.banglaQrImageUrl ?? ""}
                             onChange={(e) => {
                               if (!cms.languageCoursePage)
                                 cms.languageCoursePage = { ...DEFAULT_WEBSITE_CMS.languageCoursePage };
                               cms.languageCoursePage.banglaQrImageUrl = e.target.value;
                               store.websiteCms[0] = cms;
+                              saveCmsStore(store);
                               setStore({ ...store });
                             }}
                             className="mt-1 w-full rounded-xl border border-slate-200 p-2 font-mono text-[11px]"
                           />
+                          {cms.languageCoursePage?.banglaQrImageUrl && (
+                            <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-emerald-200 bg-emerald-50/40 p-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <img
+                                  src={cms.languageCoursePage.banglaQrImageUrl}
+                                  alt="Bangla QR Preview"
+                                  className="h-12 w-12 rounded-lg border border-slate-200 bg-white object-contain shrink-0"
+                                />
+                                <span className="text-[10px] font-bold text-emerald-800 truncate">
+                                  {tr("Bangla QR সক্রিয় আছে", "Bangla QR Active", "QR設定済み")}
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (!cms.languageCoursePage) return;
+                                  cms.languageCoursePage.banglaQrImageUrl = "";
+                                  store.websiteCms[0] = cms;
+                                  saveCmsStore(store);
+                                  setStore({ ...store });
+                                }}
+                                className="rounded-lg px-2 py-1 text-[10px] font-semibold text-red-600 hover:bg-red-50 shrink-0 cursor-pointer"
+                              >
+                                {tr("মুছুন", "Remove", "削除")}
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -7100,6 +7150,7 @@ export default function DashboardPage() {
                               if (!cms.studyInJapanPage) cms.studyInJapanPage = { ...DEFAULT_WEBSITE_CMS.studyInJapanPage };
                               cms.studyInJapanPage.regularPackageFeeBdt = Number(e.target.value);
                               store.websiteCms[0] = cms;
+                              saveCmsStore(store);
                               setStore({ ...store });
                             }}
                             className="mt-1 w-full rounded-xl border border-slate-200 p-2 font-bold tabular-nums"
@@ -7114,6 +7165,7 @@ export default function DashboardPage() {
                               if (!cms.studyInJapanPage) cms.studyInJapanPage = { ...DEFAULT_WEBSITE_CMS.studyInJapanPage };
                               cms.studyInJapanPage.premiumPackageFeeBdt = Number(e.target.value);
                               store.websiteCms[0] = cms;
+                              saveCmsStore(store);
                               setStore({ ...store });
                             }}
                             className="mt-1 w-full rounded-xl border border-slate-200 p-2 font-bold tabular-nums"
@@ -7210,6 +7262,7 @@ export default function DashboardPage() {
                                       .toUpperCase()
                                       .replace(/\s+/g, "");
                                     store.websiteCms[0] = cms;
+                                    saveCmsStore(store);
                                     setStore({ ...store });
                                   }}
                                   className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-mono font-bold text-[#b91c1c] uppercase"
@@ -7227,6 +7280,7 @@ export default function DashboardPage() {
                                     cms.languageCoursePage.promoCodes[pIdx].discountType = e.target
                                       .value as "PERCENT" | "FLAT_BDT";
                                     store.websiteCms[0] = cms;
+                                    saveCmsStore(store);
                                     setStore({ ...store });
                                   }}
                                   className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 font-semibold"
@@ -7250,6 +7304,7 @@ export default function DashboardPage() {
                                       e.target.value,
                                     );
                                     store.websiteCms[0] = cms;
+                                    saveCmsStore(store);
                                     setStore({ ...store });
                                   }}
                                   className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 font-bold tabular-nums text-emerald-700"
@@ -7268,6 +7323,7 @@ export default function DashboardPage() {
                                     cms.languageCoursePage.promoCodes[pIdx].clientNameOrNote =
                                       e.target.value;
                                     store.websiteCms[0] = cms;
+                                    saveCmsStore(store);
                                     setStore({ ...store });
                                   }}
                                   placeholder={tr("যেমন: করিম - খুলনা শাখা", "e.g. Special Client", "メモ")}
@@ -7286,6 +7342,7 @@ export default function DashboardPage() {
                                     if (!cms.languageCoursePage?.promoCodes) return;
                                     cms.languageCoursePage.promoCodes[pIdx].expiresAt = e.target.value;
                                     store.websiteCms[0] = cms;
+                                    saveCmsStore(store);
                                     setStore({ ...store });
                                   }}
                                   className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 font-mono text-[11px]"

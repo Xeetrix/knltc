@@ -36,6 +36,7 @@ import { translate } from "@/lib/i18n";
 import { trackLead } from "@/lib/meta-pixel";
 import {
   DEFAULT_WEBSITE_CMS,
+  fetchLiveStoreFromServer,
   getWebsiteCms,
   recordPublicCourseEnrollment,
   type LanguageCoursePromoCode,
@@ -130,20 +131,34 @@ export default function EnrollmentForm({
   );
 
   useEffect(() => {
-    try {
-      const cms = getWebsiteCms();
-      if (cms?.languageCoursePage) {
-        setCmsConfig({
-          ...DEFAULT_WEBSITE_CMS.languageCoursePage,
-          ...cms.languageCoursePage,
-          promoCodes: Array.isArray(cms.languageCoursePage.promoCodes)
-            ? cms.languageCoursePage.promoCodes
-            : [],
-        });
+    const syncFromStore = () => {
+      try {
+        const cms = getWebsiteCms();
+        if (cms?.languageCoursePage) {
+          setCmsConfig({
+            ...DEFAULT_WEBSITE_CMS.languageCoursePage,
+            ...cms.languageCoursePage,
+            promoCodes: Array.isArray(cms.languageCoursePage.promoCodes)
+              ? cms.languageCoursePage.promoCodes
+              : [],
+          });
+        }
+      } catch {
+        // fallback to default
       }
-    } catch {
-      // fallback to default
-    }
+    };
+
+    syncFromStore();
+    void fetchLiveStoreFromServer().then(() => {
+      syncFromStore();
+    });
+
+    window.addEventListener("knltc-cms-updated", syncFromStore);
+    window.addEventListener("storage", syncFromStore);
+    return () => {
+      window.removeEventListener("knltc-cms-updated", syncFromStore);
+      window.removeEventListener("storage", syncFromStore);
+    };
   }, []);
 
   const n5Fee = Number(cmsConfig.n5PriceBdt) || 12000;
@@ -152,8 +167,7 @@ export default function EnrollmentForm({
   const jftFee = Number(cmsConfig.jftPriceBdt) || 12500;
   const fullDiscountPercent = cmsConfig.fullPaymentDiscountPercent ?? 20;
   const merchantNumber = cmsConfig.bkashMerchantNumber || "01805-013633";
-  const banglaQrUrl =
-    cmsConfig.banglaQrImageUrl || "/images/payment/bangla-qr.png";
+  const banglaQrUrl = (cmsConfig.banglaQrImageUrl || "").trim();
   const lmsUrl = cmsConfig.externalLmsUrl || "https://npw.bd/knltc";
 
   const formatBdt = (val: number) => {
@@ -606,6 +620,11 @@ export default function EnrollmentForm({
   const [copiedMerchant, setCopiedMerchant] = useState(false);
   const [qrZoomOpen, setQrZoomOpen] = useState(false);
   const [qrImgFailed, setQrImgFailed] = useState(false);
+
+  // Reset image error state whenever the uploaded Bangla QR URL changes
+  useEffect(() => {
+    setQrImgFailed(false);
+  }, [banglaQrUrl]);
 
   // Current course pricing breakdown
   const currentCourseObj =
@@ -1742,8 +1761,9 @@ export default function EnrollmentForm({
                     onClick={() => setQrZoomOpen(true)}
                     className="group relative mx-auto max-w-[240px] rounded-2xl border-2 border-stone-200 bg-[#fcfaf7] p-4 text-center cursor-pointer hover:border-[#e2136e] transition"
                   >
-                    {!qrImgFailed ? (
+                    {Boolean(banglaQrUrl) && !qrImgFailed ? (
                       <img
+                        key={banglaQrUrl}
                         src={banglaQrUrl}
                         alt="KNLTC Official bKash Bangla QR"
                         onError={() => setQrImgFailed(true)}
@@ -1844,8 +1864,9 @@ export default function EnrollmentForm({
               </div>
 
               <div className="rounded-2xl border-2 border-stone-200 bg-[#fcfaf7] p-5">
-                {!qrImgFailed ? (
+                {Boolean(banglaQrUrl) && !qrImgFailed ? (
                   <img
+                    key={banglaQrUrl}
                     src={banglaQrUrl}
                     alt="KNLTC Bangla QR Zoomed"
                     onError={() => setQrImgFailed(true)}
