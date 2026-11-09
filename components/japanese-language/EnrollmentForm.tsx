@@ -9,6 +9,7 @@ import {
   Check,
   CheckCircle2,
   Copy,
+  Download,
   ExternalLink,
   GraduationCap,
   Headphones,
@@ -221,7 +222,12 @@ export default function EnrollmentForm({
         qrBoxBadge: "bKash / Bangla QR",
         qrBoxTitle: "Scan to Pay",
         qrMerchantLabel: "bKash Merchant:",
-        qrEnlargeBtn: "Enlarge QR",
+        qrEnlargeBtn: "Enlarge",
+        qrSaveBtn: "Save QR",
+        qrSaveModalBtn: "Save QR to Gallery",
+        qrSavedBtn: "QR Saved!",
+        qrSavedHint:
+          "QR saved to gallery! Open bKash app → Scan QR → Select from Gallery.",
         summaryHeading: "Fee Summary",
         baseFeeText: "Regular Course Fee",
         fullDiscountText: `Full Payment Discount (${fullDiscountPercent}%)`,
@@ -359,7 +365,12 @@ export default function EnrollmentForm({
         qrBoxBadge: "বিকাশ / Bangla QR",
         qrBoxTitle: "স্ক্যান করে পেমেন্ট করুন",
         qrMerchantLabel: "বিকাশ মার্চেন্ট:",
-        qrEnlargeBtn: "বড় করে দেখুন",
+        qrEnlargeBtn: "বড় করুন",
+        qrSaveBtn: "QR সেভ করুন",
+        qrSaveModalBtn: "গ্যালারিতে QR সেভ করুন",
+        qrSavedBtn: "সেভ হয়েছে!",
+        qrSavedHint:
+          "QR গ্যালারিতে সেভ হয়েছে! বিকাশ অ্যাপে Scan QR → গ্যালারি থেকে ছবিটি সিলেক্ট করুন।",
         summaryHeading: "কোর্স ফি ও পেমেন্ট হিসাব",
         baseFeeText: "রেগুলার কোর্স ফি",
         fullDiscountText: `ফুল পেমেন্ট ছাড় (${fullDiscountPercent}%)`,
@@ -497,7 +508,12 @@ export default function EnrollmentForm({
         qrBoxBadge: "bKash / Bangla QR",
         qrBoxTitle: "QRスキャン決済",
         qrMerchantLabel: "bKashマーチャント:",
-        qrEnlargeBtn: "拡大表示",
+        qrEnlargeBtn: "拡大",
+        qrSaveBtn: "QRを保存",
+        qrSaveModalBtn: "ギャラリーにQRを保存",
+        qrSavedBtn: "保存完了!",
+        qrSavedHint:
+          "QR画像を保存しました。bKashアプリのQRスキャンから画像を選択してください。",
         summaryHeading: "受講料明細",
         baseFeeText: "通常受講料",
         fullDiscountText: `一括払い割引 (${fullDiscountPercent}%)`,
@@ -698,6 +714,8 @@ export default function EnrollmentForm({
   const [copiedMerchant, setCopiedMerchant] = useState(false);
   const [qrZoomOpen, setQrZoomOpen] = useState(false);
   const [qrImgFailed, setQrImgFailed] = useState(false);
+  const [isSavingQr, setIsSavingQr] = useState(false);
+  const [qrSavedToast, setQrSavedToast] = useState(false);
 
   useEffect(() => {
     setQrImgFailed(false);
@@ -1010,6 +1028,178 @@ export default function EnrollmentForm({
     navigator.clipboard.writeText(merchantNumber.replace(/[^0-9]/g, ""));
     setCopiedMerchant(true);
     setTimeout(() => setCopiedMerchant(false), 2000);
+  };
+
+  const handleDownloadQr = async () => {
+    if (isSavingQr) return;
+    setIsSavingQr(true);
+
+    const activePayable =
+      paidAmountEdited && paidAmountInput > 0
+        ? paidAmountInput
+        : recommendedPayableToday;
+    const fileName = `KNLTC-bKash-QR-${courseOptionToSlug(course)}.png`;
+
+    const triggerDownload = (url: string) => {
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+
+    try {
+      const canvas = document.createElement("canvas");
+      const width = 900;
+      const height = 1120;
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+
+      if (!ctx) {
+        if (banglaQrUrl) triggerDownload(banglaQrUrl);
+        setQrSavedToast(true);
+        setTimeout(() => setQrSavedToast(false), 4500);
+        setIsSavingQr(false);
+        return;
+      }
+
+      // Background
+      ctx.fillStyle = "#fcfaf7";
+      ctx.fillRect(0, 0, width, height);
+
+      // Top Brand Accent Bar
+      ctx.fillStyle = "#e2136e";
+      ctx.fillRect(0, 0, width, 16);
+
+      // Header Badge
+      ctx.fillStyle = "#e2136e";
+      ctx.beginPath();
+      ctx.roundRect(width / 2 - 140, 44, 280, 44, 22);
+      ctx.fill();
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 22px system-ui, -apple-system, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("bKash / Bangla QR", width / 2, 73);
+
+      // Title & Merchant Info
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "800 34px system-ui, -apple-system, sans-serif";
+      ctx.fillText("KNLTC Japan Gateway", width / 2, 140);
+
+      ctx.fillStyle = "#475569";
+      ctx.font = "bold 24px monospace";
+      ctx.fillText(`bKash Merchant: ${merchantNumber}`, width / 2, 180);
+
+      // Pure White QR Quiet-Zone Card
+      const qrBoxSize = 640;
+      const qrBoxX = (width - qrBoxSize) / 2;
+      const qrBoxY = 215;
+
+      ctx.fillStyle = "#ffffff";
+      ctx.strokeStyle = "#e7e5e4";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 28);
+      ctx.fill();
+      ctx.stroke();
+
+      // Load and draw the QR image inside the white box
+      if (banglaQrUrl && !qrImgFailed) {
+        const img = new window.Image();
+        img.crossOrigin = "anonymous";
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = () => reject(new Error("QR image load failed"));
+          img.src = banglaQrUrl;
+        });
+
+        const pad = 36;
+        const targetSize = qrBoxSize - pad * 2;
+        const scale = Math.min(
+          targetSize / (img.naturalWidth || targetSize),
+          targetSize / (img.naturalHeight || targetSize),
+        );
+        const drawW = (img.naturalWidth || targetSize) * scale;
+        const drawH = (img.naturalHeight || targetSize) * scale;
+        const drawX = qrBoxX + (qrBoxSize - drawW) / 2;
+        const drawY = qrBoxY + (qrBoxSize - drawH) / 2;
+
+        ctx.drawImage(img, drawX, drawY, drawW, drawH);
+      } else {
+        ctx.fillStyle = "#0f172a";
+        ctx.font = "bold 28px system-ui, -apple-system, sans-serif";
+        ctx.fillText(
+          `bKash Make Payment: ${merchantNumber}`,
+          width / 2,
+          qrBoxY + qrBoxSize / 2,
+        );
+      }
+
+      // Bottom Course & Payable Amount Pill
+      const footerY = 890;
+      ctx.fillStyle = "#ecfdf5";
+      ctx.strokeStyle = "#a7f3d0";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(70, footerY, width - 140, 130, 24);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "#1E5631";
+      ctx.font = "bold 24px system-ui, -apple-system, sans-serif";
+      ctx.fillText(
+        `${currentCourseObj.name} (${
+          instantPaymentPlan === "FULL_PAYMENT"
+            ? `${fullDiscountPercent}% OFF Full Pay`
+            : "50% Installment"
+        })`,
+        width / 2,
+        footerY + 48,
+      );
+
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "900 36px system-ui, -apple-system, sans-serif";
+      ctx.fillText(
+        `Payable Now: ৳${Math.round(activePayable).toLocaleString("en-IN")}`,
+        width / 2,
+        footerY + 98,
+      );
+
+      ctx.fillStyle = "#64748b";
+      ctx.font = "600 18px system-ui, -apple-system, sans-serif";
+      ctx.fillText(
+        "Open bKash App → Scan QR → Select this image from Gallery",
+        width / 2,
+        1070,
+      );
+
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob((b) => resolve(b), "image/png", 1),
+      );
+
+      if (blob) {
+        const blobUrl = URL.createObjectURL(blob);
+        triggerDownload(blobUrl);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+      } else if (banglaQrUrl) {
+        triggerDownload(banglaQrUrl);
+      }
+
+      setQrSavedToast(true);
+      setTimeout(() => setQrSavedToast(false), 4500);
+    } catch {
+      // Fallback to direct download if CORS blocks canvas export
+      if (banglaQrUrl) {
+        triggerDownload(banglaQrUrl);
+        setQrSavedToast(true);
+        setTimeout(() => setQrSavedToast(false), 4500);
+      }
+    } finally {
+      setIsSavingQr(false);
+    }
   };
 
   const buildWhatsAppExpediteLink = () => {
@@ -1840,63 +2030,89 @@ export default function EnrollmentForm({
                               )}
                           </div>
 
-                          {/* Compact Mobile QR + Merchant Row */}
-                          <div className="rounded-xl border border-stone-200 bg-white p-3 flex items-center gap-3">
-                            <div
-                              onClick={() => setQrZoomOpen(true)}
-                              className="h-20 w-20 shrink-0 rounded-lg border border-stone-200 bg-[#fcfaf7] p-1.5 flex items-center justify-center cursor-pointer hover:border-[#e2136e] transition"
-                            >
-                              {Boolean(banglaQrUrl) && !qrImgFailed ? (
-                                <img
-                                  key={banglaQrUrl}
-                                  src={banglaQrUrl}
-                                  alt="KNLTC Official bKash Bangla QR"
-                                  onError={() => setQrImgFailed(true)}
-                                  className="h-full w-full object-contain rounded-xs"
-                                />
-                              ) : (
-                                <QrCode className="h-11 w-11 text-slate-900 stroke-[1.5]" />
-                              )}
-                            </div>
-
-                            <div className="flex-1 min-w-0 space-y-1.5">
-                              <div className="flex items-center justify-between gap-1">
-                                <span className="rounded-sm bg-[#e2136e] text-white px-1.5 py-0.5 text-[9px] font-bold">
-                                  {t.qrBoxBadge}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => setQrZoomOpen(true)}
-                                  className="inline-flex items-center gap-1 text-[10px] font-bold text-[#e2136e] hover:underline cursor-pointer"
-                                >
-                                  <Maximize2 className="h-2.5 w-2.5" />
-                                  <span>{t.qrEnlargeBtn}</span>
-                                </button>
+                          {/* Compact Mobile QR + Merchant Row with Smart Save QR to Gallery */}
+                          <div className="rounded-xl border border-stone-200 bg-white p-3 space-y-2.5">
+                            <div className="flex items-center gap-3">
+                              <div
+                                onClick={() => setQrZoomOpen(true)}
+                                className="h-20 w-20 shrink-0 rounded-lg border border-stone-200 bg-[#fcfaf7] p-1.5 flex items-center justify-center cursor-pointer hover:border-[#e2136e] transition"
+                              >
+                                {Boolean(banglaQrUrl) && !qrImgFailed ? (
+                                  <img
+                                    key={banglaQrUrl}
+                                    src={banglaQrUrl}
+                                    alt="KNLTC Official bKash Bangla QR"
+                                    onError={() => setQrImgFailed(true)}
+                                    className="h-full w-full object-contain rounded-xs"
+                                  />
+                                ) : (
+                                  <QrCode className="h-11 w-11 text-slate-900 stroke-[1.5]" />
+                                )}
                               </div>
 
-                              <div className="rounded-lg bg-stone-50 border border-stone-200/80 px-2.5 py-1.5 flex items-center justify-between gap-2">
-                                <div className="min-w-0">
-                                  <span className="text-[9px] text-slate-500 block">
-                                    {t.qrMerchantLabel}
+                              <div className="flex-1 min-w-0 space-y-1.5">
+                                <div className="flex items-center justify-between gap-1 flex-wrap">
+                                  <span className="rounded-sm bg-[#e2136e] text-white px-1.5 py-0.5 text-[9px] font-bold">
+                                    {t.qrBoxBadge}
                                   </span>
-                                  <span className="text-xs font-black font-mono text-slate-900 truncate block">
-                                    {merchantNumber}
-                                  </span>
+                                  <div className="flex items-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={handleDownloadQr}
+                                      disabled={isSavingQr}
+                                      className="inline-flex items-center gap-1 rounded-md bg-[#e2136e]/10 border border-[#e2136e]/25 px-2 py-0.5 text-[10px] font-bold text-[#e2136e] hover:bg-[#e2136e]/15 transition cursor-pointer"
+                                    >
+                                      {qrSavedToast ? (
+                                        <Check className="h-2.5 w-2.5 text-[#1E5631]" />
+                                      ) : (
+                                        <Download className="h-2.5 w-2.5" />
+                                      )}
+                                      <span>
+                                        {qrSavedToast ? t.qrSavedBtn : t.qrSaveBtn}
+                                      </span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setQrZoomOpen(true)}
+                                      className="inline-flex items-center gap-1 rounded-md border border-stone-200 bg-stone-50 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 hover:bg-stone-100 cursor-pointer"
+                                    >
+                                      <Maximize2 className="h-2.5 w-2.5" />
+                                      <span>{t.qrEnlargeBtn}</span>
+                                    </button>
+                                  </div>
                                 </div>
-                                <button
-                                  type="button"
-                                  onClick={handleCopyMerchant}
-                                  className="inline-flex items-center gap-1 rounded-md border border-stone-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-700 hover:bg-stone-100 shrink-0 cursor-pointer"
-                                >
-                                  {copiedMerchant ? (
-                                    <Check className="h-3 w-3 text-[#1E5631]" />
-                                  ) : (
-                                    <Copy className="h-3 w-3" />
-                                  )}
-                                  <span>{copiedMerchant ? "Copied" : "Copy"}</span>
-                                </button>
+
+                                <div className="rounded-lg bg-stone-50 border border-stone-200/80 px-2.5 py-1.5 flex items-center justify-between gap-2">
+                                  <div className="min-w-0">
+                                    <span className="text-[9px] text-slate-500 block">
+                                      {t.qrMerchantLabel}
+                                    </span>
+                                    <span className="text-xs font-black font-mono text-slate-900 truncate block">
+                                      {merchantNumber}
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={handleCopyMerchant}
+                                    className="inline-flex items-center gap-1 rounded-md border border-stone-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-700 hover:bg-stone-100 shrink-0 cursor-pointer"
+                                  >
+                                    {copiedMerchant ? (
+                                      <Check className="h-3 w-3 text-[#1E5631]" />
+                                    ) : (
+                                      <Copy className="h-3 w-3" />
+                                    )}
+                                    <span>{copiedMerchant ? "Copied" : "Copy"}</span>
+                                  </button>
+                                </div>
                               </div>
                             </div>
+
+                            {qrSavedToast && (
+                              <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 text-[11px] font-semibold text-[#1E5631] flex items-center gap-1.5">
+                                <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                                <span>{t.qrSavedHint}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -2190,18 +2406,35 @@ export default function EnrollmentForm({
 
                       {/* Compact Bangla QR & Merchant Number */}
                       <div className="rounded-xl border border-stone-200 bg-white p-3.5 space-y-3">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-2">
                           <span className="rounded-md bg-[#e2136e] text-white px-2 py-0.5 text-[10px] font-bold">
                             {t.qrBoxBadge}
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => setQrZoomOpen(true)}
-                            className="inline-flex items-center gap-1 text-[11px] font-bold text-[#e2136e] hover:underline cursor-pointer"
-                          >
-                            <Maximize2 className="h-3 w-3" />
-                            <span>{t.qrEnlargeBtn}</span>
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={handleDownloadQr}
+                              disabled={isSavingQr}
+                              className="inline-flex items-center gap-1 rounded-md bg-[#e2136e]/10 border border-[#e2136e]/25 px-2 py-0.5 text-[11px] font-bold text-[#e2136e] hover:bg-[#e2136e]/15 transition cursor-pointer"
+                            >
+                              {qrSavedToast ? (
+                                <Check className="h-3 w-3 text-[#1E5631]" />
+                              ) : (
+                                <Download className="h-3 w-3" />
+                              )}
+                              <span>
+                                {qrSavedToast ? t.qrSavedBtn : t.qrSaveBtn}
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setQrZoomOpen(true)}
+                              className="inline-flex items-center gap-1 rounded-md border border-stone-200 bg-stone-50 px-2 py-0.5 text-[11px] font-semibold text-slate-700 hover:bg-stone-100 cursor-pointer"
+                            >
+                              <Maximize2 className="h-3 w-3" />
+                              <span>{t.qrEnlargeBtn}</span>
+                            </button>
+                          </div>
                         </div>
 
                         <div
@@ -2225,6 +2458,13 @@ export default function EnrollmentForm({
                             </div>
                           )}
                         </div>
+
+                        {qrSavedToast && (
+                          <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 text-[11px] font-semibold text-[#1E5631] flex items-center gap-1.5">
+                            <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                            <span>{t.qrSavedHint}</span>
+                          </div>
+                        )}
 
                         <div className="rounded-lg bg-stone-50 border border-stone-200/80 px-3 py-2 flex items-center justify-between">
                           <div>
@@ -2320,6 +2560,43 @@ export default function EnrollmentForm({
                   : t.payableTodayInstText}
                 : {formatBdt(recommendedPayableToday)}
               </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleDownloadQr}
+                  disabled={isSavingQr}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#e2136e] hover:bg-[#c1105d] text-white py-2.5 px-3 text-xs font-bold shadow-xs transition cursor-pointer"
+                >
+                  {qrSavedToast ? (
+                    <Check className="h-3.5 w-3.5" />
+                  ) : (
+                    <Download className="h-3.5 w-3.5" />
+                  )}
+                  <span>
+                    {qrSavedToast ? t.qrSavedBtn : t.qrSaveModalBtn}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleCopyMerchant}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 hover:bg-stone-100 text-slate-800 py-2.5 px-3 text-xs font-bold transition cursor-pointer"
+                >
+                  {copiedMerchant ? (
+                    <Check className="h-3.5 w-3.5 text-[#1E5631]" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5" />
+                  )}
+                  <span>{copiedMerchant ? "Copied!" : merchantNumber}</span>
+                </button>
+              </div>
+
+              {qrSavedToast && (
+                <p className="text-[11px] font-semibold text-[#1E5631] bg-emerald-50/70 rounded-lg px-2.5 py-1.5">
+                  {t.qrSavedHint}
+                </p>
+              )}
             </motion.div>
           </motion.div>
         )}
