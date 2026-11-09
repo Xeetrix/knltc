@@ -121,25 +121,25 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
   const t = translate(
     {
       en: {
-        kicker: "4 Standardized Course Packages • Database Live Pricing",
+        kicker: "4 Standardized Course Packages • Official Fee & Scholarship",
         title: "Choose Your Japanese Language Package",
         subtitle:
-          "Priority JFT (Irodori) & JLPT N5/N4 programs designed for both Student Visa and SSW Job Visa candidates. Pay in 2 easy installments (50% + 50%) OR get an instant 20% discount on Full Payment!",
+          "Priority JFT (Irodori) & JLPT N5/N4 programs designed for both Student Visa and SSW Job Visa candidates. Flexible installment options available (negotiate with our Sales Team) OR get an instant 20% discount on Full Payment!",
         priorityTag: "#1 Priority • Student & Job Visa",
         scholarshipBadge: "100% FREE for KNLTC Student Visa COE Candidates",
         comboBadge: "Best Value Combo",
-        regularFeeLabel: "Regular Fee (2 Installments)",
+        regularFeeLabel: "Regular Course Fee",
         fullPayLabel: `Full Payment (${discountPct}% OFF)`,
-        installmentBadge: `50% Booking Installment Available • Extra ${discountPct}% OFF on Full Payment`,
+        installmentBadge: `Option 1: Apply Now (Discuss & Pay) • Option 2: Enroll Now (${discountPct}% OFF or 50% Installment)`,
         syllabusHeading: "Curriculum & Syllabus Highlights",
         scheduleHeading: "Flexible Batch Schedules (Online, Paltan & Khulna)",
         materialsHeading: "100% Free Included Materials",
         benefit1: "All Textbooks (Minna No Nihongo & Irodori) & Worksheets Free",
         benefit2: "3 Career Bonus Courses Worth ৳15,000 Included Free",
         benefit3: "Official Student LMS Account (npw.bd/knltc) & HD Recordings",
-        ctaEnrollFull: `Enroll with ${discountPct}% Full-Pay Discount`,
-        ctaEnrollInstallment: "Enroll with 50% Installment",
-        autoSelectNote: "Opens dedicated course enrollment & bKash Bangla QR payment page",
+        ctaEnrollFull: `Enroll Now (${discountPct}% OFF / Installment)`,
+        ctaEnrollInstallment: "Apply Now (Discuss Payment Plan)",
+        autoSelectNote: "Apply first to discuss payment options, or choose 'Enroll Now' for instant admission",
         tryIrodoriBtn: "Try Free Irodori Demo",
         camp1Badge: "Student Visa Special Scholarship",
         camp1Title: "100% Free JLPT N4 Course During COE Processing!",
@@ -166,12 +166,12 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
               "Japan Foundation official 'Irodori: Japanese for Life in Japan' A1–A2 full mastery",
               "Real-life situational speaking & listening for Japanese schools, part-time jobs (Baitō) & workplaces",
               "Computer-Based Testing (CBT) simulations for JFT-Basic & NAT/JLPT listening",
-              "Direct Japanese Embassy & School Zoom interview conversational drills",
+              "Direct Japanese Embassy & School online interview conversational drills",
               "Includes 3 free bonus courses (Embassy Interview, JIS CV & Baitō worth ৳15,000)",
             ],
             schedules: [
-              "Morning Batch: 10:00 AM – 12:00 PM (Online Zoom / Paltan / Khulna)",
-              "Evening Batch: 07:00 PM – 09:00 PM (Online Zoom / Paltan / Khulna)",
+              "Morning Batch: 10:00 AM – 12:00 PM (Online Live / Paltan / Khulna)",
+              "Evening Batch: 07:00 PM – 09:00 PM (Online Live / Paltan / Khulna)",
               "Weekend Intensive: Friday & Saturday (Special Spoken Lab)",
             ],
             materials:
@@ -196,8 +196,8 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
               "Includes 3 free bonus courses (Embassy, CV & Baitō worth ৳15,000)",
             ],
             schedules: [
-              "Morning Batch: 10:00 AM – 12:00 PM (Sun, Tue, Thu — Dhaka / Khulna / Zoom)",
-              "Evening Batch: 07:00 PM – 09:00 PM (Sun, Tue, Thu — Dhaka / Khulna / Zoom)",
+              "Morning Batch: 10:00 AM – 12:00 PM (Sun, Tue, Thu — Dhaka / Khulna / Online)",
+              "Evening Batch: 07:00 PM – 09:00 PM (Sun, Tue, Thu — Dhaka / Khulna / Online)",
               "Weekend Special: Friday & Saturday (For College & Job Holders)",
             ],
             materials:
@@ -222,8 +222,8 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
               "100% FREE scholarship for KNLTC Student Visa candidates during COE wait period",
             ],
             schedules: [
-              "Morning Batch: 10:00 AM – 12:00 PM (Mon, Wed, Sat — Dhaka / Khulna / Zoom)",
-              "Evening Batch: 07:00 PM – 09:00 PM (Mon, Wed, Sat — Dhaka / Khulna / Zoom)",
+              "Morning Batch: 10:00 AM – 12:00 PM (Mon, Wed, Sat — Dhaka / Khulna / Online)",
+              "Evening Batch: 07:00 PM – 09:00 PM (Mon, Wed, Sat — Dhaka / Khulna / Online)",
               "Weekend Intensive: Friday & Saturday",
             ],
             materials:
@@ -248,7 +248,7 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
               "Includes all textbooks, workbooks & 3 Career Bonus Courses (worth ৳15,000) 100% Free",
             ],
             schedules: [
-              "Regular Track: 3 Days/Week (Online Live Zoom / Paltan HQ / Khulna Branch)",
+              "Regular Track: 3 Days/Week (Online Live / Paltan HQ / Khulna Branch)",
               "Fast-Track Intensive: 5 Days/Week (Dedicated Visa Target Batch)",
             ],
             materials:
@@ -257,25 +257,25 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
         },
       },
       bn: {
-        kicker: "৪টি স্ট্যান্ডার্ড কোর্স প্যাকেজ • ডাটাবেস লাইভ ফি ও ডিসকাউন্ট",
+        kicker: "৪টি স্ট্যান্ডার্ড কোর্স প্যাকেজ • অফিশিয়াল কোর্স ফি ও স্কলারশিপ",
         title: "আপনার উপযুক্ত জাপানি ভাষা কোর্সটি বেছে নিন",
         subtitle:
-          "স্টুডেন্ট ভিসা এবং SSW জব ভিসা—উভয় প্রার্থীদের জন্যই সর্বাধিক গুরুত্ব দিয়ে সাজানো JFT (Irodori) ও JLPT N5/N4 কোর্স। প্রতিটি কোর্সে কিস্তি সুবিধা (৫০% + ৫০%) রয়েছে, আর এককালীন ফুল পেমেন্ট করলে পাচ্ছেন অতিরিক্ত ২০% ডিসকাউন্ট!",
+          "স্টুডেন্ট ভিসা এবং SSW জব ভিসা—উভয় প্রার্থীদের জন্যই সর্বাধিক গুরুত্ব দিয়ে সাজানো JFT (Irodori) ও JLPT N5/N4 কোর্স। প্রতিটি কোর্সে কিস্তি সুবিধা (সেলস টিমের সাথে আলোচনা সাপেক্ষে) রয়েছে, আর এককালীন ফুল পেমেন্ট করলে পাচ্ছেন অতিরিক্ত ২০% ডিসকাউন্ট!",
         priorityTag: "#১ অগ্রাধিকার • স্টুডেন্ট ও জব ভিসা",
         scholarshipBadge: "KNLTC স্টুডেন্ট ভিসা (COE) প্রার্থীদের জন্য ১০০% ফ্রি",
         comboBadge: "সেরা কম্বো সাশ্রয়",
-        regularFeeLabel: "রেগুলার ফি (২ কিস্তিতে পরিশোধযোগ্য)",
-        fullPayLabel: `এককালীন ফুল পেমেন্ট (${discountPct}% ছাড়)`,
-        installmentBadge: `৫০% প্রথম কিস্তিতে ভর্তির সুযোগ • ফুল পেমেন্টে অতিরিক্ত ${discountPct}% ডিসকাউন্ট`,
+        regularFeeLabel: "নির্ধারিত রেগুলার কোর্স ফি",
+        fullPayLabel: `ফুল পেমেন্ট (${discountPct}% ছাড়)`,
+        installmentBadge: `অপশন ১: আবেদন করুন (আলোচনা সাপেক্ষে পেমেন্ট) • অপশন ২: এখনই এনরোল করুন`,
         syllabusHeading: "পাঠ্যক্রম ও সিলেবাসের মূল বৈশিষ্ট্যসমূহ",
-        scheduleHeading: "ব্যাচ সময়সূচি (অনলাইন জুম, পল্টন ও খুলনা শাখা)",
+        scheduleHeading: "ব্যাচ সময়সূচি (অনলাইন লাইভ ক্লাস, পল্টন ও খুলনা শাখা)",
         materialsHeading: "সম্পূর্ণ বিনামূল্যে স্টাডি ম্যাটেরিয়ালস",
         benefit1: "মিন্না নো নিহোঙ্গো ও ইরোদেরি সব পাঠ্যবই এবং লেকচার শিট ফ্রি",
         benefit2: "১৫,০০০ টাকা মূল্যের ৩টি স্পেশাল ইন্টারভিউ ও সিভি কোর্স ফ্রি",
         benefit3: "অফিশিয়াল LMS আইডি (npw.bd/knltc) ও এইচডি ক্লাস রেকর্ডিং",
-        ctaEnrollFull: `${discountPct}% ডিসকাউন্টে ফুল পেমেন্টে ভর্তি হোন`,
-        ctaEnrollInstallment: "৫০% কিস্তিতে ভর্তি আবেদন করুন",
-        autoSelectNote: "এই কোর্সের ডেডিকেটেড ভর্তি ও বিকাশ Bangla QR পেমেন্ট পেইজে নিয়ে যাবে",
+        ctaEnrollFull: `এখনই এনরোল করুন (${discountPct}% ছাড় / ৫০% কিস্তি)`,
+        ctaEnrollInstallment: "আবেদন করুন (আলোচনা সাপেক্ষে পেমেন্ট)",
+        autoSelectNote: "পেমেন্টের ব্যাপারে আলোচনা করে পেমেন্ট করতে আবেদন করুন, অথবা এখনই এনরোল করুন",
         tryIrodoriBtn: "ফ্রি ইরোদেরি ডেমো",
         camp1Badge: "স্টুডেন্ট ভিসা স্পেশাল স্কলারশিপ",
         camp1Title: "COE প্রসেসিং চলাকালীন স্টুডেন্ট ভিসা প্রার্থীদের N4 কোর্স ১০০% ফ্রি!",
@@ -302,12 +302,12 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
               "জাপান ফাউন্ডেশনের অফিশিয়াল 'Irodori: Japanese for Life in Japan' (A1–A2) পূর্ণাঙ্গ অনুশীলন",
               "স্টুডেন্টদের জাপানি ক্যাম্পাস লাইফ, পার্ট-টাইম জব (Baitō) ও কর্মক্ষেত্রের রিয়েল-লাইফ কথোপকথন ও লিসেনিং",
               "কম্পিউটার ভিত্তিক (CBT) JFT-Basic এবং JLPT/NAT লিসেনিং মক টেস্ট সিমুলেশন",
-              "জাপানি স্কুল জুম ইন্টারভিউ ও এম্বাসি ভিসা অফিসারের সামনে স্মার্টলি জাপানি বলার প্র্যাকটিস",
+              "জাপানি স্কুল অনলাইন ইন্টারভিউ ও এম্বাসি ভিসা অফিসারের সামনে স্মার্টলি জাপানি বলার প্র্যাকটিস",
               "১৫,০০০ টাকা মূল্যের ৩টি স্পেশাল বোনাস কোর্স (এম্বাসি ইন্টারভিউ, সিভি ও বাইতো) সম্পূর্ণ ফ্রি",
             ],
             schedules: [
-              "সকালের ব্যাচ: ১০:০০ AM – ১২:০০ PM (অনলাইন জুম / পল্টন / খুলনা শাখা)",
-              "সন্ধ্যার ব্যাচ: ০৭:০০ PM – ০৯:০০ PM (অনলাইন জুম / পল্টন / খুলনা শাখা)",
+              "সকালের ব্যাচ: ১০:০০ AM – ১২:০০ PM (অনলাইন লাইভ / পল্টন / খুলনা শাখা)",
+              "সন্ধ্যার ব্যাচ: ০৭:০০ PM – ০৯:০০ PM (অনলাইন লাইভ / পল্টন / খুলনা শাখা)",
               "উইকেন্ড ইন্টেনসিভ: শুক্র ও শনিবার (স্পেশাল স্পোকেন ও লিসেনিং ল্যাব)",
             ],
             materials:
@@ -332,8 +332,8 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
               "১৫,০০০ টাকা মূল্যের ৩টি স্পেশাল ইন্টারভিউ ও সিভি কোর্স সম্পূর্ণ ফ্রি",
             ],
             schedules: [
-              "সকালের ব্যাচ: ১০:০০ AM – ১২:০০ PM (রবি, মঙ্গল, বৃহস্পতি — ঢাকা / খুলনা / জুম)",
-              "সন্ধ্যার ব্যাচ: ০৭:০০ PM – ০৯:০০ PM (রবি, মঙ্গল, বৃহস্পতি — ঢাকা / খুলনা / জুম)",
+              "সকালের ব্যাচ: ১০:০০ AM – ১২:০০ PM (রবি, মঙ্গল, বৃহস্পতি — ঢাকা / খুলনা / অনলাইন)",
+              "সন্ধ্যার ব্যাচ: ০৭:০০ PM – ০৯:০০ PM (রবি, মঙ্গল, বৃহস্পতি — ঢাকা / খুলনা / অনলাইন)",
               "উইকেন্ড স্পেশাল: শুক্র ও শনিবার (শিক্ষার্থী ও চাকরিজীবীদের জন্য)",
             ],
             materials:
@@ -358,8 +358,8 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
               "KNLTC স্টুডেন্ট ভিসা প্রার্থীদের COE অপেক্ষাকালীন সময়ে ১০০% ফ্রি স্কলারশিপ সুবিধা",
             ],
             schedules: [
-              "সকালের ব্যাচ: ১০:০০ AM – ১২:০০ PM (সোম, বুধ, শনি — ঢাকা / খুলনা / জুম)",
-              "সন্ধ্যার ব্যাচ: ০৭:০০ PM – ০৯:০০ PM (সোম, বুধ, শনি — ঢাকা / খুলনা / জুম)",
+              "সকালের ব্যাচ: ১০:০০ AM – ১২:০০ PM (সোম, বুধ, শনি — ঢাকা / খুলনা / অনলাইন)",
+              "সন্ধ্যার ব্যাচ: ০৭:০০ PM – ০৯:০০ PM (সোম, বুধ, শনি — ঢাকা / খুলনা / অনলাইন)",
               "উইকেন্ড ইন্টেনসিভ: শুক্র ও শনিবার",
             ],
             materials:
@@ -384,7 +384,7 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
               "সম্পূর্ণ বুক সেট, ওয়ার্কবুক এবং ১৫,০০০ টাকার ৩টি ক্যারিয়ার বোনাস কোর্স ১০০% ফ্রি",
             ],
             schedules: [
-              "রেগুলার ট্র্যাক: সপ্তাহে ৩ দিন (অনলাইন লাইভ জুম / পল্টন হেড অফিস / খুলনা শাখা)",
+              "রেগুলার ট্র্যাক: সপ্তাহে ৩ দিন (অনলাইন লাইভ ক্লাস / পল্টন হেড অফিস / খুলনা শাখা)",
               "ফাস্ট-ট্র্যাক ইন্টেনসিভ: সপ্তাহে ৫ দিন (স্পেশাল ভিসা টার্গেট ব্যাচ)",
             ],
             materials:
@@ -393,25 +393,25 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
         },
       },
       ja: {
-        kicker: "4大標準コースパッケージ • データベース連動料金",
+        kicker: "4大標準コースパッケージ • 公式受講料＆奨学金",
         title: "目的に合わせた日本語コース選択",
         subtitle:
-          "留学ビザ・特定技能（SSW）双方に最優先の『JFT（いろどり）』および『JLPT N5 / N4』150時間認定講座。2回分割払い（50%+50%）可能、一括払いならさらに20%特別割引！",
+          "留学ビザ・特定技能（SSW）双方に最優先の『JFT（いろどり）』および『JLPT N5 / N4』150時間認定講座。分割払い相談可能、一括払いならさらに20%特別割引！",
         priorityTag: "最優先推奨 • 留学＆特定技能",
         scholarshipBadge: "KNLTC留学ビザ（COE申請中）候補生は100%無料",
         comboBadge: "お得なセット割",
-        regularFeeLabel: "通常受講料（2回分割払い可）",
-        fullPayLabel: `一括払い特別料金 (${discountPct}%割引)`,
-        installmentBadge: `初回50%分割払い可能 • 一括払いならさらに${discountPct}%割引`,
+        regularFeeLabel: "通常コース受講料",
+        fullPayLabel: `一括払い (${discountPct}%割引)`,
+        installmentBadge: `方法1: 申込・支払い相談 • 方法2: 今すぐ申し込む (${discountPct}%割引 / 分割)`,
         syllabusHeading: "カリキュラム概要・学習内容",
         scheduleHeading: "クラス時間割（オンライン・ダッカ本部・クルナ支部）",
         materialsHeading: "完全無料配布教材",
         benefit1: "『みんなの日本語』＆『いろどり』全テキスト・資料無料",
         benefit2: "15,000タカ相当の面接・履歴書・バイト3大特典講座無料",
         benefit3: "公式LMSアカウント（npw.bd/knltc）＆講義録画視聴",
-        ctaEnrollFull: `一括払い（${discountPct}%割引）で申し込む`,
-        ctaEnrollInstallment: "50%分割払いで申し込む",
-        autoSelectNote: "このコース専用の申込・Bangla QR決済ページへ移動します",
+        ctaEnrollFull: `今すぐ申し込む（${discountPct}%割引 / 分割払い）`,
+        ctaEnrollInstallment: "申込フォーム送信（相談してお支払い）",
+        autoSelectNote: "支払いプランを相談してからお支払い、または今すぐ入学手続きを選択できます",
         tryIrodoriBtn: "無料いろどりデモ",
         camp1Badge: "留学ビザ特別奨学金",
         camp1Title: "COE申請期間中の留学ビザ候補生はJLPT N4講座が100%無料！",
@@ -438,12 +438,12 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
               "国際交流基金公式『いろどり 生活の日本語』A1〜A2完全マスター",
               "日本の学校生活、コンビニ・飲食店アルバイト、職場で即戦力となる会話・聴解特訓",
               "JFT-Basic（CBT方式）およびJLPT聴解の本番形式シミュレーション",
-              "日本大使館面接・日本語学校Zoom面接での自然な受け答えロールプレイ",
+              "日本大使館面接・日本語学校オンライン面接での自然な受け答えロールプレイ",
               "15,000タカ相当の面接・履歴書・アルバイト3大特典講座が完全無料",
             ],
             schedules: [
-              "午前クラス: 10:00〜12:00（Zoom / ダッカ本部 / クルナ支部）",
-              "夜間クラス: 19:00〜21:00（Zoom / ダッカ本部 / クルナ支部）",
+              "午前クラス: 10:00〜12:00（オンライン / ダッカ本部 / クルナ支部）",
+              "夜間クラス: 19:00〜21:00（オンライン / ダッカ本部 / クルナ支部）",
               "週末集中クラス: 金曜・土曜（実践会話ラボ）",
             ],
             materials:
@@ -468,8 +468,8 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
               "15,000タカ相当の面接・履歴書・アルバイト3大特典講座が完全無料",
             ],
             schedules: [
-              "午前クラス: 10:00〜12:00（日・火・木 — ダッカ / クルナ / Zoom）",
-              "夜間クラス: 19:00〜21:00（日・火・木 — ダッカ / クルナ / Zoom）",
+              "午前クラス: 10:00〜12:00（日・火・木 — ダッカ / クルナ / オンライン）",
+              "夜間クラス: 19:00〜21:00（日・火・木 — ダッカ / クルナ / オンライン）",
               "週末特別クラス: 金曜・土曜",
             ],
             materials:
@@ -494,8 +494,8 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
               "KNLTC留学ビザ候補生はCOE審査期間中100%無料で受講可能",
             ],
             schedules: [
-              "午前クラス: 10:00〜12:00（月・水・土 — ダッカ / クルナ / Zoom）",
-              "夜間クラス: 19:00〜21:00（月・水・土 — ダッカ / クルナ / Zoom）",
+              "午前クラス: 10:00〜12:00（月・水・土 — ダッカ / クルナ / オンライン）",
+              "夜間クラス: 19:00〜21:00（月・水・土 — ダッカ / クルナ / オンライン）",
               "週末集中クラス: 金曜・土曜",
             ],
             materials:
@@ -520,7 +520,7 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
               "全テキスト・問題集および15,000タカ相当の3大特典講座が100%無料",
             ],
             schedules: [
-              "通常コース: 週3日（オンラインZoom / ダッカ本部 / クルナ支部）",
+              "通常コース: 週3日（オンラインライブ / ダッカ本部 / クルナ支部）",
               "短期集中コース: 週5日（ビザ優先選抜クラス）",
             ],
             materials:
@@ -826,14 +826,18 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
                     </div>
                   </div>
 
-                  {/* 50% Installment Option Box */}
+                  {/* Option 2: Submit Form & Pay Later After Sales Team Consultation */}
                   <div className="mt-3 rounded-xl border border-stone-200 bg-[#fcfaf7] p-3.5 flex items-center justify-between text-xs">
                     <div>
                       <span className="font-bold text-slate-800 block">
                         {t.regularFeeLabel}: {formatBdt(activePricing.baseFee)}
                       </span>
                       <span className="text-[11px] text-slate-500">
-                        50% 1st Installment: {formatBdt(activePricing.installmentFee)} + 50% Later
+                        {language === "bn"
+                          ? "আগে ফর্ম সাবমিট করুন • সেলস টিমের সাথে কথা বলে পরে পেমেন্ট করুন"
+                          : language === "ja"
+                            ? "フォーム送信後、営業チームと相談して後払い可能"
+                            : "Submit form first • Discuss with Sales Team & pay later"}
                       </span>
                     </div>
                     <CheckCircle2 className="h-4 w-4 text-[#15803d] shrink-0" />
@@ -855,14 +859,14 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
                     </div>
                   </div>
 
-                  {/* Dual Action Buttons: Full Payment (20% Off) vs 50% Installment */}
+                  {/* Dual Action Buttons: Direct Purchase (20% Off) vs Submit Form & Pay Later */}
                   <div className="mt-5 space-y-2.5">
                     <Button
                       asChild
-                      className="w-full py-6 rounded-xl bg-[#b91c1c] hover:bg-red-800 text-white font-bold text-xs sm:text-sm shadow-xs active:scale-[0.98] transition-transform cursor-pointer"
+                      className="w-full py-6 rounded-xl bg-[#1E5631] hover:bg-emerald-900 text-white font-bold text-xs sm:text-sm shadow-xs active:scale-[0.98] transition-transform cursor-pointer"
                     >
-                      <Link href={getCourseEnrollUrl(activeCourse.id, "FULL_PAYMENT")}>
-                        <span>{t.ctaEnrollFull}</span>
+                      <Link href={getCourseEnrollUrl(activeCourse.id, "INSTALLMENT_50")}>
+                        <span>{t.ctaEnrollInstallment}</span>
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </Link>
                     </Button>
@@ -870,11 +874,11 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
                     <Button
                       asChild
                       variant="outline"
-                      className="w-full py-5 rounded-xl border-stone-300 hover:bg-stone-50 text-slate-800 font-bold text-xs sm:text-sm active:scale-[0.98] transition-transform cursor-pointer"
+                      className="w-full py-5 rounded-xl border-2 border-[#b91c1c] bg-red-50/30 hover:bg-red-50 text-[#b91c1c] font-bold text-xs sm:text-sm active:scale-[0.98] transition-transform cursor-pointer"
                     >
-                      <Link href={getCourseEnrollUrl(activeCourse.id, "INSTALLMENT_50")}>
+                      <Link href={getCourseEnrollUrl(activeCourse.id, "FULL_PAYMENT")}>
                         <span>
-                          {t.ctaEnrollInstallment} ({formatBdt(activePricing.installmentFee)})
+                          {t.ctaEnrollFull} — {formatBdt(activePricing.fullPayFee)}
                         </span>
                       </Link>
                     </Button>

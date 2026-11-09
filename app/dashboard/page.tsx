@@ -7012,12 +7012,16 @@ export default function DashboardPage() {
                               folderName="KNLTC_Payment_QR"
                               accept="image/*"
                               label={tr("QR আপলোড", "Upload QR", "QR登録")}
-                              onUploaded={(url) => {
+                              onUploaded={(url, _fileName, dataUrl) => {
                                 if (!cms.languageCoursePage)
                                   cms.languageCoursePage = { ...DEFAULT_WEBSITE_CMS.languageCoursePage };
                                 const mediaIdx = url.indexOf("/api/media/file/");
                                 const cleanUrl = mediaIdx >= 0 ? url.slice(mediaIdx) : url;
-                                cms.languageCoursePage.banglaQrImageUrl = cleanUrl;
+                                const embeddedQr =
+                                  dataUrl && dataUrl.startsWith("data:image/") && dataUrl.length <= 32000
+                                    ? dataUrl
+                                    : cleanUrl;
+                                cms.languageCoursePage.banglaQrImageUrl = embeddedQr;
                                 store.websiteCms[0] = cms;
                                 saveCmsStore(store);
                                 setStore({ ...store });

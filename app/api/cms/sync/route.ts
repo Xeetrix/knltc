@@ -162,10 +162,13 @@ export async function GET() {
     if (dbCms?.[0] && snapCms) {
       const primary = snapUpdatedAt > dbUpdatedAt ? snapCms : dbCms[0];
       const secondary = snapUpdatedAt > dbUpdatedAt ? dbCms[0] : snapCms;
-      const mergedQr =
-        primary.languageCoursePage?.banglaQrImageUrl ||
-        secondary.languageCoursePage?.banglaQrImageUrl ||
-        "";
+      const primaryQr = String(primary.languageCoursePage?.banglaQrImageUrl || "").trim();
+      const secondaryQr = String(secondary.languageCoursePage?.banglaQrImageUrl || "").trim();
+      const mergedQr = primaryQr.startsWith("data:image/")
+        ? primaryQr
+        : secondaryQr.startsWith("data:image/")
+          ? secondaryQr
+          : primaryQr || secondaryQr;
       resolvedCmsList = [
         normalizeCmsQr({
           ...secondary,

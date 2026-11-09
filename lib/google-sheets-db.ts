@@ -713,7 +713,7 @@ export async function resolveMediaFileById(fileId: string): Promise<{
   }
 
   // Step 2: Query `media_vault` AND `knltc_website_cms` from Google Sheets (works even on older Oct 29 Code.gs deployments!)
-  if (!meta && isConfigured) {
+  if (!local.buffer && isConfigured) {
     try {
       await Promise.allSettled([
         fetchSheetTable<Record<string, any>>("media_vault"),
@@ -842,6 +842,11 @@ export function offloadEmbeddedBase64Strings<T = any>(
               buffer,
               folderName: folderHint,
             });
+            // Keep compact `banglaQrImageUrl` (<= 32,000 chars) directly embedded so the QR code
+            // renders instantaneously across all browsers/containers without any external HTTP hop!
+            if (keyHint.endsWith("banglaQrImageUrl") && val.length <= 32000) {
+              return val;
+            }
             offloadedCount++;
             freedBytes += Math.max(0, val.length - saved.url.length);
             return saved.url;

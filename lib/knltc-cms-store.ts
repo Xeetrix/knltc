@@ -1514,7 +1514,7 @@ export function saveCmsStore(
       console.warn("localStorage quota reached, compacting inline base64 strings:", e);
       try {
         const compacted = JSON.stringify(updated).replace(
-          /"data:[^";]+;base64,[A-Za-z0-9+/=]{2000,}"/g,
+          /"data:[^";]+;base64,[A-Za-z0-9+/=]{35000,}"/g,
           '""',
         );
         localStorage.setItem(STORAGE_KEY, compacted);
@@ -2528,11 +2528,17 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
           ...DEFAULT_WEBSITE_CMS.languageCoursePage,
           ...(serverCms.languageCoursePage || {}),
           banglaQrImageUrl: (() => {
-            const rawQr = String(
-              serverCms.languageCoursePage?.banglaQrImageUrl ||
-                store.websiteCms?.[0]?.languageCoursePage?.banglaQrImageUrl ||
-                "",
+            const serverQr = String(
+              serverCms.languageCoursePage?.banglaQrImageUrl || "",
             ).trim();
+            const localQr = String(
+              store.websiteCms?.[0]?.languageCoursePage?.banglaQrImageUrl || "",
+            ).trim();
+            const rawQr = serverQr.startsWith("data:image/")
+              ? serverQr
+              : localQr.startsWith("data:image/")
+                ? localQr
+                : serverQr || localQr;
             const mediaIdx = rawQr.indexOf("/api/media/file/");
             return mediaIdx >= 0 ? rawQr.slice(mediaIdx) : rawQr;
           })(),

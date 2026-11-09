@@ -36,7 +36,7 @@ export default function CurriculumFaqSection() {
           },
           {
             q: "How does the online LMS classroom work and how do I log in?",
-            a: "All online courses, live Zoom classes, and recorded lectures are hosted on our dedicated KNLTC Student LMS Portal. After submitting your enrollment form, our team verifies your payment and delivers your LMS username and password directly via WhatsApp. You can log in anytime from phone or PC.",
+            a: "All online courses, live online classes, and recorded lectures are hosted on our dedicated KNLTC Student LMS Portal. After submitting your enrollment form, our team verifies your payment and delivers your LMS username and password directly via WhatsApp. You can log in anytime from phone or PC.",
           },
           {
             q: "Are there any separate or hidden charges for textbooks and worksheets?",
@@ -79,7 +79,7 @@ export default function CurriculumFaqSection() {
           },
           {
             q: "অনলাইন লার্নিং প্ল্যাটফর্ম (LMS) কীভাবে কাজ করে এবং ক্লাসে কীভাবে যুক্ত হব?",
-            a: "KNLTC-এর সমস্ত অনলাইন কোর্স, লাইভ জুম সেশন ও রিসোর্স সরাসরি আমাদের নিবেদিত ক্লাসরুম পোর্টালে হোস্ট করা। নিচের ফর্মে আবেদন করার পর আমাদের টিম আপনার তথ্য ও পেমেন্ট ভেরিফাই করে সরাসরি আপনার হোয়াটসঅ্যাপে LMS আইডি ও পাসওয়ার্ড পাঠিয়ে দেবে। লিংকে গিয়ে ইউজারনেম ও পাসওয়ার্ড দিয়ে খুব সহজেই ক্লাসরুমে প্রবেশ করতে পারবেন।",
+            a: "KNLTC-এর সমস্ত অনলাইন কোর্স, অনলাইন লাইভ ক্লাস ও রিসোর্স সরাসরি আমাদের নিবেদিত ক্লাসরুম পোর্টালে হোস্ট করা। নিচের ফর্মে আবেদন করার পর আমাদের টিম আপনার তথ্য ও পেমেন্ট ভেরিফাই করে সরাসরি আপনার হোয়াটসঅ্যাপে LMS আইডি ও পাসওয়ার্ড পাঠিয়ে দেবে। লিংকে গিয়ে ইউজারনেম ও পাসওয়ার্ড দিয়ে খুব সহজেই ক্লাসরুমে প্রবেশ করতে পারবেন।",
           },
           {
             q: "বই এবং লেকচার শিটের জন্য আলাদা কোনো খরচ আছে কি?",

@@ -52,7 +52,7 @@ export default function HowItWorksSection() {
         step3Tag: "Step 03",
         step3Title: "Enter LMS Classroom & Begin Learning",
         step3Desc:
-          "Log in to the official student LMS portal with your username and password to attend live Zoom classes, watch recorded lectures, and download worksheets.",
+          "Log in to the official student LMS portal with your username and password to attend live online classes, watch recorded lectures, and download worksheets.",
         step3Action: "Visit LMS Portal",
       },
       bn: {

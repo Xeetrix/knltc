@@ -95,7 +95,7 @@ export default function TrustMetricsSection() {
             name: "Sadia Afrin",
             batch: "NAT-TEST 5Q • Student Visa",
             score: "158 / 180 (Passed)",
-            city: "Online Zoom",
+            city: "Online Live",
           },
           {
             name: "Rakibul Islam",
@@ -156,7 +156,7 @@ export default function TrustMetricsSection() {
             name: "সাদিয়া আফরিন",
             batch: "NAT-TEST 5Q • স্টুডেন্ট ভিসা",
             score: "১৫৮ / ১৮০ (উত্তীর্ণ)",
-            city: "অনলাইন জুম",
+            city: "অনলাইন লাইভ",
           },
           {
             name: "রাকিবুল ইসলাম",

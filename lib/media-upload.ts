@@ -23,6 +23,7 @@ export interface UploadResult {
   driveUrl?: string;
   fileId?: string;
   fileName?: string;
+  dataUrl?: string;
   source: "google-drive" | "cloudinary" | "persistent-disk" | "supabase-storage" | "compressed-data-url";
 }
 
@@ -70,12 +71,13 @@ function fileToBase64DataUrl(file: File | Blob): Promise<string> {
 }
 
 /**
- * Compresses an image file in browser canvas to produce a lightweight WebP or JPEG.
+ * Compresses an image file in browser canvas to produce a crisp, lightweight JPEG (< 24,000 chars base64)
+ * that always fits inside Google Sheets cells and renders with a clean white background for transparent PNGs.
  */
 export async function compressImageToDataUrl(
   file: File,
-  maxDimension: number = 960,
-  quality: number = 0.85,
+  maxDimension: number = 720,
+  quality: number = 0.84,
 ): Promise<{ dataUrl: string; blob: Blob }> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -84,45 +86,60 @@ export async function compressImageToDataUrl(
       const img = new Image();
       img.onerror = () => reject(new Error("Failed to load image for compression"));
       img.onload = () => {
-        let width = img.width;
-        let height = img.height;
+        const renderAtSize = (targetDim: number, targetQuality: number) => {
+          let width = img.width;
+          let height = img.height;
 
-        if (width > maxDimension || height > maxDimension) {
-          if (width > height) {
-            height = Math.round((height * maxDimension) / width);
-            width = maxDimension;
-          } else {
-            width = Math.round((width * maxDimension) / height);
-            height = maxDimension;
-          }
-        }
-
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          return reject(new Error("Canvas context not available"));
-        }
-
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = "high";
-        ctx.drawImage(img, 0, 0, width, height);
-
-        const mime = file.type === "image/png" ? "image/png" : "image/jpeg";
-        const dataUrl = canvas.toDataURL(mime, quality);
-
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              resolve({ dataUrl, blob });
+          if (width > targetDim || height > targetDim) {
+            if (width > height) {
+              height = Math.round((height * targetDim) / width);
+              width = targetDim;
             } else {
-              resolve({ dataUrl, blob: file });
+              width = Math.round((width * targetDim) / height);
+              height = targetDim;
             }
-          },
-          mime,
-          quality,
-        );
+          }
+
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            throw new Error("Canvas context not available");
+          }
+
+          // Fill solid white background so transparent PNGs (like QR codes or logos) never turn black
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, width, height);
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const mime = "image/jpeg";
+          const dataUrl = canvas.toDataURL(mime, targetQuality);
+          return { canvas, dataUrl, mime };
+        };
+
+        try {
+          let { canvas, dataUrl, mime } = renderAtSize(maxDimension, quality);
+          if (dataUrl.length > 28000) {
+            ({ canvas, dataUrl, mime } = renderAtSize(500, 0.76));
+          }
+
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                resolve({ dataUrl, blob });
+              } else {
+                resolve({ dataUrl, blob: file });
+              }
+            },
+            mime,
+            quality,
+          );
+        } catch (err) {
+          reject(err);
+        }
       };
       img.src = String(reader.result || "");
     };
@@ -145,7 +162,7 @@ function toDirectPublicUrl(rawUrl?: string): string {
 }
 
 /**
- * Upload an image (logo, avatar, product photo, blog cover) to `/api/media` (Direct Object Storage).
+ * Upload an image (logo, avatar, product photo, blog cover, QR code) to `/api/media` (Direct Object Storage).
  */
 export async function uploadMediaImage(
   file: File,
@@ -155,8 +172,8 @@ export async function uploadMediaImage(
     typeof rawOptions === "string"
       ? { bucket: rawOptions, folderName: rawOptions }
       : rawOptions;
-  const maxDim = options?.maxDimension || 960;
-  const quality = options?.quality || 0.85;
+  const maxDim = options?.maxDimension || 720;
+  const quality = options?.quality || 0.84;
   const folderName = options?.folderName || options?.bucket || "KNLTC_Images";
 
   let compressed: { dataUrl: string; blob: Blob } | null = null;
@@ -196,6 +213,7 @@ export async function uploadMediaImage(
           driveUrl: data.driveUrl,
           fileId: data.fileId,
           fileName: file.name,
+          dataUrl: base64Payload,
           source: data.provider || "persistent-disk",
         };
       }
@@ -229,6 +247,7 @@ export async function uploadMediaImage(
           driveUrl: data.driveUrl,
           fileId: data.fileId,
           fileName: file.name,
+          dataUrl: base64Payload,
           source: data.provider || "google-drive",
         };
       }
@@ -241,6 +260,7 @@ export async function uploadMediaImage(
     url: base64Payload,
     downloadUrl: base64Payload,
     fileName: file.name,
+    dataUrl: base64Payload,
     source: "compressed-data-url",
   };
 }

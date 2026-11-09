@@ -5,7 +5,7 @@ import { CheckCircle2, Loader2, Upload } from "lucide-react";
 import { uploadDocumentFile, uploadMediaImage } from "@/lib/media-upload";
 
 interface DriveFileUploadButtonProps {
-  onUploaded: (url: string, fileName?: string) => void;
+  onUploaded: (url: string, fileName?: string, dataUrl?: string) => void;
   folderName?: string;
   accept?: string;
   label?: string;
@@ -35,7 +35,7 @@ export default function DriveFileUploadButton({
         : await uploadDocumentFile(file, { folderName });
 
       if (result.url) {
-        onUploaded(result.url, result.fileName || file.name);
+        onUploaded(result.url, result.fileName || file.name, result.dataUrl);
         setUploadedOk(true);
         setTimeout(() => setUploadedOk(false), 3000);
       }

@@ -1,6 +1,6 @@
 {
-  "summary": "ড্যাশবোর্ডে আপলোড করা Bangla QR ওয়েবসাইটে শো না করা এবং অন্য ব্রাউজার/ডিভাইস বা Incognito মোডে CMS আপডেট না আসার মূল কারণ (Root Cause) ও স্থায়ী সমাধানের পরিকল্পনা।",
-  "updatedAt": "2026-11-04T18:35:52.257274937Z",
-  "requestFeedback": true,
-  "userFacing": true
+  "summary":  "Implementation plan for updating the Japanese Language Course enrollment flow with natural Benglish/Bengali labels (\"এখনই এনরোল করুন\" and \"আবেদন করুন (আলোচনা সাপেক্ষে পেমেন্ট)\"), adding a Full Payment (20% OFF) vs Installment Payment (50% Now) selector inside the Instant Enrollment tab, and polishing the end-to-end UX.",
+  "updatedAt":  "2026-11-09T08:17:51.343669538Z",
+  "requestFeedback":  true,
+  "userFacing":  true
 }
