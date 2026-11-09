@@ -1540,7 +1540,7 @@ export default function EnrollmentForm({
                       >
                         {t.courses.map((c) => (
                           <option key={c.id} value={c.id}>
-                            {c.name} — {formatBdt(c.baseFee)}
+                            {c.name}
                           </option>
                         ))}
                       </select>
