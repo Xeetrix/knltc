@@ -242,7 +242,7 @@ export default function EnrollmentForm({
         salesCardBadge: "Discuss & Pay Later",
         salesCardTitle: "Discuss Payment Plan First",
         salesCardDesc:
-          "Submit your basic info on the left. Our counselor will call you to discuss batch timings and flexible payment options before you make any payment.",
+          "Submit the form with your basic details. Our counselor will call you to discuss batch timings and flexible payment options before you make any payment.",
         salesWhatsappBtn: "WhatsApp Sales",
         salesCallBtn: "01805-013633",
         switchToDirectBtn: `Ready to enroll right now? Switch to "Enroll Now" →`,
@@ -380,7 +380,7 @@ export default function EnrollmentForm({
         salesCardBadge: "আলোচনা সাপেক্ষে পেমেন্ট",
         salesCardTitle: "আগে আলোচনা করুন, পরে পেমেন্ট করুন",
         salesCardDesc:
-          "বামপাশের ফর্মটি পূরণ করে সাবমিট করুন। আমাদের টিম আপনার সাথে যোগাযোগ করে পেমেন্টের ব্যাপারে আলোচনা করার পর আপনি সুবিধামতো পেমেন্ট করবেন।",
+          "ফর্মটি পূরণ করে সাবমিট করুন। আমাদের টিম আপনার সাথে যোগাযোগ করে পেমেন্টের ব্যাপারে আলোচনা করার পর আপনি সুবিধামতো পেমেন্ট করবেন।",
         salesWhatsappBtn: "হোয়াটসঅ্যাপ মেসেজ",
         salesCallBtn: "01805-013633",
         switchToDirectBtn: `এখনই পেমেন্ট করে ভর্তি হতে চান? "এখনই এনরোল করুন" অপশনে যান →`,
@@ -518,7 +518,7 @@ export default function EnrollmentForm({
         salesCardBadge: "相談してお支払い",
         salesCardTitle: "まずは相談、お支払いは後で",
         salesCardDesc:
-          "左のフォームを送信してください。担当者よりお支払いプランや時間割をご案内した後に決済いただけます。",
+          "フォームを送信してください。担当者よりお支払いプランや時間割をご案内した後に決済いただけます。",
         salesWhatsappBtn: "WhatsApp相談",
         salesCallBtn: "01805-013633",
         switchToDirectBtn: `今すぐ入学手続きを完了したい方は「今すぐ申し込む」へ →`,
@@ -1412,7 +1412,7 @@ export default function EnrollmentForm({
             >
               {/* SLEEK SEGMENTED TAB SWITCHER */}
               <div className="bg-stone-100/80 p-1.5 border-b border-stone-200/80">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                <div className="grid grid-cols-2 gap-1.5">
                   <button
                     type="button"
                     onClick={() => {
@@ -1460,6 +1460,32 @@ export default function EnrollmentForm({
                   )}
 
                   <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* MOBILE-ONLY COMPACT COURSE SUMMARY STRIP FOR "APPLY NOW" MODE */}
+                    {flowMode === "TALK_TO_SALES" && (
+                      <div className="lg:hidden rounded-xl border border-stone-200/90 bg-[#fcfaf7] px-3.5 py-2.5 flex items-center justify-between gap-2 text-xs">
+                        <div className="min-w-0">
+                          <span className="font-extrabold text-slate-900 block truncate">
+                            {currentCourseObj.name}
+                          </span>
+                          <span className="text-[11px] text-slate-500">
+                            {currentCourseObj.duration} • {formatBdt(baseFeeBdt)}
+                          </span>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="text-[10px] font-semibold text-slate-500 block">
+                            {language === "bn"
+                              ? "এখন পরিশোধযোগ্য"
+                              : language === "ja"
+                                ? "本日のお支払い"
+                                : "Payable Now"}
+                          </span>
+                          <span className="text-sm font-black text-[#1E5631]">
+                            {language === "bn" ? "৳০" : "৳0"}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
                     {/* 1. Full Name */}
                     <div>
                       <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -1599,7 +1625,7 @@ export default function EnrollmentForm({
                         />
                       </div>
                     ) : (
-                      /* "এখনই এনরোল করুন" (Instant Enrollment): Payment Plan Selector + bKash Inputs */
+                      /* "এখনই এনরোল করুন" (Instant Enrollment): Payment Plan Selector + Mobile QR/Fee Preview + bKash Inputs */
                       <div className="pt-2 border-t border-stone-100 space-y-3.5">
                         {/* Payment Plan Selector: Full Payment (20% OFF) vs Installment (50% Now) */}
                         <div>
@@ -1675,59 +1701,7 @@ export default function EnrollmentForm({
                           </div>
                         </div>
 
-                        {/* bKash Verification Fields */}
-                        <div className="grid gap-3 sm:grid-cols-3">
-                          <div>
-                            <label className="block text-xs font-semibold text-slate-700 mb-1">
-                              {t.senderLabel}
-                            </label>
-                            <input
-                              type="tel"
-                              required
-                              value={senderNumber}
-                              onChange={(e) => setSenderNumber(e.target.value)}
-                              placeholder={t.senderPlaceholder}
-                              className="w-full rounded-xl border border-stone-200 bg-[#fcfaf7]/60 px-3 py-2 text-xs sm:text-sm font-mono text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-xs font-semibold text-slate-700 mb-1">
-                              {t.paidAmountLabel}
-                            </label>
-                            <input
-                              type="number"
-                              required
-                              min={500}
-                              value={paidAmountInput}
-                              onChange={(e) => {
-                                setPaidAmountEdited(true);
-                                setPaidAmountInput(Number(e.target.value));
-                              }}
-                              className="w-full rounded-xl border border-stone-200 bg-[#fcfaf7]/60 px-3 py-2 text-xs sm:text-sm font-mono font-bold text-[#1E5631] tabular-nums focus:bg-white focus:border-[#1E5631] focus:outline-none"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-xs font-semibold text-[#b91c1c] mb-1">
-                              {t.trxIdLabel}
-                            </label>
-                            <input
-                              type="text"
-                              required
-                              value={trxId}
-                              onChange={(e) =>
-                                setTrxId(
-                                  e.target.value.toUpperCase().replace(/\s+/g, ""),
-                                )
-                              }
-                              placeholder={t.trxIdPlaceholder}
-                              className="w-full rounded-xl border border-red-200 bg-red-50/20 px-3 py-2 text-xs sm:text-sm font-mono font-bold uppercase text-slate-950 focus:bg-white focus:border-[#b91c1c] focus:outline-none"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Collapsible "Have a promo code?" Link */}
+                        {/* Collapsible "Have a promo code?" Link (Placed right under Payment Plan so user applies code before paying) */}
                         <div>
                           {!showPromoInput && !appliedPromo ? (
                             <button
@@ -1741,7 +1715,7 @@ export default function EnrollmentForm({
                               </span>
                             </button>
                           ) : (
-                            <div className="flex items-center gap-2 pt-0.5">
+                            <div className="flex flex-wrap items-center gap-2 pt-0.5">
                               <input
                                 type="text"
                                 value={promoInput}
@@ -1794,10 +1768,193 @@ export default function EnrollmentForm({
                             </div>
                           )}
                         </div>
+
+                        {/* MOBILE-ONLY FEE BREAKDOWN + BKASH MERCHANT & BANGLA QR BOX (Shown BEFORE TrxID & Submit on Mobile!) */}
+                        <div className="lg:hidden rounded-2xl border border-stone-200/90 bg-[#fcfaf7] p-4 space-y-3">
+                          <div className="space-y-1.5 text-xs">
+                            <div className="flex items-center justify-between pb-1.5 border-b border-stone-200/80">
+                              <span className="font-bold text-slate-900">
+                                {currentCourseObj.name}
+                              </span>
+                              <span className="rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-[#1E5631]">
+                                {instantPaymentPlan === "FULL_PAYMENT"
+                                  ? `${fullDiscountPercent}% OFF`
+                                  : "50% + 50%"}
+                              </span>
+                            </div>
+
+                            <div className="flex justify-between text-slate-600">
+                              <span>{t.baseFeeText}</span>
+                              <span
+                                className={`font-semibold text-slate-800 tabular-nums ${
+                                  fullPayDiscountBdt > 0 ? "line-through" : ""
+                                }`}
+                              >
+                                {formatBdt(baseFeeBdt)}
+                              </span>
+                            </div>
+
+                            {fullPayDiscountBdt > 0 && (
+                              <div className="flex justify-between text-[#1E5631] font-semibold">
+                                <span>{t.fullDiscountText}</span>
+                                <span className="tabular-nums">
+                                  -{formatBdt(fullPayDiscountBdt)}
+                                </span>
+                              </div>
+                            )}
+
+                            {promoDiscountBdt > 0 && (
+                              <div className="flex justify-between text-[#b91c1c] font-semibold">
+                                <span>
+                                  {t.promoDiscountText} ({appliedPromo?.code})
+                                </span>
+                                <span className="tabular-nums">
+                                  -{formatBdt(promoDiscountBdt)}
+                                </span>
+                              </div>
+                            )}
+
+                            <div className="rounded-xl bg-white border border-stone-200 px-3 py-2 flex items-center justify-between mt-1">
+                              <span className="text-xs font-bold text-slate-800">
+                                {instantPaymentPlan === "FULL_PAYMENT"
+                                  ? t.payableTodayFullText
+                                  : t.payableTodayInstText}
+                              </span>
+                              <span className="text-base font-black text-[#1E5631] tabular-nums">
+                                {formatBdt(
+                                  paidAmountEdited && paidAmountInput > 0
+                                    ? paidAmountInput
+                                    : recommendedPayableToday,
+                                )}
+                              </span>
+                            </div>
+
+                            {instantPaymentPlan === "INSTALLMENT_50" &&
+                              estimatedRemainingDue > 0 && (
+                                <div className="flex justify-between text-[11px] font-semibold text-slate-500 px-1">
+                                  <span>{t.dueLaterText}</span>
+                                  <span className="tabular-nums">
+                                    {formatBdt(estimatedRemainingDue)}
+                                  </span>
+                                </div>
+                              )}
+                          </div>
+
+                          {/* Compact Mobile QR + Merchant Row */}
+                          <div className="rounded-xl border border-stone-200 bg-white p-3 flex items-center gap-3">
+                            <div
+                              onClick={() => setQrZoomOpen(true)}
+                              className="h-20 w-20 shrink-0 rounded-lg border border-stone-200 bg-[#fcfaf7] p-1.5 flex items-center justify-center cursor-pointer hover:border-[#e2136e] transition"
+                            >
+                              {Boolean(banglaQrUrl) && !qrImgFailed ? (
+                                <img
+                                  key={banglaQrUrl}
+                                  src={banglaQrUrl}
+                                  alt="KNLTC Official bKash Bangla QR"
+                                  onError={() => setQrImgFailed(true)}
+                                  className="h-full w-full object-contain rounded-xs"
+                                />
+                              ) : (
+                                <QrCode className="h-11 w-11 text-slate-900 stroke-[1.5]" />
+                              )}
+                            </div>
+
+                            <div className="flex-1 min-w-0 space-y-1.5">
+                              <div className="flex items-center justify-between gap-1">
+                                <span className="rounded-sm bg-[#e2136e] text-white px-1.5 py-0.5 text-[9px] font-bold">
+                                  {t.qrBoxBadge}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => setQrZoomOpen(true)}
+                                  className="inline-flex items-center gap-1 text-[10px] font-bold text-[#e2136e] hover:underline cursor-pointer"
+                                >
+                                  <Maximize2 className="h-2.5 w-2.5" />
+                                  <span>{t.qrEnlargeBtn}</span>
+                                </button>
+                              </div>
+
+                              <div className="rounded-lg bg-stone-50 border border-stone-200/80 px-2.5 py-1.5 flex items-center justify-between gap-2">
+                                <div className="min-w-0">
+                                  <span className="text-[9px] text-slate-500 block">
+                                    {t.qrMerchantLabel}
+                                  </span>
+                                  <span className="text-xs font-black font-mono text-slate-900 truncate block">
+                                    {merchantNumber}
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={handleCopyMerchant}
+                                  className="inline-flex items-center gap-1 rounded-md border border-stone-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-700 hover:bg-stone-100 shrink-0 cursor-pointer"
+                                >
+                                  {copiedMerchant ? (
+                                    <Check className="h-3 w-3 text-[#1E5631]" />
+                                  ) : (
+                                    <Copy className="h-3 w-3" />
+                                  )}
+                                  <span>{copiedMerchant ? "Copied" : "Copy"}</span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* bKash Verification Fields (Now logically placed AFTER user sees Payable Amount & QR on Mobile!) */}
+                        <div className="grid gap-3 sm:grid-cols-3">
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-700 mb-1">
+                              {t.senderLabel}
+                            </label>
+                            <input
+                              type="tel"
+                              required
+                              value={senderNumber}
+                              onChange={(e) => setSenderNumber(e.target.value)}
+                              placeholder={t.senderPlaceholder}
+                              className="w-full rounded-xl border border-stone-200 bg-[#fcfaf7]/60 px-3 py-2 text-xs sm:text-sm font-mono text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-700 mb-1">
+                              {t.paidAmountLabel}
+                            </label>
+                            <input
+                              type="number"
+                              required
+                              min={500}
+                              value={paidAmountInput}
+                              onChange={(e) => {
+                                setPaidAmountEdited(true);
+                                setPaidAmountInput(Number(e.target.value));
+                              }}
+                              className="w-full rounded-xl border border-stone-200 bg-[#fcfaf7]/60 px-3 py-2 text-xs sm:text-sm font-mono font-bold text-[#1E5631] tabular-nums focus:bg-white focus:border-[#1E5631] focus:outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-semibold text-[#b91c1c] mb-1">
+                              {t.trxIdLabel}
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={trxId}
+                              onChange={(e) =>
+                                setTrxId(
+                                  e.target.value.toUpperCase().replace(/\s+/g, ""),
+                                )
+                              }
+                              placeholder={t.trxIdPlaceholder}
+                              className="w-full rounded-xl border border-red-200 bg-red-50/20 px-3 py-2 text-xs sm:text-sm font-mono font-bold uppercase text-slate-950 focus:bg-white focus:border-[#b91c1c] focus:outline-none"
+                            />
+                          </div>
+                        </div>
                       </div>
                     )}
 
-                    {/* Submit Button */}
+                    {/* Submit Button (Always at the bottom of the form flow!) */}
                     <div className="pt-1">
                       <Button
                         type="submit"
@@ -1828,6 +1985,30 @@ export default function EnrollmentForm({
                       </Button>
                     </div>
 
+                    {/* MOBILE-ONLY COMPACT HELP BAR BELOW SUBMIT IN "APPLY NOW" MODE */}
+                    {flowMode === "TALK_TO_SALES" && (
+                      <div className="lg:hidden pt-2 border-t border-stone-100 flex items-center justify-between gap-2">
+                        <a
+                          href={`https://wa.me/8801805013633?text=${encodeURIComponent(
+                            `Assalamu Alaikum KNLTC Team, I want to discuss payment options for ${currentCourseObj.name}${name ? ` (Name: ${name})` : ""}.`,
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#fcfaf7] border border-stone-200 hover:border-[#1E5631] text-[#1E5631] px-3 py-2 text-xs font-bold whitespace-nowrap transition"
+                        >
+                          <MessageCircle className="h-3.5 w-3.5 shrink-0" />
+                          <span>{t.salesWhatsappBtn}</span>
+                        </a>
+                        <a
+                          href="tel:+8801805013633"
+                          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#fcfaf7] border border-stone-200 hover:border-slate-400 text-slate-800 px-3 py-2 text-xs font-bold whitespace-nowrap transition"
+                        >
+                          <Phone className="h-3.5 w-3.5 text-[#b91c1c] shrink-0" />
+                          <span>{t.salesCallBtn}</span>
+                        </a>
+                      </div>
+                    )}
+
                     <p className="text-center text-[11px] text-slate-400 flex items-center justify-center gap-1">
                       <Lock className="h-3 w-3" />
                       <span>{t.securityNote}</span>
@@ -1835,8 +2016,8 @@ export default function EnrollmentForm({
                   </form>
                 </div>
 
-                {/* RIGHT COLUMN (5 Cols): Minimal Contextual Summary Card */}
-                <div className="lg:col-span-5">
+                {/* RIGHT COLUMN (5 Cols — Desktop Only `hidden lg:block` so Mobile doesn't duplicate or show after Submit!): Minimal Contextual Summary Card */}
+                <div className="hidden lg:block lg:col-span-5">
                   {flowMode === "TALK_TO_SALES" ? (
                     /* =========================================================
                        MINIMAL OPTION 1 PANEL: DISCUSS & PAY LATER INFO
@@ -1893,16 +2074,16 @@ export default function EnrollmentForm({
                           )}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-white border border-stone-200 hover:border-[#1E5631] text-[#1E5631] px-3 py-2 text-xs font-bold transition"
+                          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-white border border-stone-200 hover:border-[#1E5631] text-[#1E5631] px-3 py-2 text-xs font-bold whitespace-nowrap transition"
                         >
-                          <MessageCircle className="h-3.5 w-3.5" />
+                          <MessageCircle className="h-3.5 w-3.5 shrink-0" />
                           <span>{t.salesWhatsappBtn}</span>
                         </a>
                         <a
                           href="tel:+8801805013633"
-                          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-white border border-stone-200 hover:border-slate-400 text-slate-800 px-3 py-2 text-xs font-bold transition"
+                          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-white border border-stone-200 hover:border-slate-400 text-slate-800 px-3 py-2 text-xs font-bold whitespace-nowrap transition"
                         >
-                          <Phone className="h-3.5 w-3.5 text-[#b91c1c]" />
+                          <Phone className="h-3.5 w-3.5 text-[#b91c1c] shrink-0" />
                           <span>{t.salesCallBtn}</span>
                         </a>
                       </div>

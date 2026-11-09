@@ -1,6 +1,6 @@
 {
-  "summary":  "Implementation plan to make all standalone course enrollment pages (/japanese-language/enroll/[courseSlug]) default to the Lead Application Form (\"আবেদন করুন • আলোচনা সাপেক্ষে পেমেন্ট\") instead of \"Enroll Now\" so ad/lead campaigns land directly on the zero-friction lead form.",
-  "updatedAt":  "2026-11-09T10:52:45.504920574Z",
+  "summary":  "UX analysis and implementation plan for fixing the mobile layout order of payment details, QR code, and submit button in EnrollmentForm.tsx so users see the payable amount and bKash/QR details BEFORE entering TrxID and clicking Submit.",
+  "updatedAt":  "2026-11-09T11:24:09.408022658Z",
   "requestFeedback":  true,
   "userFacing":  true
 }
