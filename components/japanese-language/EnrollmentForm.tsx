@@ -182,7 +182,7 @@ export default function EnrollmentForm({
         kicker: "Course Enrollment",
         title: "Enroll in Japanese Language Course",
         subtitle: `Submit your application first to discuss payment options with our team, or choose "Enroll Now" for instant admission (Full Payment ${fullDiscountPercent}% OFF or 50% Installment).`,
-        tabSales: "Apply Now (Discuss & Pay)",
+        tabSales: "Apply Now",
         tabDirect: "Enroll Now",
         labelName: "Full Name *",
         placeholderName: "Your full name",
@@ -230,7 +230,7 @@ export default function EnrollmentForm({
         payableTodayFullText: "Payable Now (Full)",
         payableTodayInstText: "Payable Now (1st Installment 50%)",
         dueLaterText: "Remaining Due (50% Later)",
-        btnSubmitSales: "Submit Application (Discuss & Pay Later)",
+        btnSubmitSales: "Submit Application",
         btnSubmitDirect: "Complete Enrollment & Get Receipt",
         submittingSales: "Submitting...",
         submittingDirect: "Completing Enrollment...",
@@ -320,7 +320,7 @@ export default function EnrollmentForm({
         kicker: "কোর্স এনরোলমেন্ট",
         title: "জাপানি ভাষা কোর্সে ভর্তি ফরম",
         subtitle: `পেমেন্টের ব্যাপারে আলোচনা করে পেমেন্ট করতে চাইলে "আবেদন করুন" বেছে নিন, অথবা সাথে সাথে ভর্তি হতে "এখনই এনরোল করুন" সিলেক্ট করুন (ফুল পেমেন্টে ${fullDiscountPercent}% ছাড় অথবা ৫০% কিস্তি সুবিধা)।`,
-        tabSales: "আবেদন করুন (আলোচনা সাপেক্ষে পেমেন্ট)",
+        tabSales: "আবেদন করুন",
         tabDirect: "এখনই এনরোল করুন",
         labelName: "পূর্ণ নাম *",
         placeholderName: "আপনার নাম লিখুন",
@@ -368,7 +368,7 @@ export default function EnrollmentForm({
         payableTodayFullText: "এখন পরিশোধযোগ্য (ফুল পেমেন্ট)",
         payableTodayInstText: "এখন পরিশোধযোগ্য (১ম কিস্তি ৫০%)",
         dueLaterText: "পরবর্তী কিস্তি (বাকি ৫০%)",
-        btnSubmitSales: "আবেদন সাবমিট করুন (আলোচনা করে পেমেন্ট)",
+        btnSubmitSales: "আবেদন সাবমিট করুন",
         btnSubmitDirect: "এখনই এনরোলমেন্ট সম্পন্ন করুন ও রিসিট নিন",
         submittingSales: "আবেদন জমা হচ্ছে...",
         submittingDirect: "এনরোলমেন্ট সম্পন্ন হচ্ছে...",
@@ -458,7 +458,7 @@ export default function EnrollmentForm({
         kicker: "コース受講申込",
         title: "日本語コース受講申込フォーム",
         subtitle: `支払いプランを相談してからお支払いする場合は「申込・支払いプラン相談」、今すぐ入学手続きを完了する場合は「今すぐ申し込む」（一括払い${fullDiscountPercent}%OFFまたは分割50%）をお選びください。`,
-        tabSales: "申込（相談してお支払い）",
+        tabSales: "申込フォーム",
         tabDirect: "今すぐ申し込む",
         labelName: "氏名 *",
         placeholderName: "氏名を入力",
@@ -506,7 +506,7 @@ export default function EnrollmentForm({
         payableTodayFullText: "本日のお支払い（一括）",
         payableTodayInstText: "本日のお支払い（初回50%）",
         dueLaterText: "次回お支払い（残り50%）",
-        btnSubmitSales: "フォームを送信（相談してお支払い）",
+        btnSubmitSales: "フォームを送信",
         btnSubmitDirect: "今すぐ申し込み＆領収書発行",
         submittingSales: "送信中...",
         submittingDirect: "処理中...",
@@ -1874,10 +1874,10 @@ export default function EnrollmentForm({
                         </span>
                         <span className="font-extrabold text-[#1E5631]">
                           {language === "bn"
-                            ? "৳০ (আলোচনা সাপেক্ষে পেমেন্ট)"
+                            ? "৳০"
                             : language === "ja"
-                              ? "৳0（相談後にお支払い）"
-                              : "৳0 (Discuss & Pay Later)"}
+                              ? "৳0"
+                              : "৳0"}
                         </span>
                       </div>
 

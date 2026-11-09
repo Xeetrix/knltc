@@ -56,10 +56,11 @@ export default async function CourseEnrollmentCampaignPage({
 }: PageProps) {
   const { courseSlug } = await params;
   const sp = await searchParams;
+  const planParam = (sp?.plan || "").toLowerCase();
   const initialPlan: PaymentPlanOption =
-    sp?.plan === "installment" || sp?.plan === "50"
-      ? "INSTALLMENT_50"
-      : "FULL_PAYMENT";
+    planParam === "full" || planParam === "20" || planParam === "direct"
+      ? "FULL_PAYMENT"
+      : "INSTALLMENT_50";
 
   return (
     <main className="min-h-screen bg-[#fcfaf7]">

@@ -130,7 +130,7 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
         comboBadge: "Best Value Combo",
         regularFeeLabel: "Regular Course Fee",
         fullPayLabel: `Full Payment (${discountPct}% OFF)`,
-        installmentBadge: `Option 1: Apply Now (Discuss & Pay) • Option 2: Enroll Now (${discountPct}% OFF or 50% Installment)`,
+        installmentBadge: `Option 1: Apply Now • Option 2: Enroll Now (${discountPct}% OFF or 50% Installment)`,
         syllabusHeading: "Curriculum & Syllabus Highlights",
         scheduleHeading: "Flexible Batch Schedules (Online, Paltan & Khulna)",
         materialsHeading: "100% Free Included Materials",
@@ -138,7 +138,7 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
         benefit2: "3 Career Bonus Courses Worth ৳15,000 Included Free",
         benefit3: "Official Student LMS Account (npw.bd/knltc) & HD Recordings",
         ctaEnrollFull: `Enroll Now (${discountPct}% OFF / Installment)`,
-        ctaEnrollInstallment: "Apply Now (Discuss Payment Plan)",
+        ctaEnrollInstallment: "Apply Now",
         autoSelectNote: "Apply first to discuss payment options, or choose 'Enroll Now' for instant admission",
         tryIrodoriBtn: "Try Free Irodori Demo",
         camp1Badge: "Student Visa Special Scholarship",
@@ -266,7 +266,7 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
         comboBadge: "সেরা কম্বো সাশ্রয়",
         regularFeeLabel: "নির্ধারিত রেগুলার কোর্স ফি",
         fullPayLabel: `ফুল পেমেন্ট (${discountPct}% ছাড়)`,
-        installmentBadge: `অপশন ১: আবেদন করুন (আলোচনা সাপেক্ষে পেমেন্ট) • অপশন ২: এখনই এনরোল করুন`,
+        installmentBadge: `অপশন ১: আবেদন করুন • অপশন ২: এখনই এনরোল করুন`,
         syllabusHeading: "পাঠ্যক্রম ও সিলেবাসের মূল বৈশিষ্ট্যসমূহ",
         scheduleHeading: "ব্যাচ সময়সূচি (অনলাইন লাইভ ক্লাস, পল্টন ও খুলনা শাখা)",
         materialsHeading: "সম্পূর্ণ বিনামূল্যে স্টাডি ম্যাটেরিয়ালস",
@@ -274,7 +274,7 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
         benefit2: "১৫,০০০ টাকা মূল্যের ৩টি স্পেশাল ইন্টারভিউ ও সিভি কোর্স ফ্রি",
         benefit3: "অফিশিয়াল LMS আইডি (npw.bd/knltc) ও এইচডি ক্লাস রেকর্ডিং",
         ctaEnrollFull: `এখনই এনরোল করুন (${discountPct}% ছাড় / ৫০% কিস্তি)`,
-        ctaEnrollInstallment: "আবেদন করুন (আলোচনা সাপেক্ষে পেমেন্ট)",
+        ctaEnrollInstallment: "আবেদন করুন",
         autoSelectNote: "পেমেন্টের ব্যাপারে আলোচনা করে পেমেন্ট করতে আবেদন করুন, অথবা এখনই এনরোল করুন",
         tryIrodoriBtn: "ফ্রি ইরোদেরি ডেমো",
         camp1Badge: "স্টুডেন্ট ভিসা স্পেশাল স্কলারশিপ",
@@ -410,7 +410,7 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
         benefit2: "15,000タカ相当の面接・履歴書・バイト3大特典講座無料",
         benefit3: "公式LMSアカウント（npw.bd/knltc）＆講義録画視聴",
         ctaEnrollFull: `今すぐ申し込む（${discountPct}%割引 / 分割払い）`,
-        ctaEnrollInstallment: "申込フォーム送信（相談してお支払い）",
+        ctaEnrollInstallment: "申込フォーム送信",
         autoSelectNote: "支払いプランを相談してからお支払い、または今すぐ入学手続きを選択できます",
         tryIrodoriBtn: "無料いろどりデモ",
         camp1Badge: "留学ビザ特別奨学金",
@@ -558,16 +558,18 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
 
   const getCourseEnrollUrl = (
     courseId: StandardCourseId,
-    paymentPlan: "FULL_PAYMENT" | "INSTALLMENT_50" = "FULL_PAYMENT",
+    paymentPlan: "FULL_PAYMENT" | "INSTALLMENT_50" = "INSTALLMENT_50",
   ) => {
     const slug = getCourseSlug(courseId);
-    const planQuery = paymentPlan === "INSTALLMENT_50" ? "installment" : "full";
-    return `/japanese-language/enroll/${slug}?plan=${planQuery}`;
+    if (paymentPlan === "FULL_PAYMENT") {
+      return `/japanese-language/enroll/${slug}?plan=full`;
+    }
+    return `/japanese-language/enroll/${slug}`;
   };
 
   const handleApply = (
     courseId: StandardCourseId,
-    paymentPlan: "FULL_PAYMENT" | "INSTALLMENT_50" = "FULL_PAYMENT",
+    paymentPlan: "FULL_PAYMENT" | "INSTALLMENT_50" = "INSTALLMENT_50",
   ) => {
     setSelectedId(courseId);
     if (onSelectCourse) {
@@ -664,7 +666,7 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
                 </div>
 
                 <Link
-                  href={getCourseEnrollUrl(cId, "FULL_PAYMENT")}
+                  href={getCourseEnrollUrl(cId, "INSTALLMENT_50")}
                   onClick={(e) => e.stopPropagation()}
                   className={`mt-4 w-full rounded-xl py-2.5 px-3 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 ${
                     isSelected
@@ -914,7 +916,7 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
                 Value: {formatBdt(cmsPricing.n4PriceBdt)} — 100% Waived
               </span>
               <Link
-                href={getCourseEnrollUrl("N5_COURSE", "FULL_PAYMENT")}
+                href={getCourseEnrollUrl("N5_COURSE", "INSTALLMENT_50")}
                 className="inline-flex items-center gap-1 text-xs font-bold text-[#1E5631] hover:underline"
               >
                 <span>Enroll Now</span>

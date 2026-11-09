@@ -1,6 +1,6 @@
 {
-  "summary":  "Implementation plan for updating the Japanese Language Course enrollment flow with natural Benglish/Bengali labels (\"এখনই এনরোল করুন\" and \"আবেদন করুন (আলোচনা সাপেক্ষে পেমেন্ট)\"), adding a Full Payment (20% OFF) vs Installment Payment (50% Now) selector inside the Instant Enrollment tab, and polishing the end-to-end UX.",
-  "updatedAt":  "2026-11-09T08:17:51.343669538Z",
+  "summary":  "Implementation plan to make all standalone course enrollment pages (/japanese-language/enroll/[courseSlug]) default to the Lead Application Form (\"আবেদন করুন • আলোচনা সাপেক্ষে পেমেন্ট\") instead of \"Enroll Now\" so ad/lead campaigns land directly on the zero-friction lead form.",
+  "updatedAt":  "2026-11-09T10:52:45.504920574Z",
   "requestFeedback":  true,
   "userFacing":  true
 }
