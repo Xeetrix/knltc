@@ -845,7 +845,38 @@ function doPost(e) {
     }
 
     if (action === "PURGE_DUMMY_DATA" || action === "PURGE_ALL_DUMMY") {
-      return jsonResponse({ ok: true, message: "Clean database ready" });
+      var dummyIdsByTable = {
+        knltc_crm_leads: ["lead-01", "lead-02", "lead-03", "lead-04", "lead-05", "lead-06"],
+        knltc_visa_applicants: ["visa-01", "visa-02", "visa-03", "visa-04"],
+        knltc_lms_bridges: ["lms-01", "lms-02", "lms-03"],
+        knltc_partner_schools: ["sch-01", "sch-02", "sch-03", "sch-04"],
+        knltc_b2b_agents: ["b2b-01", "b2b-02", "b2b-03"],
+        knltc_staff_members: ["stf-01", "stf-02", "stf-03", "stf-04", "stf-05"],
+        knltc_finance_transactions: ["trx-01", "trx-02", "trx-03", "trx-04", "trx-05"],
+        products: ["prod-book-01", "prod-book-02", "prod-book-03", "prod-book-04", "prod-book-05", "prod-book-06"],
+        blog_posts: ["post-01", "post-02", "post-03"]
+      };
+      var purgedCount = 0;
+      for (var dTbl in dummyIdsByTable) {
+        if (Object.prototype.hasOwnProperty.call(dummyIdsByTable, dTbl)) {
+          var dSheet = ss.getSheetByName(dTbl);
+          if (dSheet && dSheet.getLastRow() > 1) {
+            var dHeaders = getActualSheetHeaders(dSheet, TABLE_SCHEMAS[dTbl]);
+            var idsToPurge = dummyIdsByTable[dTbl];
+            for (var di = 0; di < idsToPurge.length; di++) {
+              if (deleteRowById(dSheet, dHeaders, idsToPurge[di])) {
+                purgedCount++;
+              }
+            }
+          }
+        }
+      }
+      return jsonResponse({
+        ok: true,
+        action: "PURGE_DUMMY_DATA",
+        purgedCount: purgedCount,
+        message: "Clean database ready"
+      });
     }
 
     return jsonResponse({

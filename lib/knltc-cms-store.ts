@@ -1780,12 +1780,9 @@ export function formatDocumentLinksForSheet(
 
 export function serializeLeadToSheetRow(lead: CrmLead): Record<string, any> {
   const defaultContract =
-    lead.contractAmountBdt ??
-    (lead.interest === "STUDENT_VISA_PREMIUM"
-      ? 1100000
-      : lead.interest === "JAPANESE_N5" || lead.interest === "JAPANESE_N4"
-        ? 12000
-        : 120000);
+    lead.contractAmountBdt !== undefined && lead.contractAmountBdt !== null
+      ? Number(lead.contractAmountBdt)
+      : 0;
   const paid = lead.paidAmountBdt ?? 0;
   const due = lead.dueAmountBdt ?? Math.max(0, defaultContract - paid);
 
@@ -2075,11 +2072,7 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
             ? Number(l.contract_amount_bdt)
             : parsedProfile.contractAmountBdt ??
               local?.contractAmountBdt ??
-              (interest === "STUDENT_VISA_PREMIUM"
-                ? 1100000
-                : interest === "JAPANESE_N5" || interest === "JAPANESE_N4"
-                  ? 12000
-                  : 120000);
+              0;
         const paid =
           l.paid_amount_bdt != null && l.paid_amount_bdt !== ""
             ? Number(l.paid_amount_bdt)
@@ -2191,11 +2184,11 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
             local?.documentChecklist,
           ),
           tasks:
-            Array.isArray(parsedProfile.tasks) && parsedProfile.tasks.length > 0
+            Array.isArray(parsedProfile.tasks)
               ? parsedProfile.tasks
               : local?.tasks,
           activityLog:
-            Array.isArray(parsedProfile.activityLog) && parsedProfile.activityLog.length > 0
+            Array.isArray(parsedProfile.activityLog)
               ? parsedProfile.activityLog
               : local?.activityLog,
           lastContactedAt:
@@ -2619,13 +2612,13 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
               : lead.referredByAgentName || ext.referredByAgentName || "",
             documentChecklist: mergeDocumentLists(lead.documentChecklist, ext.documentChecklist),
             tasks:
-              Array.isArray(lead.tasks) && lead.tasks.length > 0
+              Array.isArray(lead.tasks)
                 ? lead.tasks
-                : Array.isArray(ext.tasks) && ext.tasks.length > 0
+                : Array.isArray(ext.tasks)
                   ? ext.tasks
                   : undefined,
             activityLog:
-              Array.isArray(lead.activityLog) && lead.activityLog.length > 0
+              Array.isArray(lead.activityLog)
                 ? lead.activityLog
                 : ext.activityLog,
           };
@@ -2874,6 +2867,7 @@ export function updateCrmLeadProfile(id: string, updates: Partial<CrmLead>): Crm
       active_batch: linkedLms.activeBatch,
       assigned_sensei_id: linkedLms.assignedSenseiId || "",
       assigned_sensei_name: linkedLms.assignedSenseiName || "",
+      created_at: linkedLms.credentialsSentAt || new Date().toISOString(),
     });
   }
 
@@ -3172,6 +3166,7 @@ export function provisionLeadLoginAndEnrollment(
         active_batch: newBridge.activeBatch,
         assigned_sensei_id: newBridge.assignedSenseiId || "",
         assigned_sensei_name: newBridge.assignedSenseiName || "",
+        created_at: newBridge.credentialsSentAt,
       });
     } else {
       existingBridge.leadId = existingLead.id;
@@ -3199,6 +3194,7 @@ export function provisionLeadLoginAndEnrollment(
         active_batch: existingBridge.activeBatch,
         assigned_sensei_id: existingBridge.assignedSenseiId || "",
         assigned_sensei_name: existingBridge.assignedSenseiName || "",
+        created_at: existingBridge.credentialsSentAt || new Date().toISOString(),
       });
     }
   }
@@ -3753,6 +3749,7 @@ export function addLmsCredentials(data: {
     active_batch: newBridge.activeBatch,
     assigned_sensei_id: newBridge.assignedSenseiId || "",
     assigned_sensei_name: newBridge.assignedSenseiName || "",
+    created_at: newBridge.credentialsSentAt,
   });
 
   return newBridge;
@@ -3821,6 +3818,7 @@ export function updateLmsBridgeRecord(
     active_batch: updated.activeBatch,
     assigned_sensei_id: updated.assignedSenseiId || "",
     assigned_sensei_name: updated.assignedSenseiName || "",
+    created_at: updated.credentialsSentAt || new Date().toISOString(),
   });
 
   return updated;
@@ -5018,6 +5016,7 @@ export function updateLmsProgressAndAttendance(
       active_batch: bridge.activeBatch,
       assigned_sensei_id: bridge.assignedSenseiId || "",
       assigned_sensei_name: bridge.assignedSenseiName || "",
+      created_at: bridge.credentialsSentAt || new Date().toISOString(),
     });
   }
   saveCmsStore(store);
@@ -5776,6 +5775,7 @@ export function recordPublicCourseEnrollment(input: {
         active_batch: newBridge.activeBatch,
         assigned_sensei_id: newBridge.assignedSenseiId || "",
         assigned_sensei_name: newBridge.assignedSenseiName || "",
+        created_at: newBridge.credentialsSentAt,
       });
 
       if (input.trxId && input.paidAmountBdt > 0) {
