@@ -625,16 +625,18 @@ export function getStageLabelForTrack(
 // ------------------------------------------------------------------------------
 // LMS & External Portal Bridge (`npw.bd/knltc` & `npw.bd/irodori`)
 // ------------------------------------------------------------------------------
+export type LmsCourseLevel = "N5" | "N4" | "IRODORI" | "N5+N4";
+
 export interface LmsUserBridge {
   id: string;
   studentName: string;
   phone: string;
-  courseLevel: "N5" | "N4" | "IRODORI";
+  courseLevel: LmsCourseLevel;
   enrollmentNo: string;
   portalUsername: string;
   portalPasswordMasked: string;
-  portalFeeDeductedBdt: number; // ৳২,০০০ NPW প্ল্যাটফর্ম ফি
-  netKnlTcMarginBdt: number;   // ৳১০,০০০ নিট প্রতিষ্ঠান মার্জিন
+  portalFeeDeductedBdt: number;
+  netKnlTcMarginBdt: number;
   credentialsSentViaWa: boolean;
   credentialsSentAt?: string;
   progressPercentage: number;
@@ -2304,25 +2306,58 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
     }
 
     if (Array.isArray(data.lmsBridges)) {
-      store.lmsBridges = data.lmsBridges.map((b: any) => ({
-        id: b.id,
-        leadId: b.lead_id || "",
-        linkedLeadId: b.lead_id || "",
-        studentName: b.student_name,
-        phone: String(b.phone || ""),
-        courseLevel: b.course_level || "N5",
-        enrollmentNo: b.enrollment_no,
-        portalUsername: b.portal_username,
-        portalPasswordMasked: b.portal_password_masked,
-        portalFeeDeductedBdt: Number(b.portal_fee_deducted_bdt) || 2000,
-        netKnlTcMarginBdt: Number(b.net_knltc_margin_bdt) || 10000,
-        credentialsSentViaWa: Boolean(b.credentials_sent_via_wa),
-        credentialsSentAt: b.credentials_sent_at || new Date().toISOString(),
-        progressPercentage: Number(b.progress_percentage) || 0,
-        activeBatch: b.active_batch || "",
-        assignedSenseiId: b.assigned_sensei_id || "",
-        assignedSenseiName: b.assigned_sensei_name || "",
-      }));
+      const mappedBridges: LmsUserBridge[] = data.lmsBridges.map((b: any) => {
+        const rawPhone = String(b.phone || "");
+        const normPhone = normalizeBdPhone(rawPhone);
+        const matchedLead = store.crmLeads.find(
+          (l) =>
+            (b.lead_id && l.id === b.lead_id) ||
+            (normPhone && normalizeBdPhone(l.phone) === normPhone),
+        );
+        const resolvedLeadId = b.lead_id || matchedLead?.id || "";
+        if (matchedLead) {
+          matchedLead.isCourseEnrolled = true;
+          if (!matchedLead.enrolledBatchOrSession && b.active_batch) {
+            matchedLead.enrolledBatchOrSession = b.active_batch;
+          }
+        }
+        const rawSenseiName = String(b.assigned_sensei_name || "").trim();
+        const cleanSenseiName =
+          /amir hossen/i.test(rawSenseiName) &&
+          !store.staffList.some((st) => /amir hossen/i.test(st.name))
+            ? store.staffList.find((st) => st.role === "SENIOR_SENSEI")?.name || "Unassigned"
+            : rawSenseiName || "Unassigned";
+
+        return {
+          id: b.id,
+          leadId: resolvedLeadId,
+          linkedLeadId: resolvedLeadId,
+          studentName: b.student_name || matchedLead?.name || "Student",
+          phone: rawPhone || matchedLead?.phone || "",
+          courseLevel: (b.course_level || "N5") as LmsCourseLevel,
+          enrollmentNo: b.enrollment_no || "",
+          portalUsername: b.portal_username || "",
+          portalPasswordMasked: b.portal_password_masked || "",
+          portalFeeDeductedBdt: Number(b.portal_fee_deducted_bdt) || 0,
+          netKnlTcMarginBdt: Number(b.net_knltc_margin_bdt) || 0,
+          credentialsSentViaWa: Boolean(b.credentials_sent_via_wa),
+          credentialsSentAt: b.credentials_sent_at || new Date().toISOString(),
+          progressPercentage: Number(b.progress_percentage) || 0,
+          activeBatch: b.active_batch || "",
+          assignedSenseiId: b.assigned_sensei_id || "",
+          assignedSenseiName: cleanSenseiName,
+        };
+      });
+      const mappedBridgeIds = new Set(mappedBridges.map((m) => m.id));
+      if (Array.isArray(snap?.lmsBridges)) {
+        for (const sItem of snap.lmsBridges) {
+          if (!mappedBridgeIds.has(sItem.id)) {
+            mappedBridges.push(sItem);
+            mappedBridgeIds.add(sItem.id);
+          }
+        }
+      }
+      store.lmsBridges = mappedBridges;
       hasChanges = true;
     }
 
@@ -2583,7 +2618,16 @@ export async function fetchLiveStoreFromServer(): Promise<MasterKnlTcStore | nul
               ? ""
               : lead.referredByAgentName || ext.referredByAgentName || "",
             documentChecklist: mergeDocumentLists(lead.documentChecklist, ext.documentChecklist),
-            activityLog: lead.activityLog || ext.activityLog,
+            tasks:
+              Array.isArray(lead.tasks) && lead.tasks.length > 0
+                ? lead.tasks
+                : Array.isArray(ext.tasks) && ext.tasks.length > 0
+                  ? ext.tasks
+                  : undefined,
+            activityLog:
+              Array.isArray(lead.activityLog) && lead.activityLog.length > 0
+                ? lead.activityLog
+                : ext.activityLog,
           };
         });
       }
@@ -2878,7 +2922,7 @@ export function provisionLeadLoginAndEnrollment(
     assignedVisaOfficerName?: string;
     contractAmountBdt?: number;
     initialPaymentBdt?: number;
-    courseLevel?: "N5" | "N4" | "IRODORI";
+    courseLevel?: LmsCourseLevel;
     accountStatus?: "ACTIVE" | "SUSPENDED";
     address?: string;
     passportNo?: string;
@@ -3035,11 +3079,11 @@ export function provisionLeadLoginAndEnrollment(
         contractAmountBdt: defaultContract,
         paidAmountBdt: currentPaid,
         dueAmountBdt: currentDue,
-        sponsorName: config.guardianName || "অভিভাবক (যাচাইকৃত)",
+        sponsorName: config.guardianName || existingLead.guardianName || "",
         sponsorRelation: "FATHER",
-        sponsorBank: "অগ্রণী ব্যাংক লি.",
-        sponsorBalanceBdt: 1850000,
-        bankLoanAssistance: false,
+        sponsorBank: existingLead.sponsorBankName || "",
+        sponsorBalanceBdt: existingLead.sponsorBankBalanceBdt ?? 0,
+        bankLoanAssistance: Boolean(existingLead.bankLoanRequired),
         coEStatus: "PENDING",
         visaStatus: "IN_PROCESS",
         counselorName: existingLead.assignedTo,
@@ -3071,14 +3115,30 @@ export function provisionLeadLoginAndEnrollment(
     syncToServer("UPSERT", "knltc_visa_applicants", serializeVisaToSheetRow(targetVisa));
   }
 
-  // If Language Course is enrolled, ensure LMS bridge record exists
+  // If Language Course is enrolled, ensure LMS bridge record exists or is updated
   if (config.isCourseEnrolled) {
-    const hasLms = store.lmsBridges.some((l) => l.phone === existingLead!.phone);
-    if (!hasLms) {
-      const sensei = store.staffList.find((st) => st.role === "SENIOR_SENSEI");
+    const sensei = store.staffList.find((st) => st.role === "SENIOR_SENSEI");
+    const existingBridge = store.lmsBridges.find(
+      (l) =>
+        l.leadId === existingLead!.id ||
+        l.linkedLeadId === existingLead!.id ||
+        (existingLead!.phone && normalizeBdPhone(l.phone) === normalizeBdPhone(existingLead!.phone)),
+    );
+    const cmsCoursePage = cms.languageCoursePage || DEFAULT_WEBSITE_CMS.languageCoursePage;
+    const courseFeeVal =
+      config.courseLevel === "N4"
+        ? Number(cmsCoursePage.n4PriceBdt) || 14500
+        : config.courseLevel === "N5+N4"
+          ? Number(cmsCoursePage.comboPriceBdt) || 21500
+          : config.courseLevel === "IRODORI"
+            ? Number(cmsCoursePage.jftPriceBdt) || 12500
+            : Number(cmsCoursePage.n5PriceBdt) || 12000;
+
+    if (!existingBridge) {
       const newBridge: LmsUserBridge = {
         id: `lms-${Date.now()}`,
         leadId: existingLead.id,
+        linkedLeadId: existingLead.id,
         studentName: existingLead.name,
         phone: existingLead.phone,
         courseLevel: config.courseLevel || "N5",
@@ -3086,13 +3146,13 @@ export function provisionLeadLoginAndEnrollment(
         portalUsername: config.loginEmail.trim().toLowerCase(),
         portalPasswordMasked: config.loginPassword.trim(),
         portalFeeDeductedBdt: 2000,
-        netKnlTcMarginBdt: 10000,
+        netKnlTcMarginBdt: Math.max(0, courseFeeVal - 2000),
         credentialsSentViaWa: true,
         credentialsSentAt: new Date().toISOString(),
         progressPercentage: 10,
-        activeBatch: config.enrolledBatchOrSession || "N5 Special Batch",
-        assignedSenseiId: sensei?.id,
-        assignedSenseiName: sensei?.name,
+        activeBatch: config.enrolledBatchOrSession || "Active Batch",
+        assignedSenseiId: sensei?.id || "",
+        assignedSenseiName: sensei?.name || "Unassigned",
       };
       store.lmsBridges.unshift(newBridge);
       syncToServer("UPSERT", "knltc_lms_bridges", {
@@ -3112,6 +3172,33 @@ export function provisionLeadLoginAndEnrollment(
         active_batch: newBridge.activeBatch,
         assigned_sensei_id: newBridge.assignedSenseiId || "",
         assigned_sensei_name: newBridge.assignedSenseiName || "",
+      });
+    } else {
+      existingBridge.leadId = existingLead.id;
+      existingBridge.linkedLeadId = existingLead.id;
+      existingBridge.studentName = existingLead.name;
+      existingBridge.phone = existingLead.phone;
+      existingBridge.courseLevel = config.courseLevel || existingBridge.courseLevel;
+      existingBridge.portalUsername = config.loginEmail.trim().toLowerCase();
+      existingBridge.portalPasswordMasked = config.loginPassword.trim();
+      existingBridge.activeBatch = config.enrolledBatchOrSession || existingBridge.activeBatch;
+      syncToServer("UPSERT", "knltc_lms_bridges", {
+        id: existingBridge.id,
+        lead_id: existingBridge.leadId || "",
+        student_name: existingBridge.studentName,
+        phone: existingBridge.phone,
+        course_level: existingBridge.courseLevel,
+        enrollment_no: existingBridge.enrollmentNo,
+        portal_username: existingBridge.portalUsername,
+        portal_password_masked: existingBridge.portalPasswordMasked,
+        portal_fee_deducted_bdt: existingBridge.portalFeeDeductedBdt,
+        net_knltc_margin_bdt: existingBridge.netKnlTcMarginBdt,
+        credentials_sent_via_wa: existingBridge.credentialsSentViaWa,
+        credentials_sent_at: existingBridge.credentialsSentAt,
+        progress_percentage: existingBridge.progressPercentage,
+        active_batch: existingBridge.activeBatch,
+        assigned_sensei_id: existingBridge.assignedSenseiId || "",
+        assigned_sensei_name: existingBridge.assignedSenseiName || "",
       });
     }
   }
@@ -3349,10 +3436,10 @@ export function updateCrmLeadStatus(id: string, status: LeadStatus, notes?: stri
         contractAmountBdt: lead.contractAmountBdt,
         paidAmountBdt: lead.paidAmountBdt,
         dueAmountBdt: lead.dueAmountBdt,
-        sponsorName: lead.guardianName || "অভিভাবক (যাচাইকৃত)",
+        sponsorName: lead.guardianName || "",
         sponsorRelation: "FATHER",
-        sponsorBank: lead.sponsorBankName || "অগ্রণী ব্যাংক লি.",
-        sponsorBalanceBdt: lead.sponsorBankBalanceBdt || 1850000,
+        sponsorBank: lead.sponsorBankName || "",
+        sponsorBalanceBdt: lead.sponsorBankBalanceBdt ?? 0,
         bankLoanAssistance: Boolean(lead.bankLoanRequired),
         bankLoanBank: lead.preferredLoanBank || "",
         coEStatus: "PENDING",
@@ -3580,7 +3667,7 @@ export function updateVisaStage(id: string, nextStage: VisaStage): VisaApplicant
 export function addLmsCredentials(data: {
   studentName: string;
   phone: string;
-  courseLevel: "N5" | "N4" | "IRODORI";
+  courseLevel: LmsCourseLevel;
   enrollmentNo: string;
   portalUsername: string;
   portalPasswordMasked: string;
@@ -3591,26 +3678,39 @@ export function addLmsCredentials(data: {
   linkedLeadId?: string;
 }): LmsUserBridge {
   const store = getCmsStore();
+  const cms = store.websiteCms?.[0] || DEFAULT_WEBSITE_CMS;
+  const cmsCoursePage = cms.languageCoursePage || DEFAULT_WEBSITE_CMS.languageCoursePage;
+
   const sensei = store.staffList.find(
     (st) =>
       (data.assignedSenseiId && st.id === data.assignedSenseiId) || st.role === "SENIOR_SENSEI",
   );
+  const normPhone = normalizeBdPhone(data.phone);
   const matchedLead = store.crmLeads.find(
     (l) =>
       (data.leadId && l.id === data.leadId) ||
       (data.linkedLeadId && l.id === data.linkedLeadId) ||
-      l.phone === data.phone,
+      (normPhone && normalizeBdPhone(l.phone) === normPhone),
   );
+
+  const courseFeeBdt =
+    data.courseLevel === "N4"
+      ? Number(cmsCoursePage.n4PriceBdt) || 14500
+      : data.courseLevel === "N5+N4"
+        ? Number(cmsCoursePage.comboPriceBdt) || 21500
+        : data.courseLevel === "IRODORI"
+          ? Number(cmsCoursePage.jftPriceBdt) || 12500
+          : Number(cmsCoursePage.n5PriceBdt) || 12000;
 
   const newBridge: LmsUserBridge = {
     id: `lms-${Date.now()}`,
     ...data,
-    leadId: matchedLead?.id || data.leadId || data.linkedLeadId,
-    linkedLeadId: matchedLead?.id || data.leadId || data.linkedLeadId,
-    assignedSenseiId: sensei?.id || data.assignedSenseiId,
-    assignedSenseiName: sensei?.name || data.assignedSenseiName,
+    leadId: matchedLead?.id || data.leadId || data.linkedLeadId || "",
+    linkedLeadId: matchedLead?.id || data.leadId || data.linkedLeadId || "",
+    assignedSenseiId: sensei?.id || data.assignedSenseiId || "",
+    assignedSenseiName: sensei?.name || data.assignedSenseiName || "Unassigned",
     portalFeeDeductedBdt: 2000,
-    netKnlTcMarginBdt: 10000,
+    netKnlTcMarginBdt: Math.max(0, courseFeeBdt - 2000),
     credentialsSentViaWa: true,
     credentialsSentAt: new Date().toISOString(),
     progressPercentage: 5,
@@ -3620,12 +3720,23 @@ export function addLmsCredentials(data: {
   if (matchedLead) {
     matchedLead.isCourseEnrolled = true;
     matchedLead.enrolledBatchOrSession = data.activeBatch;
+    const actItem: LeadActivityItem = {
+      id: `act-lms-${Date.now()}`,
+      type: "STAGE_CHANGE",
+      fromStatus: "Language Academy",
+      toStatus: `LMS Activated (${data.courseLevel})`,
+      note: `Issued LMS ID ${newBridge.enrollmentNo} for batch: ${data.activeBatch}`,
+      summary: `Issued LMS credentials (${data.courseLevel} • ${data.activeBatch})`,
+      counselorName: matchedLead.assignedTo || "Admin",
+      createdAt: new Date().toISOString(),
+    };
+    matchedLead.activityLog = [actItem, ...(matchedLead.activityLog || [])];
     syncToServer("UPSERT", "knltc_crm_leads", serializeLeadToSheetRow(matchedLead));
   }
 
   saveCmsStore(store);
 
-  syncToServer("INSERT", "knltc_lms_bridges", {
+  syncToServer("UPSERT", "knltc_lms_bridges", {
     id: newBridge.id,
     lead_id: newBridge.leadId || "",
     student_name: newBridge.studentName,
@@ -3645,6 +3756,91 @@ export function addLmsCredentials(data: {
   });
 
   return newBridge;
+}
+
+export function updateLmsBridgeRecord(
+  id: string,
+  updates: Partial<LmsUserBridge>,
+): LmsUserBridge | null {
+  const store = getCmsStore();
+  const idx = store.lmsBridges.findIndex((b) => b.id === id);
+  if (idx === -1) return null;
+
+  const prev = store.lmsBridges[idx];
+  const updated: LmsUserBridge = {
+    ...prev,
+    ...updates,
+  };
+  store.lmsBridges[idx] = updated;
+
+  const normPhone = normalizeBdPhone(updated.phone);
+  const matchedLead = store.crmLeads.find(
+    (l) =>
+      (updated.leadId && l.id === updated.leadId) ||
+      (updated.linkedLeadId && l.id === updated.linkedLeadId) ||
+      (normPhone && normalizeBdPhone(l.phone) === normPhone),
+  );
+  if (matchedLead) {
+    updated.leadId = matchedLead.id;
+    updated.linkedLeadId = matchedLead.id;
+    matchedLead.isCourseEnrolled = true;
+    if (updates.activeBatch) {
+      matchedLead.enrolledBatchOrSession = updates.activeBatch;
+    }
+    if (updates.progressPercentage !== undefined && updates.progressPercentage !== prev.progressPercentage) {
+      const logEntry: LeadActivityItem = {
+        id: `act-lms-prog-${Date.now()}`,
+        type: "STAGE_CHANGE",
+        fromStatus: `LMS ${prev.progressPercentage}%`,
+        toStatus: `LMS ${updates.progressPercentage}%`,
+        note: `Updated ${updated.courseLevel} course progress to ${updates.progressPercentage}% (${updated.activeBatch})`,
+        summary: `LMS course progress updated to ${updates.progressPercentage}%`,
+        counselorName: updated.assignedSenseiName || matchedLead.assignedTo || "Sensei",
+        createdAt: new Date().toISOString(),
+      };
+      matchedLead.activityLog = [logEntry, ...(matchedLead.activityLog || [])];
+    }
+    syncToServer("UPSERT", "knltc_crm_leads", serializeLeadToSheetRow(matchedLead));
+  }
+
+  saveCmsStore(store);
+  syncToServer("UPSERT", "knltc_lms_bridges", {
+    id: updated.id,
+    lead_id: updated.leadId || "",
+    student_name: updated.studentName,
+    phone: updated.phone,
+    course_level: updated.courseLevel,
+    enrollment_no: updated.enrollmentNo,
+    portal_username: updated.portalUsername,
+    portal_password_masked: updated.portalPasswordMasked,
+    portal_fee_deducted_bdt: updated.portalFeeDeductedBdt,
+    net_knltc_margin_bdt: updated.netKnlTcMarginBdt,
+    credentials_sent_via_wa: updated.credentialsSentViaWa,
+    credentials_sent_at: updated.credentialsSentAt || new Date().toISOString(),
+    progress_percentage: updated.progressPercentage,
+    active_batch: updated.activeBatch,
+    assigned_sensei_id: updated.assignedSenseiId || "",
+    assigned_sensei_name: updated.assignedSenseiName || "",
+  });
+
+  return updated;
+}
+
+export function deleteLmsBridgeRecord(id: string): void {
+  const store = getCmsStore();
+  const target = store.lmsBridges.find((b) => b.id === id);
+  store.lmsBridges = store.lmsBridges.filter((b) => b.id !== id);
+  if (target) {
+    const matchedLead = store.crmLeads.find(
+      (l) => l.id === target.leadId || l.id === target.linkedLeadId || normalizeBdPhone(l.phone) === normalizeBdPhone(target.phone),
+    );
+    if (matchedLead) {
+      matchedLead.isCourseEnrolled = false;
+      syncToServer("UPSERT", "knltc_crm_leads", serializeLeadToSheetRow(matchedLead));
+    }
+  }
+  saveCmsStore(store);
+  syncToServer("DELETE", "knltc_lms_bridges", { id });
 }
 
 export function addFinancialTransaction(tx: Omit<FinancialTransaction, "id">): FinancialTransaction {
@@ -5339,10 +5535,13 @@ export function bulkImportCrmLeads(
 }
 
 export function recordPublicCourseEnrollment(input: {
+  leadId?: string;
+  flowMode?: "TALK_TO_SALES" | "DIRECT_PURCHASE";
   referenceId: string;
   applicantName: string;
   phone: string;
   whatsapp: string;
+  email?: string;
   courseId: string;
   courseLabel: string;
   deliveryMode: string;
@@ -5359,8 +5558,10 @@ export function recordPublicCourseEnrollment(input: {
   senderNumber?: string;
   trxId?: string;
   promoCode?: string;
-}): void {
-  if (typeof window === "undefined") return;
+  studentNote?: string;
+}): string {
+  const fallbackId = input.leadId || `lead-${Date.now()}`;
+  if (typeof window === "undefined") return fallbackId;
   try {
     const store = getCmsStore();
     const cms = store.websiteCms?.[0] || DEFAULT_WEBSITE_CMS;
@@ -5373,130 +5574,240 @@ export function recordPublicCourseEnrollment(input: {
     const interest: ServiceInterest = input.courseId.includes("N4")
       ? "JAPANESE_N4"
       : "JAPANESE_N5";
-    const courseLevel: "N5" | "N4" | "IRODORI" = input.courseId.includes("IRODORI") || input.courseId.includes("JFT")
-      ? "IRODORI"
-      : input.courseId.includes("N4")
-        ? "N4"
-        : "N5";
+    const courseLevel: LmsCourseLevel = input.courseId.includes("COMBO")
+      ? "N5+N4"
+      : input.courseId.includes("IRODORI") || input.courseId.includes("JFT")
+        ? "IRODORI"
+        : input.courseId.includes("N4")
+          ? "N4"
+          : "N5";
+
+    const isDirectPurchase =
+      input.flowMode === "DIRECT_PURCHASE" ||
+      (input.paymentMethod === "BKASH_BANGLA_QR" &&
+        Boolean(input.trxId) &&
+        input.trxId !== "SALES-TEAM-PAY-LATER" &&
+        input.paidAmountBdt > 0);
 
     const nowIso = new Date().toISOString();
     const todayDate = nowIso.slice(0, 10);
 
-    const paymentSummaryNote = [
-      `Course: ${input.courseLabel}`,
-      `Mode: ${input.classModeLabel}`,
-      `Target: ${input.purposeLabel}`,
-      `Plan: ${input.paymentPlan === "FULL_PAYMENT" ? "Full Payment (20% Off)" : "50% 1st Installment"}`,
-      input.promoCode ? `Promo: ${input.promoCode} (-৳${input.discountBdt})` : `Discount: ৳${input.discountBdt}`,
-      input.paymentMethod === "BKASH_BANGLA_QR"
-        ? `bKash/Bangla QR Paid: ৳${input.paidAmountBdt} | Sender: ${input.senderNumber || "N/A"} | TrxID: ${input.trxId || "N/A"}`
-        : `Pay at Office Desk | Payable: ৳${input.paidAmountBdt}`,
-    ].join(" | ");
+    const paymentSummaryNote = isDirectPurchase
+      ? [
+          `[Enroll Now] Course: ${input.courseLabel}`,
+          `Mode: ${input.classModeLabel}`,
+          `Purpose: ${input.purposeLabel}`,
+          `Plan: ${input.paymentPlan === "FULL_PAYMENT" ? "Full Payment (20% Off)" : "50% 1st Installment"}`,
+          input.promoCode ? `Promo: ${input.promoCode} (-৳${input.discountBdt})` : null,
+          `bKash Paid: ৳${input.paidAmountBdt} | Due: ৳${input.dueAmountBdt} | Sender: ${input.senderNumber || input.phone} | TrxID: ${input.trxId}`,
+        ]
+          .filter(Boolean)
+          .join(" | ")
+      : [
+          `[Apply Now - Discuss Payment] Course: ${input.courseLabel}`,
+          `Mode: ${input.classModeLabel}`,
+          `Purpose: ${input.purposeLabel}`,
+          `Course Fee: ৳${input.baseFeeBdt}`,
+          input.studentNote ? `Note: ${input.studentNote}` : null,
+        ]
+          .filter(Boolean)
+          .join(" | ");
 
     let existingLead = normPhone
       ? store.crmLeads.find((l) => normalizeBdPhone(l.phone) === normPhone)
       : undefined;
 
+    const activityEntry: LeadActivityItem = {
+      id: `act-web-${Date.now()}`,
+      type: isDirectPurchase ? "PAYMENT" : "MEETING_NOTE",
+      fromStatus: existingLead?.status || "Website Form",
+      toStatus: isDirectPurchase ? "Admitted (Course Enrolled)" : "New Lead (Course Inquiry)",
+      note: paymentSummaryNote,
+      summary: paymentSummaryNote,
+      counselorName: "Website Portal",
+      createdAt: nowIso,
+    };
+
     if (existingLead) {
       existingLead.name = input.applicantName || existingLead.name;
       existingLead.whatsapp = input.whatsapp || existingLead.whatsapp;
+      if (input.email) existingLead.email = input.email;
       existingLead.interest = interest;
       existingLead.branch = branchCode;
-      existingLead.isCourseEnrolled = true;
-      existingLead.enrolledBatchOrSession = `${input.courseLabel} (${input.classModeLabel})`;
-      existingLead.contractAmountBdt = input.netCourseFeeBdt;
-      existingLead.paidAmountBdt = (existingLead.paidAmountBdt || 0) + (input.trxId ? input.paidAmountBdt : 0);
-      existingLead.dueAmountBdt = Math.max(0, input.netCourseFeeBdt - (existingLead.paidAmountBdt || 0));
-      existingLead.notes = `${paymentSummaryNote} || ${existingLead.notes || ""}`;
+      if (isDirectPurchase) {
+        existingLead.status = "ADMITTED";
+        existingLead.isCourseEnrolled = true;
+        existingLead.enrolledBatchOrSession = `${input.courseLabel} (${input.classModeLabel})`;
+        existingLead.contractAmountBdt = input.netCourseFeeBdt;
+        existingLead.paidAmountBdt = (existingLead.paidAmountBdt || 0) + input.paidAmountBdt;
+        existingLead.dueAmountBdt = Math.max(
+          0,
+          input.netCourseFeeBdt - (existingLead.paidAmountBdt || 0),
+        );
+      } else if (!existingLead.isCourseEnrolled) {
+        existingLead.contractAmountBdt = input.netCourseFeeBdt;
+        existingLead.dueAmountBdt = Math.max(
+          0,
+          input.netCourseFeeBdt - (existingLead.paidAmountBdt || 0),
+        );
+      }
+      existingLead.notes = existingLead.notes
+        ? `${paymentSummaryNote} || ${existingLead.notes}`
+        : paymentSummaryNote;
+      existingLead.followUpDate = existingLead.followUpDate || todayDate;
       existingLead.lastContactedAt = nowIso;
+      existingLead.activityLog = [activityEntry, ...(existingLead.activityLog || [])];
       cms.leadExtendedProfiles[existingLead.id] = {
         ...(cms.leadExtendedProfiles[existingLead.id] || {}),
         ...existingLead,
       };
     } else {
       existingLead = {
-        id: `lead-${Date.now()}`,
+        id: fallbackId,
         name: input.applicantName,
         phone: input.phone,
         whatsapp: input.whatsapp || input.phone,
-        city: branchCode === "KHULNA-01" ? "খুলনা" : "ঢাকা",
+        email: input.email || "",
+        city: branchCode === "KHULNA-01" ? "Khulna" : "Dhaka",
         source: "WEBSITE_FORM",
         interest,
-        status: input.trxId ? "ADMITTED" : "NEW",
-        priority: "HOT",
-        education: "HSC / Equivalent",
+        status: isDirectPurchase ? "ADMITTED" : "NEW",
+        priority: isDirectPurchase ? "HOT" : "WARM",
+        education: "HSC / Alim",
         japaneseProficiency: courseLevel === "N4" ? "PASSED_N5" : "LEARNING_N5",
-        studyGapYears: 1,
-        assignedTo: "KNLTC Admissions",
+        studyGapYears: 0,
+        assignedTo: "Unassigned",
         branch: branchCode,
-        isCourseEnrolled: true,
-        enrolledBatchOrSession: `${input.courseLabel} (${input.classModeLabel})`,
+        isCourseEnrolled: isDirectPurchase,
+        enrolledBatchOrSession: isDirectPurchase
+          ? `${input.courseLabel} (${input.classModeLabel})`
+          : undefined,
         contractAmountBdt: input.netCourseFeeBdt,
-        paidAmountBdt: input.trxId ? input.paidAmountBdt : 0,
-        dueAmountBdt: input.trxId ? input.dueAmountBdt : input.netCourseFeeBdt,
+        paidAmountBdt: isDirectPurchase ? input.paidAmountBdt : 0,
+        dueAmountBdt: isDirectPurchase ? input.dueAmountBdt : input.netCourseFeeBdt,
         notes: paymentSummaryNote,
         followUpDate: todayDate,
         lastContactedAt: nowIso,
         createdAt: nowIso,
+        activityLog: [activityEntry],
         customTags: [
           courseLevel,
-          input.paymentPlan === "FULL_PAYMENT" ? "20% Full Pay" : "Installment",
+          isDirectPurchase
+            ? input.paymentPlan === "FULL_PAYMENT"
+              ? "20% Full Pay"
+              : "50% Installment"
+            : "Discuss & Pay Later",
           ...(input.promoCode ? [`Promo:${input.promoCode}`] : []),
-          ...(input.trxId ? [`TrxID:${input.trxId}`] : []),
+          ...(isDirectPurchase && input.trxId ? [`TrxID:${input.trxId}`] : []),
         ],
       };
       store.crmLeads.unshift(existingLead);
       cms.leadExtendedProfiles[existingLead.id] = { ...existingLead };
     }
 
-    const newBridge: LmsUserBridge = {
-      id: `lms-${Date.now()}`,
-      leadId: existingLead.id,
-      studentName: input.applicantName,
-      phone: input.phone,
-      courseLevel,
-      enrollmentNo: input.referenceId,
-      portalUsername: `${input.applicantName
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, "")
-        .slice(0, 10)}.${courseLevel.toLowerCase()}@npw.bd`,
-      portalPasswordMasked: `${courseLevel}@knltc2026`,
-      portalFeeDeductedBdt: 2000,
-      netKnlTcMarginBdt: Math.max(0, input.netCourseFeeBdt - 2000),
-      credentialsSentViaWa: false,
-      credentialsSentAt: nowIso,
-      progressPercentage: 5,
-      activeBatch: `${input.courseLabel} (${input.classModeLabel})`,
-      assignedSenseiId: "st-sensei-amir",
-      assignedSenseiName: "Senior Sensei Amir Hossen",
-    };
-    store.lmsBridges.unshift(newBridge);
+    // Sync CRM Lead to backend immediately
+    syncToServer("UPSERT", "knltc_crm_leads", serializeLeadToSheetRow(existingLead));
 
-    if (input.paymentMethod === "BKASH_BANGLA_QR" && input.trxId && input.paidAmountBdt > 0) {
-      const newTx: FinancialTransaction = {
-        id: `trx-${Date.now()}`,
-        receiptNo: input.referenceId,
-        date: todayDate,
-        studentName: input.applicantName,
-        studentPhone: input.phone,
-        category: "INCOME",
-        type: "COURSE_FEE",
-        amountBdt: input.paidAmountBdt,
-        dueAmountBdt: input.dueAmountBdt,
-        paymentMethod: "BKASH",
-        referenceOrTrx: `${input.trxId} (Sender: ${input.senderNumber || input.phone})`,
-        branch: branchCode,
-        verifiedBy: "Pending TrxID Verification",
-        notes: paymentSummaryNote,
-        linkedLeadId: existingLead.id,
-      };
-      store.transactions.unshift(newTx);
+    // Confirmed Decision 1: Only "Enroll Now" (Direct Purchase) creates an LMS Bridge & Finance Receipt immediately
+    if (isDirectPurchase) {
+      const sensei = store.staffList.find((st) => st.role === "SENIOR_SENSEI");
+      const existingBridge = store.lmsBridges.find(
+        (b) =>
+          b.leadId === existingLead!.id ||
+          (normPhone && normalizeBdPhone(b.phone) === normPhone),
+      );
+      const cleanSlug = courseLevel.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const newBridge: LmsUserBridge = existingBridge
+        ? {
+            ...existingBridge,
+            leadId: existingLead.id,
+            linkedLeadId: existingLead.id,
+            studentName: input.applicantName,
+            phone: input.phone,
+            courseLevel,
+            enrollmentNo: input.referenceId,
+            activeBatch: `${input.courseLabel} (${input.classModeLabel})`,
+            netKnlTcMarginBdt: Math.max(0, input.netCourseFeeBdt - 2000),
+          }
+        : {
+            id: `lms-${Date.now()}`,
+            leadId: existingLead.id,
+            linkedLeadId: existingLead.id,
+            studentName: input.applicantName,
+            phone: input.phone,
+            courseLevel,
+            enrollmentNo: input.referenceId,
+            portalUsername: `${input.applicantName
+              .toLowerCase()
+              .replace(/[^a-z0-9]/g, "")
+              .slice(0, 10)}.${cleanSlug}@npw.bd`,
+            portalPasswordMasked: `${courseLevel}@knltc2026`,
+            portalFeeDeductedBdt: 2000,
+            netKnlTcMarginBdt: Math.max(0, input.netCourseFeeBdt - 2000),
+            credentialsSentViaWa: false,
+            credentialsSentAt: nowIso,
+            progressPercentage: 5,
+            activeBatch: `${input.courseLabel} (${input.classModeLabel})`,
+            assignedSenseiId: sensei?.id || "",
+            assignedSenseiName: sensei?.name || "Unassigned",
+          };
+
+      if (!existingBridge) {
+        store.lmsBridges.unshift(newBridge);
+      } else {
+        const bIdx = store.lmsBridges.findIndex((b) => b.id === existingBridge.id);
+        if (bIdx >= 0) store.lmsBridges[bIdx] = newBridge;
+      }
+
+      syncToServer("UPSERT", "knltc_lms_bridges", {
+        id: newBridge.id,
+        lead_id: existingLead.id,
+        student_name: newBridge.studentName,
+        phone: newBridge.phone,
+        course_level: newBridge.courseLevel,
+        enrollment_no: newBridge.enrollmentNo,
+        portal_username: newBridge.portalUsername,
+        portal_password_masked: newBridge.portalPasswordMasked,
+        portal_fee_deducted_bdt: newBridge.portalFeeDeductedBdt,
+        net_knltc_margin_bdt: newBridge.netKnlTcMarginBdt,
+        credentials_sent_via_wa: newBridge.credentialsSentViaWa,
+        credentials_sent_at: newBridge.credentialsSentAt,
+        progress_percentage: newBridge.progressPercentage,
+        active_batch: newBridge.activeBatch,
+        assigned_sensei_id: newBridge.assignedSenseiId || "",
+        assigned_sensei_name: newBridge.assignedSenseiName || "",
+      });
+
+      if (input.trxId && input.paidAmountBdt > 0) {
+        const newTx: FinancialTransaction = {
+          id: `trx-${Date.now()}`,
+          receiptNo: input.referenceId,
+          date: todayDate,
+          studentName: input.applicantName,
+          studentPhone: input.phone,
+          category: "INCOME",
+          type: "COURSE_FEE",
+          amountBdt: input.paidAmountBdt,
+          dueAmountBdt: input.dueAmountBdt,
+          paymentMethod: "BKASH",
+          referenceOrTrx: `${input.trxId} (Sender: ${input.senderNumber || input.phone})`,
+          branch: branchCode,
+          verifiedBy: "Pending TrxID Verification",
+          notes: paymentSummaryNote,
+          linkedLeadId: existingLead.id,
+        };
+        store.transactions.unshift(newTx);
+        syncToServer("UPSERT", "knltc_finance_transactions", serializeTransactionToSheetRow(newTx));
+      }
     }
 
     store.websiteCms = [cms];
     saveCmsStore(store);
+    syncToServer("CMS_UPDATE", undefined, cms);
+    return existingLead.id;
   } catch (err) {
     console.warn("[KNLTC-CMS] Failed to record local public enrollment:", err);
+    return fallbackId;
   }
 }
 

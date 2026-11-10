@@ -7,6 +7,8 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
+      leadId: clientSyncedLeadId = "",
+      flowMode = "DIRECT_PURCHASE",
       applicantName,
       phone,
       whatsapp,
@@ -36,6 +38,13 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
+
+    const isDirectPurchase =
+      flowMode === "DIRECT_PURCHASE" &&
+      Boolean(trxId) &&
+      trxId !== "SALES-TEAM-PAY-LATER" &&
+      trxId !== "PAY_AT_OFFICE" &&
+      Number(paidAmountBdt) > 0;
 
     // Normalize courseId & branchId for portal-data store
     const rawCourseStr = String(courseId || "JFT_IRODORI").toUpperCase();
@@ -102,6 +111,7 @@ export async function POST(req: NextRequest) {
       : rawModeStr.includes("PALTAN")
         ? "DHAKA_PALTAN"
         : "ONLINE_ZOOM";
+    const resolvedLeadId = String(clientSyncedLeadId || "").trim() || `LEAD-WEB-${Date.now()}`;
 
     // 2. Register in Dedicated Google Sheets `knltc_course_enrollments` (25-column Course Admission Table)
     try {
@@ -120,7 +130,7 @@ export async function POST(req: NextRequest) {
           delivery_mode: String(deliveryMode),
           branch: resolvedBranchLabel,
           visa_category: String(visaCategory),
-          highest_degree: String(highestDegree || "HSC / Equivalent"),
+          highest_degree: String(highestDegree || ""),
           payment_plan: String(paymentPlan),
           payment_method: String(paymentMethod),
           base_fee_bdt: Number(baseFeeBdt || 14500),
@@ -133,10 +143,7 @@ export async function POST(req: NextRequest) {
           trx_id: String(trxId || "PAY_AT_OFFICE")
             .trim()
             .toUpperCase(),
-          payment_status:
-            trxId && Number(paidAmountBdt) > 0
-              ? "TRX_SUBMITTED"
-              : "OFFICE_PENDING",
+          payment_status: isDirectPurchase ? "TRX_SUBMITTED" : "OFFICE_PENDING",
           notes: String(notes || ""),
           created_at: nowIso,
         },
@@ -148,88 +155,91 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3. Register in Google Sheets `knltc_lms_bridges` (`https://npw.bd/knltc` classroom bridge)
-    try {
-      await mutateSheetTable({
-        action: "INSERT",
-        table: "knltc_lms_bridges",
-        payload: {
-          id: `lms-${Date.now()}`,
-          lead_id: "",
-          student_name: String(applicantName).trim(),
-          phone: String(phone).trim(),
-          course_level: courseLevel,
-          enrollment_no: resolvedEnrollmentNo,
-          portal_username: `${String(applicantName)
-            .trim()
-            .toLowerCase()
-            .replace(/[^a-z0-9]/g, "")
-            .slice(0, 10)}.${courseLevel.toLowerCase().replace(/[^a-z0-9]/g, "")}@npw.bd`,
-          portal_password_masked: `${courseLevel}@knltc2026`,
-          portal_fee_deducted_bdt: 2000,
-          net_knltc_margin_bdt: Math.max(0, Number(netCourseFeeBdt || 14500) - 2000),
-          credentials_sent_via_wa: true,
-          credentials_sent_at: nowIso,
-          progress_percentage: 5,
-          active_batch: `${enrollment.courseTitle} (${deliveryMode} | Plan: ${paymentPlan} | TrxID: ${trxId || "OFFICE"})`,
-          assigned_sensei_id: "",
-          assigned_sensei_name: "Amir Hossen (Senior Sensei)",
-          created_at: nowIso,
-        },
-      });
-    } catch (lmsErr) {
-      console.warn("Failed to record LMS bridge row in Google Sheets:", lmsErr);
-    }
-
-    // 4. Register in Google Sheets `knltc_crm_leads` for KNLTC counselors
-    try {
-      const paymentSummary = `Plan: ${paymentPlan} | Method: ${paymentMethod} | Net Fee: ৳${netCourseFeeBdt} | Paid: ৳${paidAmountBdt} | Due: ৳${dueAmountBdt} | Discount: ৳${discountBdt}${promoCode ? ` (Promo: ${promoCode})` : ""} | Sender: ${senderNumber || "N/A"} | TrxID: ${trxId || "PAY_AT_OFFICE"}`;
-
-      await createCrmLead({
-        name: String(applicantName).trim(),
-        phone: String(phone).trim(),
-        email: email || null,
-        source: "consultation form",
-        interest: `Course Enrollment: ${enrollment.courseTitle} (${resolvedEnrollmentNo})`,
-        message: `Branch: ${enrollment.branchName} | Mode: ${deliveryMode} | Visa: ${visaCategory} | Edu: ${highestDegree || "N/A"} | ${paymentSummary}`,
-        status: "new",
-        notes: `${paymentSummary}${notes ? ` | Student Note: ${notes}` : ""}`,
-      });
-    } catch (crmErr) {
-      console.warn("Failed to mirror lead into CRM:", crmErr);
-    }
-
-    // 5. Record in `knltc_finance_transactions` with exact Code.gs schema columns
-    if (trxId && Number(paidAmountBdt) > 0) {
+    // Only insert CRM/LMS/Finance rows here if the client store did not already sync them with clientSyncedLeadId
+    if (!clientSyncedLeadId) {
+      // 3. Register in Google Sheets `knltc_crm_leads` for KNLTC counselors
       try {
-        await mutateSheetTable({
-          action: "INSERT",
-          table: "knltc_finance_transactions",
-          payload: {
-            id: `FIN-WEB-${Date.now()}`,
-            receipt_no: resolvedEnrollmentNo,
-            date: nowIso.slice(0, 10),
-            student_name: String(applicantName).trim(),
-            student_phone: String(phone).trim(),
-            category: "LANGUAGE_COURSE_FEE",
-            type: "INCOME",
-            amount_bdt: Number(paidAmountBdt),
-            due_amount_bdt: Number(dueAmountBdt || 0),
-            payment_method: String(paymentMethod || "BKASH_BANGLA_QR"),
-            reference_or_trx: String(trxId).trim().toUpperCase(),
-            branch: rawModeStr.includes("KHULNA") ? "KHULNA" : "DHAKA_PALTAN",
-            verified_by: `Pending (${senderNumber || phone})`,
-            notes: `Course: ${courseLevel} | Plan: ${paymentPlan} | Base: ৳${baseFeeBdt} | Discount: ৳${discountBdt} | Net: ৳${netCourseFeeBdt}${promoCode ? ` | Promo: ${promoCode}` : ""}`,
-            linked_lead_id: "",
-            linked_visa_id: "",
-            linked_school_id: "",
-            linked_agent_id: "",
-            linked_staff_id: "",
-            created_at: nowIso,
-          },
+        const paymentSummary = `Plan: ${paymentPlan} | Method: ${paymentMethod} | Net Fee: ৳${netCourseFeeBdt} | Paid: ৳${paidAmountBdt} | Due: ৳${dueAmountBdt} | Discount: ৳${discountBdt}${promoCode ? ` (Promo: ${promoCode})` : ""} | Sender: ${senderNumber || "N/A"} | TrxID: ${trxId || "PAY_AT_OFFICE"}`;
+
+        await createCrmLead({
+          name: String(applicantName).trim(),
+          phone: String(phone).trim(),
+          email: email || null,
+          source: "consultation form",
+          interest: `Course ${isDirectPurchase ? "Enrollment" : "Application"}: ${enrollment.courseTitle} (${resolvedEnrollmentNo})`,
+          message: `Branch: ${enrollment.branchName} | Mode: ${deliveryMode} | Visa: ${visaCategory} | Edu: ${highestDegree || "N/A"} | ${paymentSummary}`,
+          status: isDirectPurchase ? "converted" : "new",
+          notes: `${paymentSummary}${notes ? ` | Student Note: ${notes}` : ""}`,
         });
-      } catch (finErr) {
-        console.warn("Failed to record finance transaction in Google Sheets:", finErr);
+      } catch (crmErr) {
+        console.warn("Failed to mirror lead into CRM:", crmErr);
+      }
+
+      // 4. Register in Google Sheets `knltc_lms_bridges` ONLY when Direct Purchase ("Enroll Now")
+      if (isDirectPurchase) {
+        try {
+          await mutateSheetTable({
+            action: "INSERT",
+            table: "knltc_lms_bridges",
+            payload: {
+              id: `lms-${Date.now()}`,
+              lead_id: resolvedLeadId,
+              student_name: String(applicantName).trim(),
+              phone: String(phone).trim(),
+              course_level: courseLevel,
+              enrollment_no: resolvedEnrollmentNo,
+              portal_username: `${String(applicantName)
+                .trim()
+                .toLowerCase()
+                .replace(/[^a-z0-9]/g, "")
+                .slice(0, 10)}.${courseLevel.toLowerCase().replace(/[^a-z0-9]/g, "")}@npw.bd`,
+              portal_password_masked: `${courseLevel}@knltc2026`,
+              portal_fee_deducted_bdt: 2000,
+              net_knltc_margin_bdt: Math.max(0, Number(netCourseFeeBdt || 14500) - 2000),
+              credentials_sent_via_wa: true,
+              credentials_sent_at: nowIso,
+              progress_percentage: 5,
+              active_batch: `${enrollment.courseTitle} (${deliveryMode} | Plan: ${paymentPlan} | TrxID: ${trxId})`,
+              assigned_sensei_id: "",
+              assigned_sensei_name: "",
+              created_at: nowIso,
+            },
+          });
+        } catch (lmsErr) {
+          console.warn("Failed to record LMS bridge row in Google Sheets:", lmsErr);
+        }
+
+        // 5. Record in `knltc_finance_transactions` with linked_lead_id
+        try {
+          await mutateSheetTable({
+            action: "INSERT",
+            table: "knltc_finance_transactions",
+            payload: {
+              id: `FIN-WEB-${Date.now()}`,
+              receipt_no: resolvedEnrollmentNo,
+              date: nowIso.slice(0, 10),
+              student_name: String(applicantName).trim(),
+              student_phone: String(phone).trim(),
+              category: "LANGUAGE_COURSE_FEE",
+              type: "INCOME",
+              amount_bdt: Number(paidAmountBdt),
+              due_amount_bdt: Number(dueAmountBdt || 0),
+              payment_method: String(paymentMethod || "BKASH_BANGLA_QR"),
+              reference_or_trx: String(trxId).trim().toUpperCase(),
+              branch: rawModeStr.includes("KHULNA") ? "KHULNA" : "DHAKA_PALTAN",
+              verified_by: `Pending (${senderNumber || phone})`,
+              notes: `Course: ${courseLevel} | Plan: ${paymentPlan} | Base: ৳${baseFeeBdt} | Discount: ৳${discountBdt} | Net: ৳${netCourseFeeBdt}${promoCode ? ` | Promo: ${promoCode}` : ""}`,
+              linked_lead_id: resolvedLeadId,
+              linked_visa_id: "",
+              linked_school_id: "",
+              linked_agent_id: "",
+              linked_staff_id: "",
+              created_at: nowIso,
+            },
+          });
+        } catch (finErr) {
+          console.warn("Failed to record finance transaction in Google Sheets:", finErr);
+        }
       }
     }
 

@@ -51,6 +51,7 @@ import {
   updateCrmLeadStatus,
   deleteCrmLead,
   provisionLeadLoginAndEnrollment,
+  updateLmsBridgeRecord,
   promoteLeadToVisaPipeline,
   updateVisaStage,
   updateVisaApplicantTrack,
@@ -77,6 +78,7 @@ import {
   type TransactionType,
   type FinancialTransaction,
   type JapanesePartnerSchool,
+  type LmsCourseLevel,
 } from "@/lib/knltc-cms-store";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 
@@ -246,6 +248,7 @@ export default function LeadProfileModal({
   onClose,
   onSaved,
   backLabel,
+  onNavigateToDashboardTab,
 }: {
   lead: CrmLead;
   allLeads?: CrmLead[];
@@ -254,6 +257,7 @@ export default function LeadProfileModal({
   onClose: () => void;
   onSaved: (message: string) => void;
   backLabel?: string;
+  onNavigateToDashboardTab?: (tabId: DashboardTabId) => void;
 }) {
   const { language } = useLanguage();
   const tr = (bn: string, en: string, ja?: string) => trModal(language, bn, en, ja);
@@ -344,7 +348,7 @@ export default function LeadProfileModal({
   const [phone, setPhone] = useState(lead.phone);
   const [whatsapp, setWhatsapp] = useState(lead.whatsapp || lead.phone);
   const [email, setEmail] = useState(lead.email || lead.loginEmail || "");
-  const [city, setCity] = useState(lead.city || "Dhaka");
+  const [city, setCity] = useState(lead.city || "");
   const [address, setAddress] = useState(lead.address || "");
   const [avatarUrl, setAvatarUrl] = useState(lead.avatarUrl || "");
   const [passportNo, setPassportNo] = useState(lead.passportNo || "");
@@ -419,10 +423,10 @@ export default function LeadProfileModal({
     lead.paidAmountBdt ?? linkedVisa?.paidAmountBdt ?? 0
   );
   const [sponsorBankName, setSponsorBankName] = useState(
-    lead.sponsorBankName || linkedVisa?.sponsorBank || "Agrani Bank PLC"
+    lead.sponsorBankName || linkedVisa?.sponsorBank || ""
   );
   const [sponsorBankBalanceBdt, setSponsorBankBalanceBdt] = useState<number>(
-    lead.sponsorBankBalanceBdt ?? linkedVisa?.sponsorBalanceBdt ?? 1850000
+    lead.sponsorBankBalanceBdt ?? linkedVisa?.sponsorBalanceBdt ?? 0
   );
 
   // Documents, Tasks, AI Summary & Activity Timeline
@@ -436,10 +440,22 @@ export default function LeadProfileModal({
   );
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDueDate, setNewTaskDueDate] = useState("");
+  const [newTaskCategory, setNewTaskCategory] = useState<
+    NonNullable<ProfileTaskItem["category"]>
+  >("CALL");
   const [aiSummary, setAiSummary] = useState<string>(lead.aiSummary || "");
   const [activityLog, setActivityLog] = useState<LeadActivityItem[]>(
     () => lead.activityLog || []
   );
+  const [activityFilter, setActivityFilter] = useState<
+    "ALL" | "CALL" | "WHATSAPP" | "VISIT" | "DOC_UPDATE" | "STAGE_CHANGE" | "MEETING_NOTE"
+  >("ALL");
+  const [quickActivityType, setQuickActivityType] = useState<
+    "CALL" | "WHATSAPP" | "VISIT" | "MEETING_NOTE"
+  >("CALL");
+  const [quickActivityNote, setQuickActivityNote] = useState("");
+  const [quickActivityNextFollowUp, setQuickActivityNextFollowUp] = useState("");
+
   const [previewDoc, setPreviewDoc] = useState<{
     title: string;
     subtitle?: string;
@@ -475,14 +491,73 @@ export default function LeadProfileModal({
   const [loginPassword, setLoginPassword] = useState(
     lead.loginPassword || `Japan@${lead.phone.slice(-4) || "2027"}`
   );
-  const [courseLevel, setCourseLevel] = useState<"N5" | "N4" | "IRODORI">(
+  const [courseLevel, setCourseLevel] = useState<LmsCourseLevel>(
     linkedLms?.courseLevel || "N5"
   );
   const [enrolledBatch, setEnrolledBatch] = useState(
-    lead.enrolledBatchOrSession ||
-      linkedLms?.activeBatch ||
-      "JLPT N5 Regular Batch — April 2027"
+    lead.enrolledBatchOrSession || linkedLms?.activeBatch || ""
   );
+
+  // Keep local state synchronized when switching between leads (Prev / Next)
+  React.useEffect(() => {
+    const freshLead = liveStore.crmLeads.find((l) => l.id === lead.id) || lead;
+    setName(freshLead.name);
+    setPhone(freshLead.phone);
+    setWhatsapp(freshLead.whatsapp || freshLead.phone);
+    setEmail(freshLead.email || freshLead.loginEmail || "");
+    setCity(freshLead.city || "");
+    setAddress(freshLead.address || "");
+    setAvatarUrl(freshLead.avatarUrl || "");
+    setPassportNo(freshLead.passportNo || "");
+    setGuardianName(freshLead.guardianName || linkedVisa?.sponsorName || "");
+    setGuardianPhone(freshLead.guardianPhone || "");
+    setEducation(freshLead.education || "HSC / Alim");
+    setSscGpa(String(freshLead.sscGpa ?? "").trim());
+    setHscGpa(String(freshLead.hscGpa ?? "").trim());
+    setStudyGapYears(freshLead.studyGapYears ?? 0);
+    setJapaneseProficiency(freshLead.japaneseProficiency || "NONE");
+    setInterest(freshLead.interest || "STUDENT_VISA_REGULAR");
+    setStatus(freshLead.status || "NEW");
+    setPriority(freshLead.priority || "WARM");
+    setAssignedTo(freshLead.assignedTo || "Sales & Marketing Team");
+    setBranch(freshLead.branch || "DHK-HQ");
+    setFollowUpDate(freshLead.followUpDate || "");
+    setStatusUpdateFollowUp(freshLead.followUpDate || "");
+    setNotes(freshLead.notes || "");
+    setTargetSchool(freshLead.targetSchool || linkedVisa?.targetSchool || "");
+    setPartnerSchoolId(freshLead.partnerSchoolId || linkedVisa?.partnerSchoolId || "");
+    setB2bAgentId(freshLead.b2bAgentId || linkedVisa?.b2bAgentId || "");
+    setB2bAgentName(freshLead.b2bAgentName || linkedVisa?.b2bAgentName || "");
+    setContractAmountBdt(
+      freshLead.contractAmountBdt ??
+        linkedVisa?.contractAmountBdt ??
+        (freshLead.interest === "STUDENT_VISA_PREMIUM" ? 1100000 : 120000)
+    );
+    setPaidAmountBdt(freshLead.paidAmountBdt ?? linkedVisa?.paidAmountBdt ?? 0);
+    setSponsorBankName(freshLead.sponsorBankName || linkedVisa?.sponsorBank || "");
+    setSponsorBankBalanceBdt(
+      freshLead.sponsorBankBalanceBdt ?? linkedVisa?.sponsorBalanceBdt ?? 0
+    );
+    setDocuments(getLeadDocumentChecklist(freshLead));
+    setTasks(
+      freshLead.tasks && freshLead.tasks.length > 0
+        ? freshLead.tasks
+        : getDefaultTasksForLead(freshLead, isBn)
+    );
+    setAiSummary(freshLead.aiSummary || "");
+    setActivityLog(freshLead.activityLog || []);
+    setLoginEmail(
+      freshLead.loginEmail ||
+        freshLead.email ||
+        `${freshLead.name.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 10) || "student"}@knltc.jp`
+    );
+    setLoginPassword(
+      freshLead.loginPassword || `Japan@${freshLead.phone.slice(-4) || "2027"}`
+    );
+    setCourseLevel(linkedLms?.courseLevel || "N5");
+    setEnrolledBatch(freshLead.enrolledBatchOrSession || linkedLms?.activeBatch || "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lead.id]);
 
   // Eligibility Calculation
   const eligibility = useMemo(
@@ -577,71 +652,7 @@ export default function LeadProfileModal({
             ? pSsc
             : 3.5;
     const candidateGpa = Math.min(5, rawAvg);
-    const baseSchools: JapanesePartnerSchool[] =
-      partnerSchools.length > 0
-        ? partnerSchools
-        : [
-            {
-              id: "jp-sch-tokyo-1",
-              name: "Tokyo International Japanese School",
-              japaneseName: "東京国際日本語学院",
-              institutionType: "LANGUAGE_SCHOOL",
-              location: "Shinjuku, Tokyo",
-              contactPerson: "Yamamoto Sensei",
-              email: "admissions@tijs.ac.jp",
-              commissionPerStudentYen: 120000,
-              commissionPerStudentBdt: 96000,
-              firstYearTuitionYen: 760000,
-              intakeMonths: ["APRIL", "OCTOBER"],
-              minGpaRequired: "3.00",
-              maxStudyGapYears: 5,
-              minLanguageLevel: "JLPT N5 / NAT 5Q",
-              activeStudentsCount: 14,
-              intakeQuota: 30,
-              totalCommissionReceivedYen: 0,
-              status: "ACTIVE_PARTNER",
-            },
-            {
-              id: "jp-sch-osaka-2",
-              name: "Osaka Meros Language Academy",
-              japaneseName: "大阪メロス言語学院",
-              institutionType: "LANGUAGE_SCHOOL",
-              location: "Namba, Osaka",
-              contactPerson: "Tanaka Kenji",
-              email: "int@meros-osaka.jp",
-              commissionPerStudentYen: 110000,
-              commissionPerStudentBdt: 88000,
-              firstYearTuitionYen: 720000,
-              intakeMonths: ["APRIL", "JULY", "OCTOBER"],
-              minGpaRequired: "2.80",
-              maxStudyGapYears: 6,
-              minLanguageLevel: "JLPT N5 / Studying",
-              activeStudentsCount: 9,
-              intakeQuota: 25,
-              totalCommissionReceivedYen: 0,
-              status: "ACTIVE_PARTNER",
-            },
-            {
-              id: "jp-sch-fukuoka-3",
-              name: "Fukuoka Kyushu Foreign Language Institute",
-              japaneseName: "九州外国語学院（福岡）",
-              institutionType: "LANGUAGE_SCHOOL",
-              location: "Hakata, Fukuoka",
-              contactPerson: "Sato Haruka",
-              email: "apply@kyushu-fli.jp",
-              commissionPerStudentYen: 100000,
-              commissionPerStudentBdt: 80000,
-              firstYearTuitionYen: 690000,
-              intakeMonths: ["JANUARY", "APRIL", "JULY", "OCTOBER"],
-              minGpaRequired: "2.50",
-              maxStudyGapYears: 7,
-              minLanguageLevel: "Beginner / N5 Prep",
-              activeStudentsCount: 6,
-              intakeQuota: 25,
-              totalCommissionReceivedYen: 0,
-              status: "ACTIVE_PARTNER",
-            },
-          ];
+    const baseSchools: JapanesePartnerSchool[] = partnerSchools;
 
     return baseSchools
       .map((sch) => {
@@ -892,18 +903,84 @@ export default function LeadProfileModal({
   };
 
   const formattedAddedDate = useMemo(() => {
+    if (!lead.createdAt) return "—";
     try {
-      const d = new Date(lead.createdAt || new Date().toISOString());
-      if (isNaN(d.getTime())) return "Oct 29, 2026";
+      const d = new Date(lead.createdAt);
+      if (isNaN(d.getTime())) return lead.createdAt;
       return d.toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
         year: "numeric",
       });
     } catch {
-      return "Oct 29, 2026";
+      return lead.createdAt || "—";
     }
   }, [lead.createdAt]);
+
+  const followUpUrgency = useMemo(() => {
+    const cleanDate = followUpDate.trim();
+    if (!cleanDate) return "UNSCHEDULED" as const;
+    const todayIso = new Date().toISOString().slice(0, 10);
+    if (cleanDate < todayIso) return "OVERDUE" as const;
+    if (cleanDate === todayIso) return "TODAY" as const;
+    return "UPCOMING" as const;
+  }, [followUpDate]);
+
+  const handleLogQuickActivity = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanNote = quickActivityNote.trim();
+    if (!cleanNote) return;
+
+    const channelLabels: Record<typeof quickActivityType, string> = {
+      CALL: isBn ? "ফোন কল লগ" : "Phone Call",
+      WHATSAPP: isBn ? "WhatsApp বার্তা" : "WhatsApp Follow-up",
+      VISIT: isBn ? "অফিস ভিজিট / মিটিং" : "Office Visit",
+      MEETING_NOTE: isBn ? "কাউন্সেলিং নোট" : "Counseling Note",
+    };
+
+    const newLogItem: LeadActivityItem = {
+      id: `act-${Date.now()}`,
+      type: quickActivityType,
+      fromStatus: STATUS_META[status]?.labelEn || status,
+      toStatus: channelLabels[quickActivityType],
+      note: cleanNote,
+      summary: `${channelLabels[quickActivityType]}: ${cleanNote}`,
+      counselorName: assignedTo || "Counselor",
+      createdAt: new Date().toISOString(),
+    };
+
+    const nextLog = [newLogItem, ...activityLog];
+    setActivityLog(nextLog);
+    setNotes(cleanNote);
+    const nextFollowUp = quickActivityNextFollowUp || followUpDate;
+    if (quickActivityNextFollowUp) {
+      setFollowUpDate(quickActivityNextFollowUp);
+    }
+
+    addLeadActivityLog(lead.id, {
+      type: quickActivityType,
+      fromStatus: STATUS_META[status]?.labelEn || status,
+      toStatus: channelLabels[quickActivityType],
+      note: cleanNote,
+      summary: `${channelLabels[quickActivityType]}: ${cleanNote}`,
+      counselorName: assignedTo || "Counselor",
+    });
+
+    persistLeadChanges(
+      {
+        notes: cleanNote,
+        followUpDate: nextFollowUp,
+        lastContactedAt: new Date().toISOString(),
+        activityLog: nextLog,
+      },
+      tr(
+        `${channelLabels[quickActivityType]} টাইমলাইনে যুক্ত ও ব্যাকএন্ডে সেভ হয়েছে`,
+        `${channelLabels[quickActivityType]} logged & saved to backend`
+      )
+    );
+    setQuickActivityNote("");
+    setQuickActivityNextFollowUp("");
+  };
 
   const formatTimelineDate = (iso: string) => {
     try {
@@ -1110,6 +1187,76 @@ export default function LeadProfileModal({
                   {tr("রেট লিড: Cold (সাধারণ)", "Rate lead: Cold ❄️", "評価: Cold")}
                 </option>
               </select>
+
+              {/* Prominent Follow-up Date Picker & Overdue Badge */}
+              <div
+                className={`inline-flex items-center gap-2 rounded-xl border px-3 py-1 text-xs font-semibold shadow-2xs transition ${
+                  followUpUrgency === "OVERDUE"
+                    ? "border-rose-300 bg-rose-50 text-rose-800"
+                    : followUpUrgency === "TODAY"
+                      ? "border-amber-300 bg-amber-50 text-amber-800"
+                      : followUpUrgency === "UPCOMING"
+                        ? "border-emerald-200 bg-emerald-50/70 text-emerald-800"
+                        : "border-slate-200 bg-white text-slate-600"
+                }`}
+              >
+                <Calendar className="h-3.5 w-3.5 shrink-0" />
+                <span className="text-[11px] font-bold">
+                  {followUpUrgency === "OVERDUE"
+                    ? tr("ফলো-আপ ওভারডিউ:", "Overdue Follow-up:")
+                    : followUpUrgency === "TODAY"
+                      ? tr("আজ ফলো-আপ:", "Follow-up Today:")
+                      : followUpUrgency === "UPCOMING"
+                        ? tr("পরবর্তী ফলো-আপ:", "Next Follow-up:")
+                        : tr("ফলো-আপ তারিখ:", "Follow-up Date:")}
+                </span>
+                <input
+                  type="date"
+                  value={followUpDate}
+                  onChange={(e) => {
+                    const nextDate = e.target.value;
+                    setFollowUpDate(nextDate);
+                    setStatusUpdateFollowUp(nextDate);
+                    const fuLog: LeadActivityItem = {
+                      id: `act-fu-${Date.now()}`,
+                      type: "STAGE_CHANGE",
+                      fromStatus: STATUS_META[status]?.labelEn || status,
+                      toStatus: nextDate ? `Follow-up: ${nextDate}` : "Follow-up Cleared",
+                      note: nextDate
+                        ? `Scheduled next follow-up for ${nextDate}`
+                        : "Cleared follow-up date",
+                      summary: nextDate
+                        ? `Scheduled next follow-up for ${nextDate}`
+                        : "Cleared follow-up date",
+                      counselorName: assignedTo || "Counselor",
+                      createdAt: new Date().toISOString(),
+                    };
+                    const nextLog = [fuLog, ...activityLog];
+                    setActivityLog(nextLog);
+                    persistLeadChanges(
+                      { followUpDate: nextDate, activityLog: nextLog },
+                      tr(
+                        `ফলো-আপ তারিখ (${nextDate || "রিসেট"}) সেভ হয়েছে`,
+                        `Follow-up date (${nextDate || "cleared"}) saved`
+                      )
+                    );
+                  }}
+                  className="bg-transparent text-xs font-bold tabular-nums focus:outline-none cursor-pointer"
+                />
+              </div>
+
+              {linkedLms && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("applications")}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition cursor-pointer"
+                >
+                  <GraduationCap className="h-3.5 w-3.5" />
+                  <span>
+                    LMS: {linkedLms.courseLevel} ({linkedLms.progressPercentage}%)
+                  </span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -1256,7 +1403,7 @@ export default function LeadProfileModal({
                       {tr("ইমেইল", "EMAIL", "メールアドレス")}
                     </div>
                     <div className="text-sm font-medium text-slate-900 break-all mt-0.5">
-                      {email || `${name.toLowerCase().replace(/[^a-z0-9]/g, "")}@gmail.com`}
+                      {email || tr("দেওয়া হয়নি", "Not provided")}
                     </div>
                   </div>
                 </div>
@@ -1566,63 +1713,215 @@ export default function LeadProfileModal({
               )}
             </div>
 
-            {/* 3. ACTIVITY TIMELINE CARD */}
-            <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-2xs">
-              <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-5">
-                <Clock className="h-3.5 w-3.5 text-slate-400" />
-                <span>
-                  {tr("অ্যাক্টিভিটি টাইমলাইন", "ACTIVITY TIMELINE", "活動タイムライン")}
-                </span>
+            {/* 3. MULTI-CHANNEL ACTIVITY COMPOSER + ACTIVITY TIMELINE CARD */}
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-2xs space-y-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  <Clock className="h-3.5 w-3.5 text-slate-400" />
+                  <span>
+                    {tr(
+                      "অ্যাক্টিভিটি লগ ও টাইমলাইন",
+                      "ACTIVITY LOG & TIMELINE",
+                      "活動ログ・タイムライン"
+                    )}
+                  </span>
+                </div>
+
+                {/* Activity Type Filter Pills */}
+                <div className="flex flex-wrap items-center gap-1">
+                  {(
+                    [
+                      { id: "ALL", label: tr("সব", "All") },
+                      { id: "CALL", label: tr("কল", "Calls") },
+                      { id: "WHATSAPP", label: "WhatsApp" },
+                      { id: "VISIT", label: tr("ভিজিট", "Visits") },
+                      { id: "DOC_UPDATE", label: tr("ডকুমেন্ট", "Docs") },
+                      { id: "STAGE_CHANGE", label: tr("স্ট্যাটাস", "Status") },
+                    ] as const
+                  ).map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => setActivityFilter(f.id)}
+                      className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition cursor-pointer ${
+                        activityFilter === f.id
+                          ? "bg-slate-900 text-white"
+                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div className="relative pl-6 border-l-2 border-slate-100 space-y-6 ml-2">
-                {timelineItems.map((item, idx) => {
-                  const isLatest = idx === 0;
-                  const noteContent = item.note || item.summary;
-                  return (
-                    <div key={item.id} className="relative">
-                      {/* Timeline Node Dot */}
-                      <span
-                        className={`absolute -left-[31px] top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full ring-4 ring-white ${
-                          isLatest ? "bg-blue-500" : "bg-slate-400"
+              {/* Standalone Multi-Channel Activity Log Composer */}
+              <form
+                onSubmit={handleLogQuickActivity}
+                className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-4 space-y-3"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {(
+                      [
+                        {
+                          id: "CALL" as const,
+                          label: tr("📞 ফোন কল", "📞 Phone Call"),
+                        },
+                        {
+                          id: "WHATSAPP" as const,
+                          label: tr("💬 WhatsApp", "💬 WhatsApp"),
+                        },
+                        {
+                          id: "VISIT" as const,
+                          label: tr("🏢 অফিস ভিজিট", "🏢 Office Visit"),
+                        },
+                        {
+                          id: "MEETING_NOTE" as const,
+                          label: tr("📝 কাউন্সেলিং নোট", "📝 Counseling Note"),
+                        },
+                      ]
+                    ).map((ch) => (
+                      <button
+                        key={ch.id}
+                        type="button"
+                        onClick={() => setQuickActivityType(ch.id)}
+                        className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition cursor-pointer ${
+                          quickActivityType === ch.id
+                            ? "bg-indigo-600 text-white shadow-2xs"
+                            : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
                         }`}
-                      />
+                      >
+                        {ch.label}
+                      </button>
+                    ))}
+                  </div>
 
-                      {/* Status Transition Line: e.g. New Lead -> [Contacted] */}
-                      <div className="flex flex-wrap items-center gap-2 text-xs">
-                        {item.fromStatus ? (
-                          <>
-                            <span className="text-slate-500 font-medium">
-                              {item.fromStatus}
-                            </span>
-                            <span className="text-slate-400">→</span>
-                            <span className="rounded-full bg-blue-50 border border-blue-200/80 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
-                              {item.toStatus || "Contacted"}
-                            </span>
-                          </>
-                        ) : (
-                          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
-                            {item.toStatus || "New Lead"}
+                  <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                    <span>{tr("পরবর্তী ফলো-আপ:", "Next Follow-up:")}</span>
+                    <input
+                      type="date"
+                      value={quickActivityNextFollowUp}
+                      onChange={(e) => setQuickActivityNextFollowUp(e.target.value)}
+                      className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-700"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="text"
+                    value={quickActivityNote}
+                    onChange={(e) => setQuickActivityNote(e.target.value)}
+                    placeholder={tr(
+                      "কথোপকথন বা ফলো-আপের বিস্তারিত লিখুন (স্ট্যাটাস পরিবর্তন না করেই সরাসরি লগ হবে)...",
+                      "Write call summary, WhatsApp message, or office visit note..."
+                    )}
+                    className="flex-1 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
+                  />
+                  <button
+                    type="submit"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition cursor-pointer shrink-0"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>{tr("লগ সেভ করুন", "Log Activity")}</span>
+                  </button>
+                </div>
+              </form>
+
+              <div className="relative pl-6 border-l-2 border-slate-100 space-y-6 ml-2">
+                {timelineItems
+                  .filter(
+                    (item) =>
+                      activityFilter === "ALL" || item.type === activityFilter
+                  )
+                  .map((item, idx) => {
+                    const isLatest = idx === 0;
+                    const noteContent = item.note || item.summary;
+                    const typeBadgeMeta: Record<
+                      LeadActivityItem["type"],
+                      { label: string; cls: string }
+                    > = {
+                      CALL: {
+                        label: tr("ফোন কল", "Call"),
+                        cls: "bg-blue-50 text-blue-700 border-blue-200",
+                      },
+                      WHATSAPP: {
+                        label: "WhatsApp",
+                        cls: "bg-emerald-50 text-emerald-700 border-emerald-200",
+                      },
+                      VISIT: {
+                        label: tr("অফিস ভিজিট", "Office Visit"),
+                        cls: "bg-amber-50 text-amber-800 border-amber-200",
+                      },
+                      DOC_UPDATE: {
+                        label: tr("ডকুমেন্ট ও টাস্ক", "Doc / Task"),
+                        cls: "bg-violet-50 text-violet-700 border-violet-200",
+                      },
+                      STAGE_CHANGE: {
+                        label: tr("স্ট্যাটাস", "Status"),
+                        cls: "bg-indigo-50 text-indigo-700 border-indigo-200",
+                      },
+                      MEETING_NOTE: {
+                        label: tr("নোট", "Note"),
+                        cls: "bg-slate-100 text-slate-700 border-slate-200",
+                      },
+                      PAYMENT: {
+                        label: tr("পেমেন্ট", "Payment"),
+                        cls: "bg-emerald-50 text-emerald-700 border-emerald-200",
+                      },
+                    };
+                    const badge =
+                      typeBadgeMeta[item.type] || typeBadgeMeta.MEETING_NOTE;
+                    return (
+                      <div key={item.id} className="relative">
+                        {/* Timeline Node Dot */}
+                        <span
+                          className={`absolute -left-[31px] top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full ring-4 ring-white ${
+                            isLatest ? "bg-blue-500" : "bg-slate-400"
+                          }`}
+                        />
+
+                        {/* Status Transition Line: e.g. New Lead -> [Contacted] */}
+                        <div className="flex flex-wrap items-center gap-2 text-xs">
+                          <span
+                            className={`rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase ${badge.cls}`}
+                          >
+                            {badge.label}
                           </span>
-                        )}
-                      </div>
+                          {item.fromStatus ? (
+                            <>
+                              <span className="text-slate-500 font-medium">
+                                {item.fromStatus}
+                              </span>
+                              <span className="text-slate-400">→</span>
+                              <span className="rounded-full bg-blue-50 border border-blue-200/80 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
+                                {item.toStatus || "Contacted"}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
+                              {item.toStatus || "New Lead"}
+                            </span>
+                          )}
+                        </div>
 
-                      {/* Timestamp & Actor */}
-                      <div className="text-[11px] text-slate-400 mt-1">
-                        {formatTimelineDate(item.createdAt)} ·{" "}
-                        {item.counselorName || "AI / system"}
-                      </div>
+                        {/* Timestamp & Actor */}
+                        <div className="text-[11px] text-slate-400 mt-1">
+                          {formatTimelineDate(item.createdAt)} ·{" "}
+                          {item.counselorName || "Counselor"}
+                        </div>
 
-                      {/* Quoted Note */}
-                      {noteContent &&
-                        !noteContent.startsWith("Lead added from") && (
-                          <p className="text-xs sm:text-sm italic text-slate-600 mt-1.5 leading-relaxed">
-                            &ldquo;{noteContent.replace(/^["“]|["”]$/g, "")}&rdquo;
-                          </p>
-                        )}
-                    </div>
-                  );
-                })}
+                        {/* Quoted Note */}
+                        {noteContent &&
+                          !noteContent.startsWith("Lead added from") && (
+                            <p className="text-xs sm:text-sm italic text-slate-600 mt-1.5 leading-relaxed">
+                              &ldquo;{noteContent.replace(/^["“]|["”]$/g, "")}&rdquo;
+                            </p>
+                          )}
+                      </div>
+                    );
+                  })}
               </div>
             </div>
           </div>
@@ -1645,7 +1944,7 @@ export default function LeadProfileModal({
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
                 {tr(
-                  "এই শিক্ষার্থীর ফাইল প্রসেসিং ও ফলো-আপের ধাপগুলো টিক দিয়ে সম্পন্ন করুন",
+                  "এই শিক্ষার্থীর ফাইল প্রসেসিং ও ফলো-আপের ধাপগুলো টিক দিয়ে সম্পন্ন করুন — স্বয়ংক্রিয়ভাবে অ্যাক্টিভিটি টাইমলাইনে লগ হবে",
                   "Track follow-up calls, document collection, and interview tasks synced to Google Sheets."
                 )}
               </p>
@@ -1662,21 +1961,34 @@ export default function LeadProfileModal({
             onSubmit={(e) => {
               e.preventDefault();
               if (!newTaskTitle.trim()) return;
+              const cleanTitle = newTaskTitle.trim();
               const newItem: ProfileTaskItem = {
                 id: `task-${Date.now()}`,
-                title: newTaskTitle.trim(),
+                title: cleanTitle,
                 dueDate: newTaskDueDate || undefined,
                 completed: false,
-                category: "GENERAL",
+                category: newTaskCategory,
                 assignee: assignedTo,
               };
               const nextTasks = [newItem, ...tasks];
+              const taskLog: LeadActivityItem = {
+                id: `act-task-add-${Date.now()}`,
+                type: "DOC_UPDATE",
+                fromStatus: `Task (${newTaskCategory})`,
+                toStatus: "Assigned",
+                note: `Created task: "${cleanTitle}"${newTaskDueDate ? ` (Due: ${newTaskDueDate})` : ""}`,
+                summary: `Created task: ${cleanTitle}`,
+                counselorName: assignedTo || "Counselor",
+                createdAt: new Date().toISOString(),
+              };
+              const nextLog = [taskLog, ...activityLog];
               setTasks(nextTasks);
+              setActivityLog(nextLog);
               setNewTaskTitle("");
               setNewTaskDueDate("");
               persistLeadChanges(
-                { tasks: nextTasks },
-                tr("নতুন টাস্ক যুক্ত হয়েছে", "Task added & saved")
+                { tasks: nextTasks, activityLog: nextLog },
+                tr("নতুন টাস্ক যুক্ত ও টাইমলাইনে লগ হয়েছে", "Task added & logged in timeline")
               );
             }}
             className="flex flex-col sm:flex-row gap-2.5 pt-2"
@@ -1691,6 +2003,21 @@ export default function LeadProfileModal({
               )}
               className="flex-1 rounded-xl border border-slate-200 px-3.5 py-2 text-xs font-medium text-slate-800 focus:border-indigo-500 focus:outline-none"
             />
+            <select
+              value={newTaskCategory}
+              onChange={(e) =>
+                setNewTaskCategory(
+                  e.target.value as NonNullable<ProfileTaskItem["category"]>
+                )
+              }
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
+            >
+              <option value="CALL">{tr("ফোন কল", "Call")}</option>
+              <option value="DOCUMENT">{tr("ডকুমেন্ট", "Document")}</option>
+              <option value="INTERVIEW">{tr("ইন্টারভিউ", "Interview")}</option>
+              <option value="FINANCE">{tr("ফিন্যান্স / পেমেন্ট", "Finance")}</option>
+              <option value="GENERAL">{tr("সাধারণ", "General")}</option>
+            </select>
             <input
               type="date"
               value={newTaskDueDate}
@@ -1708,59 +2035,109 @@ export default function LeadProfileModal({
 
           {/* Tasks List */}
           <div className="divide-y divide-slate-100 border border-slate-200/80 rounded-xl overflow-hidden">
-            {tasks.map((task) => (
-              <div
-                key={task.id}
-                className={`flex items-center justify-between gap-4 p-4 transition ${
-                  task.completed ? "bg-slate-50/70" : "bg-white hover:bg-slate-50/40"
-                }`}
-              >
-                <label className="flex items-start gap-3 cursor-pointer flex-1">
-                  <input
-                    type="checkbox"
-                    checked={task.completed}
-                    onChange={() => {
-                      const nextTasks = tasks.map((t) =>
-                        t.id === task.id ? { ...t, completed: !t.completed } : t
-                      );
-                      setTasks(nextTasks);
-                      persistLeadChanges(
-                        { tasks: nextTasks },
-                        tr("টাস্ক স্ট্যাটাস আপডেট হয়েছে", "Task status updated")
-                      );
-                    }}
-                    className="mt-0.5 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                  />
-                  <div>
-                    <div
-                      className={`text-xs sm:text-sm font-medium ${
-                        task.completed
-                          ? "line-through text-slate-400"
-                          : "text-slate-900"
-                      }`}
-                    >
-                      {task.title}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-slate-400">
-                      <span>{task.assignee || assignedTo}</span>
-                      {task.dueDate && <span>· Due: {task.dueDate}</span>}
-                    </div>
-                  </div>
-                </label>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    const nextTasks = tasks.filter((t) => t.id !== task.id);
-                    setTasks(nextTasks);
-                    persistLeadChanges({ tasks: nextTasks });
-                  }}
-                  className="text-slate-300 hover:text-rose-600 p-1 rounded-lg transition"
+            {tasks.map((task) => {
+              const todayIso = new Date().toISOString().slice(0, 10);
+              const isTaskOverdue =
+                !task.completed && Boolean(task.dueDate && task.dueDate < todayIso);
+              return (
+                <div
+                  key={task.id}
+                  className={`flex flex-wrap items-center justify-between gap-4 p-4 transition ${
+                    task.completed ? "bg-slate-50/70" : "bg-white hover:bg-slate-50/40"
+                  }`}
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ))}
+                  <label className="flex items-start gap-3 cursor-pointer flex-1 min-w-[220px]">
+                    <input
+                      type="checkbox"
+                      checked={task.completed}
+                      onChange={() => {
+                        const nextCompleted = !task.completed;
+                        const nextTasks = tasks.map((t) =>
+                          t.id === task.id ? { ...t, completed: nextCompleted } : t
+                        );
+                        const taskLog: LeadActivityItem = {
+                          id: `act-task-${Date.now()}`,
+                          type: "DOC_UPDATE",
+                          fromStatus: `Task (${task.category || "GENERAL"})`,
+                          toStatus: nextCompleted ? "Completed ✓" : "Reopened",
+                          note: `${nextCompleted ? "Completed" : "Reopened"} task: "${task.title}"`,
+                          summary: `${nextCompleted ? "Completed" : "Reopened"} task: ${task.title}`,
+                          counselorName: assignedTo || "Counselor",
+                          createdAt: new Date().toISOString(),
+                        };
+                        const nextLog = [taskLog, ...activityLog];
+                        setTasks(nextTasks);
+                        setActivityLog(nextLog);
+                        persistLeadChanges(
+                          { tasks: nextTasks, activityLog: nextLog },
+                          tr(
+                            nextCompleted
+                              ? "টাস্ক সম্পন্ন হয়েছে ও টাইমলাইনে লগ করা হয়েছে"
+                              : "টাস্ক পুনরায় ওপেন করা হয়েছে",
+                            nextCompleted
+                              ? "Task marked completed & logged"
+                              : "Task reopened"
+                          )
+                        );
+                      }}
+                      className="mt-0.5 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <div>
+                      <div
+                        className={`text-xs sm:text-sm font-medium ${
+                          task.completed
+                            ? "line-through text-slate-400"
+                            : "text-slate-900"
+                        }`}
+                      >
+                        {task.title}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-slate-400">
+                        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600">
+                          {task.category || "GENERAL"}
+                        </span>
+                        <span>{task.assignee || assignedTo}</span>
+                        {isTaskOverdue && (
+                          <span className="rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-bold text-rose-700">
+                            {tr("ওভারডিউ", "Overdue")}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </label>
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="date"
+                      value={task.dueDate || ""}
+                      onChange={(e) => {
+                        const updatedDate = e.target.value;
+                        const nextTasks = tasks.map((t) =>
+                          t.id === task.id ? { ...t, dueDate: updatedDate } : t
+                        );
+                        setTasks(nextTasks);
+                        persistLeadChanges(
+                          { tasks: nextTasks },
+                          tr("টাস্কের তারিখ আপডেট হয়েছে", "Task due date updated")
+                        );
+                      }}
+                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const nextTasks = tasks.filter((t) => t.id !== task.id);
+                        setTasks(nextTasks);
+                        persistLeadChanges({ tasks: nextTasks });
+                      }}
+                      className="text-slate-300 hover:text-rose-600 p-1 rounded-lg transition"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -1781,7 +2158,7 @@ export default function LeadProfileModal({
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
                 {tr(
-                  "সরাসরি পিডিএফ বা ছবি আপলোড করুন — প্রতিটি ফাইলের ডিরেক্ট লিংক স্বয়ংক্রিয়ভাবে প্রোফাইল ও শিট কলামে সংরক্ষিত হবে",
+                  "সরাসরি পিডিএফ বা ছবি আপলোড করুন — প্রতিটি ফাইলের ডিরেক্ট লিংক ও স্ট্যাটাস পরিবর্তন স্বয়ংক্রিয়ভাবে টাইমলাইন ও শিটে সংরক্ষিত হবে",
                   "Upload PDFs or images directly and preview or download them anytime."
                 )}
               </p>
@@ -1843,13 +2220,31 @@ export default function LeadProfileModal({
                         onChange={(e) => {
                           const nextStatus = e.target
                             .value as LeadDocumentItem["status"];
+                          const todayStr = new Date().toISOString().slice(0, 10);
                           const nextDocs = documents.map((d) =>
-                            d.id === doc.id ? { ...d, status: nextStatus } : d
+                            d.id === doc.id
+                              ? { ...d, status: nextStatus, updatedAt: todayStr }
+                              : d
                           );
+                          const docStatusLog: LeadActivityItem = {
+                            id: `act-doc-status-${Date.now()}`,
+                            type: "DOC_UPDATE",
+                            fromStatus: doc.titleEn,
+                            toStatus: nextStatus,
+                            note: `Document "${doc.titleEn}" status changed from ${doc.status} to ${nextStatus}`,
+                            summary: `${doc.titleEn} → ${nextStatus}`,
+                            counselorName: assignedTo || "Counselor",
+                            createdAt: new Date().toISOString(),
+                          };
+                          const nextLog = [docStatusLog, ...activityLog];
                           setDocuments(nextDocs);
+                          setActivityLog(nextLog);
                           persistLeadChanges(
-                            { documentChecklist: nextDocs },
-                            tr("ডকুমেন্ট স্ট্যাটাস আপডেট হয়েছে", "Document status updated")
+                            { documentChecklist: nextDocs, activityLog: nextLog },
+                            tr(
+                              `"${doc.titleBn}" স্ট্যাটাস (${nextStatus}) আপডেট ও লগ হয়েছে`,
+                              `"${doc.titleEn}" marked as ${nextStatus}`
+                            )
                           );
                         }}
                         className={`rounded-lg border px-2.5 py-1 text-[11px] font-bold ${
@@ -1963,99 +2358,134 @@ export default function LeadProfileModal({
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {schoolMatches.map(({ school, matchScore, isCurrentTarget }) => (
-                <div
-                  key={school.id}
-                  className={`flex flex-col justify-between rounded-2xl border p-5 transition ${
-                    isCurrentTarget
-                      ? "border-indigo-500 bg-indigo-50/30 ring-1 ring-indigo-500"
-                      : "border-slate-200 bg-white hover:border-slate-300"
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-bold text-indigo-700 tabular-nums">
-                        {matchScore}% Match
-                      </span>
-                      <span className="text-[11px] font-medium text-slate-400">
-                        {school.location}
-                      </span>
-                    </div>
-
-                    <h3 className="text-sm font-bold text-slate-900">
-                      {school.name}
-                    </h3>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      {school.japaneseName}
-                    </p>
-
-                    <div className="mt-4 space-y-1.5 text-xs text-slate-600 border-t border-slate-100 pt-3">
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">1st Year Tuition:</span>
-                        <span className="font-semibold text-slate-900 tabular-nums">
-                          ¥{(school.firstYearTuitionYen || 760000).toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">Min GPA Req:</span>
-                        <span className="font-semibold text-slate-900 tabular-nums">
-                          {school.minGpaRequired || "2.80"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">Max Study Gap:</span>
-                        <span className="font-semibold text-slate-900 tabular-nums">
-                          {school.maxStudyGapYears ?? 5} Years
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
+            {schoolMatches.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center space-y-3">
+                <Building2 className="h-8 w-8 text-slate-400 mx-auto" />
+                <div>
+                  <p className="text-sm font-bold text-slate-800">
+                    {tr(
+                      "ব্যাকএন্ডে কোনো জাপানি পার্টনার স্কুল তালিকাভুক্ত নেই",
+                      "No Japanese Partner Schools Found in Backend"
+                    )}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {tr(
+                      "কোনো হার্ডকোডকৃত স্কুল দেখানো হচ্ছে না। B2B Partner Schools ট্যাব থেকে পার্টনার স্কুল যুক্ত করুন।",
+                      "Hardcoded schools have been removed. Please add partner schools in the B2B Partner Schools tab."
+                    )}
+                  </p>
+                </div>
+                {onNavigateToDashboardTab && (
                   <button
                     type="button"
-                    onClick={() => {
-                      setTargetSchool(school.name);
-                      setPartnerSchoolId(school.id);
-                      const logItem: LeadActivityItem = {
-                        id: `act-sch-${Date.now()}`,
-                        type: "STAGE_CHANGE",
-                        fromStatus: "School Match",
-                        toStatus: school.name,
-                        note: `Matched and assigned candidate to ${school.name} (${school.location})`,
-                        summary: `Assigned school: ${school.name}`,
-                        counselorName: assignedTo || "Counselor",
-                        createdAt: new Date().toISOString(),
-                      };
-                      const nextLog = [logItem, ...activityLog];
-                      setActivityLog(nextLog);
-                      persistLeadChanges(
-                        {
-                          targetSchool: school.name,
-                          targetSchoolName: school.name,
-                          partnerSchoolId: school.id,
-                          targetSchoolId: school.id,
-                          activityLog: nextLog,
-                        },
-                        tr(
-                          `"${school.name}" এই শিক্ষার্থীর জন্য নির্বাচন করা হয়েছে`,
-                          `Matched & assigned "${school.name}"`
-                        )
-                      );
-                    }}
-                    className={`mt-4 w-full rounded-xl py-2 text-xs font-semibold transition cursor-pointer ${
+                    onClick={() => onNavigateToDashboardTab("b2b")}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-700 transition cursor-pointer"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    <span>
+                      {tr(
+                        "B2B Partner Schools ট্যাবে যান",
+                        "Open B2B Partner Schools Tab"
+                      )}
+                    </span>
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {schoolMatches.map(({ school, matchScore, isCurrentTarget }) => (
+                  <div
+                    key={school.id}
+                    className={`flex flex-col justify-between rounded-2xl border p-5 transition ${
                       isCurrentTarget
-                        ? "bg-emerald-600 text-white"
-                        : "bg-slate-900 text-white hover:bg-slate-800"
+                        ? "border-indigo-500 bg-indigo-50/30 ring-1 ring-indigo-500"
+                        : "border-slate-200 bg-white hover:border-slate-300"
                     }`}
                   >
-                    {isCurrentTarget
-                      ? tr("✓ বর্তমান নির্বাচিত স্কুল", "✓ Selected Target School")
-                      : tr("এই স্কুলে এসাইন করুন", "Select & Match School")}
-                  </button>
-                </div>
-              ))}
-            </div>
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-bold text-indigo-700 tabular-nums">
+                          {matchScore}% Match
+                        </span>
+                        <span className="text-[11px] font-medium text-slate-400">
+                          {school.location}
+                        </span>
+                      </div>
+
+                      <h3 className="text-sm font-bold text-slate-900">
+                        {school.name}
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {school.japaneseName}
+                      </p>
+
+                      <div className="mt-4 space-y-1.5 text-xs text-slate-600 border-t border-slate-100 pt-3">
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">1st Year Tuition:</span>
+                          <span className="font-semibold text-slate-900 tabular-nums">
+                            ¥{(school.firstYearTuitionYen || 0).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Min GPA Req:</span>
+                          <span className="font-semibold text-slate-900 tabular-nums">
+                            {school.minGpaRequired || "—"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Max Study Gap:</span>
+                          <span className="font-semibold text-slate-900 tabular-nums">
+                            {school.maxStudyGapYears ?? 5} Years
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTargetSchool(school.name);
+                        setPartnerSchoolId(school.id);
+                        const logItem: LeadActivityItem = {
+                          id: `act-sch-${Date.now()}`,
+                          type: "STAGE_CHANGE",
+                          fromStatus: "School Match",
+                          toStatus: school.name,
+                          note: `Matched and assigned candidate to ${school.name} (${school.location})`,
+                          summary: `Assigned school: ${school.name}`,
+                          counselorName: assignedTo || "Counselor",
+                          createdAt: new Date().toISOString(),
+                        };
+                        const nextLog = [logItem, ...activityLog];
+                        setActivityLog(nextLog);
+                        persistLeadChanges(
+                          {
+                            targetSchool: school.name,
+                            targetSchoolName: school.name,
+                            partnerSchoolId: school.id,
+                            targetSchoolId: school.id,
+                            activityLog: nextLog,
+                          },
+                          tr(
+                            `"${school.name}" এই শিক্ষার্থীর জন্য নির্বাচন করা হয়েছে`,
+                            `Matched & assigned "${school.name}"`
+                          )
+                        );
+                      }}
+                      className={`mt-4 w-full rounded-xl py-2 text-xs font-semibold transition cursor-pointer ${
+                        isCurrentTarget
+                          ? "bg-emerald-600 text-white"
+                          : "bg-slate-900 text-white hover:bg-slate-800"
+                      }`}
+                    >
+                      {isCurrentTarget
+                        ? tr("✓ বর্তমান নির্বাচিত স্কুল", "✓ Selected Target School")
+                        : tr("এই স্কুলে এসাইন করুন", "Select & Match School")}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -2098,7 +2528,7 @@ export default function LeadProfileModal({
                     </h2>
                     <p className="text-xs text-slate-500 mt-0.5">
                       {linkedVisa
-                        ? `Tracking ID: ${linkedVisa.trackingNo} · Institution: ${linkedVisa.targetSchool}`
+                        ? `Tracking ID: ${linkedVisa.trackingNo} · Institution: ${linkedVisa.targetSchool || "Unassigned"}`
                         : tr(
                             "এখনো ভিসা ফাইল ওপেন করা হয়নি — নিচে ক্লিক করে ভিসা পাইপলাইনে যুক্ত করুন",
                             "Not yet in Visa Pipeline — click below to open Visa File",
@@ -2112,8 +2542,12 @@ export default function LeadProfileModal({
                       onClick={() => {
                         promoteLeadToVisaPipeline({
                           leadId: lead.id,
-                          targetSchool: targetSchool || "Tokyo International Japanese School",
-                          partnerSchoolId,
+                          targetSchool:
+                            targetSchool ||
+                            partnerSchools[0]?.name ||
+                            "Unassigned Partner School",
+                          partnerSchoolId:
+                            partnerSchoolId || partnerSchools[0]?.id || "",
                           b2bAgentId,
                           packageType:
                             interest === "STUDENT_VISA_PREMIUM" ? "PREMIUM" : "REGULAR",
@@ -2242,145 +2676,239 @@ export default function LeadProfileModal({
                 </div>
               </div>
 
-          {/* LMS Language Course & Student Portal Login Provisioning */}
-          <div className="lg:col-span-5 rounded-2xl border border-slate-200/90 bg-white p-6 shadow-2xs space-y-4">
-            <div className="flex items-center gap-2">
-              <KeyRound className="h-4 w-4 text-indigo-600" />
-              <h2 className="text-base font-bold text-slate-900">
-                {tr(
-                  "LMS ভাষা ব্যাচ ও স্টুডেন্ট পোর্টাল লগইন",
-                  "LMS Batch & Student Portal Access"
+              {/* LMS Language Course & Student Portal Login Provisioning */}
+              <div className="lg:col-span-5 rounded-2xl border border-slate-200/90 bg-white p-6 shadow-2xs space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <KeyRound className="h-4 w-4 text-indigo-600" />
+                    <h2 className="text-base font-bold text-slate-900">
+                      {tr(
+                        "LMS ভাষা ব্যাচ ও স্টুডেন্ট পোর্টাল লগইন",
+                        "LMS Batch & Student Portal Access"
+                      )}
+                    </h2>
+                  </div>
+
+                  {onNavigateToDashboardTab && (
+                    <button
+                      type="button"
+                      onClick={() => onNavigateToDashboardTab("lms")}
+                      className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[11px] font-bold text-indigo-700 hover:bg-indigo-100 transition cursor-pointer"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      <span>{tr("LMS ট্যাবে দেখুন", "View LMS Tab")}</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Live Linked LMS Status Card (2-Way Synced) */}
+                {linkedLms ? (
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 space-y-3 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-2.5 py-0.5 text-[10px] font-bold text-white">
+                        <CheckCircle2 className="h-3 w-3" />
+                        <span>{tr("LMS-এ ভর্তি সক্রিয়", "Active LMS Student")}</span>
+                      </span>
+                      <span className="font-mono text-[11px] font-bold text-slate-600">
+                        {linkedLms.enrollmentNo}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-[11px]">
+                      <div>
+                        <span className="text-slate-400 block">
+                          {tr("ভর্তিকৃত কোর্স", "Enrolled Course")}
+                        </span>
+                        <span className="font-bold text-slate-900">
+                          {linkedLms.courseLevel}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block">
+                          {tr("ক্লাস ও অগ্রগতি", "Course Progress")}
+                        </span>
+                        <span className="font-bold text-emerald-700 tabular-nums">
+                          {linkedLms.progressPercentage}% Completed
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-600 block mb-1">
+                        {tr("LMS অগ্রগতি আপডেট করুন (%)", "Update LMS Progress (%)")}
+                      </label>
+                      <select
+                        value={linkedLms.progressPercentage}
+                        onChange={(e) => {
+                          const nextPct = Number(e.target.value);
+                          updateLmsBridgeRecord(linkedLms.id, {
+                            progressPercentage: nextPct,
+                          });
+                          setStoreTick((t) => t + 1);
+                          onSaved(
+                            tr(
+                              `LMS অগ্রগতি ${nextPct}%-এ আপডেট হয়েছে`,
+                              `LMS progress updated to ${nextPct}%`
+                            )
+                          );
+                        }}
+                        className="w-full rounded-lg border border-emerald-300 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-800"
+                      >
+                        {[0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(
+                          (pct) => (
+                            <option key={pct} value={pct}>
+                              {pct}% —{" "}
+                              {pct === 100
+                                ? tr("কোর্স সম্পন্ন (Course Completed)", "Course Completed")
+                                : pct >= 50
+                                  ? tr("চলমান (Mid-Course)", "In Progress (Mid-Course)")
+                                  : tr("প্রাথমিক ধাপ (Initial Stage)", "Initial Stage")}
+                            </option>
+                          )
+                        )}
+                      </select>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-3 text-xs text-amber-800">
+                    {tr(
+                      "এই লিডের জন্য এখনো কোনো LMS অ্যাকাউন্ট তৈরি করা হয়নি। নিচে কোর্স ও ব্যাচ নির্বাচন করে ভর্তি নিশ্চিত করলে স্বয়ংক্রিয়ভাবে LMS অ্যাকাউন্ট তৈরি হবে।",
+                      "No LMS classroom account is active for this lead yet. Confirm admission below to create and link their LMS account."
+                    )}
+                  </div>
                 )}
-              </h2>
-            </div>
 
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="font-semibold text-slate-600">
-                  {tr("লগইন ইমেইল", "Portal Login Email")}
-                </label>
-                <input
-                  type="email"
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
-                />
-              </div>
+                <div className="space-y-3 text-xs">
+                  <div>
+                    <label className="font-semibold text-slate-600">
+                      {tr("লগইন ইমেইল", "Portal Login Email")}
+                    </label>
+                    <input
+                      type="email"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
+                    />
+                  </div>
 
-              <div>
-                <label className="font-semibold text-slate-600">
-                  {tr("পাসওয়ার্ড", "Portal Password")}
-                </label>
-                <input
-                  type="text"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
-                />
-              </div>
+                  <div>
+                    <label className="font-semibold text-slate-600">
+                      {tr("পাসওয়ার্ড", "Portal Password")}
+                    </label>
+                    <input
+                      type="text"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono"
+                    />
+                  </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="font-semibold text-slate-600">
-                    {tr("কোর্স লেভেল", "Course Level")}
-                  </label>
-                  <select
-                    value={courseLevel}
-                    onChange={(e) =>
-                      setCourseLevel(e.target.value as "N5" | "N4" | "IRODORI")
-                    }
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold"
-                  >
-                    <option value="N5">JLPT N5</option>
-                    <option value="N4">JLPT N4</option>
-                    <option value="IRODORI">Irodori Spoken</option>
-                  </select>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="font-semibold text-slate-600">
+                        {tr("কোর্স লেভেল", "Course Level")}
+                      </label>
+                      <select
+                        value={courseLevel}
+                        onChange={(e) =>
+                          setCourseLevel(e.target.value as LmsCourseLevel)
+                        }
+                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold"
+                      >
+                        <option value="IRODORI">JFT-Basic (Irodori)</option>
+                        <option value="N5">JLPT N5</option>
+                        <option value="N4">JLPT N4</option>
+                        <option value="N5+N4">N5 + N4 Combo</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="font-semibold text-slate-600">
+                        {tr("ব্যাচ সেশন", "Active Batch")}
+                      </label>
+                      <input
+                        type="text"
+                        value={enrolledBatch}
+                        onChange={(e) => setEnrolledBatch(e.target.value)}
+                        placeholder={tr("যেমন: JFT Morning Batch", "e.g. JLPT N5 Regular Batch")}
+                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        provisionLeadLoginAndEnrollment(
+                          {
+                            id: lead.id,
+                            name,
+                            phone,
+                            whatsapp,
+                            email: loginEmail,
+                            city,
+                            education,
+                            interest,
+                            branch,
+                            notes,
+                          },
+                          {
+                            loginEmail,
+                            loginPassword,
+                            role: "STUDENT",
+                            allowedTabs: ["my_profile", "lms", "visa"],
+                            isFileOpened: true,
+                            isCourseEnrolled: true,
+                            enrolledBatchOrSession:
+                              enrolledBatch || `JLPT ${courseLevel} Batch`,
+                            targetSchool:
+                              targetSchool || partnerSchools[0]?.name || "",
+                            partnerSchoolId:
+                              partnerSchoolId || partnerSchools[0]?.id || "",
+                            b2bAgentId,
+                            b2bAgentName,
+                            contractAmountBdt,
+                            courseLevel,
+                          }
+                        );
+                        setStatus("ADMITTED");
+                        setStoreTick((t) => t + 1);
+                        onSaved(
+                          tr(
+                            "ভর্তি, ভিসা ফাইল ও স্টুডেন্ট লগইন একসাথে চালু হয়েছে!",
+                            "Enrolled in LMS, opened Visa File & activated Student Login!"
+                          )
+                        );
+                      }}
+                      className="flex-1 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-semibold text-white hover:bg-slate-800 transition cursor-pointer"
+                    >
+                      {tr(
+                        "ভর্তি নিশ্চিত ও লগইন চালু করুন",
+                        "Activate Admission & Student Portal"
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(
+                          `KNLTC Portal\nEmail: ${loginEmail}\nPassword: ${loginPassword}`
+                        );
+                        setCopiedCredentials(true);
+                        setTimeout(() => setCopiedCredentials(false), 2000);
+                      }}
+                      className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                    >
+                      {copiedCredentials ? (
+                        <Check className="h-3.5 w-3.5 text-emerald-600" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                      <span>{copiedCredentials ? "Copied" : "Copy"}</span>
+                    </button>
+                  </div>
                 </div>
-
-                <div>
-                  <label className="font-semibold text-slate-600">
-                    {tr("ব্যাচ সেশন", "Active Batch")}
-                  </label>
-                  <input
-                    type="text"
-                    value={enrolledBatch}
-                    onChange={(e) => setEnrolledBatch(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    provisionLeadLoginAndEnrollment(
-                      {
-                        id: lead.id,
-                        name,
-                        phone,
-                        whatsapp,
-                        email: loginEmail,
-                        city,
-                        education,
-                        interest,
-                        branch,
-                        notes,
-                      },
-                      {
-                        loginEmail,
-                        loginPassword,
-                        role: "STUDENT",
-                        allowedTabs: ["my_profile", "lms", "visa"],
-                        isFileOpened: true,
-                        isCourseEnrolled: true,
-                        enrolledBatchOrSession: enrolledBatch,
-                        targetSchool:
-                          targetSchool || "Tokyo International Japanese School",
-                        partnerSchoolId,
-                        b2bAgentId,
-                        b2bAgentName,
-                        contractAmountBdt,
-                        courseLevel,
-                      }
-                    );
-                    setStatus("ADMITTED");
-                    setStoreTick((t) => t + 1);
-                    onSaved(
-                      tr(
-                        "ভর্তি, ভিসা ফাইল ও স্টুডেন্ট লগইন একসাথে চালু হয়েছে!",
-                        "Enrolled in LMS, opened Visa File & activated Student Login!"
-                      )
-                    );
-                  }}
-                  className="flex-1 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-semibold text-white hover:bg-slate-800 transition cursor-pointer"
-                >
-                  {tr(
-                    "ভর্তি নিশ্চিত ও লগইন চালু করুন",
-                    "Activate Admission & Student Portal"
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(
-                      `KNLTC Portal\nEmail: ${loginEmail}\nPassword: ${loginPassword}`
-                    );
-                    setCopiedCredentials(true);
-                    setTimeout(() => setCopiedCredentials(false), 2000);
-                  }}
-                  className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-                >
-                  {copiedCredentials ? (
-                    <Check className="h-3.5 w-3.5 text-emerald-600" />
-                  ) : (
-                    <Copy className="h-3.5 w-3.5" />
-                  )}
-                  <span>{copiedCredentials ? "Copied" : "Copy"}</span>
-                </button>
-              </div>
-            </div>
               </div>
             </div>
           );
@@ -2796,6 +3324,34 @@ export default function LeadProfileModal({
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700">
+                  {tr("স্পন্সর ব্যাংকের নাম", "Sponsor Bank Name")}
+                </label>
+                <input
+                  type="text"
+                  value={sponsorBankName}
+                  onChange={(e) => setSponsorBankName(e.target.value)}
+                  placeholder={tr("যেমন: ডাচ্-বাংলা ব্যাংক পিএলসি", "e.g. Dutch-Bangla Bank PLC")}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700">
+                  {tr("স্পন্সর ব্যাংক ব্যালেন্স (BDT)", "Sponsor Bank Balance (BDT)")}
+                </label>
+                <input
+                  type="number"
+                  value={sponsorBankBalanceBdt}
+                  onChange={(e) =>
+                    setSponsorBankBalanceBdt(Number(e.target.value) || 0)
+                  }
+                  placeholder="e.g. 2000000"
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold tabular-nums"
+                />
               </div>
             </div>
 

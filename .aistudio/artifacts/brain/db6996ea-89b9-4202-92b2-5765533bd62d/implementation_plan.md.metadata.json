@@ -1,6 +1,6 @@
 {
-  "summary":  "UX analysis and implementation plan for fixing the mobile layout order of payment details, QR code, and submit button in EnrollmentForm.tsx so users see the payable amount and bKash/QR details BEFORE entering TrxID and clicking Submit.",
-  "updatedAt":  "2026-11-09T11:24:09.408022658Z",
+  "summary":  "Full architectural and UX plan to eliminate all hardcoded fallback data across CRM, 360° Lead Profile, and Language & LMS modules; establish a strict 2-way backend-synced connection between CRM Leads and Language LMS; and upgrade Lead Profile Tasks, Documents, Activity Timeline, Follow-up Date management, and Status workflows.",
+  "updatedAt":  "2026-11-10T17:53:03.182986331Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

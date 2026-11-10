@@ -67,6 +67,8 @@ import {
   bulkUpdateCrmLeads,
   updateVisaStage,
   addLmsCredentials,
+  updateLmsBridgeRecord,
+  deleteLmsBridgeRecord,
   addFinancialTransaction,
   updateFinancialTransaction,
   deleteFinancialTransaction,
@@ -121,6 +123,7 @@ import {
   type B2bAgent,
   type StaffMember,
   type FinancialTransaction,
+  type LmsCourseLevel,
 } from "@/lib/knltc-cms-store";
 import { useLanguage } from "@/components/layout/LanguageProvider";
 import { languageOptions, type Language } from "@/lib/i18n";
@@ -243,7 +246,7 @@ export default function DashboardPage() {
   const [lmsForm, setLmsForm] = useState({
     studentName: "",
     phone: "",
-    courseLevel: "N5" as "N5" | "N4" | "IRODORI",
+    courseLevel: "N5" as LmsCourseLevel,
     activeBatch: "N5 Intensive Batch (Dhaka HQ)",
     portalUsername: "",
     portalPasswordMasked: "N5@knltc2026",
@@ -1612,8 +1615,14 @@ export default function DashboardPage() {
               backLabel={
                 activeTab === "visa"
                   ? tr("ভিসা কানবানে ফিরে যান", "Back to Visa Kanban", "ビザカンバンへ戻る")
-                  : tr("লিড তালিকায় ফিরে যান", "Back to Leads", "リード一覧へ戻る")
+                  : activeTab === "lms"
+                    ? tr("Language & LMS ট্যাবে ফিরে যান", "Back to Language & LMS", "LMSへ戻る")
+                    : tr("লিড তালিকায় ফিরে যান", "Back to Leads", "リード一覧へ戻る")
               }
+              onNavigateToDashboardTab={(tabId) => {
+                setSelectedLeadForProfile(null);
+                setActiveTab((tabId as string) === "schools" ? "b2b" : tabId);
+              }}
               onSelectLead={(nextLead) => setSelectedLeadForProfile(nextLead)}
               onClose={() => setSelectedLeadForProfile(null)}
               onSaved={(msg) => {
@@ -3356,7 +3365,7 @@ export default function DashboardPage() {
                                             counselorName:
                                               currentUser?.name ||
                                               activeTeleLead.assignedTo ||
-                                              "শেখ বাসেত",
+                                              "Counselor",
                                           });
                                           setStore({ ...getCmsStore() });
                                           showToast(`${activeTeleLead.name}: ${btn.label}`);
@@ -3405,7 +3414,7 @@ export default function DashboardPage() {
                                           counselorName:
                                             currentUser?.name ||
                                             activeTeleLead.assignedTo ||
-                                            "শেখ বাসেত",
+                                            "Counselor",
                                         });
                                         setTeleCallerQuickNote("");
                                         setStore({ ...getCmsStore() });
@@ -4997,138 +5006,535 @@ export default function DashboardPage() {
               {/* =========================================================================
                   MODULE 4: LANGUAGE COURSE & EXTERNAL LMS BRIDGE
                   ========================================================================= */}
-              {activeTab === "lms" && (
-                <div className="space-y-5">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                      <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-                        {t.lms.title}
-                      </h2>
-                      <p className="text-xs sm:text-sm text-slate-500 mt-0.5">{t.lms.subtitle}</p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setActiveModal("ADD_LMS")}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-[#b91c1c] px-4 py-2 text-xs font-semibold text-white hover:bg-red-800 transition"
-                      >
-                        <Plus className="h-4 w-4" />
-                        <span>{t.lms.issueAccountBtn}</span>
-                      </button>
-                      <a
-                        href="https://npw.bd/knltc"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
-                      >
-                        <span>{t.lms.npwClassroom}</span>
-                        <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
-                      </a>
-                    </div>
-                  </div>
+              {activeTab === "lms" &&
+                (() => {
+                  const courseTxList = store.transactions.filter(
+                    (tx) =>
+                      tx.category === "INCOME" &&
+                      (tx.type === "COURSE_FEE" ||
+                        (tx.notes && tx.notes.toLowerCase().includes("course")))
+                  );
+                  const txCollectedBdt = courseTxList.reduce(
+                    (sum, tx) => sum + (Number(tx.amountBdt) || 0),
+                    0
+                  );
+                  const lmsGrossEstimatedBdt = store.lmsBridges.reduce(
+                    (sum, b) =>
+                      sum +
+                      (Number(b.netKnlTcMarginBdt) || 0) +
+                      (Number(b.portalFeeDeductedBdt) || 2000),
+                    0
+                  );
+                  const liveCourseCollectedBdt =
+                    txCollectedBdt > 0 ? txCollectedBdt : lmsGrossEstimatedBdt;
+                  const liveNetMarginBdt = store.lmsBridges.reduce(
+                    (sum, b) => sum + (Number(b.netKnlTcMarginBdt) || 0),
+                    0
+                  );
+                  const livePortalDeductedBdt = store.lmsBridges.reduce(
+                    (sum, b) => sum + (Number(b.portalFeeDeductedBdt) || 2000),
+                    0
+                  );
+                  const enrolledLeadsWithDues = store.crmLeads.filter(
+                    (l) =>
+                      (l.isCourseEnrolled ||
+                        l.interest === "JAPANESE_N5" ||
+                        l.interest === "JAPANESE_N4" ||
+                        store.lmsBridges.some(
+                          (b) =>
+                            b.leadId === l.id ||
+                            b.linkedLeadId === l.id ||
+                            (b.phone &&
+                              l.phone &&
+                              b.phone.replace(/\D/g, "").slice(-10) ===
+                                l.phone.replace(/\D/g, "").slice(-10))
+                        )) &&
+                      (l.dueAmountBdt || 0) > 0
+                  );
+                  const liveCourseDuesBdt = enrolledLeadsWithDues.reduce(
+                    (sum, l) => sum + (Number(l.dueAmountBdt) || 0),
+                    0
+                  );
 
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                    <div className="hover-spotlight rounded-2xl border border-slate-200/80 bg-white p-5">
-                      <span className="text-xs text-slate-500">{t.lms.courseFeeTitle}</span>
-                      <p className="text-2xl font-bold text-slate-900 mt-1 tabular-nums">৳ 12,000</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5">{t.lms.courseFeeDesc}</p>
-                    </div>
-                    <div className="hover-spotlight rounded-2xl border border-slate-200/80 bg-white p-5">
-                      <span className="text-xs text-slate-500">{t.lms.portalFeeTitle}</span>
-                      <p className="text-2xl font-bold text-slate-900 mt-1 tabular-nums">৳ 2,000</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5">{t.lms.portalFeeDesc}</p>
-                    </div>
-                    <div className="hover-spotlight rounded-2xl border border-slate-200/80 bg-white p-5">
-                      <span className="text-xs text-slate-500">{t.lms.netMarginTitle}</span>
-                      <p className="text-2xl font-bold text-emerald-700 mt-1 tabular-nums">৳ 10,000</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5">{t.lms.netMarginDesc}</p>
-                    </div>
-                  </div>
+                  const jftFee = Number(cms.languageCoursePage?.jftPriceBdt) || 13000;
+                  const n5Fee = Number(cms.languageCoursePage?.n5PriceBdt) || 14500;
+                  const n4Fee = Number(cms.languageCoursePage?.n4PriceBdt) || 18000;
+                  const comboFee = Number(cms.languageCoursePage?.comboPriceBdt) || 27500;
+                  const fullDiscPct =
+                    Number(cms.languageCoursePage?.fullPaymentDiscountPercent) || 20;
 
-                  <div className="rounded-2xl border border-slate-200/80 bg-white overflow-hidden">
-                    <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                      <h3 className="font-bold text-sm text-slate-900">{t.lms.tableHeading}</h3>
-                      <span className="text-xs text-slate-400 tabular-nums">
-                        {store.lmsBridges.length} {tr("জন শিক্ষার্থী", "students", "名の生徒")}
-                      </span>
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs">
-                        <thead className="bg-slate-50/70 border-b border-slate-100 font-semibold text-slate-500">
-                          <tr>
-                            <th className="px-4 py-3">{t.lms.colStudent}</th>
-                            <th className="px-4 py-3">{t.lms.colCourse}</th>
-                            <th className="px-4 py-3">{t.lms.colCredentials}</th>
-                            <th className="px-4 py-3">{t.lms.colMargin}</th>
-                            <th className="px-4 py-3">{t.lms.colProgress}</th>
-                            <th className="px-4 py-3 text-right">{t.lms.colAction}</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {store.lmsBridges.map((lms) => {
-                            const rawLmsPhone = String(lms.phone || "");
-                            const msg = encodeURIComponent(
-                              `Congratulations ${lms.studentName}!\nYour KNLTC Course ID: ${lms.enrollmentNo}.\nPortal: https://npw.bd/knltc\nUsername: ${lms.portalUsername}\nPassword: ${lms.portalPasswordMasked}`,
-                            );
-                            const waUrl = `https://wa.me/${rawLmsPhone.replace(/[^0-9]/g, "")}?text=${msg}`;
+                  return (
+                    <div className="space-y-5">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                          <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+                            {t.lms.title}
+                          </h2>
+                          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                            {t.lms.subtitle}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setActiveModal("ADD_LMS")}
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-[#b91c1c] px-4 py-2 text-xs font-semibold text-white hover:bg-red-800 transition cursor-pointer"
+                          >
+                            <Plus className="h-4 w-4" />
+                            <span>{t.lms.issueAccountBtn}</span>
+                          </button>
+                          <a
+                            href="https://npw.bd/knltc"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+                          >
+                            <span>{t.lms.npwClassroom}</span>
+                            <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
+                          </a>
+                        </div>
+                      </div>
 
-                            return (
-                              <tr key={lms.id} className="hover:bg-slate-50/70">
-                                <td className="px-4 py-3.5">
-                                  <p className="font-bold text-slate-900">{lms.studentName}</p>
-                                  <p className="text-[11px] font-mono text-slate-400">{rawLmsPhone}</p>
-                                </td>
-                                <td className="px-4 py-3.5">
-                                  <span className="font-semibold text-slate-900">{lms.courseLevel}</span>
-                                  <p className="text-[11px] text-slate-400">{lms.activeBatch}</p>
-                                </td>
-                                <td className="px-4 py-3.5 font-mono">
-                                  <p className="font-semibold text-slate-800">{lms.portalUsername}</p>
-                                  <p className="text-[11px] text-slate-400">{lms.portalPasswordMasked}</p>
-                                </td>
-                                <td className="px-4 py-3.5 tabular-nums">
-                                  <p className="font-semibold text-emerald-700">
-                                    ৳{(lms.netKnlTcMarginBdt || 0).toLocaleString()}
-                                  </p>
-                                </td>
-                                <td className="px-4 py-3.5">
-                                  <div className="w-24 bg-slate-100 rounded-full h-1.5">
-                                    <div
-                                      className="bg-emerald-600 h-1.5 rounded-full"
-                                      style={{ width: `${lms.progressPercentage}%` }}
-                                    />
-                                  </div>
-                                  <span className="text-[10px] text-slate-400 mt-1 inline-block tabular-nums">
-                                    {lms.progressPercentage}%
-                                  </span>
-                                </td>
-                                <td className="px-4 py-3.5 text-right">
-                                  <a
-                                    href={waUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 transition"
-                                  >
-                                    <Send className="h-3 w-3" />
-                                    <span>{t.lms.sendWaBtn}</span>
-                                  </a>
-                                </td>
+                      {/* 1. LIVE ENROLLMENT & REVENUE KPIs (Zero Hardcoded Values) */}
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="hover-spotlight rounded-2xl border border-slate-200/80 bg-white p-5">
+                          <span className="text-xs font-semibold text-slate-500">
+                            {tr(
+                              "সক্রিয় LMS শিক্ষার্থী",
+                              "Active LMS Students",
+                              "アクティブLMS受講生"
+                            )}
+                          </span>
+                          <p className="text-2xl font-bold text-slate-900 mt-1 tabular-nums">
+                            {store.lmsBridges.length}{" "}
+                            <span className="text-xs font-normal text-slate-400">
+                              {tr("জন", "enrolled")}
+                            </span>
+                          </p>
+                          <p className="text-[11px] text-slate-400 mt-0.5">
+                            JFT:{" "}
+                            {
+                              store.lmsBridges.filter(
+                                (b) => b.courseLevel === "IRODORI"
+                              ).length
+                            }{" "}
+                            · N5:{" "}
+                            {
+                              store.lmsBridges.filter((b) => b.courseLevel === "N5")
+                                .length
+                            }{" "}
+                            · N4:{" "}
+                            {
+                              store.lmsBridges.filter((b) => b.courseLevel === "N4")
+                                .length
+                            }{" "}
+                            · Combo:{" "}
+                            {
+                              store.lmsBridges.filter(
+                                (b) => b.courseLevel === "N5+N4"
+                              ).length
+                            }
+                          </p>
+                        </div>
+
+                        <div className="hover-spotlight rounded-2xl border border-slate-200/80 bg-white p-5">
+                          <span className="text-xs font-semibold text-slate-500">
+                            {tr(
+                              "মোট কোর্স ফি আদায় (লাইভ)",
+                              "Course Fees Collected",
+                              "コース受講料回収総額"
+                            )}
+                          </span>
+                          <p className="text-2xl font-bold text-slate-900 mt-1 tabular-nums">
+                            ৳ {liveCourseCollectedBdt.toLocaleString()}
+                          </p>
+                          <p className="text-[11px] text-slate-400 mt-0.5">
+                            {tr(
+                              `পোর্টাল চার্জ বাবদ কর্তন: ৳${livePortalDeductedBdt.toLocaleString()}`,
+                              `Portal fee deducted: ৳${livePortalDeductedBdt.toLocaleString()}`
+                            )}
+                          </p>
+                        </div>
+
+                        <div className="hover-spotlight rounded-2xl border border-emerald-200/80 bg-emerald-50/30 p-5">
+                          <span className="text-xs font-semibold text-emerald-800">
+                            {tr(
+                              "নিট KNLTC কোর্স মার্জিন",
+                              "Net KNLTC Course Margin",
+                              "KNLTC純利益マージン"
+                            )}
+                          </span>
+                          <p className="text-2xl font-bold text-emerald-700 mt-1 tabular-nums">
+                            ৳ {liveNetMarginBdt.toLocaleString()}
+                          </p>
+                          <p className="text-[11px] text-emerald-700/80 mt-0.5">
+                            {tr(
+                              "সকল ভর্তিকৃত শিক্ষার্থীর নিট আয় (ব্যাকএন্ড সিঙ্কড)",
+                              "Live net margin across all active enrollments"
+                            )}
+                          </p>
+                        </div>
+
+                        <div className="hover-spotlight rounded-2xl border border-amber-200/80 bg-amber-50/30 p-5">
+                          <span className="text-xs font-semibold text-amber-800">
+                            {tr(
+                              "বকেয়া কোর্স কিস্তি (Dues)",
+                              "Pending Course Dues",
+                              "未収コース受講料"
+                            )}
+                          </span>
+                          <p className="text-2xl font-bold text-amber-800 mt-1 tabular-nums">
+                            ৳ {liveCourseDuesBdt.toLocaleString()}
+                          </p>
+                          <p className="text-[11px] text-amber-700/80 mt-0.5">
+                            {enrolledLeadsWithDues.length}{" "}
+                            {tr(
+                              "জন শিক্ষার্থীর ২য় কিস্তি বাকি",
+                              "enrolled students with installment balance"
+                            )}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* 2. DYNAMIC CMS COURSE FEE STRIP (Live from Website CMS) */}
+                      <div className="rounded-2xl border border-slate-200/80 bg-white p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-100">
+                          <div className="flex items-center gap-2">
+                            <BookOpen className="h-4 w-4 text-indigo-600" />
+                            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                              {tr(
+                                "বর্তমান ওয়েবসাইট কোর্স ফি (CMS থেকে লাইভ)",
+                                "Live Website Course Pricing (Synced from CMS)"
+                              )}
+                            </h3>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab("cms")}
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 cursor-pointer"
+                          >
+                            <Edit3 className="h-3 w-3" />
+                            <span>
+                              {tr(
+                                "CMS থেকে কোর্স ফি পরিবর্তন করুন",
+                                "Edit Course Prices in CMS"
+                              )}
+                            </span>
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                          <div className="rounded-xl border border-slate-200/70 bg-slate-50/70 p-3">
+                            <span className="text-[11px] font-semibold text-slate-500 block">
+                              JFT-Basic (Irodori)
+                            </span>
+                            <span className="text-base font-bold text-slate-900 tabular-nums mt-0.5 block">
+                              ৳{jftFee.toLocaleString()}
+                            </span>
+                            <span className="text-[10px] text-emerald-700 font-medium">
+                              {fullDiscPct}% Off Full Pay: ৳
+                              {Math.round(
+                                jftFee * (1 - fullDiscPct / 100)
+                              ).toLocaleString()}
+                            </span>
+                          </div>
+
+                          <div className="rounded-xl border border-slate-200/70 bg-slate-50/70 p-3">
+                            <span className="text-[11px] font-semibold text-slate-500 block">
+                              JLPT N5 Regular
+                            </span>
+                            <span className="text-base font-bold text-slate-900 tabular-nums mt-0.5 block">
+                              ৳{n5Fee.toLocaleString()}
+                            </span>
+                            <span className="text-[10px] text-emerald-700 font-medium">
+                              {fullDiscPct}% Off Full Pay: ৳
+                              {Math.round(
+                                n5Fee * (1 - fullDiscPct / 100)
+                              ).toLocaleString()}
+                            </span>
+                          </div>
+
+                          <div className="rounded-xl border border-slate-200/70 bg-slate-50/70 p-3">
+                            <span className="text-[11px] font-semibold text-slate-500 block">
+                              JLPT N4 Regular
+                            </span>
+                            <span className="text-base font-bold text-slate-900 tabular-nums mt-0.5 block">
+                              ৳{n4Fee.toLocaleString()}
+                            </span>
+                            <span className="text-[10px] text-emerald-700 font-medium">
+                              {fullDiscPct}% Off Full Pay: ৳
+                              {Math.round(
+                                n4Fee * (1 - fullDiscPct / 100)
+                              ).toLocaleString()}
+                            </span>
+                          </div>
+
+                          <div className="rounded-xl border border-slate-200/70 bg-slate-50/70 p-3">
+                            <span className="text-[11px] font-semibold text-slate-500 block">
+                              N5 + N4 Zero-to-Pro Combo
+                            </span>
+                            <span className="text-base font-bold text-slate-900 tabular-nums mt-0.5 block">
+                              ৳{comboFee.toLocaleString()}
+                            </span>
+                            <span className="text-[10px] text-emerald-700 font-medium">
+                              {fullDiscPct}% Off Full Pay: ৳
+                              {Math.round(
+                                comboFee * (1 - fullDiscPct / 100)
+                              ).toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 3. LMS ENROLLED STUDENTS TABLE WITH 2-WAY 360° CRM LEAD LINK */}
+                      <div className="rounded-2xl border border-slate-200/80 bg-white overflow-hidden">
+                        <div className="px-5 py-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                          <div>
+                            <h3 className="font-bold text-sm text-slate-900">
+                              {t.lms.tableHeading}
+                            </h3>
+                            <p className="text-[11px] text-slate-400">
+                              {tr(
+                                "যেকোনো শিক্ষার্থীর নামে বা '360° প্রোফাইল' বাটনে ক্লিক করে সরাসরি তার CRM প্রোফাইল, ডকুমেন্টস ও ফলো-আপ দেখুন",
+                                "Click any student or '360° Profile' to open their full CRM profile, documents, and tasks."
+                              )}
+                            </p>
+                          </div>
+                          <span className="text-xs text-slate-400 tabular-nums">
+                            {store.lmsBridges.length}{" "}
+                            {tr("জন শিক্ষার্থী", "students", "名の生徒")}
+                          </span>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left text-xs">
+                            <thead className="bg-slate-50/70 border-b border-slate-100 font-semibold text-slate-500">
+                              <tr>
+                                <th className="px-4 py-3">{t.lms.colStudent}</th>
+                                <th className="px-4 py-3">{t.lms.colCourse}</th>
+                                <th className="px-4 py-3">{t.lms.colCredentials}</th>
+                                <th className="px-4 py-3">{t.lms.colMargin}</th>
+                                <th className="px-4 py-3">{t.lms.colProgress}</th>
+                                <th className="px-4 py-3 text-right">{t.lms.colAction}</th>
                               </tr>
-                            );
-                          })}
-                          {store.lmsBridges.length === 0 && (
-                            <tr>
-                              <td colSpan={6} className="py-10 text-center text-slate-400">
-                                {tr("কোনো LMS অ্যাকাউন্ট ইস্যু করা হয়নি।", "No LMS accounts issued yet.", "LMSアカウントはまだ発行されていません。")}
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {store.lmsBridges.map((lms) => {
+                                const rawLmsPhone = String(lms.phone || "");
+                                const normPhone = rawLmsPhone
+                                  .replace(/\D/g, "")
+                                  .slice(-10);
+                                const matchedLead = store.crmLeads.find(
+                                  (l) =>
+                                    l.id === lms.leadId ||
+                                    l.id === lms.linkedLeadId ||
+                                    (normPhone.length >= 10 &&
+                                      l.phone.replace(/\D/g, "").slice(-10) ===
+                                        normPhone)
+                                );
+                                const msg = encodeURIComponent(
+                                  `Congratulations ${lms.studentName}!\nYour KNLTC Course ID: ${lms.enrollmentNo}.\nPortal: https://npw.bd/knltc\nUsername: ${lms.portalUsername}\nPassword: ${lms.portalPasswordMasked}`
+                                );
+                                const waUrl = `https://wa.me/${rawLmsPhone.replace(/[^0-9]/g, "")}?text=${msg}`;
+
+                                const handleOpenLeadFromLms = () => {
+                                  if (matchedLead) {
+                                    setSelectedLeadForProfile(matchedLead);
+                                    return;
+                                  }
+                                  // Auto-link or create CRM lead if an older LMS row wasn't linked yet
+                                  const createdLead = addCrmLead({
+                                    name: lms.studentName,
+                                    phone: rawLmsPhone,
+                                    whatsapp: rawLmsPhone,
+                                    city: "",
+                                    education: "HSC / Equivalent",
+                                    gpaDetails: "",
+                                    studyGapYears: 0,
+                                    japaneseProficiency:
+                                      lms.courseLevel === "N4" ||
+                                      lms.courseLevel === "N5+N4"
+                                        ? "PASSED_N5"
+                                        : "LEARNING_N5",
+                                    interest:
+                                      lms.courseLevel === "N4"
+                                        ? "JAPANESE_N4"
+                                        : "JAPANESE_N5",
+                                    source: "WEBSITE_FORM",
+                                    status: "ADMITTED",
+                                    priority: "HOT",
+                                    assignedTo:
+                                      lms.assignedSenseiName ||
+                                      "Sales & Marketing Team",
+                                    branch: "DHK-HQ",
+                                    followUpDate: new Date()
+                                      .toISOString()
+                                      .slice(0, 10),
+                                    notes: `Linked from LMS (${lms.enrollmentNo} | ${lms.activeBatch})`,
+                                    isCourseEnrolled: true,
+                                    enrolledBatchOrSession: lms.activeBatch,
+                                  });
+                                  updateLmsBridgeRecord(lms.id, {
+                                    leadId: createdLead.id,
+                                    linkedLeadId: createdLead.id,
+                                  });
+                                  setStore({ ...getCmsStore() });
+                                  setSelectedLeadForProfile(createdLead);
+                                };
+
+                                return (
+                                  <tr key={lms.id} className="hover:bg-slate-50/70">
+                                    <td className="px-4 py-3.5">
+                                      <button
+                                        type="button"
+                                        onClick={handleOpenLeadFromLms}
+                                        className="text-left group cursor-pointer"
+                                      >
+                                        <p className="font-bold text-slate-900 group-hover:text-indigo-600 transition flex items-center gap-1.5">
+                                          <span>{lms.studentName}</span>
+                                          <ArrowUpRight className="h-3.5 w-3.5 text-slate-400 group-hover:text-indigo-600" />
+                                        </p>
+                                        <p className="text-[11px] font-mono text-slate-400">
+                                          {rawLmsPhone}
+                                        </p>
+                                        {matchedLead && (
+                                          <span className="mt-0.5 inline-flex items-center rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-700">
+                                            CRM: {matchedLead.status}
+                                          </span>
+                                        )}
+                                      </button>
+                                    </td>
+                                    <td className="px-4 py-3.5">
+                                      <span className="rounded-md bg-slate-100 px-2 py-0.5 font-bold text-slate-900">
+                                        {lms.courseLevel}
+                                      </span>
+                                      <p className="text-[11px] text-slate-500 mt-1">
+                                        {lms.activeBatch}
+                                      </p>
+                                      {lms.assignedSenseiName && (
+                                        <p className="text-[10px] text-slate-400 mt-0.5">
+                                          Sensei: {lms.assignedSenseiName}
+                                        </p>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-3.5 font-mono">
+                                      <p className="font-semibold text-slate-800">
+                                        {lms.portalUsername}
+                                      </p>
+                                      <p className="text-[11px] text-slate-400">
+                                        {lms.portalPasswordMasked}
+                                      </p>
+                                    </td>
+                                    <td className="px-4 py-3.5 tabular-nums">
+                                      <p className="font-semibold text-emerald-700">
+                                        ৳{(lms.netKnlTcMarginBdt || 0).toLocaleString()}
+                                      </p>
+                                      <p className="text-[10px] text-slate-400">
+                                        Portal: ৳
+                                        {(
+                                          lms.portalFeeDeductedBdt || 2000
+                                        ).toLocaleString()}
+                                      </p>
+                                    </td>
+                                    <td className="px-4 py-3.5">
+                                      <div className="w-28 bg-slate-100 rounded-full h-1.5 mb-1.5">
+                                        <div
+                                          className="bg-emerald-600 h-1.5 rounded-full transition-all"
+                                          style={{
+                                            width: `${lms.progressPercentage}%`,
+                                          }}
+                                        />
+                                      </div>
+                                      <select
+                                        value={lms.progressPercentage}
+                                        onChange={(e) => {
+                                          const nextPct = Number(e.target.value);
+                                          updateLmsBridgeRecord(lms.id, {
+                                            progressPercentage: nextPct,
+                                          });
+                                          setStore({ ...getCmsStore() });
+                                          showToast(
+                                            tr(
+                                              `${lms.studentName}-এর কোর্স অগ্রগতি ${nextPct}% সেভ হয়েছে`,
+                                              `Updated ${lms.studentName}'s progress to ${nextPct}%`
+                                            )
+                                          );
+                                        }}
+                                        className="rounded-lg border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-bold text-slate-700 tabular-nums cursor-pointer"
+                                      >
+                                        {[
+                                          0, 5, 10, 20, 30, 40, 50, 60, 70, 80,
+                                          90, 100,
+                                        ].map((pct) => (
+                                          <option key={pct} value={pct}>
+                                            {pct}%
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </td>
+                                    <td className="px-4 py-3.5 text-right">
+                                      <div className="inline-flex flex-wrap items-center justify-end gap-1.5">
+                                        <button
+                                          type="button"
+                                          onClick={handleOpenLeadFromLms}
+                                          className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition cursor-pointer"
+                                        >
+                                          <UserCheck className="h-3.5 w-3.5" />
+                                          <span>
+                                            {tr("360° প্রোফাইল", "360° Profile")}
+                                          </span>
+                                        </button>
+                                        <a
+                                          href={waUrl}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 transition"
+                                        >
+                                          <Send className="h-3 w-3" />
+                                          <span>{t.lms.sendWaBtn}</span>
+                                        </a>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            deleteLmsBridgeRecord(lms.id);
+                                            setStore({ ...getCmsStore() });
+                                            showToast(
+                                              tr(
+                                                `${lms.studentName}-এর LMS রেকর্ড মুছে ফেলা হয়েছে`,
+                                                `Removed LMS record for ${lms.studentName}`
+                                              )
+                                            );
+                                          }}
+                                          className="rounded-lg border border-slate-200 p-1.5 text-slate-400 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 transition cursor-pointer"
+                                          title={tr("মুছে ফেলুন", "Delete LMS Account")}
+                                        >
+                                          <Trash2 className="h-3.5 w-3.5" />
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                              {store.lmsBridges.length === 0 && (
+                                <tr>
+                                  <td
+                                    colSpan={6}
+                                    className="py-10 text-center text-slate-400"
+                                  >
+                                    {tr(
+                                      "কোনো LMS অ্যাকাউন্ট ইস্যু করা হয়নি।",
+                                      "No LMS accounts issued yet.",
+                                      "LMSアカウントはまだ発行されていません。"
+                                    )}
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              )}
+                  );
+                })()}
 
               {/* =========================================================================
                   MODULE 5: B2B CHANNEL, JAPANESE PARTNER SCHOOLS & SUB-AGENTS
@@ -9004,13 +9410,23 @@ export default function DashboardPage() {
                       <select
                         value={lmsForm.courseLevel}
                         onChange={(e) =>
-                          setLmsForm({ ...lmsForm, courseLevel: e.target.value as any })
+                          setLmsForm({
+                            ...lmsForm,
+                            courseLevel: e.target.value as LmsCourseLevel,
+                          })
                         }
                         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
                       >
+                        <option value="IRODORI">
+                          {tr(
+                            "JFT-Basic (ইরোডোরি স্পোকেন)",
+                            "JFT-Basic (Irodori Spoken)",
+                            "JFT-Basic（いろどり会話）"
+                          )}
+                        </option>
                         <option value="N5">JLPT N5</option>
                         <option value="N4">JLPT N4</option>
-                        <option value="IRODORI">{tr("ইরোডোরি স্পোকেন", "Irodori Spoken", "いろどり会話")}</option>
+                        <option value="N5+N4">N5 + N4 Combo</option>
                       </select>
                     </div>
                     <div>

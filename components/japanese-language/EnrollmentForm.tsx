@@ -907,8 +907,9 @@ export default function EnrollmentForm({
     const finalDueAmount = Math.max(0, netCourseFeeBdt - finalPaidAmount);
     const totalDiscountBdt = fullPayDiscountBdt + promoDiscountBdt;
 
-    recordPublicCourseEnrollment({
+    const syncedLeadId = recordPublicCourseEnrollment({
       referenceId,
+      flowMode,
       applicantName: cleanName,
       phone: cleanPhone,
       whatsapp: cleanWa,
@@ -928,12 +929,15 @@ export default function EnrollmentForm({
       senderNumber: isDirect ? cleanSender : undefined,
       trxId: isDirect ? cleanTrxId : "SALES-TEAM-PAY-LATER",
       promoCode: isDirect ? appliedPromo?.code : undefined,
+      studentNote: cleanNote || undefined,
     });
 
     fetch("/api/enroll", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        leadId: syncedLeadId,
+        flowMode,
         applicantName: cleanName,
         phone: cleanPhone,
         whatsapp: cleanWa,
