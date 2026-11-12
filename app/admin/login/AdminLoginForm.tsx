@@ -303,8 +303,11 @@ export default function AdminLoginForm() {
         education: regEducation.trim() || "HSC",
         japaneseProficiency: "NONE",
         studyGapYears: 0,
-        assignedTo: "Sumaiya Sultana (Tele-Counselor)",
+        assignedTo: "Unassigned",
         branch: "DHK-HQ",
+        contractAmountBdt: 0,
+        paidAmountBdt: 0,
+        dueAmountBdt: 0,
         notes: `Self-registered via Portal Registration (${regInterest})`,
         followUpDate: new Date().toISOString().slice(0, 10),
       });

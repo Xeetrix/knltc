@@ -431,9 +431,7 @@ export default function CrmImportExportModal({
   const [defaultBranch, setDefaultBranch] = useState<"DHK-HQ" | "KHULNA-01">(
     activeBranch === "KHULNA-01" ? "KHULNA-01" : "DHK-HQ",
   );
-  const [defaultAssignedTo, setDefaultAssignedTo] = useState<string>(
-    staffList.find((s) => s.role === "TELE_COUNSELOR")?.name || "শেখ বাসেত",
-  );
+  const [defaultAssignedTo, setDefaultAssignedTo] = useState<string>("Unassigned");
   const [defaultStatus, setDefaultStatus] = useState<LeadStatus>("NEW");
   const [defaultPriority, setDefaultPriority] = useState<LeadPriority>("WARM");
   const [defaultSource, setDefaultSource] = useState<LeadSource>("GOOGLE_SHEET");
@@ -1422,7 +1420,9 @@ export default function CrmImportExportModal({
                       onChange={(e) => setDefaultAssignedTo(e.target.value)}
                       className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-medium"
                     >
-                      <option value="শেখ বাসেত">শেখ বাসেত (MD)</option>
+                      <option value="Unassigned">
+                        {tr("আনঅ্যাসাইনড (Unassigned)", "Unassigned", "未割当")}
+                      </option>
                       {staffList.map((st) => (
                         <option key={st.id} value={st.name}>
                           {st.name}

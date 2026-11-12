@@ -3269,6 +3269,8 @@ export function updateWebsiteCms(partial: Partial<WebsiteCmsContent>) {
 
 export function addCrmLead(lead: Omit<CrmLead, "id" | "createdAt" | "lastContactedAt">): CrmLead {
   const store = getCmsStore();
+  const cms = store.websiteCms?.[0] || DEFAULT_WEBSITE_CMS;
+  if (!cms.leadExtendedProfiles) cms.leadExtendedProfiles = {};
 
   const schoolId = lead.partnerSchoolId || lead.targetSchoolId;
   const schoolLabel = lead.targetSchool || lead.targetSchoolName;
@@ -3291,16 +3293,37 @@ export function addCrmLead(lead: Omit<CrmLead, "id" | "createdAt" | "lastContact
       (lead.assignedTo && st.name.toLowerCase() === lead.assignedTo.toLowerCase()),
   );
 
+  // Confirmed Decision 2: Keep contract 0 for inquiry leads unless explicitly set or ADMITTED
   const defaultContract =
-    lead.contractAmountBdt ??
-    (lead.interest === "STUDENT_VISA_PREMIUM"
-      ? 1100000
-      : lead.interest === "JAPANESE_N5" || lead.interest === "JAPANESE_N4"
-        ? 12000
-        : 120000);
+    lead.contractAmountBdt !== undefined
+      ? lead.contractAmountBdt
+      : lead.status === "ADMITTED"
+        ? lead.interest === "STUDENT_VISA_PREMIUM"
+          ? 1100000
+          : lead.interest === "JAPANESE_N5" || lead.interest === "JAPANESE_N4"
+            ? 12000
+            : 120000
+        : 0;
 
   const paid = lead.paidAmountBdt ?? 0;
   const due = Math.max(0, defaultContract - paid);
+  const nowIso = new Date().toISOString();
+
+  const initialActivity: LeadActivityItem[] =
+    Array.isArray(lead.activityLog) && lead.activityLog.length > 0
+      ? lead.activityLog
+      : [
+          {
+            id: `act-init-${Date.now()}`,
+            type: "MEETING_NOTE",
+            fromStatus: "Lead Capture",
+            toStatus: lead.status || "NEW",
+            note: lead.notes || "Lead profile created in CRM",
+            summary: lead.notes || "Lead profile created in CRM",
+            counselorName: matchedCounselor?.name || lead.assignedTo || "System",
+            createdAt: nowIso,
+          },
+        ];
 
   const newLead: CrmLead = {
     ...lead,
@@ -3313,15 +3336,18 @@ export function addCrmLead(lead: Omit<CrmLead, "id" | "createdAt" | "lastContact
     referredByAgentId: matchedAgent?.id || agentId,
     b2bAgentName: matchedAgent?.organizationName || lead.b2bAgentName,
     assignedCounselorId: matchedCounselor?.id || lead.assignedCounselorId,
-    assignedTo: matchedCounselor?.name || lead.assignedTo,
+    assignedTo: matchedCounselor?.name || lead.assignedTo || "Unassigned",
     contractAmountBdt: defaultContract,
     paidAmountBdt: paid,
     dueAmountBdt: due,
-    createdAt: new Date().toISOString(),
-    lastContactedAt: new Date().toISOString(),
+    activityLog: initialActivity,
+    createdAt: nowIso,
+    lastContactedAt: nowIso,
   };
 
   store.crmLeads.unshift(newLead);
+  cms.leadExtendedProfiles[newLead.id] = { ...newLead };
+  store.websiteCms = [cms];
 
   // If referred by a B2B agent, increment their referred count and sync to Sheet
   if (matchedAgent) {
@@ -3332,6 +3358,7 @@ export function addCrmLead(lead: Omit<CrmLead, "id" | "createdAt" | "lastContact
   saveCmsStore(store);
 
   syncToServer("INSERT", "knltc_crm_leads", serializeLeadToSheetRow(newLead));
+  syncToServer("CMS_UPDATE", undefined, cms);
 
   return newLead;
 }
@@ -3341,11 +3368,29 @@ export function updateCrmLeadStatus(id: string, status: LeadStatus, notes?: stri
   const index = store.crmLeads.findIndex((l) => l.id === id);
   if (index === -1) return null;
 
+  const cms = store.websiteCms?.[0] || DEFAULT_WEBSITE_CMS;
+  if (!cms.leadExtendedProfiles) cms.leadExtendedProfiles = {};
+
   const lead = store.crmLeads[index];
   const prevStatus = lead.status;
+  const nowIso = new Date().toISOString();
   lead.status = status;
-  lead.lastContactedAt = new Date().toISOString();
+  lead.lastContactedAt = nowIso;
   if (notes) lead.notes = notes;
+
+  if (prevStatus !== status || notes) {
+    const statusLog: LeadActivityItem = {
+      id: `act-status-${Date.now()}`,
+      type: "STAGE_CHANGE",
+      fromStatus: prevStatus,
+      toStatus: status,
+      note: notes || `Lead status updated from ${prevStatus} to ${status}`,
+      summary: notes || `Status changed: ${prevStatus} → ${status}`,
+      counselorName: lead.assignedTo && lead.assignedTo !== "Unassigned" ? lead.assignedTo : "Admin",
+      createdAt: nowIso,
+    };
+    lead.activityLog = [statusLog, ...(lead.activityLog || [])];
+  }
 
   // Auto-sync when status changes to ADMITTED
   if (status === "ADMITTED" && prevStatus !== "ADMITTED") {
@@ -3355,12 +3400,13 @@ export function updateCrmLeadStatus(id: string, status: LeadStatus, notes?: stri
     lead.fileTrackingNo = trackingNo;
 
     const defaultContract =
-      lead.contractAmountBdt ??
-      (lead.packageType === "PREMIUM" || lead.interest === "STUDENT_VISA_PREMIUM"
-        ? 1100000
-        : lead.interest === "JAPANESE_N5" || lead.interest === "JAPANESE_N4"
-          ? 12000
-          : 120000);
+      lead.contractAmountBdt && lead.contractAmountBdt > 0
+        ? lead.contractAmountBdt
+        : lead.packageType === "PREMIUM" || lead.interest === "STUDENT_VISA_PREMIUM"
+          ? 1100000
+          : lead.interest === "JAPANESE_N5" || lead.interest === "JAPANESE_N4"
+            ? 12000
+            : 120000;
     lead.contractAmountBdt = defaultContract;
     lead.paidAmountBdt = lead.paidAmountBdt ?? 0;
     lead.dueAmountBdt = Math.max(0, defaultContract - lead.paidAmountBdt);
@@ -3453,9 +3499,15 @@ export function updateCrmLeadStatus(id: string, status: LeadStatus, notes?: stri
     }
   }
 
+  cms.leadExtendedProfiles[lead.id] = {
+    ...(cms.leadExtendedProfiles[lead.id] || {}),
+    ...lead,
+  };
+  store.websiteCms = [cms];
   saveCmsStore(store);
 
   syncToServer("UPSERT", "knltc_crm_leads", serializeLeadToSheetRow(lead));
+  syncToServer("CMS_UPDATE", undefined, cms);
 
   return lead;
 }
@@ -5314,9 +5366,35 @@ export function bulkUpdateCrmLeads(
   if (!cms.leadExtendedProfiles) cms.leadExtendedProfiles = {};
 
   let updatedCount = 0;
-  store.crmLeads.forEach((lead) => {
+  const nowIso = new Date().toISOString();
+  store.crmLeads.forEach((lead, idx) => {
     if (!idSet.has(lead.id)) return;
-    Object.assign(lead, updates, { lastContactedAt: new Date().toISOString() });
+    if (updates.status && updates.status !== lead.status) {
+      const bulkStatusLog: LeadActivityItem = {
+        id: `act-bulk-st-${Date.now()}-${idx}`,
+        type: "STAGE_CHANGE",
+        fromStatus: lead.status,
+        toStatus: updates.status,
+        note: `Bulk status update: ${lead.status} → ${updates.status}`,
+        summary: `Bulk status changed: ${lead.status} → ${updates.status}`,
+        counselorName: updates.assignedTo || lead.assignedTo || "Admin",
+        createdAt: nowIso,
+      };
+      lead.activityLog = [bulkStatusLog, ...(lead.activityLog || [])];
+    } else if (updates.assignedTo && updates.assignedTo !== lead.assignedTo) {
+      const bulkAssignLog: LeadActivityItem = {
+        id: `act-bulk-asg-${Date.now()}-${idx}`,
+        type: "STAGE_CHANGE",
+        fromStatus: lead.assignedTo || "Unassigned",
+        toStatus: updates.assignedTo,
+        note: `Assigned counselor updated to ${updates.assignedTo}`,
+        summary: `Counselor assigned: ${updates.assignedTo}`,
+        counselorName: "Admin",
+        createdAt: nowIso,
+      };
+      lead.activityLog = [bulkAssignLog, ...(lead.activityLog || [])];
+    }
+    Object.assign(lead, updates, { lastContactedAt: nowIso });
     cms.leadExtendedProfiles![lead.id] = {
       ...(cms.leadExtendedProfiles![lead.id] || {}),
       ...lead,
@@ -5393,13 +5471,19 @@ export function bulkImportCrmLeads(
     }
 
     const interest: ServiceInterest = normalizeSheetLeadInterest(row.interest);
+    const resolvedStatus: LeadStatus = normalizeSheetLeadStatus(
+      row.status || existingLead?.status || fallbackStatus,
+    );
     const defaultContract =
       row.contractAmountBdt ??
-      (interest === "STUDENT_VISA_PREMIUM"
-        ? 1100000
-        : interest === "JAPANESE_N5" || interest === "JAPANESE_N4"
-          ? 12000
-          : 120000);
+      existingLead?.contractAmountBdt ??
+      (resolvedStatus === "ADMITTED"
+        ? interest === "STUDENT_VISA_PREMIUM"
+          ? 1100000
+          : interest === "JAPANESE_N5" || interest === "JAPANESE_N4"
+            ? 12000
+            : 120000
+        : 0);
     const paid = row.paidAmountBdt ?? existingLead?.paidAmountBdt ?? 0;
     const due = Math.max(0, defaultContract - paid);
 

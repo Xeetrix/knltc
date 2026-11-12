@@ -512,8 +512,11 @@ function mapWebsiteLeadToEnterprisePayload(
     education: "HSC / Equivalent",
     japanese_proficiency: "NONE",
     study_gap_years: 0,
-    assigned_to: "সুমাইয়া সুলতানা",
+    assigned_to: "Unassigned",
     branch: "DHK-HQ",
+    contract_amount_bdt: 0,
+    paid_amount_bdt: 0,
+    due_amount_bdt: 0,
     notes:
       [lead.interest ? `[${lead.interest}]` : "", lead.message || "", lead.notes || ""]
         .filter(Boolean)
