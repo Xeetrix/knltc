@@ -7,16 +7,56 @@ import {
   PaymentStatus,
   PaymentMethod,
 } from "@/lib/portal-data";
+import { fetchAllSheetTables } from "@/lib/google-sheets-db";
 
 export async function GET() {
   const store = getPortalStore();
-  return NextResponse.json({
-    branches: store.branches,
-    courses: store.courses,
-    batches: store.batches,
-    enrollments: store.enrollments,
-    resources: store.resources,
-  });
+  try {
+    const db = await fetchAllSheetTables();
+    const lmsRows = Array.isArray(db.knltc_lms_bridges) ? db.knltc_lms_bridges : [];
+    const enrollmentRows = Array.isArray(db.knltc_course_enrollments)
+      ? db.knltc_course_enrollments
+      : [];
+
+    const dhakaCount = enrollmentRows.filter((r) =>
+      String(r.branch || "").toUpperCase().includes("DHAKA"),
+    ).length;
+    const khulnaCount = enrollmentRows.filter((r) =>
+      String(r.branch || "").toUpperCase().includes("KHULNA"),
+    ).length;
+    const onlineCount = Math.max(
+      lmsRows.length,
+      enrollmentRows.filter((r) =>
+        String(r.branch || "").toUpperCase().includes("ONLINE"),
+      ).length,
+    );
+
+    const branches = store.branches.map((b) => ({
+      ...b,
+      totalStudents:
+        b.id === "branch-dhaka-hq"
+          ? dhakaCount
+          : b.id === "branch-khulna"
+            ? khulnaCount
+            : onlineCount,
+    }));
+
+    return NextResponse.json({
+      branches,
+      courses: store.courses,
+      batches: store.batches,
+      enrollments: store.enrollments,
+      resources: store.resources,
+    });
+  } catch {
+    return NextResponse.json({
+      branches: store.branches,
+      courses: store.courses,
+      batches: store.batches,
+      enrollments: store.enrollments,
+      resources: store.resources,
+    });
+  }
 }
 
 export async function POST(req: NextRequest) {

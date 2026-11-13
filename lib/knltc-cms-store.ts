@@ -982,7 +982,7 @@ export interface WebsiteCmsContent {
     banglaQrImageUrl?: string;
     promoCodes?: LanguageCoursePromoCode[];
     externalLmsUrl: string;
-    externalIrodoriUrl: string;
+    externalIrodoriUrl?: string;
     bonuses: { title: MultilingualText; valueBdt: number; description: MultilingualText }[];
     lessons: MinnaLesson[];
   };
@@ -1106,7 +1106,7 @@ export const DEFAULT_WEBSITE_CMS: WebsiteCmsContent = {
     banglaQrImageUrl: "/images/payment/bangla-qr.png",
     promoCodes: [],
     externalLmsUrl: "https://npw.bd/knltc",
-    externalIrodoriUrl: "https://npw.bd/irodori/index.html",
+    externalIrodoriUrl: "",
     bonuses: [
       {
         title: {

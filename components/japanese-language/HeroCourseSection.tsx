@@ -62,7 +62,6 @@ export default function HeroCourseSection() {
   );
   const fullDiscountPercent = cmsConfig.fullPaymentDiscountPercent ?? 20;
   const lmsUrl = cmsConfig.externalLmsUrl || "https://npw.bd/knltc";
-  const irodoriUrl = cmsConfig.externalIrodoriUrl || "https://npw.bd/irodori/index.html";
 
   const t = translate(
     {
@@ -80,7 +79,6 @@ export default function HeroCourseSection() {
         stat3Sub: "Textbooks, Sheets & Audio",
         ctaEnroll: "Explore 4 Courses & Enroll",
         ctaLms: "Enter LMS Classroom",
-        ctaIrodori: "Try Free Irodori Interactive Demo",
         hotlineLabel: "Admission Hotline:",
         cardTag: "Official KNLTC Portal",
         cardTitle: "Digital Classroom & LMS Gateway",
@@ -115,7 +113,6 @@ export default function HeroCourseSection() {
         stat3Sub: "মিন্না নো নিহোঙ্গো ও শিট",
         ctaEnroll: "৪টি কোর্স প্যাকেজ ও ভর্তি",
         ctaLms: "LMS ক্লাসরুমে প্রবেশ",
-        ctaIrodori: "ফ্রি ইরোদেরি (Irodori) ডেমো দেখুন",
         hotlineLabel: "এডমিশন হটলাইন:",
         cardTag: "অফিশিয়াল KNLTC পোর্টাল",
         cardTitle: "ডিজিটাল ক্লাসরুম ও LMS গেটওয়ে",
@@ -150,7 +147,6 @@ export default function HeroCourseSection() {
         stat3Sub: "テキスト・音声配布",
         ctaEnroll: "4大コース詳細・受講申請",
         ctaLms: "LMS教室へ入室",
-        ctaIrodori: "無料『いろどり』体験デモ",
         hotlineLabel: "相談窓口:",
         cardTag: "公式 KNLTCポータル",
         cardTitle: "デジタル教室・公式LMSゲートウェイ",
@@ -288,21 +284,6 @@ export default function HeroCourseSection() {
                     <GraduationCap className="mr-2 h-5 w-5 text-[#b91c1c]" />
                     <span>{t.ctaLms}</span>
                     <ExternalLink className="ml-2 h-4 w-4 text-slate-400" />
-                  </a>
-                </Button>
-              </motion.div>
-
-              <motion.div whileHover={{ y: -2, scale: 1.015 }} whileTap={{ scale: 0.97 }}>
-                <Button
-                  asChild
-                  size="lg"
-                  variant="outline"
-                  className="w-full sm:w-auto border-emerald-300 bg-emerald-50/70 text-[#1E5631] hover:bg-emerald-100/80 font-semibold text-xs sm:text-sm px-5 py-6 rounded-xl transition-colors shadow-2xs"
-                >
-                  <a href={irodoriUrl} target="_blank" rel="noopener noreferrer">
-                    <Sparkles className="mr-2 h-4 w-4 text-[#1E5631]" />
-                    <span>{t.ctaIrodori}</span>
-                    <ExternalLink className="ml-2 h-3.5 w-3.5 text-[#1E5631]/70" />
                   </a>
                 </Button>
               </motion.div>

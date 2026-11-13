@@ -137,7 +137,7 @@ export const INITIAL_BRANCHES: Branch[] = [
     address: "Sky View Trade Valley (8th Floor), 66/1 VIP Road, Naya Paltan, Dhaka-1000",
     phone: "+880 1805 013633",
     email: "info@knltc.com",
-    totalStudents: 340,
+    totalStudents: 0,
   },
   {
     id: "branch-khulna",
@@ -147,17 +147,17 @@ export const INITIAL_BRANCHES: Branch[] = [
     address: "Shibbari More, Khulna",
     phone: "+880 1805 013633",
     email: "info@knltc.com",
-    totalStudents: 185,
+    totalStudents: 0,
   },
   {
     id: "branch-online-global",
     name: "Online Live Global Campus",
     code: "ONL-GLB",
     city: "Virtual",
-    address: "Worldwide Interactive Zoom Live Classroom (https://npw.bd/knltc)",
+    address: "Worldwide Interactive Zoom Live Classroom",
     phone: "+880 1805 013633",
     email: "info@knltc.com",
-    totalStudents: 410,
+    totalStudents: 0,
   },
 ];
 
@@ -169,7 +169,7 @@ export const INITIAL_COURSES: Course[] = [
     level: "N4",
     durationMonths: 3,
     durationHours: 150,
-    fee: 14500,
+    fee: 12500,
     popular: true,
     tagline: "স্টুডেন্ট ভিসা এবং SSW জব ভিসার জন্য সর্বাধিক অগ্রাধিকারপ্রাপ্ত কোর্স",
     description:
@@ -217,7 +217,7 @@ export const INITIAL_COURSES: Course[] = [
     level: "N5",
     durationMonths: 3,
     durationHours: 150,
-    fee: 12500,
+    fee: 12000,
     popular: true,
     tagline: "জাপান স্টুডেন্ট ও জব ভিসার প্রথম ও সবচেয়ে গুরুত্বপূর্ণ ধাপ (১৫০ ঘণ্টা)",
     description:
@@ -266,7 +266,7 @@ export const INITIAL_COURSES: Course[] = [
     level: "N4",
     durationMonths: 3,
     durationHours: 150,
-    fee: 16500,
+    fee: 14500,
     tagline: "SSW জব ভিসা ও জাপানি বিশ্ববিদ্যালয়ে ডিরেক্ট এডমিশনের জন্য (১৫০ ঘণ্টা)",
     description:
       "মিন্না নো নিহোঙ্গো ২৬-৫০ অধ্যায়, ২৫০+ অ্যাডভান্সড কাঞ্জি, কমপ্লেক্স গ্রামার প্যাটার্ন এবং কর্মক্ষেত্রে ফ্লুয়েন্ট কমিউনিকেশন। KNLTC স্টুডেন্ট ভিসা (COE প্রসেসিং) প্রার্থীদের জন্য N4 কোর্স ১০০% ফ্রি!",
@@ -307,8 +307,8 @@ export const INITIAL_COURSES: Course[] = [
     level: "N5+N4",
     durationMonths: 6,
     durationHours: 300,
-    fee: 24500,
-    discountedFee: 19600,
+    fee: 21500,
+    discountedFee: 17200,
     popular: false,
     tagline: "জিরো থেকে সরাসরি N4 পর্যন্ত ৩০০ ঘণ্টার কমপ্লিট কম্বো প্যাকেজ",
     description:

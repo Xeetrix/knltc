@@ -48,9 +48,6 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
     jftPriceBdt: DEFAULT_WEBSITE_CMS.languageCoursePage.jftPriceBdt || 12500,
     fullPaymentDiscountPercent:
       DEFAULT_WEBSITE_CMS.languageCoursePage.fullPaymentDiscountPercent ?? 20,
-    externalIrodoriUrl:
-      DEFAULT_WEBSITE_CMS.languageCoursePage.externalIrodoriUrl ||
-      "https://npw.bd/irodori/index.html",
   });
 
   useEffect(() => {
@@ -65,9 +62,6 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
             jftPriceBdt: Number(cms.languageCoursePage.jftPriceBdt) || 12500,
             fullPaymentDiscountPercent:
               cms.languageCoursePage.fullPaymentDiscountPercent ?? 20,
-            externalIrodoriUrl:
-              cms.languageCoursePage.externalIrodoriUrl ||
-              "https://npw.bd/irodori/index.html",
           });
         }
       } catch {
@@ -175,7 +169,7 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
               "Weekend Intensive: Friday & Saturday (Special Spoken Lab)",
             ],
             materials:
-              "Japan Foundation Irodori Textbooks, Interactive Audio Lab (npw.bd/irodori), Kanji Sheets & 24/7 LMS Portal.",
+              "Japan Foundation Irodori Textbooks, Interactive Audio Lab, Kanji Sheets & 24/7 LMS Portal.",
           },
           N5_COURSE: {
             id: "N5_COURSE" as StandardCourseId,
@@ -311,7 +305,7 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
               "উইকেন্ড ইন্টেনসিভ: শুক্র ও শনিবার (স্পেশাল স্পোকেন ও লিসেনিং ল্যাব)",
             ],
             materials:
-              "জাপান ফাউন্ডেশন ইরোদেরি টেক্সটবুক, ইন্টারঅ্যাক্টিভ অডিও ল্যাব (npw.bd/irodori), কাঞ্জি শিট ও ২৪/৭ LMS পোর্টাল।",
+              "জাপান ফাউন্ডেশন ইরোদেরি টেক্সটবুক, ইন্টারঅ্যাক্টিভ অডিও ল্যাব, কাঞ্জি শিট ও ২৪/৭ LMS পোর্টাল।",
           },
           N5_COURSE: {
             id: "N5_COURSE" as StandardCourseId,
@@ -447,7 +441,7 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
               "週末集中クラス: 金曜・土曜（実践会話ラボ）",
             ],
             materials:
-              "国際交流基金『いろどり』教材、対話型音声デモ（npw.bd/irodori）、漢字シート、24時間LMSアクセス",
+              "国際交流基金『いろどり』教材、対話型音声ラボ、漢字シート、24時間LMSアクセス",
           },
           N5_COURSE: {
             id: "N5_COURSE" as StandardCourseId,
@@ -738,18 +732,6 @@ export default function CoursePackagesSection({ onSelectCourse }: Props) {
                       <BookOpen className="h-4 w-4 text-[#b91c1c]" />
                       <span>{t.syllabusHeading}</span>
                     </h4>
-                    {activeCourse.id === "JFT_IRODORI" && (
-                      <a
-                        href={cmsPricing.externalIrodoriUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs font-bold text-[#1E5631] hover:underline"
-                      >
-                        <Sparkles className="h-3.5 w-3.5" />
-                        <span>{t.tryIrodoriBtn}</span>
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                    )}
                   </div>
                   <ul className="space-y-2.5 text-xs sm:text-sm text-slate-700">
                     {activeCourse.highlights.map((h, i) => (

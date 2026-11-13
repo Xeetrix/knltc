@@ -68,8 +68,9 @@ export default function HomePage() {
         portalCardSub: "Official KNLTC Japan Admissions & Career Liaison",
         portalTag1: "1,200+ Visas",
         portalTag2: "98% Pass Rate",
-        portalTag3: "LMS Digital",
-        portalLmsBtn: "Enter Student LMS Classroom",
+        portalTag3: "N5 & Irodori",
+        portalLmsBtn: "Enroll in Japanese Language Course",
+        portalLmsSub: "Direct Online Course Registration & Enrollment",
         pathKicker: "Pathways to Japan",
         pathHeading: "Three Core Pathways to Your Journey in Japan",
         pathSub: "Select the ideal program based on your academic background and professional aspirations.",
@@ -251,8 +252,9 @@ export default function HomePage() {
         portalCardSub: "KNLTC অফিশিয়াল জাপান এডমিশন ও ভিসা উইং",
         portalTag1: "১,২০০+ ভিসা",
         portalTag2: "৯৮% পাসের হার",
-        portalTag3: "ডিজিটাল LMS",
-        portalLmsBtn: "LMS ক্লাসরুমে প্রবেশ করুন",
+        portalTag3: "N5 ও ইরোদেরি",
+        portalLmsBtn: "জাপানি ভাষা কোর্সে ভর্তি হোন",
+        portalLmsSub: "সরাসরি অনলাইন কোর্স রেজিস্ট্রেশন ও এনরোলমেন্ট",
         pathKicker: "জাপান যাত্রার পথসমূহ",
         pathHeading: "জাপান গমনের তিনটি মূল পাথওয়ে",
         pathSub: "আপনার শিক্ষাগত যোগ্যতা ও ক্যারিয়ারের লক্ষ্যের সাথে মানানসই সেরা প্রোগ্রামটি বেছে নিন।",
@@ -414,8 +416,9 @@ export default function HomePage() {
         portalCardSub: "公式KNLTC日本渡航総合支援センター",
         portalTag1: "1,200名ビザ取得",
         portalTag2: "98%合格率",
-        portalTag3: "公式LMS完備",
-        portalLmsBtn: "公式受講生LMSにログイン",
+        portalTag3: "N5・いろどり",
+        portalLmsBtn: "日本語コースに申し込む",
+        portalLmsSub: "オンラインコース登録・お申し込み",
         pathKicker: "日本進路プログラム",
         pathHeading: "日本渡航への3大基本進路",
         pathSub: "学歴・職歴や将来の目標に合わせた最適な進路プランをご案内します。",
@@ -719,12 +722,10 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                {/* Official LMS Entrance Card CTA */}
+                {/* Course Enrollment Card CTA */}
                 <div className="mt-6 pt-5 border-t border-slate-100">
-                  <a
-                    href="https://npw.bd/knltc"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <Link
+                    href="/japanese-language/enroll/jft-irodori"
                     className="group flex items-center justify-between rounded-xl bg-slate-900 hover:bg-slate-800 p-3.5 text-xs font-semibold text-white transition-all"
                   >
                     <div className="flex items-center gap-3">
@@ -734,12 +735,12 @@ export default function HomePage() {
                       <div>
                         <span className="block text-xs font-bold text-white">{t.portalLmsBtn}</span>
                         <span className="block text-[10px] text-slate-300 font-medium">
-                          Official Student Portal (npw.bd/knltc)
+                          {t.portalLmsSub}
                         </span>
                       </div>
                     </div>
-                    <ExternalLink className="h-4 w-4 text-slate-300 transition-transform group-hover:translate-x-0.5" />
-                  </a>
+                    <ArrowRight className="h-4 w-4 text-slate-300 transition-transform group-hover:translate-x-0.5" />
+                  </Link>
                 </div>
               </div>
             </motion.div>

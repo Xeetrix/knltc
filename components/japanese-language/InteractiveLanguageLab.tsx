@@ -1185,7 +1185,6 @@ export default function InteractiveLanguageLab() {
         enrollBanner: "প্রথম দিন থেকেই জাপানি ভাষায় সাবলীল হতে আমাদের ১৫০ ঘণ্টার কোর্সে যোগ দিন",
         enrollSub: "মিন্না নো নিহোঙ্গো ১ ও ২ বই, ইরোদেরি শিট, অডিও ড্রিল এবং ১৫,০০০ টাকার ৩টি স্পেশাল ইন্টারভিউ কোর্স ১০০% ফ্রি।",
         btnEnroll: "কোর্সে ভর্তি আবেদন",
-        btnIrodoriDemo: "ফ্রি ইরোদেরি (Irodori) ডেমো",
         btnBookStore: "বুক স্টোর (/store) থেকে বই অর্ডার করুন",
         storeBannerTitle: "বাসায় বসে প্র্যাকটিস করার জন্য হার্ডকপি বই ও কাঞ্জি ওয়ার্কবুক প্রয়োজন?",
         storeBannerSub: "KNLTC অফিশিয়াল বুক স্টোর (/store) থেকে মিন্না নো নিহোঙ্গো, ইরোদেরি, কাঞ্জি শিট ও SSW গাইড সারা বাংলাদেশে ক্যাশ-অন-ডেলিভারিতে অর্ডার করুন।",
@@ -1231,7 +1230,6 @@ export default function InteractiveLanguageLab() {
         enrollBanner: "Master JFT (Irodori) & JLPT N5/N4 in our 150-Hour Certified Batch",
         enrollSub: "Includes Minna No Nihongo I & II books, Irodori handouts, audio drills, and 3 free bonus courses worth ৳15,000.",
         btnEnroll: "Apply for Admission",
-        btnIrodoriDemo: "Try Free Irodori Demo",
         btnBookStore: "Order Physical Books (/store)",
         storeBannerTitle: "Want physical Minna No Nihongo books, Kanji workbooks & SSW guides delivered home?",
         storeBannerSub: "Order authentic textbooks, Kanji practice sheets, and JFT/JLPT question banks from the official KNLTC Book Store with nationwide delivery.",
@@ -1277,7 +1275,6 @@ export default function InteractiveLanguageLab() {
         enrollBanner: "入管基準150時間認定のJFT（いろどり）・JLPT N5/N4コース受講生募集中",
         enrollSub: "『みんなの日本語』第1・2巻、いろどり教材、15,000タカ相当の面接・履歴書3大特典講座が100%無料。",
         btnEnroll: "受講申込みへ",
-        btnIrodoriDemo: "無料『いろどり』デモ",
         btnBookStore: "公式ブックストア (/store)",
         storeBannerTitle: "紙の『みんなの日本語』教科書・漢字ドリル・特定技能テキストをご希望ですか？",
         storeBannerSub: "KNLTC公式ブックストア（/store）より、バングラデシュ全国へ教材を配送いたします。",
@@ -2295,22 +2292,6 @@ export default function InteractiveLanguageLab() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3 shrink-0">
-            <Button
-              asChild
-              variant="outline"
-              className="border-emerald-400/50 bg-emerald-950/60 hover:bg-emerald-900 text-emerald-200 rounded-xl text-xs sm:text-sm font-bold py-5 px-5 cursor-pointer"
-            >
-              <a
-                href="https://npw.bd/irodori/index.html"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2"
-              >
-                <Sparkles className="h-4 w-4" />
-                <span>{t.btnIrodoriDemo}</span>
-                <ExternalLink className="h-3.5 w-3.5" />
-              </a>
-            </Button>
             <Button
               asChild
               className="bg-[#b91c1c] hover:bg-red-800 text-white rounded-xl text-xs sm:text-sm font-bold py-5 px-6 active:scale-95 transition-all shadow-md cursor-pointer"
