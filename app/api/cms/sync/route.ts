@@ -4,13 +4,22 @@ import path from "path";
 import { selectRows, upsertRow, insertRow, deleteRow } from "@/lib/supabase";
 import {
   bulkSyncMasterStoreToSheets,
-  fetchSheetTable,
+  fetchAllSheetTables,
   getGoogleSheetsConfig,
   getPersistentDataDir,
   offloadEmbeddedBase64Strings,
   purgeFallbackTables,
 } from "@/lib/google-sheets-db";
-import { getCmsStore, type MasterKnlTcStore } from "@/lib/knltc-cms-store";
+import {
+  getCmsStore,
+  serializeLeadToSheetRow,
+  serializeVisaToSheetRow,
+  serializeSchoolToSheetRow,
+  serializeAgentToSheetRow,
+  serializeStaffToSheetRow,
+  serializeTransactionToSheetRow,
+  type MasterKnlTcStore,
+} from "@/lib/knltc-cms-store";
 
 export const dynamic = "force-dynamic";
 
@@ -58,10 +67,157 @@ async function writeServerSnapshot(store: MasterKnlTcStore): Promise<MasterKnlTc
   return cleaned;
 }
 
+function stripCmsVolatileFields(cms: any) {
+  if (!cms || typeof cms !== "object") return {};
+  const clone = { ...cms };
+  delete clone.updatedAt;
+  delete clone.leadExtendedProfiles;
+  delete clone.schoolExtendedProfiles;
+  delete clone.b2bAgentExtendedProfiles;
+  return clone;
+}
+
+async function syncStoreDeltaToSheets(
+  prevStore: MasterKnlTcStore | null,
+  nextStore: MasterKnlTcStore,
+  nowIso: string,
+): Promise<number> {
+  let deltaCount = 0;
+
+  const diffAndSyncCollection = async <T extends { id: string }>(
+    prevList: T[] | undefined,
+    nextList: T[] | undefined,
+    tableName: string,
+    serializeFn: (item: T) => Record<string, any>,
+  ) => {
+    if (!Array.isArray(nextList)) return;
+    const prevMap = new Map<string, string>();
+    if (Array.isArray(prevList)) {
+      for (const item of prevList) {
+        if (item?.id) {
+          prevMap.set(String(item.id), JSON.stringify(item));
+        }
+      }
+    }
+
+    const nextIds = new Set<string>();
+    for (const item of nextList) {
+      if (!item?.id) continue;
+      const idStr = String(item.id);
+      nextIds.add(idStr);
+      const prevJson = prevMap.get(idStr);
+      const nextJson = JSON.stringify(item);
+      if (prevJson !== nextJson) {
+        deltaCount++;
+        await upsertRow(tableName, serializeFn(item));
+      }
+    }
+
+    if (Array.isArray(prevList)) {
+      for (const prevItem of prevList) {
+        if (prevItem?.id && !nextIds.has(String(prevItem.id))) {
+          deltaCount++;
+          await deleteRow(tableName, String(prevItem.id));
+        }
+      }
+    }
+  };
+
+  await diffAndSyncCollection(
+    prevStore?.crmLeads,
+    nextStore.crmLeads,
+    "knltc_crm_leads",
+    serializeLeadToSheetRow,
+  );
+
+  await diffAndSyncCollection(
+    prevStore?.visaApplicants,
+    nextStore.visaApplicants,
+    "knltc_visa_applicants",
+    serializeVisaToSheetRow,
+  );
+
+  await diffAndSyncCollection(
+    prevStore?.lmsBridges,
+    nextStore.lmsBridges,
+    "knltc_lms_bridges",
+    (b) => ({
+      id: b.id,
+      lead_id: b.leadId || b.linkedLeadId || "",
+      student_name: b.studentName,
+      phone: b.phone,
+      course_level: b.courseLevel,
+      enrollment_no: b.enrollmentNo,
+      portal_username: b.portalUsername,
+      portal_password_masked: b.portalPasswordMasked,
+      portal_fee_deducted_bdt: b.portalFeeDeductedBdt,
+      net_knltc_margin_bdt: b.netKnlTcMarginBdt,
+      credentials_sent_via_wa: b.credentialsSentViaWa,
+      credentials_sent_at: b.credentialsSentAt || nowIso,
+      progress_percentage: b.progressPercentage,
+      active_batch: b.activeBatch,
+      assigned_sensei_id: b.assignedSenseiId || "",
+      assigned_sensei_name: b.assignedSenseiName || "",
+      created_at: b.credentialsSentAt || nowIso,
+    }),
+  );
+
+  await diffAndSyncCollection(
+    prevStore?.partnerSchools,
+    nextStore.partnerSchools,
+    "knltc_partner_schools",
+    serializeSchoolToSheetRow,
+  );
+
+  await diffAndSyncCollection(
+    prevStore?.b2bAgents,
+    nextStore.b2bAgents,
+    "knltc_b2b_agents",
+    serializeAgentToSheetRow,
+  );
+
+  await diffAndSyncCollection(
+    prevStore?.staffList,
+    nextStore.staffList,
+    "knltc_staff_members",
+    serializeStaffToSheetRow,
+  );
+
+  await diffAndSyncCollection(
+    prevStore?.transactions,
+    nextStore.transactions,
+    "knltc_finance_transactions",
+    serializeTransactionToSheetRow,
+  );
+
+  const prevCmsCore = JSON.stringify(stripCmsVolatileFields(prevStore?.websiteCms?.[0]));
+  const nextCmsCore = JSON.stringify(stripCmsVolatileFields(nextStore.websiteCms?.[0]));
+  if (nextStore.websiteCms?.[0] && prevCmsCore !== nextCmsCore) {
+    deltaCount++;
+    await upsertRow(
+      "knltc_website_cms",
+      {
+        id: "cms-master-01",
+        section_key: "master_cms",
+        data: nextStore.websiteCms[0],
+        updated_at: nowIso,
+      },
+      "section_key",
+    );
+  }
+
+  return deltaCount;
+}
+
 export async function GET() {
   try {
     const snapshot = await readServerSnapshot();
     const gsConfig = getGoogleSheetsConfig();
+
+    // Hydrate all tables in ONE single round-trip (`?table=all`) so selectRows below resolve instantaneously!
+    if (gsConfig.isConfigured) {
+      await fetchAllSheetTables();
+    }
 
     const [
       leads,
@@ -81,7 +237,6 @@ export async function GET() {
       selectRows<any>("knltc_finance_transactions", { order: "created_at.desc" }, true),
       selectRows<any>("knltc_staff_members", { order: "created_at.desc" }, true),
       selectRows<any>("knltc_website_cms", "", true),
-      gsConfig.isConfigured ? fetchSheetTable("media_vault") : Promise.resolve([]),
     ]);
 
     const dbLeads =
@@ -211,20 +366,31 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { type, entity, payload, fullStore } = body as {
-      type: "UPSERT" | "INSERT" | "DELETE" | "CMS_UPDATE" | "FULL_STORE_SYNC";
+      type: "UPSERT" | "INSERT" | "DELETE" | "CMS_UPDATE" | "DELTA_STORE_SYNC" | "FULL_STORE_SYNC";
       entity?: string;
       payload?: any;
       fullStore?: MasterKnlTcStore;
     };
 
     const nowIso = new Date().toISOString();
-    const snapshot = await readServerSnapshot();
+    const prevSnapshot = await readServerSnapshot();
+    const prevSnapshotClone: MasterKnlTcStore = JSON.parse(JSON.stringify(prevSnapshot));
 
     if (fullStore && Array.isArray(fullStore.crmLeads)) {
       if (fullStore.websiteCms?.[0]) {
         (fullStore.websiteCms[0] as any).updatedAt = nowIso;
       }
       await writeServerSnapshot(fullStore);
+    }
+
+    if (type === "DELTA_STORE_SYNC" && fullStore) {
+      const cleanedStore = await writeServerSnapshot(fullStore);
+      const deltaCount = await syncStoreDeltaToSheets(prevSnapshotClone, cleanedStore, nowIso);
+      return NextResponse.json({
+        ok: true,
+        deltaCount,
+        message: `Synced ${deltaCount} changed record(s) to Google Sheets & Persistent Disk`,
+      });
     }
 
     if (type === "FULL_STORE_SYNC" && fullStore) {
@@ -241,20 +407,20 @@ export async function POST(request: Request) {
     }
 
     if ((type as string) === "PURGE_ALL_DUMMY" || entity === "PURGE_ALL_DUMMY") {
-      snapshot.crmLeads = [];
-      snapshot.visaApplicants = [];
-      snapshot.lmsBridges = [];
-      snapshot.b2bAgents = [];
-      snapshot.partnerSchools = [];
-      snapshot.staffList = [];
-      snapshot.transactions = [];
-      if (snapshot.websiteCms?.[0]) {
-        snapshot.websiteCms[0].customerOrders = [];
-        snapshot.websiteCms[0].testimonials = [];
-        snapshot.websiteCms[0].storeProducts = [];
+      prevSnapshot.crmLeads = [];
+      prevSnapshot.visaApplicants = [];
+      prevSnapshot.lmsBridges = [];
+      prevSnapshot.b2bAgents = [];
+      prevSnapshot.partnerSchools = [];
+      prevSnapshot.staffList = [];
+      prevSnapshot.transactions = [];
+      if (prevSnapshot.websiteCms?.[0]) {
+        prevSnapshot.websiteCms[0].customerOrders = [];
+        prevSnapshot.websiteCms[0].testimonials = [];
+        prevSnapshot.websiteCms[0].storeProducts = [];
       }
       purgeFallbackTables();
-      await writeServerSnapshot(snapshot);
+      await writeServerSnapshot(prevSnapshot);
       return NextResponse.json({ ok: true, message: "Server snapshot purged of dummy data" });
     }
 
@@ -270,8 +436,8 @@ export async function POST(request: Request) {
           }
         }
       }
-      snapshot.websiteCms = [cleanedCms];
-      await writeServerSnapshot(snapshot);
+      prevSnapshot.websiteCms = [cleanedCms];
+      await writeServerSnapshot(prevSnapshot);
       await upsertRow(
         "knltc_website_cms",
         {

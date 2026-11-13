@@ -1331,6 +1331,19 @@ export function invalidateSheetsCache(tableName?: string) {
  * READ OPERATIONS (Google Sheets Web App + Persistent Disk Mirror)
  * ============================================================================
  */
+let inFlightGetAllPromise: Promise<Record<GoogleSheetsTableName, Record<string, any>[]>> | null =
+  null;
+let lastGetAllCompletedAt = 0;
+const GET_ALL_COALESCE_TTL_MS = 2500;
+
+let remoteWriteChain: Promise<any> = Promise.resolve();
+
+function enqueueRemoteAppsScriptWrite<R>(task: () => Promise<R>): Promise<R> {
+  const next = remoteWriteChain.then(task, task);
+  remoteWriteChain = next.catch(() => undefined);
+  return next;
+}
+
 export async function fetchSheetTable<T = Record<string, any>>(
   tableName: GoogleSheetsTableName | string,
 ): Promise<T[]> {
@@ -1339,6 +1352,15 @@ export async function fetchSheetTable<T = Record<string, any>>(
   const fallback = getFallbackTables();
 
   if (!isConfigured) {
+    return (fallback[safeTable] || []) as T[];
+  }
+
+  // If a full-table fetch recently completed or is currently in-flight, reuse it!
+  if (inFlightGetAllPromise) {
+    const all = await inFlightGetAllPromise;
+    return (all[safeTable] || fallback[safeTable] || []) as T[];
+  }
+  if (Date.now() - lastGetAllCompletedAt < GET_ALL_COALESCE_TTL_MS) {
     return (fallback[safeTable] || []) as T[];
   }
 
@@ -1383,30 +1405,44 @@ export async function fetchAllSheetTables(): Promise<
     return fallback;
   }
 
-  try {
-    const url = `${webAppUrl}${webAppUrl.includes("?") ? "&" : "?"}table=all`;
-    const response = await fetch(url, {
-      method: "GET",
-      redirect: "follow",
-      cache: "no-store",
-    });
-
-    if (!response.ok) return fallback;
-    const json = await response.json();
-    if (json && json.ok && json.data && typeof json.data === "object") {
-      for (const tbl of GOOGLE_SHEETS_TABLES) {
-        if (Array.isArray(json.data[tbl]) && json.data[tbl].length > 0) {
-          fallback[tbl] = mergeRemoteAndMirrorRows(tbl, json.data[tbl], fallback[tbl] || []);
-        }
-      }
-      saveFallbackTablesToDisk(fallback);
-      syncMediaVaultFromFallbackRows();
-      return fallback;
-    }
-    return fallback;
-  } catch {
+  if (inFlightGetAllPromise) {
+    return inFlightGetAllPromise;
+  }
+  if (Date.now() - lastGetAllCompletedAt < GET_ALL_COALESCE_TTL_MS) {
     return fallback;
   }
+
+  inFlightGetAllPromise = (async () => {
+    try {
+      const url = `${webAppUrl}${webAppUrl.includes("?") ? "&" : "?"}table=all`;
+      const response = await fetch(url, {
+        method: "GET",
+        redirect: "follow",
+        cache: "no-store",
+      });
+
+      if (!response.ok) return fallback;
+      const json = await response.json();
+      if (json && json.ok && json.data && typeof json.data === "object") {
+        for (const tbl of GOOGLE_SHEETS_TABLES) {
+          if (Array.isArray(json.data[tbl]) && json.data[tbl].length > 0) {
+            fallback[tbl] = mergeRemoteAndMirrorRows(tbl, json.data[tbl], fallback[tbl] || []);
+          }
+        }
+        saveFallbackTablesToDisk(fallback);
+        syncMediaVaultFromFallbackRows();
+        lastGetAllCompletedAt = Date.now();
+        return fallback;
+      }
+      return fallback;
+    } catch {
+      return fallback;
+    } finally {
+      inFlightGetAllPromise = null;
+    }
+  })();
+
+  return inFlightGetAllPromise;
 }
 
 /**
@@ -1510,9 +1546,39 @@ export async function mutateSheetTable<T = Record<string, any>>(options: {
     options.tables = cleanedTables;
   }
 
+  // Sync any extended profiles from `master_cms` directly into each row's `profile_json` in the fallback mirror
+  // before compacting `master_cms` for the Google Sheets 50,000-char cell limit so ZERO profile data is ever lost!
+  const syncExtendedProfilesIntoRows = (rawCms: any) => {
+    if (!rawCms || typeof rawCms !== "object") return;
+    if (rawCms.leadExtendedProfiles && typeof rawCms.leadExtendedProfiles === "object") {
+      const leadRows = Array.isArray(fallback.knltc_crm_leads) ? fallback.knltc_crm_leads : [];
+      for (const [leadId, extProf] of Object.entries(rawCms.leadExtendedProfiles)) {
+        if (!extProf || typeof extProf !== "object") continue;
+        const rIdx = leadRows.findIndex((r) => String(r.id) === String(leadId));
+        if (rIdx >= 0) {
+          let existingProf: Record<string, any> = {};
+          try {
+            existingProf =
+              typeof leadRows[rIdx].profile_json === "string"
+                ? JSON.parse(leadRows[rIdx].profile_json)
+                : leadRows[rIdx].profile_json || {};
+          } catch {
+            existingProf = {};
+          }
+          leadRows[rIdx].profile_json = JSON.stringify({
+            ...existingProf,
+            ...(extProf as Record<string, any>),
+          });
+        }
+      }
+      fallback.knltc_crm_leads = leadRows;
+    }
+  };
+
   // Ensure `master_cms` data never exceeds Google Sheets 50,000-character cell limit due to redundant extended profile maps
   const compactMasterCmsData = (rawCms: any) => {
     if (!rawCms || typeof rawCms !== "object") return rawCms;
+    syncExtendedProfilesIntoRows(rawCms);
     const clone = { ...rawCms };
     if (clone.languageCoursePage?.banglaQrImageUrl) {
       const qr = String(clone.languageCoursePage.banglaQrImageUrl).trim();
@@ -1627,18 +1693,21 @@ export async function mutateSheetTable<T = Record<string, any>>(options: {
     saveFallbackTablesToDisk(fallback);
   }
 
-  // 2. Forward write to Google Apps Script Web App if configured (automatically trying all API keys)
+  // 2. Forward write to Google Apps Script Web App via serialized FIFO queue so concurrent edits never collide on LockService
   if (isConfigured) {
     try {
-      const res = await postToAppsScript({
-        action: options.action,
-        table: options.table,
-        payload: options.payload,
-        id: options.id,
-        matchKey: options.matchKey,
-        tables: options.tables,
-        replaceAll: options.replaceAll,
-      });
+      const res = await enqueueRemoteAppsScriptWrite(() =>
+        postToAppsScript({
+          action: options.action,
+          table: options.table,
+          payload: options.payload,
+          id: options.id,
+          matchKey: options.matchKey,
+          tables: options.tables,
+          replaceAll: options.replaceAll,
+        }),
+      );
+      lastGetAllCompletedAt = Date.now();
       invalidateSheetsCache(options.table);
       if (res.ok && res.json?.data !== undefined) {
         return res.json.data as T;
@@ -2251,4 +2320,27 @@ export async function testLiveGoogleSheetsConnection() {
   result.ok = result.getStatusOk || result.postAuthOk;
   return result;
 }
+
+export async function upsertRow<T = Record<string, any>>(
+  table: string,
+  payload: Record<string, any>,
+): Promise<T> {
+  return mutateSheetTable<T>({
+    action: "UPSERT",
+    table,
+    payload,
+  });
+}
+
+export async function deleteRow<T = Record<string, any>>(
+  table: string,
+  id: string,
+): Promise<T> {
+  return mutateSheetTable<T>({
+    action: "DELETE",
+    table,
+    id,
+  });
+}
+
 

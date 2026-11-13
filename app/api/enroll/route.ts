@@ -178,34 +178,72 @@ export async function POST(req: NextRequest) {
         ? `[Enroll Now - Instant LMS] Course: ${enrollment.courseTitle} (${resolvedEnrollmentNo}) | Mode: ${deliveryMode} | Plan: ${paymentPlan} | Net Fee: ৳${resolvedNetFee} | Paid: ৳${paidAmountBdt} | Due: ৳${dueAmountBdt} | Sender: ${senderNumber || phone} | TrxID: ${trxId}`
         : `[Apply Now - Discuss Payment] Course: ${enrollment.courseTitle} (${resolvedEnrollmentNo}) | Mode: ${deliveryMode} | Purpose: ${visaCategory} | Course Fee: ৳${resolvedNetFee}`;
 
+      const leadStatus = isDirectPurchase ? "ADMITTED" : "NEW";
+      const leadContract = isDirectPurchase ? resolvedNetFee : 0;
+      const leadPaid = isDirectPurchase ? Number(paidAmountBdt || 0) : 0;
+      const leadDue = Math.max(0, leadContract - leadPaid);
+      const followUpDate = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+      const leadNoteText = `${paymentSummary}${notes ? ` | Note: ${notes}` : ""}`;
+
       await mutateSheetTable({
         action: "UPSERT",
         table: "knltc_crm_leads",
         payload: {
           id: resolvedLeadId,
-          full_name: String(applicantName).trim(),
+          name: String(applicantName).trim(),
           phone: String(phone).trim(),
           whatsapp: String(whatsapp || phone).trim(),
           email: String(email || "").trim(),
           city: rawModeStr.includes("KHULNA") ? "Khulna" : "Dhaka",
-          branch: mappedBranch,
-          highest_education: String(highestDegree || "HSC / Equivalent"),
-          gpa_details: "",
-          age: 22,
-          study_gap_years: 0,
+          source: "WEBSITE_FORM",
           interest: mappedInterest,
-          stage: isDirectPurchase ? "LANGUAGE_ENROLLED" : "NEW",
-          assigned_counselor_id: "",
-          assigned_counselor_name: "Unassigned",
-          source: "Website Portal",
-          contract_amount_bdt: isDirectPurchase ? resolvedNetFee : 0,
-          paid_amount_bdt: isDirectPurchase ? Number(paidAmountBdt || 0) : 0,
-          next_follow_up_date: new Date(Date.now() + 86400000)
-            .toISOString()
-            .slice(0, 10),
-          notes: `${paymentSummary}${notes ? ` | Note: ${notes}` : ""}`,
+          status: leadStatus,
+          education: String(highestDegree || "HSC / Equivalent"),
+          japanese_proficiency: "LEARNING_N5",
+          study_gap_years: 0,
+          assigned_to: "Unassigned",
+          branch: rawModeStr.includes("KHULNA") ? "KHULNA-01" : "DHK-HQ",
+          notes: leadNoteText,
+          follow_up_date: followUpDate,
+          last_contacted_at: nowIso,
           created_at: nowIso,
-          updated_at: nowIso,
+          priority: isDirectPurchase ? "HOT" : "WARM",
+          passport_no: "",
+          target_school: "",
+          b2b_agent_name: "",
+          contract_amount_bdt: leadContract,
+          paid_amount_bdt: leadPaid,
+          due_amount_bdt: leadDue,
+          ssc_gpa: "",
+          hsc_gpa: "",
+          avatar_url: "",
+          documents_urls: "",
+          profile_json: JSON.stringify({
+            id: resolvedLeadId,
+            name: String(applicantName).trim(),
+            phone: String(phone).trim(),
+            whatsapp: String(whatsapp || phone).trim(),
+            email: String(email || "").trim(),
+            city: rawModeStr.includes("KHULNA") ? "Khulna" : "Dhaka",
+            source: "WEBSITE_FORM",
+            interest: mappedInterest,
+            status: leadStatus,
+            priority: isDirectPurchase ? "HOT" : "WARM",
+            education: String(highestDegree || "HSC / Equivalent"),
+            japaneseProficiency: "LEARNING_N5",
+            studyGapYears: 0,
+            assignedTo: "Unassigned",
+            branch: rawModeStr.includes("KHULNA") ? "KHULNA-01" : "DHK-HQ",
+            contractAmountBdt: leadContract,
+            paidAmountBdt: leadPaid,
+            dueAmountBdt: leadDue,
+            isCourseEnrolled: isDirectPurchase,
+            enrolledBatchOrSession: `${enrollment.courseTitle} (${deliveryMode})`,
+            notes: leadNoteText,
+            followUpDate,
+            lastContactedAt: nowIso,
+            createdAt: nowIso,
+          }),
         },
       });
     } catch (crmErr) {

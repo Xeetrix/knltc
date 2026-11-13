@@ -1245,6 +1245,46 @@ export default function LeadProfileModal({
                 />
               </div>
 
+              {/* Meta Campaign / Ad Attribution & 1-Click CAPI Trigger */}
+              <button
+                type="button"
+                onClick={() => {
+                  persistLeadChanges(
+                    {},
+                    tr(
+                      `মেটা CAPI Dataset (1061685489662581)-এ "${status}" স্টেজ ইভেন্ট পাঠানো হয়েছে!`,
+                      `Sent "${status}" CRM stage event to Meta CAPI (Dataset 1061685489662581)!`
+                    )
+                  );
+                  fetch("/api/admin/meta-marketing", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      action: "SEND_CRM_EVENT",
+                      leadId: lead.id,
+                      leadName: name,
+                      phone,
+                      email,
+                      city,
+                      crmStage: status,
+                      interest,
+                      branch,
+                      contractAmountBdt,
+                      metaLeadId: lead.metaLeadId,
+                    }),
+                  }).catch(() => {});
+                }}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50/80 px-3 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-100 transition cursor-pointer"
+                title="Send current CRM funnel stage to Meta Conversions API (Dataset 1061685489662581)"
+              >
+                <Send className="h-3 w-3 text-blue-600" />
+                <span>
+                  {lead.metaCampaignName
+                    ? `Meta Ad: ${lead.metaCampaignName}`
+                    : tr("Meta CAPI সিঙ্ক", "Sync Meta CAPI")}
+                </span>
+              </button>
+
               {linkedLms && (
                 <button
                   type="button"

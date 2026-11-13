@@ -55,6 +55,7 @@ import {
   Search,
   ArrowDownRight,
   Coins,
+  Megaphone,
 } from "lucide-react";
 import {
   getCmsStore,
@@ -104,6 +105,9 @@ import {
   STANDARD_DEGREE_OPTIONS,
   DEFAULT_WEBSITE_CMS,
   purgeStoreOfDummyData,
+  getLiveSyncStatus,
+  forceRetryServerSync,
+  type LiveSyncStatus,
   type WebsiteCmsContent,
   type MasterKnlTcStore,
   type UserRole,
@@ -140,6 +144,7 @@ import UserAccessControlPanel from "@/components/admin/UserAccessControlPanel";
 import StudentProfileView from "@/components/admin/StudentProfileView";
 import DriveFileUploadButton from "@/components/admin/DriveFileUploadButton";
 import MediaStorageManager from "@/components/dashboard/MediaStorageManager";
+import MarketingOmniChannelHub from "@/components/admin/MarketingOmniChannelHub";
 import type {
   AdminSummary,
   BlogPost,
@@ -177,6 +182,7 @@ export default function DashboardPage() {
   const [activeBranch, setActiveBranch] = useState<BranchCode>("ALL");
   const [isSyncingWithDb, setIsSyncingWithDb] = useState(false);
   const [isPushingToSheets, setIsPushingToSheets] = useState(false);
+  const [liveSyncStatus, setLiveSyncStatus] = useState<LiveSyncStatus>(() => getLiveSyncStatus());
   const [sheetsStatus, setSheetsStatus] = useState<{
     connected: boolean;
     mode: string;
@@ -443,6 +449,7 @@ export default function DashboardPage() {
           "b2b",
           "finance",
           "hr",
+          "marketing_hub",
           "cms",
           "store_blog",
           "media_storage",
@@ -541,9 +548,19 @@ export default function DashboardPage() {
     const sync = () => {
       setStore({ ...getCmsStore() });
     };
+    const onSyncStatus = (e: Event) => {
+      const custom = e as CustomEvent<LiveSyncStatus>;
+      if (custom.detail) {
+        setLiveSyncStatus({ ...custom.detail });
+      }
+    };
 
     window.addEventListener("knltc-cms-updated", sync);
-    return () => window.removeEventListener("knltc-cms-updated", sync);
+    window.addEventListener("knltc-sync-status", onSyncStatus);
+    return () => {
+      window.removeEventListener("knltc-cms-updated", sync);
+      window.removeEventListener("knltc-sync-status", onSyncStatus);
+    };
   }, []);
 
   const handleManualSync = async () => {
@@ -1053,6 +1070,18 @@ export default function DashboardPage() {
         (adminBundle.summary?.lowStockProducts || 0),
     },
     {
+      id: "marketing_hub",
+      group: language === "bn" ? "মার্কেটিং ও অ্যাডস" : language === "ja" ? "マーケティング" : "Marketing & Ads",
+      label:
+        language === "ja"
+          ? "Meta広告・CAPI・オムニチャネル"
+          : language === "en"
+            ? "Meta Ads & CAPI Hub"
+            : "মেটা অ্যাডস ও মার্কেটিং হাব",
+      icon: Megaphone,
+      badge: 0,
+    },
+    {
       id: "cms",
       group: language === "bn" ? "কনটেন্ট ও স্টোর" : language === "ja" ? "ストア・CMS" : "Content & Store",
       label: t.tabs.cms,
@@ -1550,6 +1579,40 @@ export default function DashboardPage() {
                 <ArrowUpRight className="h-3 w-3 text-slate-400" />
               </a>
             )}
+
+            {/* Real-Time Delta Sync Status Indicator Badge */}
+            <div className="hidden sm:flex items-center">
+              {liveSyncStatus.state === "syncing" || isSyncingWithDb ? (
+                <span className="inline-flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[11px] font-semibold text-amber-800 tabular-nums">
+                  <RefreshCw className="h-3 w-3 animate-spin text-amber-600" />
+                  <span>
+                    {tr("গুগল শিটে সেভ হচ্ছে...", "Saving to Sheet...", "保存中...")}
+                  </span>
+                </span>
+              ) : liveSyncStatus.state === "error" ? (
+                <button
+                  type="button"
+                  onClick={() => forceRetryServerSync()}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[11px] font-bold text-rose-700 hover:bg-rose-100 transition"
+                  title={liveSyncStatus.lastError || "Click to retry sync"}
+                >
+                  <RefreshCw className="h-3 w-3 text-rose-600" />
+                  <span>{tr("পুনরায় সিঙ্ক করুন", "Retry Sync", "再試行")}</span>
+                </button>
+              ) : (
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200/80 bg-emerald-50/70 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-800 tabular-nums"
+                  title={
+                    liveSyncStatus.lastSyncedAt
+                      ? `Last synced: ${new Date(liveSyncStatus.lastSyncedAt).toLocaleTimeString()}`
+                      : "Real-Time Google Sheet Sync Active"
+                  }
+                >
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  <span>{tr("লাইভ সেভড", "Live Synced", "同期済")}</span>
+                </span>
+              )}
+            </div>
 
             {/* Cloud Sync */}
             <button
@@ -8105,6 +8168,18 @@ export default function DashboardPage() {
                     <MediaStorageManager language={language} onShowToast={showToast} />
                   )}
                 </div>
+              )}
+
+              {/* =========================================================================
+                  MODULE 9A: OMNI-CHANNEL MARKETING & META CONVERSIONS API (CAPI) HUB
+                  ========================================================================= */}
+              {activeTab === "marketing_hub" && (
+                <MarketingOmniChannelHub
+                  crmLeads={store.crmLeads}
+                  onRefreshStore={() => setStore({ ...getCmsStore() })}
+                  onOpenLeadProfile={(lead) => setSelectedLeadForProfile(lead)}
+                  onSwitchDashboardTab={(tabId) => setActiveTab(tabId)}
+                />
               )}
 
               {/* =========================================================================

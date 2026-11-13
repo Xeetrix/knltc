@@ -25,6 +25,7 @@ export type DashboardTabId =
   | "b2b"
   | "finance"
   | "hr"
+  | "marketing_hub"
   | "cms"
   | "store_blog"
   | "media_storage"
@@ -202,6 +203,17 @@ export interface CrmLead {
   loginPassword?: string;
   allowedTabs?: DashboardTabId[];
   visaTrack?: VisaTrack;
+  // Meta Ads & Conversions API (CAPI) Attribution Fields
+  metaLeadId?: string;
+  metaCampaignId?: string;
+  metaCampaignName?: string;
+  metaAdSetId?: string;
+  metaAdSetName?: string;
+  metaAdId?: string;
+  metaAdName?: string;
+  fbclid?: string;
+  lastCapiEventSent?: string;
+  lastCapiSyncedAt?: string;
 }
 
 // ------------------------------------------------------------------------------
@@ -1502,7 +1514,108 @@ function mergeDocumentLists<T extends { id: string; fileUrl?: string; fileName?:
   return merged;
 }
 
+export interface LiveSyncStatus {
+  state: "idle" | "syncing" | "synced" | "error";
+  lastSyncedAt: string | null;
+  pendingCount: number;
+  lastEntity?: string;
+  lastError?: string;
+}
+
+const currentSyncStatus: LiveSyncStatus = {
+  state: "synced",
+  lastSyncedAt: new Date().toISOString(),
+  pendingCount: 0,
+};
+
+function emitSyncStatus(partial: Partial<LiveSyncStatus>) {
+  Object.assign(currentSyncStatus, partial);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent("knltc-sync-status", { detail: { ...currentSyncStatus } }),
+    );
+  }
+}
+
+export function getLiveSyncStatus(): LiveSyncStatus {
+  return { ...currentSyncStatus };
+}
+
+export async function forceRetryServerSync(): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+  const store = getCmsStore();
+  emitSyncStatus({
+    state: "syncing",
+    pendingCount: Math.max(1, currentSyncStatus.pendingCount),
+    lastEntity: "Full Delta Sync",
+    lastError: undefined,
+  });
+  try {
+    const res = await fetch("/api/cms/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "DELTA_STORE_SYNC",
+        fullStore: store,
+      }),
+    });
+    if (res.ok) {
+      emitSyncStatus({
+        state: "synced",
+        lastSyncedAt: new Date().toISOString(),
+        pendingCount: 0,
+        lastError: undefined,
+      });
+      return true;
+    }
+    throw new Error(`HTTP ${res.status}`);
+  } catch (err: any) {
+    emitSyncStatus({
+      state: "error",
+      pendingCount: 0,
+      lastError: err?.message || "Sync failed",
+    });
+    return false;
+  }
+}
+
+export function triggerMetaCapiForLead(lead: CrmLead, stageOverride?: string) {
+  if (typeof window === "undefined" || !lead) return;
+  const crmStage = stageOverride || lead.status || "NEW";
+  fetch("/api/admin/meta-marketing", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "SEND_CRM_EVENT",
+      leadId: lead.id,
+      leadName: lead.name,
+      phone: lead.phone,
+      email: lead.email || "",
+      city: lead.city || "Dhaka",
+      crmStage,
+      interest: lead.interest || "STUDENT_VISA_REGULAR",
+      branch: lead.branch || "DHK-HQ",
+      contractAmountBdt: lead.contractAmountBdt || 0,
+      metaLeadId: lead.metaLeadId || undefined,
+    }),
+  })
+    .then((r) => r.json())
+    .then((json) => {
+      if (json?.ok && json?.logEntry) {
+        lead.lastCapiEventSent = json.logEntry.metaEventName;
+        lead.lastCapiSyncedAt = json.logEntry.timestamp;
+        window.dispatchEvent(
+          new CustomEvent("knltc-meta-capi-sent", { detail: json.logEntry }),
+        );
+      }
+    })
+    .catch((err) => {
+      console.warn("[KNLTC-Meta-CAPI] Background stage event warning:", err);
+    });
+}
+
 let fullStoreSyncTimer: ReturnType<typeof setTimeout> | null = null;
+let lastDirectRowSyncAt = 0;
 
 export function saveCmsStore(
   updated: MasterKnlTcStore,
@@ -1533,32 +1646,46 @@ export function saveCmsStore(
       if (fullStoreSyncTimer) {
         clearTimeout(fullStoreSyncTimer);
       }
-      fullStoreSyncTimer = setTimeout(() => {
+      fullStoreSyncTimer = setTimeout(async () => {
+        // If a direct row-level syncToServer just fired within the last 250ms,
+        // it already sent `fullStore` and updated both the row and the server snapshot.
+        if (Date.now() - lastDirectRowSyncAt < 250) {
+          return;
+        }
         const latestStore = globalForStore.__knltc_master_store || updated;
-        if (latestStore.websiteCms?.[0]) {
-          fetch("/api/cms/sync", {
+        emitSyncStatus({
+          state: "syncing",
+          pendingCount: currentSyncStatus.pendingCount + 1,
+          lastEntity: "Delta Sync",
+        });
+        try {
+          const res = await fetch("/api/cms/sync", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              type: "CMS_UPDATE",
-              payload: latestStore.websiteCms[0],
+              type: "DELTA_STORE_SYNC",
               fullStore: latestStore,
             }),
-          }).catch((err) => {
-            console.warn("[KNLTC-CMS] Background CMS_UPDATE sync warning:", err);
+          });
+          if (res.ok) {
+            emitSyncStatus({
+              state: "synced",
+              lastSyncedAt: new Date().toISOString(),
+              pendingCount: Math.max(0, currentSyncStatus.pendingCount - 1),
+              lastError: undefined,
+            });
+          } else {
+            throw new Error(`Sync HTTP ${res.status}`);
+          }
+        } catch (err: any) {
+          console.warn("[KNLTC-CMS] Background DELTA_STORE_SYNC warning:", err);
+          emitSyncStatus({
+            state: "error",
+            pendingCount: Math.max(0, currentSyncStatus.pendingCount - 1),
+            lastError: err?.message || "Network sync error",
           });
         }
-        fetch("/api/cms/sync", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            type: "FULL_STORE_SYNC",
-            fullStore: latestStore,
-          }),
-        }).catch((err) => {
-          console.warn("[KNLTC-CMS] Background fullStore sync warning:", err);
-        });
-      }, 300);
+      }, 150);
     }
   }
 }
@@ -1596,8 +1723,14 @@ async function syncToServer(
   payload?: any,
 ) {
   if (typeof window === "undefined") return;
+  lastDirectRowSyncAt = Date.now();
+  emitSyncStatus({
+    state: "syncing",
+    pendingCount: currentSyncStatus.pendingCount + 1,
+    lastEntity: entity || type,
+  });
   try {
-    await fetch("/api/cms/sync", {
+    const res = await fetch("/api/cms/sync", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -1607,8 +1740,23 @@ async function syncToServer(
         fullStore: globalForStore.__knltc_master_store,
       }),
     });
-  } catch (err) {
+    if (res.ok) {
+      emitSyncStatus({
+        state: "synced",
+        lastSyncedAt: new Date().toISOString(),
+        pendingCount: Math.max(0, currentSyncStatus.pendingCount - 1),
+        lastError: undefined,
+      });
+    } else {
+      throw new Error(`HTTP ${res.status}`);
+    }
+  } catch (err: any) {
     console.warn("[KNLTC-CMS] Sync to server failed:", err);
+    emitSyncStatus({
+      state: "error",
+      pendingCount: Math.max(0, currentSyncStatus.pendingCount - 1),
+      lastError: err?.message || "Sync failed",
+    });
   }
 }
 
@@ -2877,10 +3025,14 @@ export function updateCrmLeadProfile(id: string, updates: Partial<CrmLead>): Crm
     updateCrmLeadStatus(id, "ADMITTED");
   } else {
     saveCmsStore(store);
+    if (updates.status && updates.status !== prevLead.status) {
+      triggerMetaCapiForLead(updatedLead, updates.status);
+    } else if (updates.isCourseEnrolled && !prevLead.isCourseEnrolled) {
+      triggerMetaCapiForLead(updatedLead, "LANGUAGE_ENROLLED");
+    }
   }
 
   syncToServer("UPSERT", "knltc_crm_leads", serializeLeadToSheetRow(updatedLead));
-  syncToServer("CMS_UPDATE", undefined, cms);
 
   return updatedLead;
 }
@@ -3358,7 +3510,7 @@ export function addCrmLead(lead: Omit<CrmLead, "id" | "createdAt" | "lastContact
   saveCmsStore(store);
 
   syncToServer("INSERT", "knltc_crm_leads", serializeLeadToSheetRow(newLead));
-  syncToServer("CMS_UPDATE", undefined, cms);
+  triggerMetaCapiForLead(newLead, newLead.status || "NEW");
 
   return newLead;
 }
@@ -3507,7 +3659,9 @@ export function updateCrmLeadStatus(id: string, status: LeadStatus, notes?: stri
   saveCmsStore(store);
 
   syncToServer("UPSERT", "knltc_crm_leads", serializeLeadToSheetRow(lead));
-  syncToServer("CMS_UPDATE", undefined, cms);
+  if (prevStatus !== status) {
+    triggerMetaCapiForLead(lead, status);
+  }
 
   return lead;
 }
@@ -3703,6 +3857,11 @@ export function updateVisaStage(id: string, nextStage: VisaStage): VisaApplicant
     linkedLead.activityLog = [stageEntry, ...(linkedLead.activityLog || [])];
     linkedLead.lastContactedAt = app.updatedAt;
     syncToServer("UPSERT", "knltc_crm_leads", serializeLeadToSheetRow(linkedLead));
+    if (app.visaStatus === "STAMPED" || app.visaStatus === "DEPARTED") {
+      triggerMetaCapiForLead(linkedLead, "VISA_GRANTED");
+    } else if (app.coEStatus === "APPROVED" && clampedStage === coeStageThreshold) {
+      triggerMetaCapiForLead(linkedLead, "COE_APPROVED");
+    }
   }
 
   saveCmsStore(store);
