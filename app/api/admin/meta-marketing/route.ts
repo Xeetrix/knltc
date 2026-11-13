@@ -4,6 +4,12 @@ import {
   saveMetaMarketingStore,
   sendMetaCrmConversionEvent,
   syncLiveMetaCampaignsAndAds,
+  discoverMetaAssetsWithToken,
+  updateMetaObjectStatusAndBudget,
+  syncMetaPageLeadForms,
+  pullLeadsFromMetaForm,
+  subscribeMetaPageToLeadgenWebhook,
+  syncMetaPagePostsAndComments,
   DEFAULT_META_STAGE_MAPPINGS,
 } from "@/lib/meta-marketing";
 import { fetchAllSheetTables, upsertRow } from "@/lib/google-sheets-db";
@@ -72,6 +78,7 @@ export async function GET(req: NextRequest) {
     };
 
     if (forceLive && store.config.accessToken) {
+      await discoverMetaAssetsWithToken();
       const syncResult = await syncLiveMetaCampaignsAndAds(crmLeads);
       graphSyncStatus = {
         connectedToGraphApi: syncResult.connectedToGraphApi,
@@ -79,7 +86,6 @@ export async function GET(req: NextRequest) {
       };
     }
 
-    // Recompute CRM lead attribution on cached campaigns & ads
     const campaigns = (store.cachedCampaigns || []).map((c) => {
       const matched = crmLeads.filter(
         (l) =>
@@ -124,7 +130,6 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    // Summarize CRM Attribution & CAPI Delivery
     const metaSourcedLeads = crmLeads.filter(
       (l) =>
         String(l.source).toUpperCase().includes("FACEBOOK") ||
@@ -169,6 +174,10 @@ export async function GET(req: NextRequest) {
       },
       graphSyncStatus,
       lastGraphSyncAt: store.lastGraphSyncAt || null,
+      adAccounts: store.adAccounts || [],
+      pages: store.pages || [],
+      leadForms: store.leadForms || [],
+      pagePosts: store.pagePosts || [],
       campaigns,
       adSets: store.cachedAdSets || [],
       ads,
@@ -212,12 +221,31 @@ export async function POST(req: NextRequest) {
 
     if (action === "SAVE_CONFIG") {
       const updates = body.config || {};
+      const selectedPage = (store.pages || []).find(
+        (p) => p.id === String(updates.pageId || store.config.pageId || ""),
+      );
       store.config = {
         ...store.config,
-        datasetId: String(updates.datasetId || store.config.datasetId || "1061685489662581").trim(),
-        apiVersion: String(updates.apiVersion || store.config.apiVersion || "v22.0").trim(),
-        businessName: String(updates.businessName || store.config.businessName || "KNLTC").trim(),
-        leadEventSource: String(updates.leadEventSource || store.config.leadEventSource || "KNLTC CRM").trim(),
+        appId:
+          updates.appId !== undefined
+            ? String(updates.appId).trim()
+            : store.config.appId || "",
+        appSecret:
+          updates.appSecret !== undefined
+            ? String(updates.appSecret).trim()
+            : store.config.appSecret || "",
+        datasetId: String(
+          updates.datasetId || store.config.datasetId || "1061685489662581",
+        ).trim(),
+        apiVersion: String(
+          updates.apiVersion || store.config.apiVersion || "v22.0",
+        ).trim(),
+        businessName: String(
+          updates.businessName || store.config.businessName || "KNLTC",
+        ).trim(),
+        leadEventSource: String(
+          updates.leadEventSource || store.config.leadEventSource || "KNLTC CRM",
+        ).trim(),
         accessToken:
           updates.accessToken !== undefined
             ? String(updates.accessToken).trim()
@@ -230,6 +258,10 @@ export async function POST(req: NextRequest) {
           updates.pageId !== undefined
             ? String(updates.pageId).trim()
             : store.config.pageId,
+        pageAccessToken:
+          selectedPage?.accessToken ||
+          updates.pageAccessToken ||
+          store.config.pageAccessToken,
         testEventCode:
           updates.testEventCode !== undefined
             ? String(updates.testEventCode).trim()
@@ -264,18 +296,135 @@ export async function POST(req: NextRequest) {
       };
       saveMetaMarketingStore(store);
 
-      // If access token is configured, immediately attempt a live campaign sync
       let liveSyncResult = null;
+      let discoveredAssets = null;
       if (store.config.accessToken) {
+        discoveredAssets = await discoverMetaAssetsWithToken(store.config.accessToken);
         const allTables = await fetchAllSheetTables();
         const crmLeads = (allTables.knltc_crm_leads || []).map(parseLeadRow);
         liveSyncResult = await syncLiveMetaCampaignsAndAds(crmLeads);
       }
 
+      const freshStore = loadMetaMarketingStore();
       return NextResponse.json({
         ok: true,
-        config: store.config,
+        config: freshStore.config,
+        adAccounts: freshStore.adAccounts,
+        pages: freshStore.pages,
+        leadForms: freshStore.leadForms,
         liveSyncResult,
+        discoveredAssets,
+      });
+    }
+
+    if (action === "DISCOVER_ASSETS") {
+      const discovered = await discoverMetaAssetsWithToken();
+      const allTables = await fetchAllSheetTables();
+      const crmLeads = (allTables.knltc_crm_leads || []).map(parseLeadRow);
+      const syncResult = await syncLiveMetaCampaignsAndAds(crmLeads);
+      const fresh = loadMetaMarketingStore();
+      return NextResponse.json({
+        ok: discovered.ok,
+        errorMessage: discovered.errorMessage || syncResult.errorMessage,
+        config: fresh.config,
+        adAccounts: fresh.adAccounts,
+        pages: fresh.pages,
+        leadForms: fresh.leadForms,
+        campaigns: syncResult.campaigns,
+        adSets: syncResult.adSets,
+        ads: syncResult.ads,
+      });
+    }
+
+    if (action === "UPDATE_META_OBJECT") {
+      const objectId = String(body.objectId || "").trim();
+      const objectType = String(body.objectType || "CAMPAIGN").toUpperCase() as
+        | "CAMPAIGN"
+        | "ADSET"
+        | "AD";
+      const status = body.status
+        ? (String(body.status).toUpperCase() as "ACTIVE" | "PAUSED")
+        : undefined;
+      const dailyBudget =
+        body.dailyBudget !== undefined ? Number(body.dailyBudget) : undefined;
+
+      const res = await updateMetaObjectStatusAndBudget({
+        objectId,
+        objectType,
+        status,
+        dailyBudget,
+      });
+      const fresh = loadMetaMarketingStore();
+      return NextResponse.json({
+        ok: res.ok,
+        errorMessage: res.errorMessage,
+        campaigns: fresh.cachedCampaigns,
+        adSets: fresh.cachedAdSets,
+        ads: fresh.cachedAds,
+      });
+    }
+
+    if (action === "SYNC_LEAD_FORMS") {
+      const res = await syncMetaPageLeadForms();
+      return NextResponse.json({
+        ok: res.ok,
+        leadForms: res.leadForms,
+        errorMessage: res.errorMessage,
+      });
+    }
+
+    if (action === "PULL_FORM_LEADS") {
+      const formId = String(body.formId || "").trim();
+      const pageId = body.pageId ? String(body.pageId).trim() : undefined;
+      const allTables = await fetchAllSheetTables();
+      const existingLeads = (allTables.knltc_crm_leads || []).map(parseLeadRow);
+
+      if (formId === "ALL") {
+        let totalPulled = 0;
+        let totalNew = 0;
+        const forms = store.leadForms || [];
+        for (const f of forms) {
+          const r = await pullLeadsFromMetaForm({
+            formId: f.id,
+            pageId: f.pageId,
+            existingLeads,
+          });
+          totalPulled += r.pulledCount;
+          totalNew += r.newLeadsCount;
+        }
+        return NextResponse.json({
+          ok: true,
+          pulledCount: totalPulled,
+          newLeadsCount: totalNew,
+        });
+      }
+
+      const res = await pullLeadsFromMetaForm({
+        formId,
+        pageId,
+        existingLeads,
+      });
+      return NextResponse.json(res);
+    }
+
+    if (action === "SUBSCRIBE_PAGE_WEBHOOK") {
+      const pageId = body.pageId ? String(body.pageId).trim() : undefined;
+      const res = await subscribeMetaPageToLeadgenWebhook(pageId);
+      const fresh = loadMetaMarketingStore();
+      return NextResponse.json({
+        ok: res.ok,
+        errorMessage: res.errorMessage,
+        pages: fresh.pages,
+      });
+    }
+
+    if (action === "SYNC_PAGE_POSTS") {
+      const pageId = body.pageId ? String(body.pageId).trim() : undefined;
+      const res = await syncMetaPagePostsAndComments(pageId);
+      return NextResponse.json({
+        ok: res.ok,
+        pagePosts: res.pagePosts,
+        errorMessage: res.errorMessage,
       });
     }
 
@@ -307,10 +456,15 @@ export async function POST(req: NextRequest) {
     if (action === "SYNC_META_CAMPAIGNS") {
       const allTables = await fetchAllSheetTables();
       const crmLeads = (allTables.knltc_crm_leads || []).map(parseLeadRow);
+      await discoverMetaAssetsWithToken();
       const syncResult = await syncLiveMetaCampaignsAndAds(crmLeads);
+      const fresh = loadMetaMarketingStore();
       return NextResponse.json({
         ok: syncResult.ok,
         ...syncResult,
+        adAccounts: fresh.adAccounts,
+        pages: fresh.pages,
+        leadForms: fresh.leadForms,
       });
     }
 
@@ -420,9 +574,15 @@ export async function POST(req: NextRequest) {
       const branch = String(body.branch || "DHK-HQ").trim();
       const metaLeadId = String(body.metaLeadId || "").replace(/\D/g, "");
       const metaCampaignId = String(body.metaCampaignId || "").trim();
-      const metaCampaignName = String(body.metaCampaignName || "Japan Student Visa 2027 Lead Ad").trim();
-      const metaAdSetName = String(body.metaAdSetName || "Dhaka & Khulna HSC/Diploma Audience").trim();
-      const metaAdName = String(body.metaAdName || "Zero Advance Fee Student Visa Video Ad").trim();
+      const metaCampaignName = String(
+        body.metaCampaignName || "Japan Student Visa 2027 Lead Ad",
+      ).trim();
+      const metaAdSetName = String(
+        body.metaAdSetName || "Dhaka & Khulna HSC/Diploma Audience",
+      ).trim();
+      const metaAdName = String(
+        body.metaAdName || "Zero Advance Fee Student Visa Video Ad",
+      ).trim();
 
       const fullLeadObj = {
         id: leadId,
@@ -505,11 +665,17 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({ ok: false, error: `Unknown action: ${action}` }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: `Unknown action: ${action}` },
+      { status: 400 },
+    );
   } catch (error: any) {
     console.error("[MetaMarketing API POST] Error:", error);
     return NextResponse.json(
-      { ok: false, error: error?.message || "Failed to process Meta Marketing request" },
+      {
+        ok: false,
+        error: error?.message || "Failed to process Meta Marketing request",
+      },
       { status: 500 },
     );
   }
